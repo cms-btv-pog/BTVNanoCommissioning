@@ -14,7 +14,7 @@ from coffea import processor
 def validate(file):
     try:
         fin = uproot.open(file)
-        return fin['Events'].numentries
+        return fin['Events'].num_entries
     except:
         print("Corrupted file: {}".format(file))
         return 
@@ -66,10 +66,19 @@ if __name__ == '__main__':
 
     # Scan if files can be opened
     if args.validate:
+        # Run locally, but with multiprocessing
+        import dask
+        from dask.distributed import Client
+        client = Client(n_workers=4)
         for sample in sample_dict.keys():
-            r = p_map(validate, sample_dict[sample], num_cpus=args.workers,
-                      desc=f'Validating {sample[:20]}...')
-            print("Events:", np.sum(list(r)))
+            results = []
+            for x in sample_dict[sample]:
+                y = dask.delayed(validate)(x)
+                results.append(y)
+
+            results = dask.compute(*results)
+            print(sample)
+            print("    Events:", np.sum(list(results)))
         sys.exit(0)
     
     # load workflow
