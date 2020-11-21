@@ -12,7 +12,7 @@ along with the fileset these should run over. Multiple executors can be chosen
 
 To run the example, run:
 ```
-python runner.py --worflow ttcom
+python runner.py --workflow ttcom
 ```
 
 Example plots can be found in ` make_some_plots.ipynb` though we might want to make

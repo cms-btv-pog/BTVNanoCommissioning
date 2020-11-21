@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
     parser.add_argument('--samples', '--json', dest='samplejson', default='dummy_samples.json', help='JSON file containing dataset and file locations (default: %(default)s)')
 
-    parser.add_argument('--executor', choices=['iterative', 'uproot', 'parsl','dask'], default='uproot', help='The type of executor to use (default: %(default)s)')
+    parser.add_argument('--executor', choices=['iterative', 'futures', 'parsl', 'dask/condor', 'dask/slurm'], default='futures', help='The type of executor to use (default: %(default)s)')
     parser.add_argument('-j', '--workers', type=int, default=12, help='Number of workers to use for multi-worker executors (e.g. futures or condor) (default: %(default)s)')
 
     parser.add_argument('--validate', action='store_true', help='Do not process, just check all files are accessible')
@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     #########
     # Execute
-    if args.executor in ['uproot', 'iterative']:
+    if args.executor in ['futures', 'iterative']:
         if args.executor == 'iterative':
             _exec = processor.iterative_executor
         else:
@@ -101,20 +101,27 @@ if __name__ == '__main__':
     elif args.executor == 'parsl':
         raise NotImplemented
         
-    elif args.executor == 'dask':
-        from dask_jobqueue import SLURMCluster
+    elif 'dask' in args.executor:
+        from dask_jobqueue import SLURMCluster, HTCondorCluster
         from distributed import Client
         from dask.distributed import performance_report
 
-        cluster = SLURMCluster(
-            queue='all',
-            cores=16,
-            processes=16,
-            memory="200 GB",
-            retries=10,
-            walltime='00:30:00',
-            env_extra=['ulimit -u 32768'],
-        )
+        if 'slurm' in args.executor:
+            cluster = SLURMCluster(
+                queue='all',
+                cores=16,
+                processes=16,
+                memory="200 GB",
+                retries=10,
+                walltime='00:30:00',
+                env_extra=['ulimit -u 32768'],
+            )
+        elif 'condor' in args.executor:
+             cluster = HTCondorCluster(
+                 cores=1, 
+                 memory='2GB', 
+                 disk='2GB', 
+            )
         cluster.scale(jobs=10)
 
         print(cluster.job_script())
@@ -135,3 +142,4 @@ if __name__ == '__main__':
     save(output, args.output)
   
     print(output)
+    print(f"Saving output to {args.output}")
