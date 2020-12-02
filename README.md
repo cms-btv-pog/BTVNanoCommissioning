@@ -27,6 +27,7 @@ wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 bash Miniconda3-latest-Linux-x86_64.sh
 ```
 NOTE: always make sure that conda, python, and pip point to local Miniconda installation (`which conda` etc.).
+
 You can either use the default environment`base` or create a new one:
 ```
 # create new environment with python 3.7, e.g. environment of name `coffea`
@@ -41,3 +42,6 @@ conda install -c conda-forge xrootd
 ```
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
+### Running jupyter remotely
+See https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Remote-jupyter
+
