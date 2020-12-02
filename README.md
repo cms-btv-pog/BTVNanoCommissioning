@@ -43,5 +43,23 @@ conda install -c conda-forge xrootd
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
 ### Running jupyter remotely
-See https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Remote-jupyter
+See also https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Remote-jupyter
 
+1. On your local machine, edit `.ssh/config`:
+```
+Host lxplus*
+  HostName lxplus7.cern.ch
+  User <your-user-name>
+  ForwardX11 yes
+  ForwardAgent yes
+  ForwardX11Trusted yes
+Host *_f
+  LocalForward localhost:8800 localhost:8800
+  ExitOnForwardFailure yes
+```
+2. Connect to remote with `ssh lxplus_f`
+3. Start a jupyter notebook:
+```
+jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
+```
+4. URL for notebook will be printed, copy and open in local browser
