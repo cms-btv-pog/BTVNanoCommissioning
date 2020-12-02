@@ -1,0 +1,3 @@
+*.coffea
+.ipynb_checkpoints/
+workflows/__pycache__/
