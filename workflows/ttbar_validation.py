@@ -11,12 +11,14 @@ class NanoProcessor(processor.ProcessorABC):
         # Should read axes from NanoAOD config
         dataset_axis = hist.Cat("dataset", "Primary dataset")
         cutflow_axis   = hist.Cat("cut",   "Cut")
-
+       
         # Events
         nel_axis   = hist.Bin("nel",   r"N electrons", [0,1,2,3,4,5,6,7,8,9,10])
         nmu_axis   = hist.Bin("nmu",   r"N muons",     [0,1,2,3,4,5,6,7,8,9,10])
         njet_axis  = hist.Bin("njet",  r"N jets",      [0,1,2,3,4,5,6,7,8,9,10])
-        nbjet_axis = hist.Bin("nbjet", r"N b-jets",    [0,1,2,3,4,5,6,7,8,9,10])
+        nbjet_t_axis = hist.Bin("nbjet_t", r"N tight b-jets",    [0,1,2,3,4,5,6,7,8,9,10])
+        nbjet_m_axis = hist.Bin("nbjet_m", r"N medium b-jets",    [0,1,2,3,4,5,6,7,8,9,10])
+        nbjet_l_axis = hist.Bin("nbjet_l", r"N loose b-jets",    [0,1,2,3,4,5,6,7,8,9,10])
 
         # Electron
         el_pt_axis   = hist.Bin("pt",    r"Electron $p_{T}$ [GeV]", 100, 20, 400)
@@ -37,7 +39,7 @@ class NanoProcessor(processor.ProcessorABC):
         jet_mass_axis = hist.Bin("mass", r"Jet $m$ [GeV]", 100, 0, 50)
         ljpt_axis     = hist.Bin("ljpt", r"Leading jet $p_{T}$ [GeV]", 100, 20, 400)
         sljpt_axis     = hist.Bin("sljpt", r"Subleading jet $p_{T}$ [GeV]", 100, 20, 400)
-        
+ 
         # Define similar axes dynamically
         disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC',]
         btag_axes = []
@@ -48,7 +50,7 @@ class NanoProcessor(processor.ProcessorABC):
         deepcsv_axes = []
         for d in deepcsv_list:
             if "trackDecayLenVal" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 2))
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 2.0))
             else:
                 deepcsv_axes.append(hist.Bin(d, d, 50, 0, 0.3))
 
@@ -74,7 +76,9 @@ class NanoProcessor(processor.ProcessorABC):
         
         _hist_event_dict = {
                 'njet'  : hist.Hist("Counts", dataset_axis, njet_axis),
-                'nbjet' : hist.Hist("Counts", dataset_axis, nbjet_axis),
+                'nbjet_t' : hist.Hist("Counts", dataset_axis, nbjet_t_axis),
+                'nbjet_m' : hist.Hist("Counts", dataset_axis, nbjet_m_axis),
+                'nbjet_l' : hist.Hist("Counts", dataset_axis, nbjet_l_axis),
                 'nel'   : hist.Hist("Counts", dataset_axis, nel_axis),
                 'nmu'   : hist.Hist("Counts", dataset_axis, nmu_axis),
                 'lelpt' : hist.Hist("Counts", dataset_axis, lelpt_axis),
@@ -103,7 +107,7 @@ class NanoProcessor(processor.ProcessorABC):
         ##############
         # Trigger level
         triggers = [
-        #"HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
         "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",    
         ]
         
@@ -155,16 +159,20 @@ class NanoProcessor(processor.ProcessorABC):
         jet_pt     = selev.Jet.pt > 25
         jet_pu     = selev.Jet.puId > 6
         jet_level  = jet_pu & jet_eta & jet_pt
-        
         # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
-        bjet_disc  = selev.Jet.btagDeepB > 0.7264 # L=0.0494, M=0.2770, T=0.7264
-        bjet_level = jet_level & bjet_disc
+        bjet_disc_t  = selev.Jet.btagDeepB > 0.7264 # L=0.0494, M=0.2770, T=0.7264
+        bjet_disc_m  = selev.Jet.btagDeepB > 0.2770 # L=0.0494, M=0.2770, T=0.7264
+        bjet_disc_l  = selev.Jet.btagDeepB > 0.0494 # L=0.0494, M=0.2770, T=0.7264
+        bjet_level_t = jet_level & bjet_disc_t
+        bjet_level_m = jet_level & bjet_disc_m
+        bjet_level_l = jet_level & bjet_disc_l
         
-
         sel    = selev.Electron[el_level]
         smu    = selev.Muon[mu_level]
         sjets  = selev.Jet[jet_level]
-        sbjets = selev.Jet[bjet_level]
+        sbjets_t = selev.Jet[bjet_level_t]
+        sbjets_m = selev.Jet[bjet_level_m]
+        sbjets_l = selev.Jet[bjet_level_l]
         
         # output['pt'].fill(dataset=dataset, pt=selev.Jet.pt.flatten())
         # Fill histograms dynamically  
@@ -182,7 +190,9 @@ class NanoProcessor(processor.ProcessorABC):
             return ak.num(ak.fill_none(ar[~ak.is_none(ar)], 0), axis=0)
 
         output['njet'].fill(dataset=dataset,  njet=flatten(ak.num(sjets)))
-        output['nbjet'].fill(dataset=dataset, nbjet=flatten(ak.num(sbjets)))
+        output['nbjet_t'].fill(dataset=dataset, nbjet_t=flatten(ak.num(sbjets_t)))
+        output['nbjet_m'].fill(dataset=dataset, nbjet_m=flatten(ak.num(sbjets_m)))
+        output['nbjet_l'].fill(dataset=dataset, nbjet_l=flatten(ak.num(sbjets_l)))
         output['nel'].fill(dataset=dataset,   nel=flatten(ak.num(sel)))
         output['nmu'].fill(dataset=dataset,   nmu=flatten(ak.num(smu)))
 
