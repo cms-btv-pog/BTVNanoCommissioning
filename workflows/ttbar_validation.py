@@ -44,13 +44,29 @@ class NanoProcessor(processor.ProcessorABC):
         for d in disc_list:
             btag_axes.append(hist.Bin(d, d, 50, 0, 1))        
         
-        deepcsv_list = ["DeepCSV_trackDecayLenVal_0", "DeepCSV_trackDecayLenVal_1", "DeepCSV_trackDecayLenVal_2", "DeepCSV_trackDecayLenVal_3", "DeepCSV_trackDecayLenVal_4", "DeepCSV_trackDecayLenVal_5", "DeepCSV_trackDeltaR_0", "DeepCSV_trackDeltaR_1", "DeepCSV_trackDeltaR_2", "DeepCSV_trackDeltaR_3", "DeepCSV_trackDeltaR_4", "DeepCSV_trackDeltaR_5"]
+        deepcsv_list = ["DeepCSV_trackDecayLenVal_0", "DeepCSV_trackDecayLenVal_1", "DeepCSV_trackDecayLenVal_2", "DeepCSV_trackDecayLenVal_3", "DeepCSV_trackDecayLenVal_4", "DeepCSV_trackDecayLenVal_5", 
+	"DeepCSV_trackDeltaR_0", "DeepCSV_trackDeltaR_1", "DeepCSV_trackDeltaR_2", "DeepCSV_trackDeltaR_3", "DeepCSV_trackDeltaR_4", "DeepCSV_trackDeltaR_5",
+	"DeepCSV_trackEtaRel_0","DeepCSV_trackEtaRel_1","DeepCSV_trackEtaRel_2","DeepCSV_trackEtaRel_3", 	
+	"DeepCSV_trackJetDistVal_0","DeepCSV_trackJetDistVal_1","DeepCSV_trackJetDistVal_2","DeepCSV_trackJetDistVal_3","DeepCSV_trackJetDistVal_4","DeepCSV_trackJetDistVal_5", 
+	"DeepCSV_trackJetPt", "DeepCSV_trackPtRatio_0","DeepCSV_trackPtRatio_1","DeepCSV_trackPtRatio_2","DeepCSV_trackPtRatio_3","DeepCSV_trackPtRatio_4","DeepCSV_trackPtRatio_5", 
+	"DeepCSV_trackPtRel_0", "DeepCSV_trackPtRel_1","DeepCSV_trackPtRel_2","DeepCSV_trackPtRel_3","DeepCSV_trackPtRel_4","DeepCSV_trackPtRel_5",
+	"DeepCSV_vertexCategory","DeepCSV_vertexEnergyRatio", "DeepCSV_vertexJetDeltaR","DeepCSV_vertexMass", "DeepCSV_jetNSecondaryVertices","DeepCSV_jetNSelectedTracks","DeepCSV_jetNTracksEtaRel","DeepCSV_vertexNTracks"]
         deepcsv_axes = []
         for d in deepcsv_list:
-            if "trackDecayLenVal" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 2))
-            else:
+            if "DeltaR" in d: 
                 deepcsv_axes.append(hist.Bin(d, d, 50, 0, 0.3))
+            elif "trackPtRatio" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 0.3))
+            elif "vertexMass" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 5))
+            elif "trackEtaRel" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 6))
+            elif "EnergyRatio" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 1))
+            elif "trackJetDistVal" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 50, -0.1, 0))
+            else:
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 3))
 
         # Define histograms from axes
         _hist_jet_dict = {
