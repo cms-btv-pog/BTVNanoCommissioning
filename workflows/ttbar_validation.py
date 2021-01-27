@@ -65,6 +65,12 @@ class NanoProcessor(processor.ProcessorABC):
                 deepcsv_axes.append(hist.Bin(d, d, 50, 0, 1))
             elif "trackJetDistVal" in d:
                 deepcsv_axes.append(hist.Bin(d, d, 50, -0.1, 0))
+            elif "vertexCategory" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 3, 0, 2))
+            elif "jetN" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 16, 0, 15))
+            elif "vertexN" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 16, 0, 15))
             else:
                 deepcsv_axes.append(hist.Bin(d, d, 50, 0, 3))
 

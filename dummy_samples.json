@@ -1,14 +1,14 @@
 {
     "ttbar": [
-        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA01/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1/201118_010348/0000/nano106X_on_mini106X_2017_mc_NANO_10.root",
-        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA01/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1/201118_010348/0000/nano106X_on_mini106X_2017_mc_NANO_11.root",
-        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA01/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1/201118_010348/0000/nano106X_on_mini106X_2017_mc_NANO_12.root"
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174326/0001/nano_mc2017_1-1664.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174326/0000/nano_mc2017_1-545.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174326/0000/nano_mc2017_1-439.root"
     ],
     "Data":[
-        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA01/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1/201118_010348/0000/nano106X_on_mini106X_2017_mc_NANO_13.root",
-        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA01/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1/201118_010348/0000/nano106X_on_mini106X_2017_mc_NANO_14.root",
-        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA01/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1/201118_010348/0000/nano106X_on_mini106X_2017_mc_NANO_15.root",
-        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA01/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1/201118_010348/0000/nano106X_on_mini106X_2017_mc_NANO_16.root"
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174326/0000/nano_mc2017_1-445.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174326/0001/nano_mc2017_1-1551.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174326/0001/nano_mc2017_1-1519.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174326/0000/nano_mc2017_1-929.root"
         
     ]
 }
