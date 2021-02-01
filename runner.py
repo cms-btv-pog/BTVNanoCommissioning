@@ -131,7 +131,7 @@ if __name__ == '__main__':
     
         env_extra = [
             'export XRD_RUNFORKHANDLER=1',
-            f'export X509_USER_PROXY={_tmp_path}',
+            f'export X509_USER_PROXY={_x509_path}',
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
             'ulimit -u 32768',
         ]
@@ -147,12 +147,15 @@ if __name__ == '__main__':
                 env_extra=env_extra,
             )
         elif 'condor' in args.executor:
-             cluster = HTCondorCluster(
+            cluster = HTCondorCluster(
                  cores=1, 
                  memory='2GB', 
                  disk='2GB', 
                  env_extra=env_extra,
             )
+            import logging
+            logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
         cluster.scale(jobs=10)
 
 
