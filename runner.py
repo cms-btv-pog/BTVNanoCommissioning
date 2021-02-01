@@ -153,11 +153,7 @@ if __name__ == '__main__':
                  disk='2GB', 
                  env_extra=env_extra,
             )
-            import logging
-            logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-
         cluster.scale(jobs=10)
-
 
         client = Client(cluster)
         with performance_report(filename="dask-report.html"):
