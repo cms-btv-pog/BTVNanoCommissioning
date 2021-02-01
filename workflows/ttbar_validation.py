@@ -70,6 +70,7 @@ class NanoProcessor(processor.ProcessorABC):
     
         _hist_dict = {**_hist_jet_dict, **_hist_event_dict}
         self._accumulator = processor.dict_accumulator(_hist_dict)
+        self._accumulator['sumw'] = processor.defaultdict_accumulator(float)
 
 
     @property
@@ -80,6 +81,7 @@ class NanoProcessor(processor.ProcessorABC):
         output = self.accumulator.identity()
 
         dataset = events.metadata['dataset']
+        output['sumw'][dataset] += ak.sum(events.genWeight)
         
         ##############
         # Trigger level
