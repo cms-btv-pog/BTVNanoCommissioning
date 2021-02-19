@@ -132,7 +132,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_ele = (ak.count(events.Electron.pt, axis=1) == 1)
         
         ## Jet cuts
-        events.Jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.5)]
+        events.Jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.5) ]
         req_jets = (ak.count(events.Jet.pt, axis=1) >= 2)    
         
         req_opposite_charge = events.Electron[:, 0].charge * events.Muon[:, 0].charge == -1
@@ -156,9 +156,10 @@ class NanoProcessor(processor.ProcessorABC):
         
         # Per jet
         jet_eta    = (abs(selev.Jet.eta) <= 2.4)
-        jet_pt     = selev.Jet.pt > 25
-        jet_pu     = selev.Jet.puId > 6
-        jet_level  = jet_pu & jet_eta & jet_pt
+        jet_pt     = selev.Jet.pt < 50
+        jet_pu     = selev.Jet.puId > 6 
+        jet_id     = selev.Jet.jetId < 6 #Use Jet.isTight() & Jet.isLooseLeptonVeto() 
+        jet_level  = jet_pu & jet_eta & jet_pt & jet_id 
         # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
         bjet_disc_t  = selev.Jet.btagDeepB > 0.7264 # L=0.0494, M=0.2770, T=0.7264
         bjet_disc_m  = selev.Jet.btagDeepB > 0.2770 # L=0.0494, M=0.2770, T=0.7264
