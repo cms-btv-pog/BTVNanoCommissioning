@@ -4,14 +4,14 @@ import argparse
 import pprint
 
 fset = []
-with open("UL16check.txt") as fp: 
+with open("UL16APVcheck.txt") as fp: 
     lines = fp.readlines() 
     for line in lines: 
         fset.append(line)
 
 fdict = {}
 
-instance = 'prod/global'
+instance = 'prod/phys03'
 
 xrd = 'root://xrootd-cms.infn.it//'
 
@@ -29,5 +29,5 @@ for dataset in fset:
         fdict[dictname].extend([xrd+f for f in flist if len(f) > 1])
 
 #pprint.pprint(fdict, depth=1)
-with open('samplesUL16.json', 'w') as fp:
+with open('samplesUL16APV.json', 'w') as fp:
     json.dump(fdict, fp, indent=4)
