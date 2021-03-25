@@ -40,6 +40,12 @@ Install coffea and xrootd:
 pip install git+https://github.com/CoffeaTeam/coffea.git #latest published release with `pip install coffea`
 conda install -c conda-forge xrootd
 ```
+For running with `dask/condor`, additional packages need to be installed in your conda environment:
+```
+conda install -c conda-forge ca-certificates
+conda install -c conda-forge ca-policy-lcg 
+conda install -c conda-forge dask-jobqueue
+```
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
 ### Running jupyter remotely
