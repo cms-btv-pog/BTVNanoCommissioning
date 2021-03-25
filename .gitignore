@@ -1,3 +1,5 @@
 *.coffea
 .ipynb_checkpoints/
 workflows/__pycache__/
+dask-report.html
+dask-worker-space/
