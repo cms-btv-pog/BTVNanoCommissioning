@@ -31,18 +31,29 @@ if __name__ == '__main__':
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
-    parser.add_argument('--samples', '--json', dest='samplejson', default='dummy_samples.json', help='JSON file containing dataset and file locations (default: %(default)s)')
+    parser.add_argument('--samples', '--json', dest='samplejson', default='dummy_samples.json',
+                        help='JSON file containing dataset and file locations (default: %(default)s)'
+                        )
 
     # Scale out
-    parser.add_argument('--executor', choices=['iterative', 'futures', 'parsl/slurm', 'parsl/condor', 'dask/condor', 'dask/slurm'], default='futures', 
+    parser.add_argument('--executor', choices=['iterative', 'futures', 'parsl/slurm', 'parsl/condor', 'dask/condor', 'dask/slurm'], default='futures',
                         help='The type of executor to use (default: %(default)s). Other options can be implemented. '
                              'For example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html'
-                             ''
+                             '- `parsl/slurm` - tested at DESY/Maxwell'
+                             '- `parsl/condor` - tested at DESY, RWTH'
+                             '- `dask/slurm` - tested at DESY/Maxwell'
+                             '- `dask/condor` - tested at DESY, RWTH'
                         )
-    parser.add_argument('-j', '--workers', type=int, default=12, help='Number of workers (cores/threads) to use for multi-worker executors (e.g. futures or condor) (default: %(default)s)')
-    parser.add_argument('-s', '--scaleout', type=int, default=6, help='Number of nodes to scale out to if using slurm/condor. Total number of concurrent threads is ``workers x scaleout`` (default: %(default)s)')
-    parser.add_argument('--voms', default=None, type=str, help='Path to voms proxy, accsessible to worker nodes. By default a copy will be made to $HOME.')
-
+    parser.add_argument('-j', '--workers', type=int, default=12,
+                        help='Number of workers (cores/threads) to use for multi-worker executors '
+                             '(e.g. futures or condor) (default: %(default)s)')
+    parser.add_argument('-s', '--scaleout', type=int, default=6,
+                        help='Number of nodes to scale out to if using slurm/condor. Total number of '
+                             'concurrent threads is ``workers x scaleout`` (default: %(default)s)'
+                        )
+    parser.add_argument('--voms', default=None, type=str,
+                        help='Path to voms proxy, accessible to worker nodes. By default a copy will be made to $HOME.'
+                        )
     # Debugging
     parser.add_argument('--validate', action='store_true', help='Do not process, just check all files are accessible')
     parser.add_argument('--skipbadfiles', action='store_true', help='Skip bad files.')
@@ -128,6 +139,9 @@ if __name__ == '__main__':
             'export XRD_RUNFORKHANDLER=1',
             f'export X509_USER_PROXY={_x509_path}',
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
+            f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
+        ]
+        condor_extra = [
             f'source {os.environ["HOME"]}/.bashrc',
         ]
 
@@ -139,15 +153,16 @@ if __name__ == '__main__':
         else:
             _exec = processor.futures_executor
         output = processor.run_uproot_job(sample_dict,
-                                    treename='Events',
-                                    processor_instance=processor_instance,
-                                    executor=_exec,
-                                    executor_args={
-                                        'skipbadfiles':args.skipbadfiles,
-                                        'schema': processor.NanoAODSchema,
-                                        'workers': args.workers},
-                                    chunksize=args.chunk, maxchunks=args.max
-                                    )
+                                          treename='Events',
+                                          processor_instance=processor_instance,
+                                          executor=_exec,
+                                          executor_args={
+                                              'skipbadfiles': args.skipbadfiles,
+                                              'schema': processor.NanoAODSchema,
+                                              'workers': args.workers
+                                          },
+                                          chunksize=args.chunk,
+                                          maxchunks=args.max)
     elif 'parsl' in args.executor:
         import parsl
         from parsl.providers import LocalProvider, CondorProvider, SlurmProvider
@@ -155,7 +170,7 @@ if __name__ == '__main__':
         from parsl.config import Config
         from parsl.executors import HighThroughputExecutor
         from parsl.launchers import SrunLauncher
-        from parsl.addresses import address_by_hostname,address_by_query
+        from parsl.addresses import address_by_hostname, address_by_query
 
         if 'slurm' in args.executor:
             htex_config = Config(
@@ -167,10 +182,10 @@ if __name__ == '__main__':
                         provider=SlurmProvider(
                             channel=LocalChannel(script_dir='logs_parsl'),
                             launcher=SrunLauncher(),
-                            max_blocks=(args.scaleout)+10,
+                            max_blocks=(args.scaleout) + 10,
                             init_blocks=args.scaleout,
                             partition='all',
-                            worker_init="\n".join(env_extra) + f"\nexport PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
+                            worker_init="\n".join(env_extra),
                             walltime='00:120:00'
                         ),
                     )
@@ -188,7 +203,7 @@ if __name__ == '__main__':
                             nodes_per_block=1,
                             init_blocks=1,
                             max_blocks=1,
-                            worker_init="\n".join(env_extra) + f"\nexport PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
+                            worker_init="\n".join(env_extra + condor_extra),
                             walltime="00:20:00",
                         ),
                     )
@@ -200,16 +215,16 @@ if __name__ == '__main__':
         dfk = parsl.load(htex_config)
 
         output = processor.run_uproot_job(sample_dict,
-                                    treename='Events',
-                                    processor_instance=processor_instance,
-                                    executor=processor.parsl_executor,
-                                    executor_args={
-                                        'skipbadfiles':True,
-                                        'schema': processor.NanoAODSchema,
-                                        'config': None,
-                                    },
-                                    chunksize=args.chunk, maxchunks=args.max
-                                    )
+                                          treename='Events',
+                                          processor_instance=processor_instance,
+                                          executor=processor.parsl_executor,
+                                          executor_args={
+                                              'skipbadfiles': True,
+                                              'schema': processor.NanoAODSchema,
+                                              'config': None,
+                                          },
+                                          chunksize=args.chunk,
+                                          maxchunks=args.max)
 
     elif 'dask' in args.executor:
         from dask_jobqueue import SLURMCluster, HTCondorCluster
@@ -228,26 +243,26 @@ if __name__ == '__main__':
             )
         elif 'condor' in args.executor:
             cluster = HTCondorCluster(
-                 cores=args.workers,
-                 memory='2GB',
-                 disk='2GB',
-                 env_extra=env_extra,
+                cores=args.workers,
+                memory='2GB',
+                disk='2GB',
+                env_extra=env_extra,
             )
         cluster.scale(jobs=args.scaleout)
 
         client = Client(cluster)
         with performance_report(filename="dask-report.html"):
             output = processor.run_uproot_job(sample_dict,
-                                        treename='Events',
-                                        processor_instance=processor_instance,
-                                        executor=processor.dask_executor,
-                                        executor_args={
-                                            'client': client,
-                                            'skipbadfiles':args.skipbadfiles,
-                                            'schema': processor.NanoAODSchema,
-                                        },
-                                        chunksize=args.chunk, maxchunks=args.max
-                            )
+                                              treename='Events',
+                                              processor_instance=processor_instance,
+                                              executor=processor.dask_executor,
+                                              executor_args={
+                                                  'client': client,
+                                                  'skipbadfiles': args.skipbadfiles,
+                                                  'schema': processor.NanoAODSchema,
+                                              },
+                                              chunksize=args.chunk,
+                                              maxchunks=args.max)
 
     save(output, args.output)
 
