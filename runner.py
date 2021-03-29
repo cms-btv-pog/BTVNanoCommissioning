@@ -18,18 +18,27 @@ def validate(file):
         return fin['Events'].num_entries
     except:
         print("Corrupted file: {}".format(file))
-        return 
+        return
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run analysis on baconbits files using processor coffea files')
     # Inputs
-    parser.add_argument( '--wf', '--workflow', dest='workflow', choices=['ttcom', 'fattag'], help='Which processor to run', required=True)
+    parser.add_argument('--wf',
+                        '--workflow',
+                        dest='workflow',
+                        choices=['ttcom', 'fattag'],
+                        help='Which processor to run',
+                        required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
     parser.add_argument('--samples', '--json', dest='samplejson', default='dummy_samples.json', help='JSON file containing dataset and file locations (default: %(default)s)')
 
     # Scale out
-    parser.add_argument('--executor', choices=['iterative', 'futures', 'parsl/slurm', 'dask/condor', 'dask/slurm'], default='futures', help='The type of executor to use (default: %(default)s)')
+    parser.add_argument('--executor', choices=['iterative', 'futures', 'parsl/slurm', 'parsl/condor', 'dask/condor', 'dask/slurm'], default='futures', 
+                        help='The type of executor to use (default: %(default)s). Other options can be implemented. '
+                             'For example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html'
+                             ''
+                        )
     parser.add_argument('-j', '--workers', type=int, default=12, help='Number of workers (cores/threads) to use for multi-worker executors (e.g. futures or condor) (default: %(default)s)')
     parser.add_argument('-s', '--scaleout', type=int, default=6, help='Number of nodes to scale out to if using slurm/condor. Total number of concurrent threads is ``workers x scaleout`` (default: %(default)s)')
     parser.add_argument('--voms', default=None, type=str, help='Path to voms proxy, accsessible to worker nodes. By default a copy will be made to $HOME.')
@@ -50,7 +59,7 @@ if __name__ == '__main__':
     # load dataset
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
-    
+
     for key in sample_dict.keys():
         sample_dict[key] = sample_dict[key][:args.limit]
 
@@ -69,7 +78,7 @@ if __name__ == '__main__':
         else:  # is file
             for key in sample_dict.keys():
                 if args.only in sample_dict[key]:
-                    sample_dict = dict([(key, [args.only])]) 
+                    sample_dict = dict([(key, [args.only])])
 
 
     # Scan if files can be opened
@@ -89,13 +98,13 @@ if __name__ == '__main__':
             print(f"  {fi}")
         end = time.time()
         print("TIME:", time.strftime("%H:%M:%S", time.gmtime(end-start)))
-        if input("Remove bad files? (y/n)") == "y": 
+        if input("Remove bad files? (y/n)") == "y":
             print("Removing:")
             for fi in all_invalid:
-                print(f"Removing: {fi}")            
+                print(f"Removing: {fi}")
                 os.system(f'rm {fi}')
         sys.exit(0)
-    
+
     # load workflow
     if args.workflow == "ttcom":
         from workflows.ttbar_validation import NanoProcessor
@@ -119,7 +128,7 @@ if __name__ == '__main__':
             'export XRD_RUNFORKHANDLER=1',
             f'export X509_USER_PROXY={_x509_path}',
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
-            'ulimit -u 32768',
+            f'source {os.environ["HOME"]}/.bashrc',
         ]
 
     #########
@@ -135,39 +144,60 @@ if __name__ == '__main__':
                                     executor=_exec,
                                     executor_args={
                                         'skipbadfiles':args.skipbadfiles,
-                                        'schema': processor.NanoAODSchema, 
+                                        'schema': processor.NanoAODSchema,
                                         'workers': args.workers},
                                     chunksize=args.chunk, maxchunks=args.max
                                     )
-    elif args.executor == 'parsl/slurm':
+    elif 'parsl' in args.executor:
         import parsl
         from parsl.providers import LocalProvider, CondorProvider, SlurmProvider
         from parsl.channels import LocalChannel
         from parsl.config import Config
         from parsl.executors import HighThroughputExecutor
         from parsl.launchers import SrunLauncher
-        from parsl.addresses import address_by_hostname
+        from parsl.addresses import address_by_hostname,address_by_query
 
-        slurm_htex = Config(
-            executors=[
-                HighThroughputExecutor(
-                    label="coffea_parsl_slurm",
-                    address=address_by_hostname(),
-                    prefetch_capacity=0,
-                    provider=SlurmProvider(
-                        channel=LocalChannel(script_dir='logs_parsl'),
-                        launcher=SrunLauncher(),
-                        max_blocks=(args.scaleout)+10,
-                        init_blocks=args.scaleout, 
-                        partition='all',
-                        worker_init="\n".join(env_extra) + "\nexport PYTHONPATH=$PYTHONPATH:$PWD", 
-                        walltime='00:120:00'
-                    ),
-                )
-            ],
-            retries=20,
-        )
-        dfk = parsl.load(slurm_htex)
+        if 'slurm' in args.executor:
+            htex_config = Config(
+                executors=[
+                    HighThroughputExecutor(
+                        label="coffea_parsl_slurm",
+                        address=address_by_hostname(),
+                        prefetch_capacity=0,
+                        provider=SlurmProvider(
+                            channel=LocalChannel(script_dir='logs_parsl'),
+                            launcher=SrunLauncher(),
+                            max_blocks=(args.scaleout)+10,
+                            init_blocks=args.scaleout,
+                            partition='all',
+                            worker_init="\n".join(env_extra) + f"\nexport PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
+                            walltime='00:120:00'
+                        ),
+                    )
+                ],
+                retries=20,
+            )
+        elif 'condor' in args.executor:
+            htex_config = Config(
+                executors=[
+                    HighThroughputExecutor(
+                        label='coffea_parsl_condor',
+                        address=address_by_query(),
+                        # max_workers=1,
+                        provider=CondorProvider(
+                            nodes_per_block=1,
+                            init_blocks=1,
+                            max_blocks=1,
+                            worker_init="\n".join(env_extra) + f"\nexport PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
+                            walltime="00:20:00",
+                        ),
+                    )
+                ]
+            )
+        else:
+            raise NotImplementedError
+
+        dfk = parsl.load(htex_config)
 
         output = processor.run_uproot_job(sample_dict,
                                     treename='Events',
@@ -175,12 +205,12 @@ if __name__ == '__main__':
                                     executor=processor.parsl_executor,
                                     executor_args={
                                         'skipbadfiles':True,
-                                        'schema': processor.NanoAODSchema, 
+                                        'schema': processor.NanoAODSchema,
                                         'config': None,
                                     },
                                     chunksize=args.chunk, maxchunks=args.max
                                     )
-        
+
     elif 'dask' in args.executor:
         from dask_jobqueue import SLURMCluster, HTCondorCluster
         from distributed import Client
@@ -198,9 +228,9 @@ if __name__ == '__main__':
             )
         elif 'condor' in args.executor:
             cluster = HTCondorCluster(
-                 cores=args.workers, 
-                 memory='2GB', 
-                 disk='2GB', 
+                 cores=args.workers,
+                 memory='2GB',
+                 disk='2GB',
                  env_extra=env_extra,
             )
         cluster.scale(jobs=args.scaleout)
@@ -214,12 +244,12 @@ if __name__ == '__main__':
                                         executor_args={
                                             'client': client,
                                             'skipbadfiles':args.skipbadfiles,
-                                            'schema': processor.NanoAODSchema, 
+                                            'schema': processor.NanoAODSchema,
                                         },
                                         chunksize=args.chunk, maxchunks=args.max
                             )
 
     save(output, args.output)
-  
+
     print(output)
     print(f"Saving output to {args.output}")
