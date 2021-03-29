@@ -6,7 +6,7 @@ import time
 
 import numpy as np
 
-import uproot4 as uproot
+import uproot
 from coffea import hist
 from coffea.nanoevents import NanoEventsFactory
 from coffea.util import load, save
@@ -36,7 +36,7 @@ if __name__ == '__main__':
                         )
 
     # Scale out
-    parser.add_argument('--executor', choices=['iterative', 'futures', 'parsl/slurm', 'parsl/condor', 'dask/condor', 'dask/slurm'], default='futures',
+    parser.add_argument('--executor', choices=['iterative', 'futures', 'parsl/slurm', 'parsl/condor', 'dask/condor', 'dask/slurm', 'dask/lpc'], default='futures',
                         help='The type of executor to use (default: %(default)s). Other options can be implemented. '
                              'For example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html'
                              '- `parsl/slurm` - tested at DESY/Maxwell'
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     else:
         raise NotImplemented
 
-    if args.executor not in ['futures', 'iterative']:
+    if args.executor not in ['futures', 'iterative', 'dask/lpc']:
         # dask/parsl needs to export x509 to read over xrootd
         if args.voms is not None:
             _x509_path = args.voms
@@ -231,7 +231,18 @@ if __name__ == '__main__':
         from distributed import Client
         from dask.distributed import performance_report
 
-        if 'slurm' in args.executor:
+        if 'lpc' in args.executor:
+            env_extra = [
+                f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
+            ] 
+            condor_extra = []
+            from lpcjobqueue import LPCCondorCluster
+            cluster = LPCCondorCluster(
+                transfer_input_files='/srv/workflows/',
+                ship_env=True,
+                env_extra = env_extra,
+            )
+        elif 'slurm' in args.executor:
             cluster = SLURMCluster(
                 queue='all',
                 cores=args.workers,
@@ -248,7 +259,7 @@ if __name__ == '__main__':
                 disk='2GB',
                 env_extra=env_extra,
             )
-        cluster.scale(jobs=args.scaleout)
+        cluster.adapt(maximum=args.scaleout)
 
         client = Client(cluster)
         with performance_report(filename="dask-report.html"):

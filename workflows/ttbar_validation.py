@@ -1,7 +1,7 @@
 import coffea
 from coffea import hist, processor
 import numpy as np
-import awkward1 as ak
+import awkward as ak
 
 
 class NanoProcessor(processor.ProcessorABC):

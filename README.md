@@ -5,7 +5,7 @@ Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD sa
 ## Structure
 Example worfkflow for ttbar is included. 
 
-Each workflow can be a separete "processor" file, creating the mapping from NanoAOD to
+Each workflow can be a separate "processor" file, creating the mapping from NanoAOD to
 the histograms we need. Workflow processors can be passed to the `runner.py` script 
 along with the fileset these should run over. Multiple executors can be chosen 
 (for now iterative - one by one, uproot/futures - multiprocessing and dask-slurm). 
@@ -63,3 +63,9 @@ Host *_f
 jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
 ```
 4. URL for notebook will be printed, copy and open in local browser
+
+## Scale-out (Sites)
+
+### FNAL/LPC Condor
+Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
+the singularity container run as `python runner.py --wf ttcom --executor dask/lpc`
