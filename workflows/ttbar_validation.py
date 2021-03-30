@@ -1,6 +1,7 @@
 import coffea
 from coffea import hist, processor
 import numpy as np
+#import awkward1 as ak
 import awkward as ak
 
 
@@ -11,12 +12,14 @@ class NanoProcessor(processor.ProcessorABC):
         # Should read axes from NanoAOD config
         dataset_axis = hist.Cat("dataset", "Primary dataset")
         cutflow_axis   = hist.Cat("cut",   "Cut")
-
+       
         # Events
         nel_axis   = hist.Bin("nel",   r"N electrons", [0,1,2,3,4,5,6,7,8,9,10])
         nmu_axis   = hist.Bin("nmu",   r"N muons",     [0,1,2,3,4,5,6,7,8,9,10])
         njet_axis  = hist.Bin("njet",  r"N jets",      [0,1,2,3,4,5,6,7,8,9,10])
-        nbjet_axis = hist.Bin("nbjet", r"N b-jets",    [0,1,2,3,4,5,6,7,8,9,10])
+        nbjet_t_axis = hist.Bin("nbjet_t", r"N tight b-jets",    [0,1,2,3,4,5,6,7,8,9,10])
+        nbjet_m_axis = hist.Bin("nbjet_m", r"N medium b-jets",    [0,1,2,3,4,5,6,7,8,9,10])
+        nbjet_l_axis = hist.Bin("nbjet_l", r"N loose b-jets",    [0,1,2,3,4,5,6,7,8,9,10])
 
         # Electron
         el_pt_axis   = hist.Bin("pt",    r"Electron $p_{T}$ [GeV]", 100, 20, 400)
@@ -36,12 +39,21 @@ class NanoProcessor(processor.ProcessorABC):
         jet_phi_axis  = hist.Bin("phi",  r"$\phi$", 60, -3, 3)
         jet_mass_axis = hist.Bin("mass", r"Jet $m$ [GeV]", 100, 0, 50)
         ljpt_axis     = hist.Bin("ljpt", r"Leading jet $p_{T}$ [GeV]", 100, 20, 400)
-                
+        sljpt_axis     = hist.Bin("sljpt", r"Subleading jet $p_{T}$ [GeV]", 100, 20, 400)
+ 
         # Define similar axes dynamically
         disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC',]
         btag_axes = []
         for d in disc_list:
             btag_axes.append(hist.Bin(d, d, 50, 0, 1))        
+        
+        deepcsv_list = ["DeepCSV_trackDecayLenVal_0", "DeepCSV_trackDecayLenVal_1", "DeepCSV_trackDecayLenVal_2", "DeepCSV_trackDecayLenVal_3", "DeepCSV_trackDecayLenVal_4", "DeepCSV_trackDecayLenVal_5", "DeepCSV_trackDeltaR_0", "DeepCSV_trackDeltaR_1", "DeepCSV_trackDeltaR_2", "DeepCSV_trackDeltaR_3", "DeepCSV_trackDeltaR_4", "DeepCSV_trackDeltaR_5"]
+        deepcsv_axes = []
+        for d in deepcsv_list:
+            if "trackDecayLenVal" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 2.0))
+            else:
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 0.3))
 
         # Define histograms from axes
         _hist_jet_dict = {
@@ -50,25 +62,37 @@ class NanoProcessor(processor.ProcessorABC):
                 'phi' : hist.Hist("Counts", dataset_axis, jet_phi_axis),
                 'mass': hist.Hist("Counts", dataset_axis, jet_mass_axis),
             }
-        
+        _hist_deepcsv_dict = {
+                'pt'  : hist.Hist("Counts", dataset_axis, jet_pt_axis),
+                'eta' : hist.Hist("Counts", dataset_axis, jet_eta_axis),
+                'phi' : hist.Hist("Counts", dataset_axis, jet_phi_axis),
+                'mass': hist.Hist("Counts", dataset_axis, jet_mass_axis),
+            }
+ 
         # Generate some histograms dynamically
         for disc, axis in zip(disc_list, btag_axes):
             _hist_jet_dict[disc] = hist.Hist("Counts", dataset_axis, axis)
+        for deepcsv, axis in zip(deepcsv_list, deepcsv_axes):
+            _hist_deepcsv_dict[deepcsv] = hist.Hist("Counts", dataset_axis, axis)
         
         _hist_event_dict = {
                 'njet'  : hist.Hist("Counts", dataset_axis, njet_axis),
-                'nbjet' : hist.Hist("Counts", dataset_axis, nbjet_axis),
+                'nbjet_t' : hist.Hist("Counts", dataset_axis, nbjet_t_axis),
+                'nbjet_m' : hist.Hist("Counts", dataset_axis, nbjet_m_axis),
+                'nbjet_l' : hist.Hist("Counts", dataset_axis, nbjet_l_axis),
                 'nel'   : hist.Hist("Counts", dataset_axis, nel_axis),
                 'nmu'   : hist.Hist("Counts", dataset_axis, nmu_axis),
                 'lelpt' : hist.Hist("Counts", dataset_axis, lelpt_axis),
                 'lmupt' : hist.Hist("Counts", dataset_axis, lmupt_axis),
                 'ljpt'  : hist.Hist("Counts", dataset_axis, ljpt_axis),
+                'sljpt'  : hist.Hist("Counts", dataset_axis, sljpt_axis),
             }
         
         self.jet_hists = list(_hist_jet_dict.keys())
+        self.deepcsv_hists = list(_hist_deepcsv_dict.keys())
         self.event_hists = list(_hist_event_dict.keys())
     
-        _hist_dict = {**_hist_jet_dict, **_hist_event_dict}
+        _hist_dict = {**_hist_jet_dict, **_hist_deepcsv_dict, **_hist_event_dict}
         self._accumulator = processor.dict_accumulator(_hist_dict)
         self._accumulator['sumw'] = processor.defaultdict_accumulator(float)
 
@@ -86,7 +110,7 @@ class NanoProcessor(processor.ProcessorABC):
         ##############
         # Trigger level
         triggers = [
-        #"HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
         "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",    
         ]
         
@@ -136,23 +160,30 @@ class NanoProcessor(processor.ProcessorABC):
         # Per jet
         jet_eta    = (abs(selev.Jet.eta) <= 2.4)
         jet_pt     = selev.Jet.pt > 25
-        jet_pu     = selev.Jet.puId > 6
-        jet_level  = jet_pu & jet_eta & jet_pt
-        
-        # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
-        bjet_disc  = selev.Jet.btagDeepB > 0.7264 # L=0.0494, M=0.2770, T=0.7264
-        bjet_level = jet_level & bjet_disc
-        
+        jet_pu     = ( ((selev.Jet.puId > 6) & (selev.Jet.pt < 50)) | (selev.Jet.pt > 50) ) 
+        jet_id     = selev.Jet.jetId >= 2 
+        #jet_id     = selev.Jet.isTight() == 1 & selev.Jet.isTightLeptonVeto() == 0
+        jet_level  = jet_pu & jet_eta & jet_pt & jet_id
 
+        # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
+        bjet_disc_t  = selev.Jet.btagDeepB > 0.7264 # L=0.0494, M=0.2770, T=0.7264
+        bjet_disc_m  = selev.Jet.btagDeepB > 0.2770 # L=0.0494, M=0.2770, T=0.7264
+        bjet_disc_l  = selev.Jet.btagDeepB > 0.0494 # L=0.0494, M=0.2770, T=0.7264
+        bjet_level_t = jet_level & bjet_disc_t
+        bjet_level_m = jet_level & bjet_disc_m
+        bjet_level_l = jet_level & bjet_disc_l
+        
         sel    = selev.Electron[el_level]
         smu    = selev.Muon[mu_level]
         sjets  = selev.Jet[jet_level]
-        sbjets = selev.Jet[bjet_level]
+        sbjets_t = selev.Jet[bjet_level_t]
+        sbjets_m = selev.Jet[bjet_level_m]
+        sbjets_l = selev.Jet[bjet_level_l]
         
         # output['pt'].fill(dataset=dataset, pt=selev.Jet.pt.flatten())
         # Fill histograms dynamically  
         for histname, h in output.items():
-            if histname not in self.jet_hists: continue
+            if (histname not in self.jet_hists) and (histname not in self.deepcsv_hists): continue
             # Get valid fields perhistogram to fill
             fields = {k: ak.flatten(sjets[k], axis=None) for k in h.fields if k in dir(sjets)}
             h.fill(dataset=dataset, **fields)
@@ -164,14 +195,17 @@ class NanoProcessor(processor.ProcessorABC):
         def num(ar):
             return ak.num(ak.fill_none(ar[~ak.is_none(ar)], 0), axis=0)
 
-        output['njet'].fill(dataset=dataset,  njet=num(sjets))
-        output['nbjet'].fill(dataset=dataset, nbjet=num(sbjets))
-        output['nel'].fill(dataset=dataset,   nel=num(sel))
-        output['nmu'].fill(dataset=dataset,   nmu=num(smu))
+        output['njet'].fill(dataset=dataset,  njet=flatten(ak.num(sjets)))
+        output['nbjet_t'].fill(dataset=dataset, nbjet_t=flatten(ak.num(sbjets_t)))
+        output['nbjet_m'].fill(dataset=dataset, nbjet_m=flatten(ak.num(sbjets_m)))
+        output['nbjet_l'].fill(dataset=dataset, nbjet_l=flatten(ak.num(sbjets_l)))
+        output['nel'].fill(dataset=dataset,   nel=flatten(ak.num(sel)))
+        output['nmu'].fill(dataset=dataset,   nmu=flatten(ak.num(smu)))
 
         output['lelpt'].fill(dataset=dataset, lelpt=flatten(selev.Electron[:, 0].pt))
         output['lmupt'].fill(dataset=dataset, lmupt=flatten(selev.Muon[:, 0].pt))
         output['ljpt'].fill(dataset=dataset,  ljpt=flatten(selev.Jet[:, 0].pt))
+        output['sljpt'].fill(dataset=dataset,  sljpt=flatten(selev.Jet[:, 1].pt))
 
         return output
 

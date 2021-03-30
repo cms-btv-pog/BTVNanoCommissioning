@@ -35,10 +35,16 @@ conda create --name coffea python=3.7
 # activate environment `coffea`
 conda activate coffea
 ```
-Install coffea and xrootd:
+Install coffea, xrootd, and more:
 ```
 pip install git+https://github.com/CoffeaTeam/coffea.git #latest published release with `pip install coffea`
 conda install -c conda-forge xrootd
+conda install -c conda-forge ca-certificates
+conda install -c conda-forge ca-policy-lcg
+conda install -c conda-forge dask-jobqueue
+conda install -c anaconda bokeh 
+conda install -c conda-forge 'fsspec>=0.3.3'
+conda install dask
 ```
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html

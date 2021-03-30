@@ -6,6 +6,8 @@ import time
 
 import numpy as np
 
+
+#import uproot4 as uproot
 import uproot
 from coffea import hist
 from coffea.nanoevents import NanoEventsFactory
@@ -254,10 +256,10 @@ if __name__ == '__main__':
             )
         elif 'condor' in args.executor:
             cluster = HTCondorCluster(
-                cores=args.workers,
-                memory='2GB',
-                disk='2GB',
-                env_extra=env_extra,
+                 cores=args.workers, 
+                 memory='4GB', 
+                 disk='4GB', 
+                 env_extra=env_extra,
             )
         cluster.adapt(maximum=args.scaleout)
 
