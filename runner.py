@@ -120,7 +120,7 @@ if __name__ == '__main__':
 
     # load workflow
     if args.workflow == "ttcom":
-        from workflows.ttbar_validation import NanoProcessor
+        from workflows.ttbar_validation2 import NanoProcessor
         processor_instance = NanoProcessor()
     # elif args.workflow == "fattag":
     #     from workflows.fatjet_tagger import NanoProcessor
