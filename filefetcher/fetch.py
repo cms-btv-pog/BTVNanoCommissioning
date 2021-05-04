@@ -16,6 +16,7 @@ instance = 'prod/phys03'
 xrd = 'root://xrootd-cms.infn.it//'
 
 for dataset in fset:
+    print(fset)
     flist = os.popen(("dasgoclient -query='instance={} file dataset={}'").format(instance,fset[fset.index(dataset)].rstrip())).read().split('\n')
     if "Summer19" in dataset:
         dictname = "ttbar19"

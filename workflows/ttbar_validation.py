@@ -47,13 +47,17 @@ class NanoProcessor(processor.ProcessorABC):
         for d in disc_list:
             btag_axes.append(hist.Bin(d, d, 50, 0, 1))        
         
-        deepcsv_list = ["DeepCSV_trackDecayLenVal_0", "DeepCSV_trackDecayLenVal_1", "DeepCSV_trackDecayLenVal_2", "DeepCSV_trackDecayLenVal_3", "DeepCSV_trackDecayLenVal_4", "DeepCSV_trackDecayLenVal_5", "DeepCSV_trackDeltaR_0", "DeepCSV_trackDeltaR_1", "DeepCSV_trackDeltaR_2", "DeepCSV_trackDeltaR_3", "DeepCSV_trackDeltaR_4", "DeepCSV_trackDeltaR_5"]
+        deepcsv_list = ["DeepCSV_vertexCategory","DeepCSV_vertexEnergyRatio", "DeepCSV_vertexJetDeltaR","DeepCSV_vertexMass", 
+    "DeepCSV_flightDistance2dVal","DeepCSV_flightDistance2dSig","DeepCSV_flightDistance3dVal","DeepCSV_flightDistance3dSig","DeepCSV_trackJetPt", 
+    "DeepCSV_jetNSecondaryVertices","DeepCSV_jetNSelectedTracks","DeepCSV_jetNTracksEtaRel","DeepCSV_trackSumJetEtRatio","DeepCSV_trackSumJetDeltaR","DeepCSV_vertexNTracks"]
         deepcsv_axes = []
         for d in deepcsv_list:
             if "trackDecayLenVal" in d:
                 deepcsv_axes.append(hist.Bin(d, d, 50, 0, 2.0))
+            elif "DeltaR" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 0.4))
             else:
-                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 0.3))
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 5.))
 
         # Define histograms from axes
         _hist_jet_dict = {
