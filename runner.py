@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--wf',
                         '--workflow',
                         dest='workflow',
-                        choices=['ttcom', 'fattag'],
+                        choices=['ttcom', 'jet_AK4','mu_AK4','dilep','ctag'],
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
@@ -122,6 +122,19 @@ if __name__ == '__main__':
     if args.workflow == "ttcom":
         from workflows.ttbar_validation2 import NanoProcessor
         processor_instance = NanoProcessor()
+    elif args.workflow == "jet_AK4":
+        from workflows.multijet_valid import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "mu_AK4":
+        from workflows.muAK4_valid import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "dilep":
+        from workflows.dilep_valid import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctag":
+        from workflows.ctag_valid import NanoProcessor
+        processor_instance = NanoProcessor()
+        
     # elif args.workflow == "fattag":
     #     from workflows.fatjet_tagger import NanoProcessor
     #     processor_instance = NanoProcessor()

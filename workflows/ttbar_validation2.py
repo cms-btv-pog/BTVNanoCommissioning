@@ -149,53 +149,16 @@ class NanoProcessor(processor.ProcessorABC):
                 'phi' : hist.Hist("Counts", dataset_axis, flav_axis,jet_phi_axis),
                 'mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis),
             }
-        # _hist_deepcsv_b_dict = {};_hist_deepcsv_c_dict = {};_hist_deepcsv_l_dict = {}
-        # _hist_deepddx_b_dict = {};_hist_deepddx_c_dict = {};_hist_deepddx_l_dict = {}
-        # _hist_jet_b_dict = {};_hist_jet_c_dict = {};_hist_jet_l_dict = {}
-        # _hist_fatjet_b_dict = {};_hist_fatjet_c_dict = {};_hist_fatjet_l_dict = {}
-        # _hist_subjet_b_dict = {};_hist_subjet_c_dict = {};_hist_subjet_l_dict = {}
+       
         # Generate some histograms dynamically
-        
-        # sublist = list(_hist_subjet_dict.keys())
-        # for disc in sublist:
-        #     _hist_subjet_b_dict["b%s" %(disc)] = _hist_subjet_dict[disc]
-        #     _hist_subjet_c_dict["c%s" %(disc)] = _hist_subjet_dict[disc]
-        #     _hist_subjet_l_dict["l%s" %(disc)] = _hist_subjet_dict[disc]
-        # fatlist = list(_hist_fatjet_dict.keys())
-        # for disc in fatlist:
-        #     _hist_fatjet_b_dict["b%s" %(disc)] = _hist_fatjet_dict[disc]
-        #     _hist_fatjet_c_dict["c%s" %(disc)] = _hist_fatjet_dict[disc]
-        #     _hist_fatjet_l_dict["l%s" %(disc)] = _hist_fatjet_dict[disc]
-        # jlist = list(_hist_jet_dict.keys())
-        # for disc in jlist:
-        #     _hist_jet_b_dict["b%s" %(disc)] = _hist_jet_dict[disc]
-        #     _hist_jet_c_dict["c%s" %(disc)] = _hist_jet_dict[disc]
-        #     _hist_jet_l_dict["l%s" %(disc)] = _hist_jet_dict[disc]
-        # for disc, axis in zip(disc_list, btag_axes):
-        #     _hist_jet_dict[disc] = hist.Hist("Counts", dataset_axis, axis)
-        #     _hist_jet_b_dict["bjet_%s" %(disc)] = hist.Hist("Counts", dataset_axis, axis)
-        #     _hist_jet_c_dict["cjet_%s" %(disc)] = hist.Hist("Counts", dataset_axis, axis)
-        #     _hist_jet_l_dict["ljet_%s" %(disc)] = hist.Hist("Counts", dataset_axis, axis)
-        # for disc, axis in zip(disc_list, btag_axes):
-        #     _hist_fatjet_dict["fatjet_%s" %(disc)] = hist.Hist("Counts", dataset_axis, axis)
-        #     _hist_fatjet_b_dict["fatjet_b%s" %(disc)] = hist.Hist("Counts", dataset_axis, axis)
-        #     _hist_fatjet_c_dict["fatjet_c%s" %(disc)] = hist.Hist("Counts", dataset_axis, axis)
-        #     _hist_fatjet_l_dict["fatjet_l%s" %(disc)] = hist.Hist("Counts", dataset_axis, axis)
+        for disc, axis in zip(disc_list, btag_axes):
+            _hist_deepcsv_dict[disc] = hist.Hist("Counts", dataset_axis, flav_axis, axis)
         for disc, axis in zip(ddx_list, btag_axes):
-            _hist_fatjet_dict["fatjet_%s" %(disc)] = hist.Hist("Counts", flav_axis, dataset_axis, axis)
-            # _hist_fatjet_b_dict["fatjet_b%s" %(disc)] = hist.Hist("Counts", dataset_axis, axis)
-            # _hist_fatjet_c_dict["fatjet_c%s" %(disc)] = hist.Hist("Counts", dataset_axis, axis)
-            # _hist_fatjet_l_dict["fatjet_l%s" %(disc)] = hist.Hist("Counts", dataset_axis, axis)
+            _hist_deepddx_dict[disc] = hist.Hist("Counts", dataset_axis, flav_axis, axis)
         for deepcsv, axises in zip(deepcsv_list, deepcsv_axes):
             _hist_deepcsv_dict[deepcsv] = hist.Hist("Counts", dataset_axis,flav_axis,  axises)
-            # _hist_deepcsv_b_dict["bjet_%s" %(deepcsv)] = hist.Hist("Counts", dataset_axis, axises)
-            # _hist_deepcsv_c_dict["cjet_%s" %(deepcsv)] = hist.Hist("Counts", dataset_axis, axises)
-            # _hist_deepcsv_l_dict["ljet_%s" %(deepcsv)] = hist.Hist("Counts", dataset_axis, axises)
         for deepddx, axiss in zip(deepddx_list, deepddx_axes):
             _hist_deepddx_dict[deepddx] = hist.Hist("Counts", dataset_axis,flav_axis, axiss)
-            # _hist_deepddx_b_dict["bjet_%s" %(deepddx)] = hist.Hist("Counts", dataset_axis, axiss)
-            # _hist_deepddx_c_dict["cjet_%s" %(deepddx)] = hist.Hist("Counts", dataset_axis, axiss)
-            # _hist_deepddx_l_dict["ljet_%s" %(deepddx)] = hist.Hist("Counts", dataset_axis, axiss)
         _hist_event_dict = {
                 'njet'  : hist.Hist("Counts", dataset_axis, njet_axis),
                 'nbjet' : hist.Hist("Counts", dataset_axis, nbjet_axis),
@@ -211,24 +174,8 @@ class NanoProcessor(processor.ProcessorABC):
         self.subjet_hists = list(_hist_subjet_dict.keys())
         self.deepcsv_hists = list(_hist_deepcsv_dict.keys())
         self.deepddx_hists = list(_hist_deepddx_dict.keys())
-        # self.jet_hists_l = list(_hist_jet_l_dict.keys())
-        # self.fatjet_hists_l = list(_hist_fatjet_l_dict.keys())
-        # self.subjet_hists_l = list(_hist_subjet_l_dict.keys())
-        # self.deepcsv_hists_l = list(_hist_deepcsv_l_dict.keys())
-        # self.deepddx_hists_l = list(_hist_deepddx_l_dict.keys())
-        # self.jet_hists_c = list(_hist_jet_c_dict.keys())
-        # self.fatjet_hists_c = list(_hist_fatjet_c_dict.keys())
-        # self.subjet_hists_c = list(_hist_subjet_c_dict.keys())
-        # self.deepcsv_hists_c = list(_hist_deepcsv_c_dict.keys())
-        # self.deepddx_hists_c = list(_hist_deepddx_c_dict.keys())
-        # self.jet_hists_b = list(_hist_jet_b_dict.keys())
-        # self.fatjet_hists_b = list(_hist_fatjet_b_dict.keys())
-        # self.subjet_hists_b = list(_hist_subjet_b_dict.keys())
-        # self.deepcsv_hists_b = list(_hist_deepcsv_b_dict.keys())
-        # self.deepddx_hists_b = list(_hist_deepddx_b_dict.keys())
         self.event_hists = list(_hist_event_dict.keys())
         _hist_dict = {**_hist_jet_dict,**_hist_deepcsv_dict,**_hist_deepddx_dict, **_hist_fatjet_dict, **_hist_subjet_dict,**_hist_event_dict}
-        # _hist_dict = {**_hist_fatjet_dict,**_hist_fatjet_c_dict, **_hist_fatjet_b_dict,**_hist_fatjet_l_dict,    **_hist_subjet_dict,**_hist_subjet_b_dict,**_hist_subjet_c_dict,**_hist_subjet_l_dict}
         self._accumulator = processor.dict_accumulator(_hist_dict)
         self._accumulator['sumw'] = processor.defaultdict_accumulator(float)
 
@@ -238,10 +185,13 @@ class NanoProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
+        print(events)
         output = self.accumulator.identity()
         # print(output.items())
         dataset = events.metadata['dataset']
-        output['sumw'][dataset] += ak.sum(events.genWeight)
+        isRealData = not hasattr(events, "genWeight")
+        if(isRealData):output['sumw'][dataset] += ak.sum(1.)
+        else:output['sumw'][dataset] += ak.sum(events.genWeight)
         
         ##############
         # Trigger level
@@ -313,7 +263,7 @@ class NanoProcessor(processor.ProcessorABC):
         fatjet_tau21=selev.FatJet.tau2/selev.FatJet.tau1
         fatjet_tau21cut = (fatjet_tau21<=0.6)&(fatjet_tau21>=0.0)
         
-        fatjet_level = fatjet_eta&fatjet_pt&fatjet_ID&fatjet_prunemass&fatjet_tau21cut
+        fatjet_level = fatjet_eta&fatjet_pt&fatjet_ID&fatjet_prunemass
         subjet_pt = selev.SubJet.pt>0.
         subjet_level = subjet_pt
        
@@ -339,150 +289,40 @@ class NanoProcessor(processor.ProcessorABC):
         for histname, h in output.items():
             if (histname in self.jet_hists) or (histname in self.deepcsv_hists):
                 fields = {l: ak.flatten(sjets_b[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets_b)}
-                flav=5
-                h.fill(dataset=dataset,flav=flav, **fields)
-            elif (histname in self.jet_hists) or (histname in self.deepcsv_hists):
-                fields = {l: ak.flatten(sjets_c[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets_c)}
-                flav=4
-                h.fill(dataset=dataset,flav=flav, **fields)
-            elif (histname in self.jet_hists) or (histname in self.deepcsv_hists):
-                fields = {l: ak.flatten(sjets_l[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets_l)}
-                flav=0
-                h.fill(dataset=dataset,flav=flav, **fields)
+                h.fill(dataset=dataset,flav=5, **fields)
+                fields2 = {l: ak.flatten(sjets_c[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets_c)}
+                h.fill(dataset=dataset,flav=4, **fields2)
+                fields3 = {l: ak.flatten(sjets_l[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets_l)}
+                h.fill(dataset=dataset,flav=0, **fields3)
             elif (histname in self.deepddx_hists): 
                 fields_ddx = {l: ak.flatten(sfatjets_b[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sfatjets_b)}
-                flav=5
-                h.fill(dataset=dataset,flav=flav, **fields_ddx)
-            elif (histname in self.deepddx_hists): 
-                fields_ddx = {l: ak.flatten(sfatjets_c[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sfatjets_c)}
-                flav=4
-                h.fill(dataset=dataset,flav=flav, **fields_ddx)
-            elif (histname in self.deepddx_hists): 
-                fields_ddx = {l: ak.flatten(sfatjets_l[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sfatjets_l)}
-                flav=0
-                h.fill(dataset=dataset,flav=flav, **fields_ddx)
+                h.fill(dataset=dataset,flav=5, **fields_ddx)
+                fields_ddx2 = {l: ak.flatten(sfatjets_c[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sfatjets_c)}
+                h.fill(dataset=dataset,flav=4, **fields_ddx2)
+                fields_ddx3 = {l: ak.flatten(sfatjets_l[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sfatjets_l)}
+                h.fill(dataset=dataset,flav=0, **fields_ddx3)
             elif (histname in self.subjet_hists):
                 for l in h.fields:
                     if l.replace('subjet_','') in dir(ssubjets_b):
                         fields_s = {l: ak.flatten(ssubjets_b[l.replace('subjet_','')], axis=None)}
-                        flav=5
-                        h.fill(dataset=dataset, flav=flav, **fields_s)
-            elif (histname in self.subjet_hists):
-                for l in h.fields:
+                        h.fill(dataset=dataset, flav=5, **fields_s)
                     if l.replace('subjet_','') in dir(ssubjets_c):
-                        fields_s = {l: ak.flatten(ssubjets_c[l.replace('subjet_','')], axis=None)}
-                        flav=4
-                        h.fill(dataset=dataset, flav=flav, **fields_s)
-            elif (histname in self.subjet_hists):
-                for l in h.fields:
+                        fields_s1 = {l: ak.flatten(ssubjets_c[l.replace('subjet_','')], axis=None)}
+                        h.fill(dataset=dataset, flav=4, **fields_s1)
                     if l.replace('subjet_','') in dir(ssubjets_l):
-                        fields_s = {l: ak.flatten(ssubjets_l[l.replace('subjet_','')], axis=None)}
-                        flav=0
-                        h.fill(dataset=dataset, flav=flav, **fields_s)
+                        fields_s2 = {l: ak.flatten(ssubjets_l[l.replace('subjet_','')], axis=None)}
+                        h.fill(dataset=dataset, flav=0, **fields_s2)
             elif (histname in self.fatjet_hists):
                 for l in h.fields:
                     if l.replace('fatjet_','') in dir(sfatjets_b):
                         fields_f = {l: ak.flatten(sfatjets_b[l.replace('fatjet_','')], axis=None)}
-                        flav=5
-                        h.fill(dataset=dataset,flav=flav, **fields_f)
-            elif (histname in self.fatjet_hists):
-                for l in h.fields:
+                        h.fill(dataset=dataset,flav=5, **fields_f)
                     if l.replace('fatjet_','') in dir(sfatjets_c):
-                        fields_f = {l: ak.flatten(sfatjets_c[l.replace('fatjet_','')], axis=None)}
-                        flav=4
-                        h.fill(dataset=dataset,flav=flav, **fields_f)
-            elif (histname in self.fatjet_hists):
-                for l in h.fields:
+                        fields_f1 = {l: ak.flatten(sfatjets_c[l.replace('fatjet_','')], axis=None)}
+                        h.fill(dataset=dataset,flav=4, **fields_f1)
                     if l.replace('fatjet_','') in dir(sfatjets_l):
-                        fields_f = {l: ak.flatten(sfatjets_l[l.replace('fatjet_','')], axis=None)}
-                        flav=0
-                        h.fill(dataset=dataset,flav=flav, **fields_f)
-        '''for histname, h in output.items():
-            
-            if (histname in self.jet_hists_b) or (histname in self.deepcsv_hists_b):
-                fields2 = {l: ak.flatten(sjets_b[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets_b)}
-                h.fill(dataset=dataset, **fields2)
-            elif (histname in self.jet_hists_c) or (histname in self.deepcsv_hists_c):
-                fields3 = {k: ak.flatten(sjets_c[k.replace('jet_','')], axis=None) for k in h.fields if k.replace('jet_','') in dir(sjets_c)}
-                h.fill(dataset=dataset, **fields3)
-            elif (histname in self.jet_hists_l) or (histname in self.deepcsv_hists_l):
-                fields4 = {k: ak.flatten(sjets_l[k.replace('jet_','')], axis=None) for k in h.fields if k.replace('jet_','') in dir(sjets_l)}
-                h.fill(dataset=dataset, **fields4)
-            elif (histname in self.jet_hists) or (histname in self.deepcsv_hists):
-                fields = {k: ak.flatten(sjets[k.replace('jet_','')], axis=None) for k in h.fields if k.replace('jet_','') in dir(sjets) }
-                h.fill(dataset=dataset, **fields)
-            elif (histname in self.deepddx_hists_b): 
-                fields_ddx1 = {l: ak.flatten(sfatjets_b[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sfatjets_b)}
-                h.fill(dataset=dataset, **fields_ddx1)
-            elif (histname in self.deepddx_hists_c): 
-                fields_ddx2 = {l: ak.flatten(sfatjets_c[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sfatjets_c)}
-                h.fill(dataset=dataset, **fields_ddx2)
-            elif (histname in self.deepddx_hists_l): 
-                fields_ddx3 = {l: ak.flatten(sfatjets_l[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sfatjets_l)}
-                h.fill(dataset=dataset, **fields_ddx3)
-            elif (histname in self.deepddx_hists):
-                fields_ddx = {l: ak.flatten(sfatjets[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sfatjets)}
-                h.fill(dataset=dataset, **fields_ddx)
-            elif (histname in self.fatjet_hists):
-                for l in h.fields:
-                    if l.replace('fatjet_','') in dir(sfatjets):
-                        # print(l, ak.flatten(sfatjets[l.replace('fatjet_','')], axis=None))
-                        fields_f = {l: ak.flatten(sfatjets[l.replace('fatjet_','')], axis=None)}
-                        h.fill(dataset=dataset, **fields_f)
-                # fields_f = {l: ak.flatten(sfatjets[l.replace('fatjet_','')], axis=None) for l in h.fields if l.replace('fatjet_','') in dir(sfatjets)}
-                # h.fill(dataset=dataset, **fields_f)
-            elif (histname in self.fatjet_hists_b):
-                # fields_f1 = {l: ak.flatten(sfatjets_b[l.replace('fatjet_','')], axis=None) for l in h.fields if l.replace('fatjet_','') in dir(sfatjets_b)}
-                # if(fields_f1):h.fill(dataset=dataset, **fields_f1)
-                for l in h.fields:
-                    if l.replace('fatjet_','') in dir(sfatjets_b):
-                        fields_f1 = {l: ak.flatten(sfatjets_b[l.replace('fatjet_','')], axis=None)}
-                        h.fill(dataset=dataset, **fields_f1)
-            elif (histname in self.fatjet_hists_c):
-                # fields_f2 = {l: ak.flatten(sfatjets_c[l.replace('fatjet_','')], axis=None) for l in h.fields if l.replace('fatjet_','') in dir(sfatjets_c)}
-                # if(fields_f2):h.fill(dataset=dataset, **fields_f2)
-                for l in h.fields:
-                    if l.replace('fatjet_','') in dir(sfatjets_c):
-                        fields_f2 = {l: ak.flatten(sfatjets_c[l.replace('fatjet_','')], axis=None)}
-                        h.fill(dataset=dataset, **fields_f2)
-            elif (histname in self.fatjet_hists_l):
-                # fields_f3 = {l: ak.flatten(sfatjets_l[l.replace('fatjet_','')], axis=None) for l in h.fields if l.replace('fatjet_','') in dir(sfatjets_l)}
-                # if(fields_f3):h.fill(dataset=dataset, **fields_f3)  
-                for l in h.fields:
-                    if l.replace('fatjet_','') in dir(sfatjets_l):
-                        fields_f3 = {l: ak.flatten(sfatjets_l[l.replace('fatjet_','')], axis=None)}
-                        h.fill(dataset=dataset, **fields_f3)          
-            elif (histname in self.subjet_hists):
-                # fields_s = {l: ak.flatten(sfatjets[l.replace('subjet_','')], axis=None) for l in h.fields if l.replace('subjet_','') in dir(sfatjets)}
-                # if(fields_s):h.fill(dataset=dataset, **fields_s)
-                for l in h.fields:
-                    if l.replace('subjet_','') in dir(ssubjets):
-                        print(l, ak.flatten(sfatjets[l.replace('subjet_','')], axis=None))
-                        fields_s = {l: ak.flatten(sfatjets[l.replace('subjet_','')], axis=None)}
-                        h.fill(dataset=dataset, **fields_s)
-            elif (histname in self.subjet_hists_b):
-                # fields_s1 = {l: ak.flatten(sfatjets_b[l.replace('subjet_','')], axis=None) for l in h.fields if l.replace('subjet_','') in dir(sfatjets_b)}
-                # if(fields_s1):h.fill(dataset=dataset, **fields_s1)
-                for l in h.fields:
-                    if l.replace('subjet_','') in dir(ssubjets_b):
-                        fields_s1 = {l: ak.flatten(sfatjets_b[l.replace('subjet_','')], axis=None)}
-                        h.fill(dataset=dataset, **fields_s1)
-            elif (histname in self.subjet_hists_c):
-                # fields_s2 = {l: ak.flatten(sfatjets_c[l.replace('subjet_','')], axis=None) for l in h.fields if l.replace('subjet_','') in dir(sfatjets_c)}
-                # if(fields_s2):h.fill(dataset=dataset, **fields_s2)
-                for l in h.fields:
-                    if l.replace('subjet_','') in dir(ssubjets_c):
-                        fields_s2 = {l: ak.flatten(sfatjets_c[l.replace('subjet_','')], axis=None)}
-                        h.fill(dataset=dataset, **fields_s2)
-            elif (histname in self.subjet_hists_l):
-                # fields_s3 = {l: ak.flatten(sfatjets_l[l.replace('subjet_','')], axis=None) for l in h.fields if l.replace('subjet_','') in dir(sfatjets_l)}
-                # if(fields_s3):h.fill(dataset=dataset, **fields_s3)
-                for l in h.fields:
-                    if l.replace('subjet_','') in dir(ssubjets_l):
-                        fields_s2 = {l: ak.flatten(sfatjets_l[l.replace('subjet_','')], axis=None)}
-                        h.fill(dataset=dataset, **fields_s2)'''
-            
-            
+                        fields_f2 = {l: ak.flatten(sfatjets_l[l.replace('fatjet_','')], axis=None)}
+                        h.fill(dataset=dataset,flav=0, **fields_f2)
 
 
         def flatten(ar): # flatten awkward into a 1d array to hist
