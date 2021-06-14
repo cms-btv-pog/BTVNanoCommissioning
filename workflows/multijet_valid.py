@@ -211,7 +211,7 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             genflavor = selev.Jet.hadronFlavour
             #weight = prepro_fcn_to_match_other_inputs(events.genWeight)
-        
+
         for histname, h in output.items():
             if(isRealData):
                 if (histname in self.jet_hists) or (histname in self.deepcsv_hists):
@@ -219,8 +219,8 @@ class NanoProcessor(processor.ProcessorABC):
                         h.fill(dataset=dataset,flav=5, **fields)
             else:
                 if (histname in self.jet_hists) or (histname in self.deepcsv_hists):
-                    fields = {l: ak.flatten(ak.fill_none(selev.Jet[histname],np.nan)) for l in h.fields if l in dir(sjets)}
-                    genweiev=ak.flatten(ak.broadcast_arrays(selev.genWeight,ak.fill_none(selev.Jet[histname],np.nan))[0])
+                    fields = {l: ak.flatten(ak.fill_none(sjets[histname],np.nan)) for l in h.fields if l in dir(sjets)}
+                    genweiev=ak.flatten(ak.broadcast_arrays(selev.genWeight,ak.fill_none(sjets[histname],np.nan))[0])
                     h.fill(dataset=dataset,flav=ak.flatten(ak.fill_none(genflavor,np.nan)), **fields,weight=genweiev)
 
 
