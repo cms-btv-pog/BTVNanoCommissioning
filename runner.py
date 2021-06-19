@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--wf',
                         '--workflow',
                         dest='workflow',
-                        choices=['ttcom', 'jet_AK4','mu_AK4','dilep','ctag'],
+                        choices=['ttcom', 'jet_AK4','mu_AK4','dilep','ctag','ctagtest'],
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
@@ -130,6 +130,9 @@ if __name__ == '__main__':
         processor_instance = NanoProcessor()
     elif args.workflow == "dilep":
         from workflows.dilep_valid import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctagtest":
+        from workflows.ctag_valid_dup import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "ctag":
         from workflows.ctag_valid import NanoProcessor

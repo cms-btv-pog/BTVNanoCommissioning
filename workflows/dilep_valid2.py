@@ -103,10 +103,10 @@ class NanoProcessor(processor.ProcessorABC):
         
         # Define histograms from axes
         _hist_jet_dict = {
-                'jet_pt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_pt_axis),
-                'jet_eta' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis),
-                'jet_phi' : hist.Hist("Counts", dataset_axis, flav_axis,jet_phi_axis),
-                'jet_mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis)
+                'pt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_pt_axis),
+                'eta' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis),
+                'phi' : hist.Hist("Counts", dataset_axis, flav_axis,jet_phi_axis),
+                'mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis)
             }
         _hist_deepcsv_dict = {
                 'pt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_pt_axis),
@@ -123,8 +123,8 @@ class NanoProcessor(processor.ProcessorABC):
        
         # Generate some histograms dynamically
         
-        for disc, axis in zip(ddx_list, btag_axes):
-            _hist_deepddx_dict[disc] = hist.Hist("Counts", dataset_axis,  flav_axis, axis)
+        for disc, axis in zip(disc_list, btag_axes):
+            _hist_deepcsv_dict[disc] = hist.Hist("Counts", dataset_axis,  flav_axis, axis)
         for deepcsv, axises in zip(deepcsv_list, deepcsv_axes):
             _hist_deepcsv_dict[deepcsv] = hist.Hist("Counts", dataset_axis,flav_axis,  axises)
         _hist_event_dict = {
@@ -135,7 +135,7 @@ class NanoProcessor(processor.ProcessorABC):
             }
         self.jet_hists = list(_hist_jet_dict.keys())
         self.deepcsv_hists = list(_hist_deepcsv_dict.keys())
-        self.deepddx_hists = list(_hist_deepddx_dict.keys())
+#        self.deepddx_hists = list(_hist_deepddx_dict.keys())
         self.event_hists = list(_hist_event_dict.keys())
         _hist_dict = {**_hist_deepcsv_dict,**_hist_event_dict}
         self._accumulator = processor.dict_accumulator(_hist_dict)
@@ -158,9 +158,10 @@ class NanoProcessor(processor.ProcessorABC):
         ##############
         # Trigger level
         triggers = [
-        # "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-        # "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",   
-        "HLT_PFJet40" 
+            "HLT_IsoMu24"
+        #"HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        #"HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
+        # "HLT_PFJet40" 
         ]
         
         trig_arrs = [events.HLT[_trig.strip("HLT_")] for _trig in triggers]
@@ -169,15 +170,26 @@ class NanoProcessor(processor.ProcessorABC):
             req_trig = req_trig | t
 
         ############
-        # Event level        
+        ## Muon cuts
+        # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
+        events.Muon = events.Muon[(events.Muon.pt > 30) & (abs(events.Muon.eta < 2.4))& (events.Muon.tightId)]  
+        events.Muon = ak.pad_none(events.Muon, 1, axis=1) 
+        req_muon =(ak.count(events.Muon.pt, axis=1) == 1)
+        
+        ## Electron cuts
+        # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
+        events.Electron = events.Electron[(events.Electron.pt > 30) & (abs(events.Electron.eta) < 2.4)&(events.Electron.cutBased>3)]
+        events.Electron = ak.pad_none(events.Electron, 1, axis=1) 
+        req_ele = (ak.count(events.Electron.pt, axis=1) == 1)
         
         ## Jet cuts
-        events.Jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.5)]
-        req_jets = (ak.count(events.Jet.pt, axis=1) >= 1)    
+        events.Jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.5)&(events.Jet.puId > 6)]
+        req_jets = (ak.count(events.Jet.pt, axis=1) >= 2)    
         
         
+        req_opposite_charge = events.Electron[:, 0].charge * events.Muon[:, 0].charge == -1
         
-        event_level = req_trig & req_jets
+        event_level = req_trig & req_muon & req_ele & req_opposite_charge & req_jets
         
         # Selected
         selev = events[event_level]    
@@ -185,10 +197,10 @@ class NanoProcessor(processor.ProcessorABC):
         #########
         
         
-
+        
         # Per jet : https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
         jet_eta    = (abs(selev.Jet.eta) <= 2.4)
-        jet_pt     = selev.Jet.pt > 50 
+        jet_pt     = selev.Jet.pt > 25
         jet_pu     = selev.Jet.puId > 6
         jet_level  = jet_pu & jet_eta & jet_pt
         
@@ -209,19 +221,20 @@ class NanoProcessor(processor.ProcessorABC):
         if isRealData :
             genflavor = ak.zeros_like(sjets.pt)
         else:
-            genflavor = selev.Jet.hadronFlavour
-            #weight = prepro_fcn_to_match_other_inputs(events.genWeight)
+            genflavor = sjets.hadronFlavour
+
 
         for histname, h in output.items():
-            if(isRealData):
-                if (histname in self.jet_hists) or (histname in self.deepcsv_hists):
-                        fields = {l: ak.flatten(sjets_b[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets_b)}
-                        h.fill(dataset=dataset,flav=5, **fields)
-            else:
-                if (histname in self.jet_hists) or (histname in self.deepcsv_hists):
-                    fields = {l: ak.flatten(ak.fill_none(sjets[histname],np.nan)) for l in h.fields if l in dir(sjets)}
-                    genweiev=ak.flatten(ak.broadcast_arrays(selev.genWeight,ak.fill_none(sjets[histname],np.nan))[0])
-                    h.fill(dataset=dataset,flav=ak.flatten(ak.fill_none(genflavor,np.nan)), **fields,weight=genweiev)
+            #if(isRealData):
+            #    if (histname in self.deepcsv_hists):
+             #           fields = {l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)}
+                        #h.fill(dataset=dataset,flav=5, **fields)
+                    #else:
+            if  (histname in self.deepcsv_hists):
+                fields = {l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)}
+                if(isRealData):genweiev=ak.flatten(ak.broadcast_arrays(1.,sjets[histname])[0])
+                else: genweiev=ak.flatten(ak.broadcast_arrays(selev.genWeight,sjets[histname])[0])
+                h.fill(dataset=dataset,flav=ak.flatten(genflavor), **fields,weight=genweiev)
 
 
         def flatten(ar): # flatten awkward into a 1d array to hist

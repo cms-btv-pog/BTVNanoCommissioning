@@ -4,7 +4,7 @@ import argparse
 import pprint
 
 fset = []
-with open("qcd.txt") as fp: 
+with open("tt.txt") as fp: 
     lines = fp.readlines() 
     for line in lines: 
         fset.append(line)
@@ -30,5 +30,5 @@ for dataset in fset:
         fdict[dictname].extend([xrd+f for f in flist if len(f) > 1])
 
 #pprint.pprint(fdict, depth=1)
-with open('../qcd.json', 'w') as fp:
+with open('tt.json', 'w') as fp:
     json.dump(fdict, fp, indent=4)
