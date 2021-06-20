@@ -72,6 +72,21 @@ jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
 
 ## Scale-out (Sites)
 
-### FNAL/LPC Condor
+Scale out can be notoriously tricky between different sites. Coffea's integration of `slurm` and `dask`
+makes this quite a bit easier and for some sites the ``native'' implementation is sufficient, e.g Condor@DESY.
+However, some sites have certain restrictions for various reasons, in particular Condor @CERN and @FNAL.
+
+### Condor@FNAL (CMSLPC)
 Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
-the singularity container run as `python runner.py --wf ttcom --executor dask/lpc`
+the singularity container run with 
+```bash
+python runner.py --wf ttcom --executor dask/lpc
+```
+
+### Condor@CERN (lxplus)
+Only one port is available per node, so its possible one has to try different nodes until hitting
+one with `8786` being open. Other than that, no additional configurations should be necessary.
+
+```bash
+python runner.py --wf ttcom --executor dask/lpc
+```
