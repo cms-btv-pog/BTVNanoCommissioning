@@ -2,12 +2,11 @@ import os
 import sys
 import json
 import argparse
+import argcomplete
 import time
 
 import numpy as np
 
-
-#import uproot4 as uproot
 import uproot
 from coffea import hist
 from coffea.nanoevents import NanoEventsFactory
@@ -23,7 +22,19 @@ def validate(file):
         return
 
 
-if __name__ == '__main__':
+def check_port(port):
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(("0.0.0.0", port))
+        available = True
+    except:
+        available = False
+    sock.close()
+    return available
+
+
+def get_main_parser():
     parser = argparse.ArgumentParser(description='Run analysis on baconbits files using processor coffea files')
     # Inputs
     parser.add_argument('--wf',
@@ -38,13 +49,20 @@ if __name__ == '__main__':
                         )
 
     # Scale out
-    parser.add_argument('--executor', choices=['iterative', 'futures', 'parsl/slurm', 'parsl/condor', 'dask/condor', 'dask/slurm', 'dask/lpc'], default='futures',
+    parser.add_argument('--executor', 
+                        choices=[
+                            'iterative', 'futures', 'parsl/slurm', 'parsl/condor', 
+                            'dask/condor', 'dask/slurm', 'dask/lpc', 'dask/lxplus', 
+                        ], 
+                        default='futures',
                         help='The type of executor to use (default: %(default)s). Other options can be implemented. '
                              'For example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html'
                              '- `parsl/slurm` - tested at DESY/Maxwell'
                              '- `parsl/condor` - tested at DESY, RWTH'
                              '- `dask/slurm` - tested at DESY/Maxwell'
                              '- `dask/condor` - tested at DESY, RWTH'
+                             '- `dask/lpc` - custom lpc/condor setup (due to write access restrictions)'
+                             '- `dask/lxplus` - custom lxplus/condor setup (due to port restrictions)'
                         )
     parser.add_argument('-j', '--workers', type=int, default=12,
                         help='Number of workers (cores/threads) to use for multi-worker executors '
@@ -63,7 +81,11 @@ if __name__ == '__main__':
     parser.add_argument('--limit', type=int, default=None, metavar='N', help='Limit to the first N files of each dataset in sample JSON')
     parser.add_argument('--chunk', type=int, default=500000, metavar='N', help='Number of events per process chunk')
     parser.add_argument('--max', type=int, default=None, metavar='N', help='Max number of chunks to run in total')
+    return parser
 
+
+if __name__ == '__main__':
+    parser = get_main_parser()
     args = parser.parse_args()
     if args.output == parser.get_default('output'):
         args.output = f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.coffea'
@@ -129,11 +151,17 @@ if __name__ == '__main__':
         raise NotImplemented
 
     if args.executor not in ['futures', 'iterative', 'dask/lpc']:
-        # dask/parsl needs to export x509 to read over xrootd
+        """
+        dask/parsl needs to export x509 to read over xrootd
+        dask/lpc uses custom jobqueue provider that handles x509
+        """
         if args.voms is not None:
             _x509_path = args.voms
         else:
-            _x509_localpath = [l for l in os.popen('voms-proxy-info').read().split("\n") if l.startswith('path')][0].split(":")[-1].strip()
+            try:
+                _x509_localpath = [l for l in os.popen('voms-proxy-info').read().split("\n") if l.startswith('path')][0].split(":")[-1].strip()
+            except:
+                raise RuntimeError("x509 proxy could not be parsed, try creating it with 'voms-proxy-init'")
             _x509_path = os.environ['HOME'] + f'/.{_x509_localpath.split("/")[-1]}'
             os.system(f'cp {_x509_localpath} {_x509_path}')
 
@@ -237,11 +265,36 @@ if __name__ == '__main__':
             env_extra = [
                 f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
             ] 
-            condor_extra = []
             from lpcjobqueue import LPCCondorCluster
             cluster = LPCCondorCluster(
                 transfer_input_files='/srv/workflows/',
                 ship_env=True,
+                env_extra = env_extra,
+            )
+        elif 'lxplus' in args.executor:
+            n_port = 8786
+            if not check_port(8786):
+                raise RuntimeError("Port '8786' is not occupied on this node. Try another one.")
+            import socket
+            cluster = HTCondorCluster(
+                cores=1,
+                memory='2GB', # hardcoded
+                disk='1GB',
+                death_timeout = '60',
+                nanny = False,
+                scheduler_options={
+                    'port': n_port,
+                    'host': socket.gethostname()
+                    },
+                job_extra={
+                    'log': 'dask_job_output.log',
+                    'output': 'dask_job_output.out',
+                    'error': 'dask_job_output.err',
+                    'should_transfer_files': 'Yes',
+                    'when_to_transfer_output': 'ON_EXIT',
+                    '+JobFlavour': '"workday"',
+                    },
+                extra = ['--worker-port {}'.format(n_port)],
                 env_extra = env_extra,
             )
         elif 'slurm' in args.executor:
@@ -261,9 +314,11 @@ if __name__ == '__main__':
                  disk='4GB', 
                  env_extra=env_extra,
             )
-        cluster.adapt(maximum=args.scaleout)
 
+        cluster.adapt(minimum=args.scaleout)
         client = Client(cluster)
+        print("Waiting for at least one worker...")
+        client.wait_for_workers(1)
         with performance_report(filename="dask-report.html"):
             output = processor.run_uproot_job(sample_dict,
                                               treename='Events',
