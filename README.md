@@ -90,3 +90,13 @@ one with `8786` being open. Other than that, no additional configurations should
 ```bash
 python runner.py --wf ttcom --executor dask/lpc
 ```
+
+### Coffea-casa (Nebraska AF)
+Coffea-casa is a JupyterHub based analysis-facility hosted at Nebraska. For more information and setup instuctions see
+https://coffea-casa.readthedocs.io/en/latest/cc_user.html
+
+After setting up and checking out this repository (either via the online terminal or git widget utility run with
+```bash
+python runner.py --wf ttcom --executor dask/casa
+```
+Authentication is handled automatically via login auth token instead of a proxy. File paths need to replace xrootd redirector with "xcache", `runner.py` does this automatically.
