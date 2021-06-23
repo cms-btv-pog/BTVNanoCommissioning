@@ -80,7 +80,7 @@ However, some sites have certain restrictions for various reasons, in particular
 Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
 the singularity container run with 
 ```bash
-python runner.py --wf ttcom --executor dask/lxplus
+python runner.py --wf ttcom --executor dask/lpc
 ```
 
 ### Condor@CERN (lxplus)
@@ -88,7 +88,7 @@ Only one port is available per node, so its possible one has to try different no
 one with `8786` being open. Other than that, no additional configurations should be necessary.
 
 ```bash
-python runner.py --wf ttcom --executor dask/lpc
+python runner.py --wf ttcom --executor dask/lxplus
 ```
 
 ### Coffea-casa (Nebraska AF)
