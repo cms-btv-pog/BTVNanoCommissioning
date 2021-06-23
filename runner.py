@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import argparse
-import argcomplete
 import time
 
 import numpy as np
@@ -52,7 +51,7 @@ def get_main_parser():
     parser.add_argument('--executor', 
                         choices=[
                             'iterative', 'futures', 'parsl/slurm', 'parsl/condor', 
-                            'dask/condor', 'dask/slurm', 'dask/lpc', 'dask/lxplus', 
+                            'dask/condor', 'dask/slurm', 'dask/lpc', 'dask/lxplus', 'dask/casa',
                         ], 
                         default='futures',
                         help='The type of executor to use (default: %(default)s). Other options can be implemented. '
@@ -94,9 +93,11 @@ if __name__ == '__main__':
     # load dataset
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
-
     for key in sample_dict.keys():
         sample_dict[key] = sample_dict[key][:args.limit]
+    if args.executor == 'dask/casa':
+        for key in sample_dict.keys():
+            sample_dict[key] = [path.replace('xrootd-cms.infn.it/', 'xcache') for path in sample_dict[key]]
 
     # For debugging
     if args.only is not None:
@@ -150,7 +151,7 @@ if __name__ == '__main__':
     else:
         raise NotImplemented
 
-    if args.executor not in ['futures', 'iterative', 'dask/lpc']:
+    if args.executor not in ['futures', 'iterative', 'dask/lpc', 'dask/casa']:
         """
         dask/parsl needs to export x509 to read over xrootd
         dask/lpc uses custom jobqueue provider that handles x509
@@ -314,11 +315,17 @@ if __name__ == '__main__':
                  disk='4GB', 
                  env_extra=env_extra,
             )
-
-        cluster.adapt(minimum=args.scaleout)
-        client = Client(cluster)
-        print("Waiting for at least one worker...")
-        client.wait_for_workers(1)
+        
+        if args.executor == 'dask/casa':
+            client = Client("tls://localhost:8786")
+            import shutil
+            shutil.make_archive("workflows", "zip", base_dir="workflows")
+            client.upload_file("workflows.zip")
+        else:
+            cluster.adapt(minimum=args.scaleout)
+            client = Client(cluster)
+            print("Waiting for at least one worker...")
+            client.wait_for_workers(1)
         with performance_report(filename="dask-report.html"):
             output = processor.run_uproot_job(sample_dict,
                                               treename='Events',
@@ -328,6 +335,7 @@ if __name__ == '__main__':
                                                   'client': client,
                                                   'skipbadfiles': args.skipbadfiles,
                                                   'schema': processor.NanoAODSchema,
+                                                  'retries': 3,
                                               },
                                               chunksize=args.chunk,
                                               maxchunks=args.max)
