@@ -1,9 +1,9 @@
-# BTVNanoCommissioning
+# coffea-hgg
 Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD samples
 
 
 ## Structure
-Example worfkflow for ttbar is included. 
+Example worfkflow for drell-yan studies is included. 
 
 Each workflow can be a separate "processor" file, creating the mapping from NanoAOD to
 the histograms we need. Workflow processors can be passed to the `runner.py` script 
@@ -12,7 +12,7 @@ along with the fileset these should run over. Multiple executors can be chosen
 
 To run the example, run:
 ```
-python runner.py --workflow ttcom
+python runner.py --workflow dystudies
 ```
 
 Example plots can be found in ` make_some_plots.ipynb` though we might want to make
@@ -37,7 +37,7 @@ conda activate coffea
 ```
 Install coffea, xrootd, and more:
 ```
-pip install git+https://github.com/CoffeaTeam/coffea.git #latest published release with `pip install coffea`
+conda install -c conda-forge coffea # pip install git+https://github.com/CoffeaTeam/coffea.git # for bleeding edge
 conda install -c conda-forge xrootd
 conda install -c conda-forge ca-certificates
 conda install -c conda-forge ca-policy-lcg
@@ -80,7 +80,7 @@ However, some sites have certain restrictions for various reasons, in particular
 Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
 the singularity container run with 
 ```bash
-python runner.py --wf ttcom --executor dask/lpc
+python runner.py --wf dystudies --executor dask/lpc
 ```
 
 ### Condor@CERN (lxplus)
@@ -88,7 +88,7 @@ Only one port is available per node, so its possible one has to try different no
 one with `8786` being open. Other than that, no additional configurations should be necessary.
 
 ```bash
-python runner.py --wf ttcom --executor dask/lxplus
+python runner.py --wf dystudies --executor dask/lxplus
 ```
 
 ### Coffea-casa (Nebraska AF)
@@ -97,6 +97,6 @@ https://coffea-casa.readthedocs.io/en/latest/cc_user.html
 
 After setting up and checking out this repository (either via the online terminal or git widget utility run with
 ```bash
-python runner.py --wf ttcom --executor dask/casa
+python runner.py --wf dystudies --executor dask/casa
 ```
 Authentication is handled automatically via login auth token instead of a proxy. File paths need to replace xrootd redirector with "xcache", `runner.py` does this automatically.
