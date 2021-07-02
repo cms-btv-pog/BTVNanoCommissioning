@@ -123,16 +123,16 @@ if __name__ == '__main__':
         from workflows.ttbar_validation2 import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "jet_AK4":
-        from workflows.multijet_valid import NanoProcessor
+        from workflows.multijet_valid2 import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "mu_AK4":
-        from workflows.muAK4_valid import NanoProcessor
+        from workflows.muAK4_valid2 import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "dilep":
         from workflows.dilep_valid import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "ctagtest":
-        from workflows.ctag_valid_dup import NanoProcessor
+        from workflows.ctag_valid_pT import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "ctag":
         from workflows.ctag_valid import NanoProcessor

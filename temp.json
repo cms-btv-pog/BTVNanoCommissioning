@@ -1,0 +1,10 @@
+{
+    
+    "mc":[
+
+"root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA04inpts/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/201215_235707/0000/nano106x_on_mini94x_2017_mc_NANO_7.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA04inpts/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/201215_235707/0000/nano106x_on_mini94x_2017_mc_NANO_6.root",
+ "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/anovak/PFNano/106X_v2_17rsb3/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17PFNanov2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/210509_154437/0000/nano_mc2017_18.root",
+        "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/anovak/PFNano/106X_v2_17rsb3/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17PFNanov2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/210509_154437/0000/nano_mc2017_27.root",
+        "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/anovak/PFNano/106X_v2_17rsb3/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17PFNanov2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/210509_154437/0000/nano_mc2017_26.root",
+        "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/anovak/PFNano/106X_v2_17rsb3/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17PFNanov2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/210509_154437/0000/nano_mc2017_23.root"]}

@@ -183,7 +183,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_ele = (ak.count(events.Electron.pt, axis=1) == 1)
         
         ## Jet cuts
-        events.Jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.5)&(events.Jet.puId > 6)]
+        events.Jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.5)&(events.Jet.puId > 0) &(events.Jet.jetId>0)]
         req_jets = (ak.count(events.Jet.pt, axis=1) >= 2)    
         
         
