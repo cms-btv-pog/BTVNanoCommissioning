@@ -6,7 +6,7 @@ import numpy as np
 import awkward as ak
 from coffea.analysis_tools import Weights
 from coffea.lumi_tools import LumiMask
-
+##import corrections, masks
 with gzip.open("corrections.pkl.gz") as fin:
     compiled = pickle.load(fin)
 def build_lumimask(filename):
@@ -16,6 +16,10 @@ lumiMasks = {
     '2017': build_lumimask('Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt'),
     '2018': build_lumimask('Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt'),
 }
+
+
+
+
 
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
@@ -36,6 +40,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Jet
         jet_pt_axis   = hist.Bin("pt",   r"Jet $p_{T}$ [GeV]", 100, 20, 400)
+        jet_rawpt_axis   = hist.Bin("rawpt",   r"Jet $p_{T}$ [GeV]", 100, 20, 400)
         jet_eta_axis  = hist.Bin("eta",  r"Jet $\eta$", 60, -3, 3)
         jet_phi_axis  = hist.Bin("phi",  r"Jet $\phi$", 60, -3, 3)
         jet_mass_axis = hist.Bin("mass", r"Jet $m$ [GeV]", 100, 0, 50)
@@ -44,17 +49,26 @@ class NanoProcessor(processor.ProcessorABC):
         sljpt_axis     = hist.Bin("sljpt", r"Subleading jet $p_{T}$ [GeV]", 100, 20, 400)        
         ssljpt_axis     = hist.Bin("ssljpt", r"3rd jet $p_{T}$ [GeV]", 100, 20, 400)
         sssljpt_axis     = hist.Bin("sssljpt", r"4th jet $p_{T}$ [GeV]", 100, 20, 400) 
+        ljrawpt_axis     = hist.Bin("ljrawpt", r"Leading jet $p_{T}$ [GeV]", 100, 20, 400)
+        sljrawpt_axis     = hist.Bin("sljrawpt", r"Subleading jet $p_{T}$ [GeV]", 100, 20, 400)        
+        ssljrawpt_axis     = hist.Bin("ssljrawpt", r"3rd jet $p_{T}$ [GeV]", 100, 20, 400)
+        sssljrawpt_axis     = hist.Bin("sssljrawpt", r"4th jet $p_{T}$ [GeV]", 100, 20, 400) 
         ljdr_axis = hist.Bin("ljdr", "Leading jet $\Delta$R(l,j)", 50,0,5)
         sljdr_axis = hist.Bin("sljdr", "Subleading jet $\Delta$R(l,j)", 50,0,5)
         ssljdr_axis = hist.Bin("ssljdr", "3rd jet $\Delta$R(l,j)", 50,0,5)
         sssljdr_axis = hist.Bin("sssljdr", "4th jet $\Delta$R(l,j)", 50,0,5)
 
         # Define similar axes dynamically
-        disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC','btagDeepB_bb']
+        disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC']
+        discSF_list = ['btagDeepBSF', 'btagDeepCSF', 'btagDeepFlavBSF', 'btagDeepFlavCSF']
         ddx_list = ["btagDDBvLV2","btagDDCvBV2","btagDDCvLV2"]
         btag_axes = []
         for d in disc_list:
             btag_axes.append(hist.Bin(d, d, 50, 0, 1))     
+        deepb_axis = hist.Bin("btagDeepBSF", "btagDeepBSF", 50, 0, 1)     
+        deepc_axis = hist.Bin("btagDeepCSF", "btagDeepCSF", 50, 0, 1)  
+        deepjb_axis = hist.Bin("btagDeepFlavBSF", "btagDeepFlavBSF", 50, 0, 1)     
+        deepjc_axis = hist.Bin("btagDeepFlavCSF", "btagDeepFlavCSF", 50, 0, 1)     
         deepddx_list = ["DDX_jetNTracks","DDX_jetNSecondaryVertices","DDX_tau1_trackEtaRel_0","DDX_tau1_trackEtaRel_1","DDX_tau1_trackEtaRel_2","DDX_tau2_trackEtaRel_0","DDX_tau2_trackEtaRel_1","DDX_tau2_trackEtaRel_3","DDX_tau1_flightDistance2dSig","DDX_tau2_flightDistance2dSig","DDX_tau1_vertexDeltaR","DDX_tau1_vertexEnergyRatio","DDX_tau2_vertexEnergyRatio","DDX_tau1_vertexMass","DDX_tau2_vertexMass","DDX_trackSip2dSigAboveBottom_0","DDX_trackSip2dSigAboveBottom_1","DDX_trackSip2dSigAboveCharm","DDX_trackSip3dSig_0","DDX_tau1_trackSip3dSig_0","DDX_tau1_trackSip3dSig_1","DDX_trackSip3dSig_1","DDX_tau2_trackSip3dSig_0","DDX_tau2_trackSip3dSig_1"]
         deepcsv_list = [
         "DeepCSV_trackDecayLenVal_0", "DeepCSV_trackDecayLenVal_1", "DeepCSV_trackDecayLenVal_2", "DeepCSV_trackDecayLenVal_3", "DeepCSV_trackDecayLenVal_4", "DeepCSV_trackDecayLenVal_5", 
@@ -105,6 +119,7 @@ class NanoProcessor(processor.ProcessorABC):
         # Define histograms from axes
         _hist_jet_dict = {
                 'pt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_pt_axis),
+                'rawpt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_rawpt_axis),
                 'eta' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis),
                 'phi' : hist.Hist("Counts", dataset_axis, flav_axis,jet_phi_axis),
                 'mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis),
@@ -112,6 +127,7 @@ class NanoProcessor(processor.ProcessorABC):
             }
         _hist_deepcsv_dict = {
                 'pt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_pt_axis),
+                'rawpt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_rawpt_axis),
                 'eta' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis),
                 'phi' : hist.Hist("Counts", dataset_axis, flav_axis,jet_phi_axis),
                 'mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis),
@@ -133,6 +149,10 @@ class NanoProcessor(processor.ProcessorABC):
                 'sljpt'  : hist.Hist("Counts", dataset_axis, flav_axis, sljpt_axis),
                 'ssljpt'  : hist.Hist("Counts", dataset_axis, flav_axis, ssljpt_axis),
                 'sssljpt'  : hist.Hist("Counts", dataset_axis, flav_axis, sssljpt_axis),
+                'ljrawpt'  : hist.Hist("Counts", dataset_axis, flav_axis, ljrawpt_axis),
+                'sljrawpt'  : hist.Hist("Counts", dataset_axis, flav_axis, sljrawpt_axis),
+                'ssljrawpt'  : hist.Hist("Counts", dataset_axis, flav_axis, ssljrawpt_axis),
+                'sssljrawpt'  : hist.Hist("Counts", dataset_axis, flav_axis, sssljrawpt_axis),
                 'ljdr'  : hist.Hist("Counts", dataset_axis, flav_axis, ljdr_axis),
                 'sljdr'  : hist.Hist("Counts", dataset_axis, flav_axis, sljdr_axis),
                 'ssljdr'  : hist.Hist("Counts", dataset_axis, flav_axis, ssljdr_axis),
@@ -141,6 +161,7 @@ class NanoProcessor(processor.ProcessorABC):
             }
         self.jet_hists = list(_hist_jet_dict.keys())
         self.deepcsv_hists = list(_hist_deepcsv_dict.keys())
+        #self.deepcsvSF_hists = list(_hist_deepcsvSF_dict.keys())
         # self.deepddx_hists = list(_hist_deepddx_dict.keys())
         self.event_hists = list(_hist_event_dict.keys())
         _hist_dict = {**_hist_deepcsv_dict,**_hist_event_dict}
@@ -157,12 +178,15 @@ class NanoProcessor(processor.ProcessorABC):
         # print(output.items())
         dataset = events.metadata['dataset']
         isRealData = not hasattr(events, "genWeight")
-        weights = Weights(len(events), storeIndividual=True)
+        
         if(isRealData):output['sumw'][dataset] += 1.
         else:output['sumw'][dataset] += ak.sum(events.genWeight)
         req_lumi=np.ones(len(events), dtype='bool')
         if(isRealData): req_lumi=lumiMasks['2017'](events.run, events.luminosityBlock)
-        
+        weights = Weights(len(events), storeIndividual=True)
+        if not isRealData:
+            weights.add('genweight',events.genWeight)
+            weights.add('puweight', compiled['2017_pileupweight'](events.Pileup.nPU))
         ##############
         # Trigger level
         triggers = [
@@ -187,7 +211,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_muon =(ak.count(event_muon.pt, axis=1) == 1)
         ## Jet cuts 
         
-        event_jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.4)&(events.Jet.puId > 0)&(events.Jet.jetId > 0)&(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))]
+        event_jet = events.Jet[((events.Jet.pt*(1-events.Jet.rawFactor))> 25) & (abs(events.Jet.eta) <= 2.4)&(events.Jet.puId > 0)&(events.Jet.jetId > 0)&(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))]
         # print(events.Jet.muonIdx1)                                                                               
         
         req_jets = (ak.num(event_jet)>=4)
@@ -209,7 +233,7 @@ class NanoProcessor(processor.ProcessorABC):
         smu=selev.Muon[mu_level]
         # Per jet : https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
         jet_eta    = (abs(selev.Jet.eta) <= 2.4)
-        jet_pt     = selev.Jet.pt > 25 
+        jet_pt     = (selev.Jet.pt*(1-selev.Jet.rawFactor)) > 25 
         jet_pu     = (selev.Jet.puId > 0) &(selev.Jet.jetId>0)
         jet_dr     = (ak.all(selev.Jet.metric_table(smu) > 0.4, axis=2))
 
@@ -220,7 +244,7 @@ class NanoProcessor(processor.ProcessorABC):
         bjet_disc  = selev.Jet.btagDeepB > 0.7264 # L=0.0494, M=0.2770, T=0.7264
         bjet_level = jet_level & bjet_disc
         
-
+        
         sjets  = selev.Jet[jet_level]
         sbjets = selev.Jet[bjet_level]
 
@@ -230,22 +254,27 @@ class NanoProcessor(processor.ProcessorABC):
             par_flav = (sjets.partonFlavour == 0 ) & (sjets.hadronFlavour==0)
             genflavor = sjets.hadronFlavour + 1*par_flav 
             
-
-            weights.add('genweight',events.genWeight)
-            weights.add('puweight',compiled['2017_pileupweight'](events.Pileup.nPU))
-        
+                
+            
         # Fill histograms dynamically  
         for histname, h in output.items():
             if histname in self.deepcsv_hists:
                 if(isRealData):
-                    fields = {l: ak.flatten(sjets[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets)}
-                    h.fill(dataset=dataset,flav=5, **fields)
+                    if histname == 'rawpt':
+                        h.fill(dataset=dataset,flav=ak.flatten(genflavor), rawpt =ak.flatten(sjets.pt*(1-sjets.rawFactor)))
+                    else:
+                        fields = {l: ak.flatten(sjets[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets)}
+                        h.fill(dataset=dataset,flav=5, **fields)
                 else:
-                    fields = {l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)}
-                            # print(ak.type(weights.weight()[jet_level]),ak.type(sjets.pt))
-                    genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets[histname])[0])
-                    h.fill(dataset=dataset,flav=ak.flatten(genflavor), **fields,weight=genweiev)
-        
+                    if histname == 'rawpt':
+                        genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
+                        h.fill(dataset=dataset,flav=ak.flatten(genflavor), rawpt =ak.flatten(sjets.pt*(1-sjets.rawFactor)) ,weight=genweiev)
+                    else:
+                        fields = {l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)}
+                        genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
+                        h.fill(dataset=dataset,flav=ak.flatten(genflavor), **fields,weight=genweiev)
+            
+
 
         def flatten(ar): # flatten awkward into a 1d array to hist
             return ak.flatten(ar, axis=None)
@@ -260,6 +289,10 @@ class NanoProcessor(processor.ProcessorABC):
             output['sljpt'].fill(dataset=dataset, flav=0, sljpt=flatten(sjets[:,1].pt))
             output['ssljpt'].fill(dataset=dataset, flav=0, ssljpt=flatten(sjets[:,2].pt))
             output['sssljpt'].fill(dataset=dataset, flav=0, sssljpt=flatten(sjets[:,3].pt))
+            output['ljrawpt'].fill(dataset=dataset, flav=0, ljrawpt=flatten(sjets[:,0].pt*(1-sjets[:,0].rawFactor)))
+            output['sljrawpt'].fill(dataset=dataset, flav=0, sljrawpt=flatten(sjets[:,1].pt*(1-sjets[:,0].rawFactor)))
+            output['ssljrawpt'].fill(dataset=dataset, flav=0, ssljrawpt=flatten(sjets[:,2].pt*(1-sjets[:,0].rawFactor)))
+            output['sssljrawpt'].fill(dataset=dataset, flav=0, sssljrawpt=flatten(sjets[:,3].pt*(1-sjets[:,0].rawFactor)))
             output['ljdr'].fill(dataset=dataset, flav=0, ljdr=flatten(sjets[:,0].delta_r(smu)))
             output['sljdr'].fill(dataset=dataset, flav=0, sljdr=flatten(sjets[:,1].delta_r(smu)))
             output['ssljdr'].fill(dataset=dataset, flav=0, ssljdr=flatten(sjets[:,2].delta_r(smu)))
@@ -267,18 +300,22 @@ class NanoProcessor(processor.ProcessorABC):
             output['met'].fill(dataset=dataset, met=flatten((selev.METFixEE2017.pt)))
         else:
             
-            output['njet'].fill(dataset=dataset,  njet=flatten(ak.num(sjets)),weight=weights.weight()[event_level])
-            output['nmu'].fill(dataset=dataset,   nmu=flatten(ak.num(smu)),weight=weights.weight()[event_level])
-            output['lmupt'].fill(dataset=dataset, lmupt=flatten((smu.pt)),weight=weights.weight()[event_level])
-            output['ljpt'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljpt=flatten(sjets[:,0].pt),weight=weights.weight()[event_level])
-            output['sljpt'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljpt=flatten(sjets[:,1].pt),weight=weights.weight()[event_level])
-            output['ssljpt'].fill(dataset=dataset, flav=flatten(sjets[:,2].hadronFlavour), ssljpt=flatten(sjets[:,2].pt),weight=weights.weight()[event_level])
-            output['sssljpt'].fill(dataset=dataset, flav=flatten(sjets[:,3].hadronFlavour), sssljpt=flatten(sjets[:,3].pt),weight=weights.weight()[event_level])
-            output['ljdr'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljdr=flatten(sjets[:,0].delta_r(smu)),weight=weights.weight()[event_level])
-            output['sljdr'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljdr=flatten(sjets[:,1].delta_r(smu)),weight=weights.weight()[event_level])
-            output['ssljdr'].fill(dataset=dataset, flav=flatten(sjets[:,2].hadronFlavour), ssljdr=flatten(sjets[:,2].delta_r(smu)),weight=weights.weight()[event_level])
-            output['sssljdr'].fill(dataset=dataset, flav=flatten(sjets[:,3].hadronFlavour), sssljdr=flatten(sjets[:,3].delta_r(smu)),weight=weights.weight()[event_level])
-            output['met'].fill(dataset=dataset, met=flatten((selev.METFixEE2017.pt)),weight=weights.weight()[event_level])
+                output['njet'].fill(dataset=dataset,  njet=flatten(ak.num(sjets)),weight=weights.weight()[event_level])
+                output['nmu'].fill(dataset=dataset,   nmu=flatten(ak.num(smu)),weight=weights.weight()[event_level])
+                output['lmupt'].fill(dataset=dataset, lmupt=flatten((smu.pt)),weight=weights.weight()[event_level])
+                output['ljpt'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljpt=flatten(sjets[:,0].pt),weight=weights.weight()[event_level])
+                output['sljpt'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljpt=flatten(sjets[:,1].pt),weight=weights.weight()[event_level])
+                output['ssljpt'].fill(dataset=dataset, flav=flatten(sjets[:,2].hadronFlavour), ssljpt=flatten(sjets[:,2].pt),weight=weights.weight()[event_level])
+                output['sssljpt'].fill(dataset=dataset, flav=flatten(sjets[:,3].hadronFlavour), sssljpt=flatten(sjets[:,3].pt),weight=weights.weight()[event_level])
+                output['ljrawpt'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljrawpt=flatten(sjets[:,0].pt*(1-sjets[:,0].rawFactor)),weight=weights.weight()[event_level])
+                output['sljrawpt'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljrawpt=flatten(sjets[:,1].pt*(1-sjets[:,1].rawFactor)),weight=weights.weight()[event_level])
+                output['ssljrawpt'].fill(dataset=dataset, flav=flatten(sjets[:,2].hadronFlavour), ssljrawpt=flatten(sjets[:,2].pt*(1-sjets[:,2].rawFactor)),weight=weights.weight()[event_level])
+                output['sssljrawpt'].fill(dataset=dataset, flav=flatten(sjets[:,3].hadronFlavour), sssljrawpt=flatten(sjets[:,3].pt*(1-sjets[:,3].rawFactor)),weight=weights.weight()[event_level])
+                output['ljdr'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljdr=flatten(sjets[:,0].delta_r(smu)),weight=weights.weight()[event_level])
+                output['sljdr'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljdr=flatten(sjets[:,1].delta_r(smu)),weight=weights.weight()[event_level])
+                output['ssljdr'].fill(dataset=dataset, flav=flatten(sjets[:,2].hadronFlavour), ssljdr=flatten(sjets[:,2].delta_r(smu)),weight=weights.weight()[event_level])
+                output['sssljdr'].fill(dataset=dataset, flav=flatten(sjets[:,3].hadronFlavour), sssljdr=flatten(sjets[:,3].delta_r(smu)),weight=weights.weight()[event_level])
+                output['met'].fill(dataset=dataset, met=flatten((selev.METFixEE2017.pt)),weight=weights.weight()[event_level])
         return output
 
     def postprocess(self, accumulator):
