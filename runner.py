@@ -38,13 +38,20 @@ if __name__ == '__main__':
                         )
 
     # Scale out
-    parser.add_argument('--executor', choices=['iterative', 'futures', 'parsl/slurm', 'parsl/condor', 'dask/condor', 'dask/slurm', 'dask/lpc'], default='futures',
+    parser.add_argument('--executor', 
+                        choices=[
+                            'iterative', 'futures', 'parsl/slurm', 'parsl/condor', 
+                            'dask/condor', 'dask/slurm', 'dask/lpc', 'dask/lxplus', 'dask/casa',
+                        ], 
+                        default='futures',
                         help='The type of executor to use (default: %(default)s). Other options can be implemented. '
                              'For example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html'
                              '- `parsl/slurm` - tested at DESY/Maxwell'
                              '- `parsl/condor` - tested at DESY, RWTH'
                              '- `dask/slurm` - tested at DESY/Maxwell'
                              '- `dask/condor` - tested at DESY, RWTH'
+                             '- `dask/lpc` - custom lpc/condor setup (due to write access restrictions)'
+                             '- `dask/lxplus` - custom lxplus/condor setup (due to port restrictions)'
                         )
     parser.add_argument('-j', '--workers', type=int, default=12,
                         help='Number of workers (cores/threads) to use for multi-worker executors '
@@ -69,12 +76,14 @@ if __name__ == '__main__':
         args.output = f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.coffea'
 
 
-    # load dataset
+        # load dataset
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
-
     for key in sample_dict.keys():
         sample_dict[key] = sample_dict[key][:args.limit]
+    if args.executor == 'dask/casa':
+        for key in sample_dict.keys():
+            sample_dict[key] = [path.replace('xrootd-cms.infn.it/', 'xcache') for path in sample_dict[key]]
 
     # For debugging
     if args.only is not None:
@@ -144,12 +153,18 @@ if __name__ == '__main__':
     else:
         raise NotImplemented
 
-    if args.executor not in ['futures', 'iterative', 'dask/lpc']:
-        # dask/parsl needs to export x509 to read over xrootd
+    if args.executor not in ['futures', 'iterative', 'dask/lpc', 'dask/casa']:
+        """
+        dask/parsl needs to export x509 to read over xrootd
+        dask/lpc uses custom jobqueue provider that handles x509
+        """
         if args.voms is not None:
             _x509_path = args.voms
         else:
-            _x509_localpath = [l for l in os.popen('voms-proxy-info').read().split("\n") if l.startswith('path')][0].split(":")[-1].strip()
+            try:
+                _x509_localpath = [l for l in os.popen('voms-proxy-info').read().split("\n") if l.startswith('path')][0].split(":")[-1].strip()
+            except:
+                raise RuntimeError("x509 proxy could not be parsed, try creating it with 'voms-proxy-init'")
             _x509_path = os.environ['HOME'] + f'/.{_x509_localpath.split("/")[-1]}'
             os.system(f'cp {_x509_localpath} {_x509_path}')
 
@@ -253,11 +268,36 @@ if __name__ == '__main__':
             env_extra = [
                 f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
             ] 
-            condor_extra = []
             from lpcjobqueue import LPCCondorCluster
             cluster = LPCCondorCluster(
                 transfer_input_files='/srv/workflows/',
                 ship_env=True,
+                env_extra = env_extra,
+            )
+        elif 'lxplus' in args.executor:
+            n_port = 8786
+            if not check_port(8786):
+                raise RuntimeError("Port '8786' is not occupied on this node. Try another one.")
+            import socket
+            cluster = HTCondorCluster(
+                cores=1,
+                memory='2GB', # hardcoded
+                disk='1GB',
+                death_timeout = '60',
+                nanny = False,
+                scheduler_options={
+                    'port': n_port,
+                    'host': socket.gethostname()
+                    },
+                job_extra={
+                    'log': 'dask_job_output.log',
+                    'output': 'dask_job_output.out',
+                    'error': 'dask_job_output.err',
+                    'should_transfer_files': 'Yes',
+                    'when_to_transfer_output': 'ON_EXIT',
+                    '+JobFlavour': '"workday"',
+                    },
+                extra = ['--worker-port {}'.format(n_port)],
                 env_extra = env_extra,
             )
         elif 'slurm' in args.executor:
@@ -277,9 +317,17 @@ if __name__ == '__main__':
                  disk='4GB', 
                  env_extra=env_extra,
             )
-        cluster.adapt(maximum=args.scaleout)
-
-        client = Client(cluster)
+        
+        if args.executor == 'dask/casa':
+            client = Client("tls://localhost:8786")
+            import shutil
+            shutil.make_archive("workflows", "zip", base_dir="workflows")
+            client.upload_file("workflows.zip")
+        else:
+            cluster.adapt(minimum=args.scaleout)
+            client = Client(cluster)
+            print("Waiting for at least one worker...")
+            client.wait_for_workers(1)
         with performance_report(filename="dask-report.html"):
             output = processor.run_uproot_job(sample_dict,
                                               treename='Events',
@@ -289,6 +337,7 @@ if __name__ == '__main__':
                                                   'client': client,
                                                   'skipbadfiles': args.skipbadfiles,
                                                   'schema': processor.NanoAODSchema,
+                                                  'retries': 3,
                                               },
                                               chunksize=args.chunk,
                                               maxchunks=args.max)
