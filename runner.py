@@ -11,6 +11,7 @@ from coffea import hist
 from coffea.nanoevents import NanoEventsFactory
 from coffea.util import load, save
 from coffea import processor
+from workflows import workflows
 
 def validate(file):
     try:
@@ -32,17 +33,34 @@ def check_port(port):
     sock.close()
     return available
 
-
 def get_main_parser():
-    parser = argparse.ArgumentParser(description='Run analysis on baconbits files using processor coffea files')
+    parser = argparse.ArgumentParser(description='Run Hgg Workflows on NanoAOD using processor coffea files')
     # Inputs
     parser.add_argument('--wf',
                         '--workflow',
                         dest='workflow',
-                        choices=['ttcom', 'fattag'],
+                        choices=list(workflows.keys()),
                         help='Which processor to run',
                         required=True)
-    parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
+    parser.add_argument('--meta',
+                        '--metaconditions',
+                        dest='metaconditions',
+                        choices=os.listdir(os.path.join(os.path.dirname(__file__), 'metaconditions')),
+                        help='What metaconditions to load',
+                        required=True)
+    parser.add_argument('--systs',
+                        '--systematics',
+                        dest='systematics',
+                        default=False,
+                        action='store_true',
+                        help='Run systematic variations and store to output.')
+    parser.add_argument('--no-trigger',
+                        dest='use_trigger',
+                        default=True,
+                        action='store_false',
+                        help='Turn off trigger selection')
+    parser.add_argument('-d', '--dump', default=None, help="Path to dump parquet outputs to (default: None)")
+    parser.add_argument('-o', '--output', default=r'output.coffea', help='Output filename (default: %(default)s)')
     parser.add_argument('--samples', '--json', dest='samplejson', default='dummy_samples.json',
                         help='JSON file containing dataset and file locations (default: %(default)s)'
                         )
@@ -84,10 +102,11 @@ def get_main_parser():
 
 
 if __name__ == '__main__':
+    metaCondsPath = os.path.join(os.path.dirname(__file__), 'metaconditions')
     parser = get_main_parser()
     args = parser.parse_args()
     if args.output == parser.get_default('output'):
-        args.output = f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.coffea'
+        args.output = f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.parquet'
 
 
     # load dataset
@@ -142,12 +161,14 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # load workflow
-    if args.workflow == "ttcom":
-        from workflows.ttbar_validation import NanoProcessor
-        processor_instance = NanoProcessor()
-    # elif args.workflow == "fattag":
-    #     from workflows.fatjet_tagger import NanoProcessor
-    #     processor_instance = NanoProcessor()
+    if args.workflow in workflows:
+        with open(os.path.join(metaCondsPath, args.metaconditions)) as f:
+            processor_instance = workflows[args.workflow](
+                json.load(f),
+                args.systematics,
+                args.use_trigger,
+                args.dump,
+            ) #additional args can go here to configure a processor
     else:
         raise NotImplemented
 
