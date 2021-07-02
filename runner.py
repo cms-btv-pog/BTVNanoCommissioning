@@ -78,6 +78,7 @@ if __name__ == '__main__':
 
         # load dataset
     with open(args.samplejson) as f:
+        print(f)
         sample_dict = json.load(f)
     for key in sample_dict.keys():
         sample_dict[key] = sample_dict[key][:args.limit]
