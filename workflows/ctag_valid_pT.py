@@ -226,8 +226,8 @@ class NanoProcessor(processor.ProcessorABC):
         req_jets = (ak.num(event_jet)>=4)
         req_MET = events.METFixEE2017.pt>50
         
-        #event_level = req_trig  & req_jets & req_muon&req_MET &req_lumi
-        event_level = req_trig  & req_jets & req_muon&req_MET
+        event_level = req_trig  & req_jets & req_muon&req_MET &req_lumi
+        #event_level = req_trig  & req_jets & req_muon&req_MET
         # Selected
         selev = events[event_level]    
         
