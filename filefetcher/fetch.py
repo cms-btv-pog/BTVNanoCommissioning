@@ -67,6 +67,8 @@ if __name__ == "__main__":
 
     fdict = {}
 
+    xrd = xrootd_pfx[args.where] if args.xrootd is None else args.xrootd
+
     for name, dataset in fset:
         flist = (
             os.popen(
@@ -78,9 +80,9 @@ if __name__ == "__main__":
             .split("\n")
         )
         if name not in fdict:
-            fdict[name] = [args.xrootd + f for f in flist if len(f) > 1]
+            fdict[name] = [xrd + f for f in flist if len(f) > 1]
         else:  # needed to collect all data samples into one common key "Data" (using append() would introduce a new element for the key)
-            fdict[name].extend([args.xrootd + f for f in flist if len(f) > 1])
+            fdict[name].extend([xrd + f for f in flist if len(f) > 1])
 
     # pprint.pprint(fdict, depth=1)
     with open(args.input[: args.input.rfind(".txt")] + ".json", "w") as fp:
