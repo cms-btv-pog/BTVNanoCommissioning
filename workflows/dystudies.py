@@ -30,7 +30,7 @@ class DYStudiesProcessor(processor.ProcessorABC):
         self.max_chad_iso = 20.0
         self.max_chad_rel_iso = 0.3
 
-        self.prefixes = {"0": "lead", "1": "sublead"}
+        self.prefixes = {"pho_lead": "lead", "pho_sublead": "sublead"}
         
     def photon_preselection(self, photons):
         photon_abs_eta = np.abs(photons.eta)
@@ -81,6 +81,7 @@ class DYStudiesProcessor(processor.ProcessorABC):
                 pl.Path(dirname).mkdir(parents=True, exist_ok=True)
             shu.copy(local_file, destination)
             assert os.path.isfile(destination)
+        pl.Path(local_file).unlink()
         
             
     
@@ -106,19 +107,19 @@ class DYStudiesProcessor(processor.ProcessorABC):
         # sort photons in each event descending in pt
         # make descending-pt combinations of photons
         photons = photons[ak.argsort(photons.pt, ascending=False)]
-        diphotons = ak.combinations(photons, 2)
+        diphotons = ak.combinations(photons, 2, fields=["pho_lead", "pho_sublead"])
         # the remaining cut is to select the leading photons
         # the previous sort assures the order
-        diphotons = diphotons[diphotons["0"].pt > self.min_pt_lead_photon]
+        diphotons = diphotons[diphotons["pho_lead"].pt > self.min_pt_lead_photon]
 
         # now turn the diphotons into candidates with four momenta and such
-        diphoton_4mom = diphotons["0"] + diphotons["1"]
+        diphoton_4mom = diphotons["pho_lead"] + diphotons["pho_sublead"]
         diphotons["pt"] = diphoton_4mom.pt
         diphotons["eta"] = diphoton_4mom.eta
         diphotons["phi"] = diphoton_4mom.phi
         diphotons["mass"] = diphoton_4mom.mass
         diphotons = ak.with_name(diphotons, "PtEtaPhiMCandidate")
-        
+ 
         # arbitrate diphotons
         diphotons = diphotons[ak.argsort(diphotons.pt, ascending=False)]
         diphotons = ak.firsts(diphotons)
@@ -130,7 +131,7 @@ class DYStudiesProcessor(processor.ProcessorABC):
         
         # drop events without a preselected diphoton candidate
         diphotons = diphotons[~ak.is_none(diphotons)]
-
+        
         if self.output_location is not None:
             df = self.diphoton_list_to_pandas(diphotons)
             fname = events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".parquet"
@@ -143,5 +144,5 @@ class DYStudiesProcessor(processor.ProcessorABC):
             
         }
 
-    def postprocess(self):
+    def postprocess(self, accumulant):
         pass

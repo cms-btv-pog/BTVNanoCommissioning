@@ -1,5 +1,6 @@
 *.coffea
 .ipynb_checkpoints/
 workflows/__pycache__/
+workflows/taggers/__pycache__/
 dask-report.html
 dask-worker-space/
