@@ -9,8 +9,15 @@ import os
 import shutil as shu
 import pathlib as pl
 
+
 class DYStudiesProcessor(processor.ProcessorABC):
-    def __init__(self, metaconditions, do_systematics=False, apply_trigger=False, output_location=None):
+    def __init__(
+        self,
+        metaconditions,
+        do_systematics=False,
+        apply_trigger=False,
+        output_location=None,
+    ):
         self.meta = metaconditions
         self.do_systematics = do_systematics
         self.apply_trigger = apply_trigger
@@ -31,17 +38,24 @@ class DYStudiesProcessor(processor.ProcessorABC):
         self.max_chad_rel_iso = 0.3
 
         self.prefixes = {"pho_lead": "lead", "pho_sublead": "sublead"}
-        
+
     def photon_preselection(self, photons):
         photon_abs_eta = np.abs(photons.eta)
-        return photons[  (photons.pt > self.min_pt_photon)
-                       & (photon_abs_eta < self.max_sc_eta)
-                       & ((photon_abs_eta < self.gap_barrel_eta) | (photon_abs_eta > self.gap_endcap_eta))
-                       & (photons.mvaID > self.min_mvaid)
-                       & (photons.hoe < self.max_hovere)
-                       & (  (photons.r9 > self.min_full5x5_r9)
-                          | (photons.pfRelIso03_chg < self.max_chad_iso)
-                          | (photons.pfRelIso03_chg/photons.pt < self.max_chad_rel_iso))]
+        return photons[
+            (photons.pt > self.min_pt_photon)
+            & (photon_abs_eta < self.max_sc_eta)
+            & (
+                (photon_abs_eta < self.gap_barrel_eta)
+                | (photon_abs_eta > self.gap_endcap_eta)
+            )
+            & (photons.mvaID > self.min_mvaid)
+            & (photons.hoe < self.max_hovere)
+            & (
+                (photons.r9 > self.min_full5x5_r9)
+                | (photons.pfRelIso03_chg < self.max_chad_iso)
+                | (photons.pfRelIso03_chg / photons.pt < self.max_chad_rel_iso)
+            )
+        ]
 
     def diphoton_list_to_pandas(self, diphotons):
         output = pd.DataFrame()
@@ -49,18 +63,21 @@ class DYStudiesProcessor(processor.ProcessorABC):
             prefix = self.prefixes.get(field, "")
             if len(prefix) > 0:
                 for subfield in ak.fields(diphotons[field]):
-                    output[f"{prefix}_{subfield}"] = ak.to_numpy(diphotons[field][subfield])
+                    output[f"{prefix}_{subfield}"] = ak.to_numpy(
+                        diphotons[field][subfield]
+                    )
             else:
                 output[field] = ak.to_numpy(diphotons[field])
         return output
 
     def dump_pandas(self, pddf, fname, location, subdirs=[]):
-        xrd_prefix = 'root://'
+        xrd_prefix = "root://"
         xrootd = False
         if xrd_prefix in location:
             try:
                 import XRootD
                 import XRootD.client
+
                 xrootd = True
             except ImportError:
                 raise ImportError(
@@ -68,11 +85,17 @@ class DYStudiesProcessor(processor.ProcessorABC):
                 )
         local_file = os.path.join(".", fname)
         subdirs = "/".join(subdirs) if xrootd else os.path.sep.join(subdirs)
-        destination = locations + subdirs + f"/{fname}" if xrootd else os.path.join(location, os.path.join(subdirs, fname))
+        destination = (
+            locations + subdirs + f"/{fname}"
+            if xrootd
+            else os.path.join(location, os.path.join(subdirs, fname))
+        )
         pddf.to_parquet(local_file)
         if xrootd:
             pfx_len = len(xrd_prefix)
-            client = XRootD.client.FileSystem(location[:location[pfx_len:].find('/') + pfx_len])
+            client = XRootD.client.FileSystem(
+                location[: location[pfx_len:].find("/") + pfx_len]
+            )
             status = client.copy(local_file, destination)
             assert status[0].ok
         else:
@@ -82,9 +105,7 @@ class DYStudiesProcessor(processor.ProcessorABC):
             shu.copy(local_file, destination)
             assert os.path.isfile(destination)
         pl.Path(local_file).unlink()
-        
-            
-    
+
     def process(self, events):
 
         # data or monte carlo?
@@ -92,13 +113,18 @@ class DYStudiesProcessor(processor.ProcessorABC):
 
         # met filters
         met_filters = self.meta["flashggMetFilters"][data_kind]
-        filtered = ft.reduce(op.and_, (events.Flag[metfilter.split("_")[-1]] for metfilter in met_filters))
+        filtered = ft.reduce(
+            op.and_,
+            (events.Flag[metfilter.split("_")[-1]] for metfilter in met_filters),
+        )
 
         triggered = ak.ones_like(filtered)
         if self.apply_trigger:
             triggers = self.meta["TriggerPaths"][self.trigger_group][self.analysis]
-            triggered = ft.reduce(op.or_, (events.HLT[trigger[4:-1]] for trigger in triggers))
-        
+            triggered = ft.reduce(
+                op.or_, (events.HLT[trigger[4:-1]] for trigger in triggers)
+            )
+
         # apply met filters and triggers to data
         events = events[filtered & triggered]
 
@@ -119,7 +145,7 @@ class DYStudiesProcessor(processor.ProcessorABC):
         diphotons["phi"] = diphoton_4mom.phi
         diphotons["mass"] = diphoton_4mom.mass
         diphotons = ak.with_name(diphotons, "PtEtaPhiMCandidate")
- 
+
         # arbitrate diphotons
         diphotons = diphotons[ak.argsort(diphotons.pt, ascending=False)]
         diphotons = ak.firsts(diphotons)
@@ -128,21 +154,22 @@ class DYStudiesProcessor(processor.ProcessorABC):
         diphotons["event"] = events.event
         diphotons["lumi"] = events.luminosityBlock
         diphotons["run"] = events.run
-        
+
         # drop events without a preselected diphoton candidate
         diphotons = diphotons[~ak.is_none(diphotons)]
-        
+
         if self.output_location is not None:
             df = self.diphoton_list_to_pandas(diphotons)
-            fname = events.behavior["__events_factory__"]._partition_key.replace("/", "_") + ".parquet"
+            fname = (
+                events.behavior["__events_factory__"]._partition_key.replace("/", "_")
+                + ".parquet"
+            )
             subdirs = []
-            if 'dataset' in events.metadata:
+            if "dataset" in events.metadata:
                 subdirs.append(events.metadata["dataset"])
             self.dump_pandas(df, fname, self.output_location, subdirs)
-        
-        return {
-            
-        }
+
+        return {}
 
     def postprocess(self, accumulant):
         pass
