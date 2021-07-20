@@ -11,7 +11,7 @@ from coffea import hist
 from coffea.nanoevents import NanoEventsFactory
 from coffea.util import load, save
 from coffea import processor
-from workflows import workflows
+from workflows import workflows, taggers
 
 
 def validate(file):
@@ -48,6 +48,15 @@ def get_main_parser():
         choices=list(workflows.keys()),
         help="Which processor to run",
         required=True,
+    )
+    parser.add_argument(
+        "--ts",
+        "--tagger-set",
+        dest="taggers",
+        nargs="+",
+        default=None,
+        choices=list(taggers.keys()),
+        help="The tagger set to apply to this run."
     )
     parser.add_argument(
         "--meta",
@@ -142,6 +151,7 @@ def get_main_parser():
     parser.add_argument(
         "--validate",
         action="store_true",
+        default=False,
         help="Do not process, just check all files are accessible",
     )
     parser.add_argument("--skipbadfiles", action="store_true", help="Skip bad files.")
@@ -176,12 +186,15 @@ if __name__ == "__main__":
     metaCondsPath = os.path.join(os.path.dirname(__file__), "metaconditions")
     parser = get_main_parser()
     args = parser.parse_args()
+    
     if args.output == parser.get_default("output"):
         args.output = (
             f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.coffea'
         )
 
     # load dataset
+    xrootd_pfx = "root://"
+    xrd_pfx_len = len(xrootd_pfx)
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
     for key in sample_dict.keys():
@@ -189,7 +202,7 @@ if __name__ == "__main__":
     if args.executor == "dask/casa":
         for key in sample_dict.keys():
             sample_dict[key] = [
-                path.replace(path[7 : 7 + path[7:].find("/")] + "/", "xcache")
+                path.replace(path[xrd_pfx_len : xrd_pfx_len + path[xrd_pfx_len:].find("/")] + "/", "xcache")
                 for path in sample_dict[key]
             ]
 

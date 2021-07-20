@@ -1,8 +1,8 @@
 from .dystudies import DYStudiesProcessor
-from . import taggers
+from .taggers import taggers
 
 workflows = {}
 
-workflows['dystudies'] = DYStudiesProcessor
+workflows["dystudies"] = DYStudiesProcessor
 
-__all__ = ['workflows', 'taggers']
+__all__ = ["workflows", "taggers"]
