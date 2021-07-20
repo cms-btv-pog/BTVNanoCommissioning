@@ -72,6 +72,7 @@ class DYStudiesProcessor(processor.ProcessorABC):
 
     def dump_pandas(self, pddf, fname, location, subdirs=[]):
         xrd_prefix = "root://"
+        pfx_len = len(xrd_prefix)
         xrootd = False
         if xrd_prefix in location:
             try:
@@ -83,20 +84,23 @@ class DYStudiesProcessor(processor.ProcessorABC):
                 raise ImportError(
                     "Install XRootD python bindings with: conda install -c conda-forge xroot"
                 )
-        local_file = os.path.join(".", fname)
+        local_file = os.path.abspath(os.path.join('.', fname)) if xrootd else os.path.join(".", fname)
         subdirs = "/".join(subdirs) if xrootd else os.path.sep.join(subdirs)
         destination = (
-            locations + subdirs + f"/{fname}"
+            location + subdirs + f"/{fname}"
             if xrootd
             else os.path.join(location, os.path.join(subdirs, fname))
         )
         pddf.to_parquet(local_file)
         if xrootd:
-            pfx_len = len(xrd_prefix)
             client = XRootD.client.FileSystem(
                 location[: location[pfx_len:].find("/") + pfx_len]
             )
-            status = client.copy(local_file, destination)
+            copyproc = XRootD.client.CopyProcess()
+            copyproc.add_job(local_file, destination)
+            copyproc.prepare()
+            copyproc.run()
+            status = client.locate(destination[destination[pfx_len:].find("/") + pfx_len + 1 :], XRootD.client.flags.OpenFlags.READ)
             assert status[0].ok
         else:
             dirname = os.path.dirname(destination)
