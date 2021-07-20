@@ -133,6 +133,13 @@ def get_main_parser():
         "concurrent threads is ``workers x scaleout`` (default: %(default)s)",
     )
     parser.add_argument(
+        "--max-scaleout",
+        dest="max_scaleout",
+        type=int,
+        default=250,
+        help="The maximum number of nodes to adapt the cluster to. (default: %(default)s)",
+    )
+    parser.add_argument(
         "--voms",
         default=None,
         type=str,
@@ -142,6 +149,7 @@ def get_main_parser():
     parser.add_argument(
         "--validate",
         action="store_true",
+        default=False,
         help="Do not process, just check all files are accessible",
     )
     parser.add_argument("--skipbadfiles", action="store_true", help="Skip bad files.")
@@ -178,7 +186,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.output == parser.get_default("output"):
         args.output = (
-            f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.coffea'
+            f'hists_{args.workflow}_{(args.samplejson).replace("/","_").rstrip(".json")}.coffea'
         )
 
     # load dataset
@@ -438,7 +446,7 @@ if __name__ == "__main__":
             shutil.make_archive("workflows", "zip", base_dir="workflows")
             client.upload_file("workflows.zip")
         else:
-            cluster.adapt(minimum=args.scaleout)
+            cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
             client = Client(cluster)
             print("Waiting for at least one worker...")
             client.wait_for_workers(1)
