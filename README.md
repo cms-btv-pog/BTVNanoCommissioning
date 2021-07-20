@@ -21,7 +21,7 @@ that more automatic in the end.
 ## Requirements
 ### Coffea installation with Miniconda
 For installing Miniconda, see also https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Local-or-remote
-```
+```bash
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 # Run and follow instructions on screen
 bash Miniconda3-latest-Linux-x86_64.sh
@@ -29,14 +29,14 @@ bash Miniconda3-latest-Linux-x86_64.sh
 NOTE: always make sure that conda, python, and pip point to local Miniconda installation (`which conda` etc.).
 
 You can either use the default environment`base` or create a new one:
-```
+```bash
 # create new environment with python 3.7, e.g. environment of name `coffea`
 conda create --name coffea python=3.7
 # activate environment `coffea`
 conda activate coffea
 ```
 Install coffea, xrootd, and more:
-```
+```bash
 conda install -c conda-forge coffea # pip install git+https://github.com/CoffeaTeam/coffea.git # for bleeding edge
 conda install -c conda-forge xrootd
 conda install -c conda-forge ca-certificates
@@ -65,7 +65,7 @@ Host *_f
 ```
 2. Connect to remote with `ssh lxplus_f`
 3. Start a jupyter notebook:
-```
+```bash
 jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
 ```
 4. URL for notebook will be printed, copy and open in local browser
@@ -77,10 +77,10 @@ makes this quite a bit easier and for some sites the ``native'' implementation i
 However, some sites have certain restrictions for various reasons, in particular Condor @CERN and @FNAL.
 
 ### Condor@FNAL (CMSLPC)
-Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
-the singularity container run with 
+Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue, run them from within the `hgg-coffea` directory that you have checked out.
+After starting the singularity container run a test with 
 ```bash
-python runner.py --wf dystudies --executor dask/lpc
+python runner.py --meta Era2017_legacy_v1.json --wf dystudies -d root://cmseos.fnal.gov//store/user/$USER/hgg_test/ --executor dask/lpc --samples filefetcher/dystudies.json --chunk=100000 --max=5
 ```
 
 ### Condor@CERN (lxplus)
