@@ -1,5 +1,5 @@
 # hgg-coffea
-Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD samples
+Repository for building a columnar analysis for Hgg using nanoAOD samples
 
 
 ## Structure
@@ -100,3 +100,8 @@ After setting up and checking out this repository (either via the online termina
 python runner.py --wf dystudies --executor dask/casa
 ```
 Authentication is handled automatically via login auth token instead of a proxy. File paths need to replace xrootd redirector with "xcache", `runner.py` does this automatically.
+
+### Canned example on cms-lpc scaleout
+```bash
+python runner.py --meta Era2017_legacy_v1.json --wf dystudies -d root://cmseos.fnal.gov//store/user/$USER/hgg_test/ --executor dask/lpc --samples filefetcher/dystudies.json --chunk=100000 --scaleout 1 --limit 2 --only DYJets-M50 --ts DummyTagger1 DummyTagger2
+```
