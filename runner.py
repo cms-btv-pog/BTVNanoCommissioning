@@ -56,7 +56,7 @@ def get_main_parser():
         nargs="+",
         default=None,
         choices=list(taggers.keys()),
-        help="The tagger set to apply to this run."
+        help="The tagger set to apply to this run.",
     )
     parser.add_argument(
         "--meta",
@@ -193,11 +193,9 @@ if __name__ == "__main__":
     metaCondsPath = os.path.join(os.path.dirname(__file__), "metaconditions")
     parser = get_main_parser()
     args = parser.parse_args()
-    
+
     if args.output == parser.get_default("output"):
-        args.output = (
-            f'hists_{args.workflow}_{(args.samplejson).replace("/","_").rstrip(".json")}.coffea'
-        )
+        args.output = f'hists_{args.workflow}_{(args.samplejson).replace("/","_").rstrip(".json")}.coffea'
 
     # load dataset
     xrootd_pfx = "root://"
@@ -209,7 +207,11 @@ if __name__ == "__main__":
     if args.executor == "dask/casa":
         for key in sample_dict.keys():
             sample_dict[key] = [
-                path.replace(path[xrd_pfx_len : xrd_pfx_len + path[xrd_pfx_len:].find("/")] + "/", "xcache")
+                path.replace(
+                    path[xrd_pfx_len : xrd_pfx_len + path[xrd_pfx_len:].find("/")]
+                    + "/",
+                    "xcache",
+                )
                 for path in sample_dict[key]
             ]
 
@@ -261,12 +263,19 @@ if __name__ == "__main__":
 
     # load workflow
     if args.workflow in workflows:
+        wf_taggers = None
+        if args.taggers is not None:
+            for tagger in args.taggers:
+                if tagger not in taggers.keys():
+                    raise NotImplemented
+            wf_taggers = [taggers[tagger]() for tagger in args.taggers]
         with open(os.path.join(metaCondsPath, args.metaconditions)) as f:
             processor_instance = workflows[args.workflow](
                 json.load(f),
                 args.systematics,
                 args.use_trigger,
                 args.dump,
+                wf_taggers,
             )  # additional args can go here to configure a processor
     else:
         raise NotImplemented

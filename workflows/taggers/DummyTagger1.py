@@ -6,13 +6,15 @@ class DummyTagger1:
     def __init__(self):
         pass
 
+    @property
     def name(self):
-        return self.__class__
+        return "DummyTagger1"
 
     # lower priority is better
+    # first decimal point is category within tag (in case for untagged)
+    @property
     def priority(self):
         return 20
 
     def __call__(self, events):
-        x = np.random.uniform(low=-1.0, high=1.0, size=len(events))
-        return x > 0
+        return self.priority * ak.ones_like(events.diphotons.pt, dtype=np.int32)

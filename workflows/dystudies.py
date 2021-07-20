@@ -8,6 +8,7 @@ import operator as op
 import os
 import shutil as shu
 import pathlib as pl
+import sys
 
 
 class DYStudiesProcessor(processor.ProcessorABC):
@@ -17,6 +18,7 @@ class DYStudiesProcessor(processor.ProcessorABC):
         do_systematics=False,
         apply_trigger=False,
         output_location=None,
+        taggers=None,
     ):
         self.meta = metaconditions
         self.do_systematics = do_systematics
@@ -36,6 +38,11 @@ class DYStudiesProcessor(processor.ProcessorABC):
         self.min_full5x5_r9 = 0.8
         self.max_chad_iso = 20.0
         self.max_chad_rel_iso = 0.3
+
+        self.taggers = []
+        if taggers is not None:
+            self.taggers = taggers
+            self.taggers.sort(key=lambda x: x.priority)
 
         self.prefixes = {"pho_lead": "lead", "pho_sublead": "sublead"}
 
@@ -84,7 +91,11 @@ class DYStudiesProcessor(processor.ProcessorABC):
                 raise ImportError(
                     "Install XRootD python bindings with: conda install -c conda-forge xroot"
                 )
-        local_file = os.path.abspath(os.path.join('.', fname)) if xrootd else os.path.join(".", fname)
+        local_file = (
+            os.path.abspath(os.path.join(".", fname))
+            if xrootd
+            else os.path.join(".", fname)
+        )
         subdirs = "/".join(subdirs) if xrootd else os.path.sep.join(subdirs)
         destination = (
             location + subdirs + f"/{fname}"
@@ -100,7 +111,10 @@ class DYStudiesProcessor(processor.ProcessorABC):
             client = XRootD.client.FileSystem(
                 location[: location[pfx_len:].find("/") + pfx_len]
             )
-            status = client.locate(destination[destination[pfx_len:].find("/") + pfx_len + 1 :], XRootD.client.flags.OpenFlags.READ)
+            status = client.locate(
+                destination[destination[pfx_len:].find("/") + pfx_len + 1 :],
+                XRootD.client.flags.OpenFlags.READ,
+            )
             assert status[0].ok
             del client
             del copyproc
@@ -152,8 +166,34 @@ class DYStudiesProcessor(processor.ProcessorABC):
         diphotons["mass"] = diphoton_4mom.mass
         diphotons = ak.with_name(diphotons, "PtEtaPhiMCandidate")
 
-        # arbitrate diphotons
+        # sort diphotons by pT
         diphotons = diphotons[ak.argsort(diphotons.pt, ascending=False)]
+        events["diphotons"] = diphotons
+
+        # run taggers on the events list with added diphotons
+        # the shape here is ensured to be broadcastable
+        for tagger in self.taggers:
+            diphotons["_".join([tagger.name, str(tagger.priority)])] = tagger(events)
+
+        # if there are taggers to run, arbitrate by them first
+        if len(self.taggers):
+            counts = ak.num(diphotons.pt, axis=1)
+            flat_tags = np.stack(
+                (
+                    ak.flatten(diphotons["_".join([tagger.name, str(tagger.priority)])])
+                    for tagger in self.taggers
+                ),
+                axis=1,
+            )
+            tags = ak.from_regular(ak.unflatten(flat_tags, counts), axis=2)
+            winner = ak.min(tags[tags != 0], axis=2)
+            diphotons["best_tag"] = winner
+
+            # lowest priority is most important (ascending sort)
+            # leave in order of diphoton pT in case of ties (stable sort)
+            sorted = ak.argsort(diphotons.best_tag, stable=True)
+            diphotons = diphotons[sorted]
+
         diphotons = ak.firsts(diphotons)
 
         # annotate diphotons with event information
@@ -162,7 +202,8 @@ class DYStudiesProcessor(processor.ProcessorABC):
         diphotons["run"] = events.run
 
         # drop events without a preselected diphoton candidate
-        diphotons = diphotons[~ak.is_none(diphotons)]
+        # drop events without a tag
+        diphotons = diphotons[~(ak.is_none(diphotons) | ak.is_none(diphotons.best_tag))]
 
         if self.output_location is not None:
             df = self.diphoton_list_to_pandas(diphotons)
