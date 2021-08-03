@@ -481,7 +481,7 @@ if __name__ == "__main__":
                     "client": client,
                     "skipbadfiles": args.skipbadfiles,
                     "schema": processor.NanoAODSchema,
-                    "retries": 3,
+                    "retries": 50,
                 },
                 chunksize=args.chunk,
                 maxchunks=args.max,
