@@ -1,7 +1,9 @@
 import coffea
 from coffea import hist, processor
 import numpy as np
+import xgboost as xg
 import awkward as ak
+import vector
 import pandas as pd
 import functools as ft
 import operator as op
@@ -9,6 +11,9 @@ import os
 import shutil as shu
 import pathlib as pl
 import sys
+import warnings
+
+vector.register_awkward()
 
 
 class HggBaseProcessor(processor.ProcessorABC):
@@ -47,6 +52,16 @@ class HggBaseProcessor(processor.ProcessorABC):
             self.taggers.sort(key=lambda x: x.priority)
 
         self.prefixes = {"pho_lead": "lead", "pho_sublead": "sublead"}
+
+        # initialize diphoton mva
+        try:
+            self.diphoton_mva = xg.Booster()
+            self.diphoton_mva.load_model(self.meta["flashggDiPhotonMVA"]["weightFile"])
+        except xg.core.XGBoostError:
+            warnings.warn(
+                f"SKIPPING diphoton_mva, could not find: {self.meta['flashggDiPhotonMVA']['weightFile']}"
+            )
+            self.diphoton_mva = None
 
     def photon_preselection(self, photons):
         photon_abs_eta = np.abs(photons.eta)
@@ -153,6 +168,8 @@ class HggBaseProcessor(processor.ProcessorABC):
         # apply met filters and triggers to data
         events = events[filtered & triggered]
 
+        # modifications to photons
+
         # photon preselection
         photons = self.photon_preselection(events.Photon)
         # sort photons in each event descending in pt
@@ -169,11 +186,20 @@ class HggBaseProcessor(processor.ProcessorABC):
         diphotons["eta"] = diphoton_4mom.eta
         diphotons["phi"] = diphoton_4mom.phi
         diphotons["mass"] = diphoton_4mom.mass
+        diphotons["charge"] = diphoton_4mom.charge
         diphotons = ak.with_name(diphotons, "PtEtaPhiMCandidate")
 
         # sort diphotons by pT
         diphotons = diphotons[ak.argsort(diphotons.pt, ascending=False)]
+
+        # baseline modifications to diphotons
+        diphotons = self.add_diphoton_mva(diphotons, events)
+
+        # set diphotons as part of the event record
         events["diphotons"] = diphotons
+
+        # workflow specific processing
+        events = self.process_extra(events)
 
         # run taggers on the events list with added diphotons
         # the shape here is ensured to be broadcastable
@@ -209,7 +235,9 @@ class HggBaseProcessor(processor.ProcessorABC):
         # drop events without a preselected diphoton candidate
         # drop events without a tag, if there are tags
         if len(self.taggers):
-            diphotons = diphotons[~(ak.is_none(diphotons) | ak.is_none(diphotons.best_tag))]
+            diphotons = diphotons[
+                ~(ak.is_none(diphotons) | ak.is_none(diphotons.best_tag))
+            ]
         else:
             diphotons = diphotons[~ak.is_none(diphotons)]
 
@@ -228,3 +256,86 @@ class HggBaseProcessor(processor.ProcessorABC):
 
     def postprocess(self, accumulant):
         raise NotImplementedError
+
+    def add_diphoton_mva(self, diphotons, events):
+        if self.diphoton_mva is None:
+            return diphotons
+
+        var_order = self.meta["flashggDiPhotonMVA"]["inputs"]
+
+        bdt_vars = {}
+
+        bdt_vars["dipho_leadIDMVA"] = diphotons.pho_lead.mvaID
+        bdt_vars["dipho_subleadIDMVA"] = diphotons.pho_sublead.mvaID
+        bdt_vars["dipho_leadEta"] = diphotons.pho_lead.eta
+        bdt_vars["dipho_subleadEta"] = diphotons.pho_sublead.eta
+        bdt_vars["dipho_lead_ptoM"] = diphotons.pho_lead.pt / diphotons.mass
+        bdt_vars["dipho_sublead_ptoM"] = diphotons.pho_sublead.pt / diphotons.mass
+
+        def calc_displacement(photons, events):
+            x = photons.x_calo - events.PV.x
+            y = photons.y_calo - events.PV.y
+            z = photons.z_calo - events.PV.z
+            return ak.zip({"x": x, "y": y, "z": z}, with_name="Vector3D")
+
+        v_lead = calc_displacement(diphotons.pho_lead, events)
+        v_sublead = calc_displacement(diphotons.pho_sublead, events)
+
+        p_lead = v_lead.unit() * diphotons.pho_lead.energyRaw
+        p_lead["energy"] = diphotons.pho_lead.energyRaw
+        p_lead = ak.with_name(p_lead, "Momentum4D")
+        p_sublead = v_sublead.unit() * diphotons.pho_sublead.energyRaw
+        p_sublead["energy"] = diphotons.pho_sublead.energyRaw
+        p_sublead = ak.with_name(p_sublead, "Momentum4D")
+
+        sech_lead = 1.0 / np.cosh(p_lead.eta)
+        sech_sublead = 1.0 / np.cosh(p_sublead.eta)
+        tanh_lead = np.cos(p_lead.theta)
+        tanh_sublead = np.cos(p_sublead.theta)
+
+        cos_dphi = np.cos(p_lead.deltaphi(p_sublead))
+
+        numerator_lead = sech_lead * (
+            sech_lead * tanh_sublead - tanh_lead * sech_sublead * cos_dphi
+        )
+        numerator_sublead = sech_sublead * (
+            sech_sublead * tanh_lead - tanh_sublead * sech_lead * cos_dphi
+        )
+
+        denominator = (
+            1.0 - tanh_lead * tanh_sublead - sech_lead * sech_sublead * cos_dphi
+        )
+
+        add_reso = (
+            0.5
+            * (-np.sqrt(2.0) * events.BeamSpot.sigmaZ / denominator)
+            * (numerator_lead / p_lead.mag + numerator_sublead / p_sublead.mag)
+        )
+
+        dEnorm_lead = diphotons.pho_lead.energyErr / diphotons.pho_lead.energy
+        dEnorm_sublead = diphotons.pho_sublead.energyErr / diphotons.pho_sublead.energy
+
+        sigma_m = 0.5 * np.sqrt(dEnorm_lead ** 2 + dEnorm_sublead ** 2)
+        sigma_wv = np.sqrt(add_reso ** 2 + sigma_m ** 2)
+
+        vtx_prob = ak.full_like(sigma_m, 0.999)  # !!!! placeholder !!!!
+
+        bdt_vars["CosPhi"] = cos_dphi
+        bdt_vars["vtxprob"] = vtx_prob
+        bdt_vars["sigmarv"] = sigma_m
+        bdt_vars["sigmawv"] = sigma_wv
+
+        counts = ak.num(diphotons, axis=-1)
+        bdt_inputs = np.column_stack(
+            [ak.to_numpy(ak.flatten(bdt_vars[name])) for name in var_order]
+        )
+        tempmatrix = xg.DMatrix(bdt_inputs, feature_names=var_order)
+        scores = self.diphoton_mva.predict(tempmatrix)
+
+        for var, arr in bdt_vars.items():
+            if "dipho" not in var:
+                diphotons[var] = arr
+
+        diphotons["bdt_score"] = ak.unflatten(scores, counts)
+
+        return diphotons

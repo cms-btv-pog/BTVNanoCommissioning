@@ -5,6 +5,7 @@ import functools as ft
 import operator as op
 from .base import HggBaseProcessor
 
+
 class DYStudiesProcessor(HggBaseProcessor):
     def __init__(
         self,
