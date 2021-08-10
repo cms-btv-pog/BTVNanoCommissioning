@@ -9,17 +9,17 @@
     "flashggMetFilters" :
     {
         "rerun_ecal_calib_filter" : true,
-        "data" : 
+        "data" :
         [
-            "Flag_goodVertices", 
-            "Flag_globalSuperTightHalo2016Filter", 
-            "Flag_HBHENoiseFilter", 
-            "Flag_HBHENoiseIsoFilter", 
+            "Flag_goodVertices",
+            "Flag_globalSuperTightHalo2016Filter",
+            "Flag_HBHENoiseFilter",
+            "Flag_HBHENoiseIsoFilter",
             "Flag_EcalDeadCellTriggerPrimitiveFilter",
-            "Flag_BadPFMuonFilter", 
+            "Flag_BadPFMuonFilter",
             "Flag_eeBadScFilter"
         ],
-        "mc" : 
+        "mc" :
         [
             "Flag_goodVertices",
             "Flag_globalSuperTightHalo2016Filter",
@@ -50,7 +50,7 @@
     {
         ".*DoubleEG.*" :
         {
-	    "mainAnalysis" : 
+	    "mainAnalysis" :
             [
 		"HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass90*",
 		"HLT_Diphoton30_22_R9Id_OR_IsoCaloId_AND_HE_R9Id_Mass95*"
@@ -67,7 +67,7 @@
         },
         ".*SingleEle.*" :
         {
-	    "tagAndProbe" : 
+	    "tagAndProbe" :
             [
 		"HLT_Ele32_WPTight_Gsf*"
 	    ]
@@ -106,16 +106,16 @@
         "MC_sf" : "JR_Summer19UL17_JRV2_MC_SF_AK4PFchs",
         "MC_db" : "flashgg/Systematics/data/JER/Summer19UL17_JRV2_MC.db"
     },
-	
-    "flashggDiPhotonMVA" : 
-    {  
+
+    "flashggDiPhotonMVA" :
+    {
         "weightFile" : "flashgg/Taggers/data/STXSmodels/legacyDiphoModelMerged.xml",
         "version" : "xgb"
     },
 
-    "flashggJetSystematics" : 
-    { 
-	"doHEMuncertainty" : false, 
+    "flashggJetSystematics" :
+    {
+	"doHEMuncertainty" : false,
         "textFileName" : "flashgg/Systematics/data/JEC/Regrouped_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.txt",
         "listOfSources" : [
                            "Absolute",
@@ -132,38 +132,38 @@
                           ]
     },
 
-    "flashggVBFMVA" : 
-    {  
+    "flashggVBFMVA" :
+    {
         "weightFile" : "flashgg/Taggers/data/STXSmodels/dijetDataDrivenMerged.xml",
         "jetID" : "Tight2017"
     },
 
-    "flashggVHhadMVA" : 
-    {  
+    "flashggVHhadMVA" :
+    {
         "weightFile" : "flashgg/Taggers/data/STXSmodels/vhHadDataDrivenMerged.xml",
         "jetID" : "Tight2017"
     },
 
-    "flashggGluGluHMVA" : 
-    {  
+    "flashggGluGluHMVA" :
+    {
         "weightFile" : "flashgg/Taggers/data/STXSmodels/nClassesGGHModel.xml",
         "jetID" : "Tight2017"
     },
 
     "stageOneCombinedTag" :
-    {  
+    {
         "rawDiphoBounds" : [
                              0.783, 0.701, 0.525,
                              0.836, 0.791, 0.655,
-                             
+
                              0.854, 0.794, 0.690,
                              0.883, 0.841, 0.746,
                              0.922, 0.885, 0.814,
-                             
+
                              0.831, 0.761, 0.637,
                              0.891, 0.867, 0.726,
                              0.918, 0.893, 0.829,
-                             
+
                              0.945, 0.882,
                              0.924, 0.802,
                              0.844,
@@ -190,7 +190,7 @@
                              0.599, 0.478
                            ],
         "rawGghBounds" : [
-                             0.565, 0.726, 
+                             0.565, 0.726,
                              0.583, 0.919,
                              0.928, 0.876,
                              0.362, 0.742,
@@ -245,10 +245,10 @@
         "y_mean" : 1.055067777633667,
         "y_std" : 0.28225210309028625,
         "year" : 2017,
-        "useBRegressionJERsf" : false, 
-        "JER_central" : 1.1, 
-        "JER_up" : 0.1, 
-        "JER_down" : -0.1 
+        "useBRegressionJERsf" : false,
+        "JER_central" : 1.1,
+        "JER_up" : 0.1,
+        "JER_down" : -0.1
     },
 
     "doubleHTag":
@@ -272,7 +272,7 @@
                               -1.06521292e-02,  -8.08607645e-02,  -5.39241839e-03,  -3.57037140e-02,
                               1.59510158e-01,   2.73751540e-02,   1.89251401e-02,  -4.07854484e-03,
                               4.75087259e-01,   4.65906361e-01,   1.23640841e+02,   5.92089022e+01,
-                              -8.63826805e-03,  -4.54561747e-03,  -2.04075881e-02,   5.20315820e-03], 
+                              -8.63826805e-03,  -4.54561747e-03,  -2.04075881e-02,   5.20315820e-03],
 	"ttHKiller_std" : [  2.23688125e+02,   6.14480046e+01,   1.89750669e+00,   1.84765326e+00,
                              1.81706814e+00,   6.16140431e-01,   1.57790173e+00,   1.21559976e+01,
                              3.18350560e+02,   5.51059043e+01,   2.27778847e+01,   5.34930606e+01,
@@ -353,5 +353,5 @@
         "MVAThreshold_VsAllBkg" : 0.05,
 	"MVAThreshold_VsttH" : -0.02
     }
-    
+
 }

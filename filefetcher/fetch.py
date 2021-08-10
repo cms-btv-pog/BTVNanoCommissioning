@@ -1,7 +1,6 @@
-import os
-import json
 import argparse
-import pprint
+import json
+import os
 
 xrootd_pfx = {
     "Americas": "root://cmsxrootd.fnal.gov/",
