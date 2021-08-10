@@ -1,6 +1,33 @@
 # hgg-coffea
-Repository for building a columnar analysis for Hgg using nanoAOD samples
+Tools for running the CMS Higgs to Two Photons Analysis on NanoAOD
+  
+[![Actions Status][actions-badge]][actions-link]
+[![Documentation Status][rtd-badge]][rtd-link]
+[![Code style: black][black-badge]][black-link]
 
+[![PyPI version][pypi-version]][pypi-link]
+[![Conda-Forge][conda-badge]][conda-link]
+[![PyPI platforms][pypi-platforms]][pypi-link]
+
+[![GitHub Discussion][github-discussions-badge]][github-discussions-link]
+[![Gitter][gitter-badge]][gitter-link]
+
+[actions-badge]:            https://github.com/lgray/hgg-coffea/workflows/CI/badge.svg
+[actions-link]:             https://github.com/lgray/hgg-coffea/actions
+[black-badge]:              https://img.shields.io/badge/code%20style-black-000000.svg
+[black-link]:               https://github.com/psf/black
+[conda-badge]:              https://img.shields.io/conda/vn/conda-forge/hgg-coffea
+[conda-link]:               https://github.com/conda-forge/hgg-coffea-feedstock
+[github-discussions-badge]: https://img.shields.io/static/v1?label=Discussions&message=Ask&color=blue&logo=github
+[github-discussions-link]:  https://github.com/lgray/hgg-coffea/discussions
+[gitter-badge]:             https://badges.gitter.im/https://github.com/lgray/hgg-coffea/community.svg
+[gitter-link]:              https://gitter.im/https://github.com/lgray/hgg-coffea/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+[pypi-link]:                https://pypi.org/project/hgg-coffea/
+[pypi-platforms]:           https://img.shields.io/pypi/pyversions/hgg-coffea
+[pypi-version]:             https://badge.fury.io/py/hgg-coffea.svg
+[rtd-badge]:                https://readthedocs.org/projects/hgg-coffea/badge/?version=latest
+[rtd-link]:                 https://hgg-coffea.readthedocs.io/en/latest/?badge=latest
+[sk-badge]:                 https://scikit-hep.org/assets/images/Scikit--HEP-Project-blue.svg
 
 ## Structure
 Example worfkflow for drell-yan studies is included. 
