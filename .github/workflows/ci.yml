@@ -33,11 +33,6 @@ jobs:
         python-version: [3.6, 3.9]
         runs-on: [ubuntu-latest]
 
-        include:
-        - python-version: pypy-3.7
-          runs-on: ubuntu-latest
-
-
     steps:
     - uses: actions/checkout@v2
 
