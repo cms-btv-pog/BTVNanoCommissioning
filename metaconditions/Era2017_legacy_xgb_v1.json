@@ -335,7 +335,7 @@
    "PhoIdInputCorrections":
     {
 	"corrections_summary" : "aux-data/Taggers/PhoIdInputsCorrections/corrections_summary_2017_Legacy_xgb.json",
-	"SS_variables" :   ["f0 := pt",
+	"SS_variables" :   ["f0 := Photon.pt",
                             "f1 := Photon.eta",
                             "f2 := Photon.phi",
                             "f3 := fixedGridRhoAll",

@@ -3,7 +3,7 @@ from coffea import hist, processor
 import awkward as ak
 import functools as ft
 import operator as op
-from .base import HggBaseProcessor
+from hgg_coffea.workflows.base import HggBaseProcessor
 
 
 class DYStudiesProcessor(HggBaseProcessor):

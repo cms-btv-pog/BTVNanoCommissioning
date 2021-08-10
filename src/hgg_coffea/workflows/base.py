@@ -53,6 +53,8 @@ class HggBaseProcessor(processor.ProcessorABC):
 
         self.prefixes = {"pho_lead": "lead", "pho_sublead": "sublead"}
 
+        # build the chained quantile regressions
+        
         # initialize diphoton mva
         try:
             self.diphoton_mva = xg.Booster()
