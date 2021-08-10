@@ -1,32 +1,32 @@
-import coffea
-from coffea import hist, processor
-import numpy as np
-import xgboost as xg
-import awkward as ak
-import vector
-import pandas as pd
 import functools as ft
 import operator as op
 import os
-import shutil as shu
 import pathlib as pl
-import sys
+import shutil as shu
 import warnings
+from typing import Any, Dict, List, Optional
+
+import awkward as ak
+import numpy as np
+import pandas as pd
+import vector
+import xgboost as xg
+from coffea import processor
 
 vector.register_awkward()
 
 
-class HggBaseProcessor(processor.ProcessorABC):
+class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
     def __init__(
         self,
-        metaconditions,
-        do_systematics,
-        apply_trigger,
-        output_location,
-        taggers,
-        trigger_group,
-        analysis,
-    ):
+        metaconditions: Dict[str, Any],
+        do_systematics: bool,
+        apply_trigger: bool,
+        output_location: Optional[str],
+        taggers: Optional[List[Any]],
+        trigger_group: str,
+        analysis: str,
+    ) -> None:
         self.meta = metaconditions
         self.do_systematics = do_systematics
         self.apply_trigger = apply_trigger
@@ -49,12 +49,12 @@ class HggBaseProcessor(processor.ProcessorABC):
         self.taggers = []
         if taggers is not None:
             self.taggers = taggers
-            self.taggers.sort(key=lambda x: x.priority)
+            self.taggers.sort(key=lambda x: x.priority)  # type: ignore
 
         self.prefixes = {"pho_lead": "lead", "pho_sublead": "sublead"}
 
         # build the chained quantile regressions
-        
+
         # initialize diphoton mva
         try:
             self.diphoton_mva = xg.Booster()
@@ -65,7 +65,7 @@ class HggBaseProcessor(processor.ProcessorABC):
             )
             self.diphoton_mva = None
 
-    def photon_preselection(self, photons):
+    def photon_preselection(self, photons: ak.Array) -> ak.Array:
         photon_abs_eta = np.abs(photons.eta)
         return photons[
             (photons.pt > self.min_pt_photon)
@@ -83,7 +83,7 @@ class HggBaseProcessor(processor.ProcessorABC):
             )
         ]
 
-    def diphoton_list_to_pandas(self, diphotons):
+    def diphoton_list_to_pandas(self, diphotons: ak.Array) -> pd.DataFrame:
         output = pd.DataFrame()
         for field in ak.fields(diphotons):
             prefix = self.prefixes.get(field, "")
@@ -96,7 +96,14 @@ class HggBaseProcessor(processor.ProcessorABC):
                 output[field] = ak.to_numpy(diphotons[field])
         return output
 
-    def dump_pandas(self, pddf, fname, location, subdirs=[]):
+    def dump_pandas(
+        self,
+        pddf: pd.DataFrame,
+        fname: str,
+        location: str,
+        subdirs: Optional[List[str]] = None,
+    ) -> None:
+        subdirs = subdirs or []
         xrd_prefix = "root://"
         pfx_len = len(xrd_prefix)
         xrootd = False
@@ -115,11 +122,11 @@ class HggBaseProcessor(processor.ProcessorABC):
             if xrootd
             else os.path.join(".", fname)
         )
-        subdirs = "/".join(subdirs) if xrootd else os.path.sep.join(subdirs)
+        merged_subdirs = "/".join(subdirs) if xrootd else os.path.sep.join(subdirs)
         destination = (
-            location + subdirs + f"/{fname}"
+            location + merged_subdirs + f"/{fname}"
             if xrootd
-            else os.path.join(location, os.path.join(subdirs, fname))
+            else os.path.join(location, os.path.join(merged_subdirs, fname))
         )
         pddf.to_parquet(local_file)
         if xrootd:
@@ -145,10 +152,10 @@ class HggBaseProcessor(processor.ProcessorABC):
             assert os.path.isfile(destination)
         pl.Path(local_file).unlink()
 
-    def process_extra(self, events):
+    def process_extra(self, events: ak.Array) -> ak.Array:
         raise NotImplementedError
 
-    def process(self, events):
+    def process(self, events: ak.Array) -> Dict[Any, Any]:
 
         # data or monte carlo?
         data_kind = "mc" if "GenPart" in ak.fields(events) else "data"
@@ -256,10 +263,10 @@ class HggBaseProcessor(processor.ProcessorABC):
 
         return {}
 
-    def postprocess(self, accumulant):
+    def postprocess(self, accumulant: Dict[Any, Any]) -> Any:
         raise NotImplementedError
 
-    def add_diphoton_mva(self, diphotons, events):
+    def add_diphoton_mva(self, diphotons: ak.Array, events: ak.Array) -> ak.Array:
         if self.diphoton_mva is None:
             return diphotons
 
@@ -274,7 +281,7 @@ class HggBaseProcessor(processor.ProcessorABC):
         bdt_vars["dipho_lead_ptoM"] = diphotons.pho_lead.pt / diphotons.mass
         bdt_vars["dipho_sublead_ptoM"] = diphotons.pho_sublead.pt / diphotons.mass
 
-        def calc_displacement(photons, events):
+        def calc_displacement(photons: ak.Array, events: ak.Array) -> ak.Array:
             x = photons.x_calo - events.PV.x
             y = photons.y_calo - events.PV.y
             z = photons.z_calo - events.PV.z

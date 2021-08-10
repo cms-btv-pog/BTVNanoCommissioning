@@ -1,25 +1,22 @@
+import argparse
+import json
 import os
 import sys
-import json
-import argparse
 import time
 
 import numpy as np
-
 import uproot
-from coffea import hist
-from coffea.nanoevents import NanoEventsFactory
-from coffea.util import load, save
 from coffea import processor
-from workflows import workflows, taggers
+from coffea.util import save
+from hgg_coffea.workflows import taggers, workflows
 
 
 def validate(file):
     try:
         fin = uproot.open(file)
         return fin["Events"].num_entries
-    except:
-        print("Corrupted file: {}".format(file))
+    except Exception:
+        print(f"Corrupted file: {file}")  # noqa
         return
 
 
@@ -30,7 +27,7 @@ def check_port(port):
     try:
         sock.bind(("0.0.0.0", port))
         available = True
-    except:
+    except Exception:
         available = False
     sock.close()
     return available
@@ -221,10 +218,10 @@ if __name__ == "__main__":
             sample_dict = dict([(args.only, sample_dict[args.only])])
         if "*" in args.only:  # wildcard for datasets
             _new_dict = {}
-            print("Will only process the following datasets:")
+            print("Will only process the following datasets:")  # noqa
             for k, v in sample_dict.items():
                 if k.lstrip("/").startswith(args.only.rstrip("*")):
-                    print("    ", k)
+                    print("    ", k)  # noqa
                     _new_dict[k] = v
             sample_dict = _new_dict
         else:  # is file
@@ -248,16 +245,16 @@ if __name__ == "__main__":
             _results = list(_rmap)
             counts = np.sum([r for r in _results if np.isreal(r)])
             all_invalid += [r for r in _results if type(r) == str]
-            print("Events:", np.sum(counts))
-        print("Bad files:")
+            print("Events:", np.sum(counts))  # noqa
+        print("Bad files:")  # noqa
         for fi in all_invalid:
-            print(f"  {fi}")
+            print(f"  {fi}")  # noqa
         end = time.time()
-        print("TIME:", time.strftime("%H:%M:%S", time.gmtime(end - start)))
+        print("TIME:", time.strftime("%H:%M:%S", time.gmtime(end - start)))  # noqa
         if input("Remove bad files? (y/n)") == "y":
-            print("Removing:")
+            print("Removing:")  # noqa
             for fi in all_invalid:
-                print(f"Removing: {fi}")
+                print(f"Removing: {fi}")  # noqa
                 os.system(f"rm {fi}")
         sys.exit(0)
 
@@ -267,7 +264,7 @@ if __name__ == "__main__":
         if args.taggers is not None:
             for tagger in args.taggers:
                 if tagger not in taggers.keys():
-                    raise NotImplemented
+                    raise NotImplementedError
             wf_taggers = [taggers[tagger]() for tagger in args.taggers]
         with open(os.path.join(metaCondsPath, args.metaconditions)) as f:
             processor_instance = workflows[args.workflow](
@@ -278,7 +275,7 @@ if __name__ == "__main__":
                 wf_taggers,
             )  # additional args can go here to configure a processor
     else:
-        raise NotImplemented
+        raise NotImplementedError
 
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """
@@ -291,14 +288,14 @@ if __name__ == "__main__":
             try:
                 _x509_localpath = (
                     [
-                        l
-                        for l in os.popen("voms-proxy-info").read().split("\n")
-                        if l.startswith("path")
+                        line
+                        for line in os.popen("voms-proxy-info").read().split("\n")
+                        if line.startswith("path")
                     ][0]
                     .split(":")[-1]
                     .strip()
                 )
-            except:
+            except Exception:
                 raise RuntimeError(
                     "x509 proxy could not be parsed, try creating it with 'voms-proxy-init'"
                 )
@@ -337,12 +334,12 @@ if __name__ == "__main__":
         )
     elif "parsl" in args.executor:
         import parsl
-        from parsl.providers import LocalProvider, CondorProvider, SlurmProvider
+        from parsl.addresses import address_by_hostname, address_by_query
         from parsl.channels import LocalChannel
         from parsl.config import Config
         from parsl.executors import HighThroughputExecutor
         from parsl.launchers import SrunLauncher
-        from parsl.addresses import address_by_hostname, address_by_query
+        from parsl.providers import CondorProvider, SlurmProvider
 
         if "slurm" in args.executor:
             htex_config = Config(
@@ -401,9 +398,9 @@ if __name__ == "__main__":
         )
 
     elif "dask" in args.executor:
-        from dask_jobqueue import SLURMCluster, HTCondorCluster
-        from distributed import Client
         from dask.distributed import performance_report
+        from dask_jobqueue import HTCondorCluster, SLURMCluster
+        from distributed import Client
 
         if "lpc" in args.executor:
             env_extra = [
@@ -439,7 +436,7 @@ if __name__ == "__main__":
                     "when_to_transfer_output": "ON_EXIT",
                     "+JobFlavour": '"workday"',
                 },
-                extra=["--worker-port {}".format(n_port)],
+                extra=[f"--worker-port {n_port}"],
                 env_extra=env_extra,
             )
         elif "slurm" in args.executor:
@@ -469,7 +466,7 @@ if __name__ == "__main__":
         else:
             cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
             client = Client(cluster)
-            print("Waiting for at least one worker...")
+            print("Waiting for at least one worker...")  # noqa
             client.wait_for_workers(1)
         with performance_report(filename="dask-report.html"):
             output = processor.run_uproot_job(
@@ -489,5 +486,5 @@ if __name__ == "__main__":
 
     save(output, args.output)
 
-    print(output)
-    print(f"Saving output to {args.output}")
+    print(output)  # noqa
+    print(f"Saving output to {args.output}")  # noqa

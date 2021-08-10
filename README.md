@@ -1,6 +1,6 @@
 # hgg-coffea
 Tools for running the CMS Higgs to Two Photons Analysis on NanoAOD
-  
+
 [![Actions Status][actions-badge]][actions-link]
 [![Documentation Status][rtd-badge]][rtd-link]
 [![Code style: black][black-badge]][black-link]
@@ -30,12 +30,12 @@ Tools for running the CMS Higgs to Two Photons Analysis on NanoAOD
 [sk-badge]:                 https://scikit-hep.org/assets/images/Scikit--HEP-Project-blue.svg
 
 ## Structure
-Example worfkflow for drell-yan studies is included. 
+Example worfkflow for drell-yan studies is included.
 
 Each workflow can be a separate "processor" file, creating the mapping from NanoAOD to
-the histograms we need. Workflow processors can be passed to the `runner.py` script 
-along with the fileset these should run over. Multiple executors can be chosen 
-(for now iterative - one by one, uproot/futures - multiprocessing and dask-slurm). 
+the histograms we need. Workflow processors can be passed to the `runner.py` script
+along with the fileset these should run over. Multiple executors can be chosen
+(for now iterative - one by one, uproot/futures - multiprocessing and dask-slurm).
 
 To run the example, run:
 ```
@@ -69,7 +69,7 @@ conda install -c conda-forge xrootd
 conda install -c conda-forge ca-certificates
 conda install -c conda-forge ca-policy-lcg
 conda install -c conda-forge dask-jobqueue
-conda install -c anaconda bokeh 
+conda install -c anaconda bokeh
 conda install -c conda-forge 'fsspec>=0.3.3'
 conda install dask
 ```
@@ -105,7 +105,7 @@ However, some sites have certain restrictions for various reasons, in particular
 
 ### Condor@FNAL (CMSLPC)
 Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue, run them from within the `hgg-coffea` directory that you have checked out.
-After starting the singularity container run a test with 
+After starting the singularity container run a test with
 ```bash
 python runner.py --meta Era2017_legacy_v1.json --wf dystudies -d root://cmseos.fnal.gov//store/user/$USER/hgg_test/ --executor dask/lpc --samples filefetcher/dystudies.json --chunk=100000 --max=5
 ```
