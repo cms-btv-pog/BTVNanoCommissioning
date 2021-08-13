@@ -1,5 +1,5 @@
-import awkward as ak
-import numpy as np
+import awkward
+import numpy
 
 
 class DummyTagger2:
@@ -16,7 +16,7 @@ class DummyTagger2:
     def priority(self) -> int:
         return 10
 
-    def __call__(self, events: ak.Array) -> ak.Array:
-        counts = ak.num(events.diphotons, axis=1)
-        x = np.random.exponential(size=ak.sum(counts))
-        return ak.unflatten(self.priority * (x > 2), counts)
+    def __call__(self, events: awkward.Array) -> awkward.Array:
+        counts = awkward.num(events.diphotons, axis=1)
+        x = numpy.random.exponential(size=awkward.sum(counts))
+        return awkward.unflatten(self.priority * (x > 2), counts)
