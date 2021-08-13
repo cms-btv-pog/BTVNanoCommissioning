@@ -68,13 +68,13 @@ class ChainedQuantileRegression:
         self.transforms: Dict[str, Any] = {}
 
         for vargroup, varlist in cq_config.items():
+            if not correctIsolations and vargroup == "isolations":
+                continue
+            if not correctShowerShapes and vargroup == "shower_shapes":
+                continue
             self.transforms[vargroup] = {}
             for varname, regions in varlist.items():
                 for region, steps in regions.items():
-                    if not correctIsolations and vargroup == "isolations":
-                        continue
-                    if not correctShowerShapes and vargroup == "shower_shapes":
-                        continue
                     self.transforms[vargroup][varname] = {}
                     if vargroup == "isolations":
                         self.transforms[vargroup][varname][region] = {}
@@ -87,21 +87,20 @@ class ChainedQuantileRegression:
                                 ]
                             if "weights_data" in keys and "weights_mc" in keys:
                                 config["weights"] = config["weights_data"]
-                                self.transforms[vargroup][varname][region][
-                                    f"{stepname}_data"
+                                self.transforms[vargroup][varname][f"{stepname}_data"][
+                                    region
                                 ] = create_evaluator(**config)
                                 config["weights"] = config["weights_mc"]
-                                self.transforms[vargroup][varname][region][
-                                    f"{stepname}_mc"
+                                self.transforms[vargroup][varname][f"{stepname}_mc"][
+                                    region
                                 ] = create_evaluator(**config)
                             else:
-                                self.transforms[vargroup][varname][region][
-                                    stepname
+                                self.transforms[vargroup][varname][stepname][
+                                    region
                                 ] = create_evaluator(**config)
                     elif vargroup == "shower_shapes":
-                        self.transforms[vargroup][varname][region] = []
-                        self.transforms[vargroup][varname][region].append(
-                            create_evaluator(**steps)
+                        self.transforms[vargroup][varname][region] = create_evaluator(
+                            **steps
                         )
                     else:
                         raise Exception(
@@ -151,7 +150,7 @@ class ChainedQuantileRegression:
         isEB: numpy.ndarray,
         isEE: numpy.ndarray,
     ) -> awkward.Array:
-        xforms = self.transforms["isolations"]["phoIso"]
+        xforms = self.transforms["isolations"]["chIso"]
 
         clf_mc = xforms["peak_tail_clfs_mc"]
         clf_data = xforms["peak_tail_clfs_data"]
@@ -159,6 +158,114 @@ class ChainedQuantileRegression:
         morphing = xforms["morphing"]
 
         photons["uncorr_pfPhoIso03"] = photons.pfPhoIso03
+
+        # clfs (input variables are the same)
+        clf_vars = clf_mc.variables
+        irho = clf_vars.index("fixedGridRhoAll")
+        clf_stack_vars = [awkward.to_numpy(photons[name]) for name in clf_vars[:irho]]
+        clf_stack_vars.append(awkward.to_numpy(rho))
+        clf_stack_vars.extend(
+            [awkward.to_numpy(photons[name]) for name in clf_vars[irho + 1 :]]
+        )
+        clf_eval_vars = numpy.column_stack(clf_stack_vars)
+        # conversion from T[-1,1] to probability [0,1]
+        p_tail_data = numpy.ones(size=clf_eval_vars.shape[0])
+        p_tail_mc = numpy.ones_like(p_tail_data)
+
+        p_tail_data[isEB] = 1.0 / (
+            1.0 + numpy.sqrt(2.0 / (1.0 + clf_data["EB"](clf_eval_vars[isEB])) - 1.0)
+        )
+        p_tail_data[isEE] = 1.0 / (
+            1.0 + numpy.sqrt(2.0 / (1.0 + clf_data["EE"](clf_eval_vars[isEE])) - 1.0)
+        )
+        p_tail_mc[isEB] = 1.0 / (
+            1.0 + numpy.sqrt(2.0 / (1.0 + clf_mc["EB"](clf_eval_vars[isEB])) - 1.0)
+        )
+        p_tail_mc[isEE] = 1.0 / (
+            1.0 + numpy.sqrt(2.0 / (1.0 + clf_mc["EE"](clf_eval_vars[isEE])) - 1.0)
+        )
+
+        p_peak_data = 1 - p_tail_data
+        p_peak_mc = 1 - p_tail_mc
+
+        migration = numpy.random.uniform(size=clf_eval_vars.shape[0])
+        pfPhoIso = awkward.to_numpy(photons.pfPhoIso03)
+
+        p_move_to_tail = (p_tail_data - p_tail_mc) / p_peak_mc
+        p_move_to_peak = (p_peak_data - p_peak_mc) / p_tail_mc
+
+        # peak2tail
+        to_tail = (
+            (pfPhoIso == 0) & (p_tail_data > p_tail_mc) & (migration < p_move_to_tail)
+        )
+        to_peak = (
+            (pfPhoIso > 0) & (p_peak_data > p_peak_mc) & (migration <= p_move_to_peak)
+        )
+
+        p2t_vars = p2t.variables
+        irho = p2t.variables.index("fixedGridRhoAll")
+        irnd = p2t.variables.index("peak2tail_rnd")
+        p2t_stack_vars = [awkward.to_numpy(photons[name]) for name in p2t_vars[:irho]]
+        p2t_stack_vars.append(awkward.to_numpy(rho))
+        p2t_stack_vars.extend(
+            [awkward.to_numpy(photons[name]) for name in p2t_vars[irho + 1 : irnd]]
+        )
+        # https://github.com/cms-analysis/flashgg/blob/dev_legacy_runII/Taggers/plugins/DifferentialPhoIdInputsCorrector.cc#L301
+        p2t_stack_vars.append(
+            numpy.random.uniform(low=0.01, high=0.99, size=clf_eval_vars.shape[0])
+        )
+        p2t_stack_vars.extend(
+            [awkward.to_numpy(photons[name]) for name in p2t_vars[irnd + 1 :]]
+        )
+
+        p2t_eval_vars = numpy.column_stack(p2t_stack_vars)
+        pfPhoIso[isEB & to_tail] = p2t["EB"](p2t_eval_vars[isEB & to_tail])
+        pfPhoIso[isEE & to_tail] = p2t["EE"](p2t_eval_vars[isEE & to_tail])
+        pfPhoIso[to_peak] = 0
+
+        # update photon for morph
+        photons["pfPhoIso03"] = pfPhoIso
+
+        # morphing
+        needs_morph = pfPhoIso > 0
+        morph_vars = morphing.variables
+        irho = clf_vars.index("fixedGridRhoAll")
+        morph_stack_vars = [
+            awkward.to_numpy(photons[name]) for name in morph_vars[:irho]
+        ]
+        morph_stack_vars.append(awkward.to_numpy(rho))
+        clf_stack_vars.extend(
+            [awkward.to_numpy(photons[name]) for name in morph_vars[irho + 1 :]]
+        )
+
+        morph_eval_vars = numpy.column_stack(morph_stack_vars)
+        pfPhoIso[isEB & needs_morph] = pfPhoIso[needs_morph] + morphing["EB"](
+            morph_eval_vars
+        )
+        pfPhoIso[isEE & needs_morph] = pfPhoIso[needs_morph] + morphing["EE"](
+            morph_eval_vars
+        )
+
+        photons["pfPhoIso03"] = pfPhoIso
+
+        return photons
+
+    def apply_charged_isolation(
+        self,
+        photons: awkward.Array,
+        rho: awkward.Array,
+        isEB: numpy.ndarray,
+        isEE: numpy.ndarray,
+    ) -> awkward.Array:
+        xforms = self.transforms["isolations"]["chIso"]
+
+        clf_mc = xforms["peak_tail_clfs_mc"]
+        clf_data = xforms["peak_tail_clfs_data"]
+        p2t = xforms["peak2tail"]
+        morphing = xforms["morphing"]
+
+        photons["uncorr_pfChargedIsoPFPV"] = photons.pfChargedIsoPFPV
+        photons["uncorr_pfChargedIsoWorstVtx"] = photons.pfChargedIsoWorstVtx
 
         # clfs (input variables are the same)
         clf_vars = clf_mc.variables
@@ -241,23 +348,14 @@ class ChainedQuantileRegression:
 
         morph_eval_vars = numpy.column_stack(morph_stack_vars)
         pfPhoIso[isEB & needs_morph] = pfPhoIso[needs_morph] + morphing["EB"](
-            morph_eval_vars
+            morph_eval_vars[isEB & needs_morph]
         )
         pfPhoIso[isEE & needs_morph] = pfPhoIso[needs_morph] + morphing["EE"](
-            morph_eval_vars
+            morph_eval_vars[isEE & needs_morph]
         )
 
         photons["pfPhoIso03"] = pfPhoIso
 
-        return photons
-
-    def apply_charged_isolation(
-        self,
-        photons: awkward.Array,
-        rho: awkward.Array,
-        isEB: numpy.ndarray,
-        isEE: numpy.ndarray,
-    ) -> awkward.Array:
         return photons
 
     def apply(self, events: awkward.Array) -> awkward.Array:
