@@ -169,7 +169,7 @@ class ChainedQuantileRegression:
         )
         clf_eval_vars = numpy.column_stack(clf_stack_vars)
         # conversion from T[-1,1] to probability [0,1]
-        p_tail_data = numpy.ones(size=clf_eval_vars.shape[0])
+        p_tail_data = numpy.ones((clf_eval_vars.shape[0],))
         p_tail_mc = numpy.ones_like(p_tail_data)
 
         p_tail_data[isEB] = 1.0 / (
@@ -229,20 +229,20 @@ class ChainedQuantileRegression:
         # morphing
         needs_morph = pfPhoIso > 0
         morph_vars = morphing.variables
-        irho = clf_vars.index("fixedGridRhoAll")
+        irho = morph_vars.index("fixedGridRhoAll")
         morph_stack_vars = [
             awkward.to_numpy(photons[name]) for name in morph_vars[:irho]
         ]
         morph_stack_vars.append(awkward.to_numpy(rho))
-        clf_stack_vars.extend(
+        morph_stack_vars.extend(
             [awkward.to_numpy(photons[name]) for name in morph_vars[irho + 1 :]]
         )
 
         morph_eval_vars = numpy.column_stack(morph_stack_vars)
-        pfPhoIso[isEB & needs_morph] = pfPhoIso[needs_morph] + morphing["EB"](
+        pfPhoIso[isEB & needs_morph] = pfPhoIso[isEB & needs_morph] + morphing["EB"](
             morph_eval_vars
         )
-        pfPhoIso[isEE & needs_morph] = pfPhoIso[needs_morph] + morphing["EE"](
+        pfPhoIso[isEE & needs_morph] = pfPhoIso[isEE & needs_morph] + morphing["EE"](
             morph_eval_vars
         )
 
@@ -261,8 +261,10 @@ class ChainedQuantileRegression:
 
         clf_mc = xforms["peak_tail_clfs_mc"]
         clf_data = xforms["peak_tail_clfs_data"]
-        p2t = xforms["peak2tail"]
-        morphing = xforms["morphing"]
+        p2t = xforms["chIso_peak2tail"]
+        p2t_worst = xforms["chIsoWorst_peak2tail"]
+        morphing = xforms["chIso_morphing"]
+        morphing_worst = xforms["chIsoWorst_morphing"]
 
         photons["uncorr_pfChargedIsoPFPV"] = photons.pfChargedIsoPFPV
         photons["uncorr_pfChargedIsoWorstVtx"] = photons.pfChargedIsoWorstVtx
@@ -276,43 +278,53 @@ class ChainedQuantileRegression:
             [awkward.to_numpy(photons[name]) for name in clf_vars[irho + 1 :]]
         )
         clf_eval_vars = numpy.column_stack(clf_stack_vars)
-        # conversion from T[-1,1] to probability [0,1]
-        p_tail_data = numpy.ones(size=clf_eval_vars.shape[0])
-        p_tail_mc = numpy.ones_like(p_tail_data)
+        # ---Charge isolations
+        #  ----------------+-------------------------+
+        #  ChIsoWorst tail | 01         | 11         |
+        #  ChIsoWorst peak | 00         | X          |
+        #  ----------------+-------------------------+
+        #                  | ChIso peak | ChIso tail |
+        #                  +-------------------------+
+        probs_data = numpy.ones((clf_eval_vars.shape[0], 3))
+        probs_mc = numpy.ones_like(probs_data)
 
-        p_tail_data[isEB] = 1.0 / (
-            1.0 + numpy.sqrt(2.0 / (1.0 + clf_data["isEB"](clf_eval_vars[isEB])) - 1.0)
-        )
-        p_tail_data[isEE] = 1.0 / (
-            1.0 + numpy.sqrt(2.0 / (1.0 + clf_data["isEE"](clf_eval_vars[isEE])) - 1.0)
-        )
-        p_tail_mc[isEB] = 1.0 / (
-            1.0 + numpy.sqrt(2.0 / (1.0 + clf_mc["isEB"](clf_eval_vars[isEB])) - 1.0)
-        )
-        p_tail_mc[isEE] = 1.0 / (
-            1.0 + numpy.sqrt(2.0 / (1.0 + clf_mc["isEE"](clf_eval_vars[isEE])) - 1.0)
-        )
-
-        p_peak_data = 1 - p_tail_data
-        p_peak_mc = 1 - p_tail_mc
+        # [[00, 01, 11], ...]
+        probs_data[isEB] = clf_data["EB"](clf_eval_vars[isEB])
+        probs_data[isEE] = clf_data["EE"](clf_eval_vars[isEE])
+        probs_mc[isEB] = clf_mc["EB"](clf_eval_vars[isEB])
+        probs_mc[isEE] = clf_mc["EE"](clf_eval_vars[isEB])
 
         migration = numpy.random.uniform(size=clf_eval_vars.shape[0])
-        pfPhoIso = awkward.to_numpy(photons.pfPhoIso03)
+        migration_subcat = numpy.random.uniform(size=clf_eval_vars.shape[0])
+        pfChgIso = awkward.to_numpy(photons.pfChargedIsoPFPV)
+        pfChgIsoWorst = awkward.to_numpy(photons.pfChargedIsoWorstVtx)
 
-        p_move_to_tail = (p_tail_data - p_tail_mc) / p_peak_mc
-        p_move_to_peak = (p_peak_data - p_peak_mc) / p_tail_mc
+        can_migrate = probs_mc > probs_data
+        should_migrate = migration < (1 - probs_data / probs_mc)
 
         # peak2tail
-        to_tail = (
-            (pfPhoIso == 0) & (p_tail_data > p_tail_mc) & (migration < p_move_to_tail)
+        to_00 = (
+            (pfChgIso == 0)
+            & (pfChgIsoWorst == 0)
+            & can_migrate[:, 0]
+            & should_migrate[:, 0]
         )
-        to_peak = (
-            (pfPhoIso > 0) & (p_peak_data > p_peak_mc) & (migration <= p_move_to_peak)
+        to_01 = (
+            (pfChgIso == 0)
+            & (pfChgIsoWorst > 0)
+            & can_migrate[:, 1]
+            & should_migrate[:, 1]
+        )
+        to_11 = (
+            (pfChgIso > 0)
+            & (pfChgIsoWorst > 0)
+            & can_migrate[:, 2]
+            & should_migrate[:, 2]
         )
 
         p2t_vars = p2t.variables
         irho = p2t.variables.index("fixedGridRhoAll")
-        irnd = p2t.variables.index("peak2tail_rnd")
+        irnd = p2t.variables.index("peak2tail_chIso_rnd")
         p2t_stack_vars = [awkward.to_numpy(photons[name]) for name in p2t_vars[:irho]]
         p2t_stack_vars.append(awkward.to_numpy(rho))
         p2t_stack_vars.extend(
@@ -325,36 +337,162 @@ class ChainedQuantileRegression:
         p2t_stack_vars.extend(
             [awkward.to_numpy(photons[name]) for name in p2t_vars[irnd + 1 :]]
         )
+        # worst
+        p2t_worst_vars = p2t_worst.variables
+        irho_worst = p2t_worst_vars.index("fixedGridRhoAll")
+        irnd_worst = p2t_worst_vars.index("peak2tail_chIsoWorst_rnd")
+        p2t_worst_stack_vars = [
+            awkward.to_numpy(photons[name]) for name in p2t_worst_vars[:irho_worst]
+        ]
+        p2t_worst_stack_vars.append(awkward.to_numpy(rho))
+        p2t_worst_stack_vars.extend(
+            [
+                awkward.to_numpy(photons[name])
+                for name in p2t_worst_vars[irho_worst + 1 : irnd_worst]
+            ]
+        )
+        # https://github.com/cms-analysis/flashgg/blob/dev_legacy_runII/Taggers/plugins/DifferentialPhoIdInputsCorrector.cc#L301
+        p2t_worst_stack_vars.append(
+            numpy.random.uniform(low=0.01, high=0.99, size=clf_eval_vars.shape[0])
+        )
+        p2t_worst_stack_vars.extend(
+            [
+                awkward.to_numpy(photons[name])
+                for name in p2t_worst_vars[irnd_worst + 1 :]
+            ]
+        )
+
+        def get_z(cat1: int, cat2: int) -> numpy.ndarray:
+            return (probs_data[:, cat1] - probs_mc[:, cat1]) / (
+                probs_mc[:, cat2] - probs_data[:, cat2]
+            )
 
         p2t_eval_vars = numpy.column_stack(p2t_stack_vars)
-        pfPhoIso[isEB & to_tail] = p2t["EB"](p2t_eval_vars[isEB & to_tail])
-        pfPhoIso[isEE & to_tail] = p2t["EE"](p2t_eval_vars[isEE & to_tail])
-        pfPhoIso[to_peak] = 0
+        p2t_worst_eval_vars = numpy.column_stack(p2t_worst_stack_vars)
+        # 00
+        #  00 -> 01
+        to_00_01 = to_00 & (~can_migrate[:, 1]) & can_migrate[:, 2]
+        to_00_01_EB = isEB & to_00_01
+        to_00_01_EE = isEE & to_00_01
+        pfChgIsoWorst[to_00_01_EB] = p2t_worst["EB"](p2t_worst_eval_vars[to_00_01_EB])
+        pfChgIsoWorst[to_00_01_EE] = p2t_worst["EE"](p2t_worst_eval_vars[to_00_01_EE])
+        #  00 -> 11
+        to_00_11 = to_00 & can_migrate[:, 1] & (~can_migrate[:, 2])
+        to_00_11_EB = isEB & to_00_11
+        to_00_11_EE = isEE & to_00_11
+        pfChgIso[to_00_11_EB] = p2t["EB"](p2t_eval_vars[to_00_11_EB])
+        pfChgIso[to_00_11_EE] = p2t["EE"](p2t_eval_vars[to_00_11_EE])
+        pfChgIsoWorst[to_00_11_EB] = p2t_worst["EB"](p2t_worst_eval_vars[to_00_11_EB])
+        pfChgIsoWorst[to_00_11_EE] = p2t_worst["EE"](p2t_worst_eval_vars[to_00_11_EE])
+        #  00 -> either
+        to_00_either = to_00 & (~can_migrate[:, 1]) & (~can_migrate[:, 2])
+        to_00_either_EB = isEB & to_00_either
+        to_00_either_EE = isEE & to_00_either
+        which_01_11 = migration_subcat <= get_z(1, 0)
+        pfChgIsoWorst[to_00_either_EB & which_01_11] = p2t_worst["EB"](
+            p2t_worst_eval_vars[to_00_either_EB & which_01_11]
+        )
+        pfChgIsoWorst[to_00_either_EE & which_01_11] = p2t_worst["EE"](
+            p2t_worst_eval_vars[to_00_either_EE & which_01_11]
+        )
+        pfChgIso[to_00_either_EB & (~which_01_11)] = p2t["EB"](
+            p2t_eval_vars[to_00_either_EB & (~which_01_11)]
+        )
+        pfChgIso[to_00_either_EE & (~which_01_11)] = p2t["EE"](
+            p2t_eval_vars[to_00_either_EE & (~which_01_11)]
+        )
+        pfChgIsoWorst[to_00_either_EB & (~which_01_11)] = p2t_worst["EB"](
+            p2t_worst_eval_vars[to_00_either_EB & (~which_01_11)]
+        )
+        pfChgIsoWorst[to_00_either_EE & (~which_01_11)] = p2t_worst["EE"](
+            p2t_worst_eval_vars[to_00_either_EE & (~which_01_11)]
+        )
+
+        # 01
+        #  01 -> 00
+        to_01_00 = to_01 & (~can_migrate[:, 0]) & can_migrate[:, 2]
+        pfChgIso[to_01_00] = 0
+        pfChgIsoWorst[to_01_00] = 0
+        #  01 -> 11
+        to_01_11 = to_01 & can_migrate[:, 0] & (~can_migrate[:, 2])
+        to_01_11_EB = isEB & to_01_11
+        to_01_11_EE = isEE & to_01_11
+        pfChgIso[to_01_11_EB] = p2t["EB"](p2t_eval_vars[to_01_11_EB])
+        pfChgIso[to_01_11_EE] = p2t["EE"](p2t_eval_vars[to_01_11_EE])
+        #  01 -> either
+        to_01_either = to_01 & (~can_migrate[:, 0]) & (~can_migrate[:, 2])
+        to_01_either_EB = isEB & to_01_either
+        to_01_either_EE = isEE & to_01_either
+        which_00_11 = migration_subcat <= get_z(0, 1)
+        pfChgIso[to_01_either_EB & (~which_01_11)] = p2t["EB"](
+            p2t_eval_vars[to_01_either_EB & (~which_00_11)]
+        )
+        pfChgIso[to_01_either_EE & (~which_01_11)] = p2t["EE"](
+            p2t_eval_vars[to_01_either_EE & (~which_00_11)]
+        )
+        pfChgIsoWorst[to_01_either & which_01_11] = 0
+
+        # 11
+        #  11 -> 00
+        to_11_00 = to_11 & (~can_migrate[:, 0]) & can_migrate[:, 1]
+        pfChgIso[to_01_00] = 0
+        pfChgIsoWorst[to_11_00] = 0
+        #  11 -> 01
+        to_11_01 = to_11 & can_migrate[:, 0] & (~can_migrate[:, 1])
+        pfChgIsoWorst[to_11_01] = 0
+        #  11 -> either
+        to_11_either = to_00 & (~can_migrate[:, 0]) & (~can_migrate[:, 1])
+        which_00_01 = migration_subcat <= get_z(0, 2)
+        pfChgIso[to_11_either] = 0
+        pfChgIsoWorst[to_11_either & which_00_01] = 0
 
         # update photon for morph
-        photons["pfPhoIso03"] = pfPhoIso
+        photons["pfChargedIsoPFPV"] = pfChgIso
+        photons["pfChargedIsoWorstVtx"] = pfChgIsoWorst
 
-        # morphing
-        needs_morph = pfPhoIso > 0
+        # tail morphing PV
+        needs_morph = pfChgIso > 0
         morph_vars = morphing.variables
-        irho = clf_vars.index("fixedGridRhoAll")
+        irho = morph_vars.index("fixedGridRhoAll")
         morph_stack_vars = [
             awkward.to_numpy(photons[name]) for name in morph_vars[:irho]
         ]
         morph_stack_vars.append(awkward.to_numpy(rho))
-        clf_stack_vars.extend(
+        morph_stack_vars.extend(
             [awkward.to_numpy(photons[name]) for name in morph_vars[irho + 1 :]]
         )
 
         morph_eval_vars = numpy.column_stack(morph_stack_vars)
-        pfPhoIso[isEB & needs_morph] = pfPhoIso[needs_morph] + morphing["EB"](
+        pfChgIso[isEB & needs_morph] = pfChgIso[isEB & needs_morph] + morphing["EB"](
             morph_eval_vars[isEB & needs_morph]
         )
-        pfPhoIso[isEE & needs_morph] = pfPhoIso[needs_morph] + morphing["EE"](
+        pfChgIso[isEE & needs_morph] = pfChgIso[isEE & needs_morph] + morphing["EE"](
             morph_eval_vars[isEE & needs_morph]
         )
 
-        photons["pfPhoIso03"] = pfPhoIso
+        photons["pfChargedIsoPFPV"] = pfChgIso
+
+        # tail morphing worst vertex
+        needs_morph_worst = pfChgIsoWorst > 0
+        morph_worst_vars = morphing_worst.variables
+        irho = morph_worst_vars.index("fixedGridRhoAll")
+        morph_worst_stack_vars = [
+            awkward.to_numpy(photons[name]) for name in morph_worst_vars[:irho]
+        ]
+        morph_worst_stack_vars.append(awkward.to_numpy(rho))
+        morph_worst_stack_vars.extend(
+            [awkward.to_numpy(photons[name]) for name in morph_worst_vars[irho + 1 :]]
+        )
+
+        morph_worst_eval_vars = numpy.column_stack(morph_worst_stack_vars)
+        pfChgIsoWorst[isEB & needs_morph_worst] = pfChgIsoWorst[
+            isEB & needs_morph
+        ] + morphing_worst["EB"](morph_worst_eval_vars[isEB & needs_morph_worst])
+        pfChgIsoWorst[isEE & needs_morph_worst] = pfChgIsoWorst[
+            isEE & needs_morph
+        ] + morphing_worst["EE"](morph_worst_eval_vars[isEE & needs_morph_worst])
+
+        photons["pfChargedIsoWorstVtx"] = pfChgIsoWorst
 
         return photons
 
