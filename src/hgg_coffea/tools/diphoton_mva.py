@@ -7,12 +7,12 @@ import xgboost
 
 
 def load_diphoton_mva(fname: str) -> Optional[xgboost.Booster]:
-    diphoton_mva = None
     try:
         diphoton_mva = xgboost.Booster()
         diphoton_mva.load_model(fname)
     except xgboost.core.XGBoostError:
         warnings.warn(f"SKIPPING diphoton_mva, could not find: {fname}")
+        diphoton_mva = None
     return diphoton_mva
 
 
