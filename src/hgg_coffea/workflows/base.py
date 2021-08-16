@@ -3,6 +3,7 @@ import operator
 import os
 import pathlib
 import shutil
+import warnings
 from typing import Any, Dict, List, Optional
 
 import awkward
@@ -11,10 +12,13 @@ import pandas
 import vector
 from coffea import processor
 
+from hgg_coffea.tools.chained_quantile import ChainedQuantileRegression
+
 from hgg_coffea.tools.diphoton_mva import (  # isort:skip
     calculate_diphoton_mva,
     load_diphoton_mva,
 )
+
 
 vector.register_awkward()
 
@@ -57,6 +61,13 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         self.prefixes = {"pho_lead": "lead", "pho_sublead": "sublead"}
 
         # build the chained quantile regressions
+        try:
+            self.chained_quantile: Optional[
+                ChainedQuantileRegression
+            ] = ChainedQuantileRegression(**self.meta["PhoIdInputCorrections"])
+        except Exception as e:
+            warnings.warn(f"Could not instantiate ChainedQuantileRegression: {e}")
+            self.chained_quantile = None
 
         # initialize diphoton mva
         self.diphoton_mva = load_diphoton_mva(
@@ -176,9 +187,12 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         events = events[filtered & triggered]
 
         # modifications to photons
+        photons = events.Photon
+        if self.chained_quantile is not None:
+            photons = self.chained_quantile.apply(events)
 
         # photon preselection
-        photons = self.photon_preselection(events.Photon)
+        photons = self.photon_preselection(photons)
         # sort photons in each event descending in pt
         # make descending-pt combinations of photons
         photons = photons[awkward.argsort(photons.pt, ascending=False)]
