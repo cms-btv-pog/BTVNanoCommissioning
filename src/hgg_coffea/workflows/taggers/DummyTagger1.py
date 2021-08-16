@@ -1,5 +1,5 @@
-import awkward as ak
-import numpy as np
+import awkward
+import numpy
 
 
 class DummyTagger1:
@@ -16,5 +16,5 @@ class DummyTagger1:
     def priority(self) -> int:
         return 20
 
-    def __call__(self, events: ak.Array) -> ak.Array:
-        return self.priority * ak.ones_like(events.diphotons.pt, dtype=np.int32)
+    def __call__(self, events: awkward.Array) -> awkward.Array:
+        return self.priority * awkward.ones_like(events.diphotons.pt, dtype=numpy.int32)

@@ -1,17 +1,24 @@
-import functools as ft
-import operator as op
+import functools
+import operator
 import os
-import pathlib as pl
-import shutil as shu
+import pathlib
+import shutil
 import warnings
 from typing import Any, Dict, List, Optional
 
-import awkward as ak
-import numpy as np
-import pandas as pd
+import awkward
+import numpy
+import pandas
 import vector
-import xgboost as xg
 from coffea import processor
+
+from hgg_coffea.tools.chained_quantile import ChainedQuantileRegression
+
+from hgg_coffea.tools.diphoton_mva import (  # isort:skip
+    calculate_diphoton_mva,
+    load_diphoton_mva,
+)
+
 
 vector.register_awkward()
 
@@ -54,19 +61,21 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         self.prefixes = {"pho_lead": "lead", "pho_sublead": "sublead"}
 
         # build the chained quantile regressions
+        try:
+            self.chained_quantile: Optional[
+                ChainedQuantileRegression
+            ] = ChainedQuantileRegression(**self.meta["PhoIdInputCorrections"])
+        except Exception as e:
+            warnings.warn(f"Could not instantiate ChainedQuantileRegression: {e}")
+            self.chained_quantile = None
 
         # initialize diphoton mva
-        try:
-            self.diphoton_mva = xg.Booster()
-            self.diphoton_mva.load_model(self.meta["flashggDiPhotonMVA"]["weightFile"])
-        except xg.core.XGBoostError:
-            warnings.warn(
-                f"SKIPPING diphoton_mva, could not find: {self.meta['flashggDiPhotonMVA']['weightFile']}"
-            )
-            self.diphoton_mva = None
+        self.diphoton_mva = load_diphoton_mva(
+            self.meta["flashggDiPhotonMVA"]["weightFile"]
+        )
 
-    def photon_preselection(self, photons: ak.Array) -> ak.Array:
-        photon_abs_eta = np.abs(photons.eta)
+    def photon_preselection(self, photons: awkward.Array) -> awkward.Array:
+        photon_abs_eta = numpy.abs(photons.eta)
         return photons[
             (photons.pt > self.min_pt_photon)
             & (photon_abs_eta < self.max_sc_eta)
@@ -83,22 +92,22 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
             )
         ]
 
-    def diphoton_list_to_pandas(self, diphotons: ak.Array) -> pd.DataFrame:
-        output = pd.DataFrame()
-        for field in ak.fields(diphotons):
+    def diphoton_list_to_pandas(self, diphotons: awkward.Array) -> pandas.DataFrame:
+        output = pandas.DataFrame()
+        for field in awkward.fields(diphotons):
             prefix = self.prefixes.get(field, "")
             if len(prefix) > 0:
-                for subfield in ak.fields(diphotons[field]):
-                    output[f"{prefix}_{subfield}"] = ak.to_numpy(
+                for subfield in awkward.fields(diphotons[field]):
+                    output[f"{prefix}_{subfield}"] = awkward.to_numpy(
                         diphotons[field][subfield]
                     )
             else:
-                output[field] = ak.to_numpy(diphotons[field])
+                output[field] = awkward.to_numpy(diphotons[field])
         return output
 
     def dump_pandas(
         self,
-        pddf: pd.DataFrame,
+        pddf: pandas.DataFrame,
         fname: str,
         location: str,
         subdirs: Optional[List[str]] = None,
@@ -147,44 +156,47 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         else:
             dirname = os.path.dirname(destination)
             if not os.path.exists(dirname):
-                pl.Path(dirname).mkdir(parents=True, exist_ok=True)
-            shu.copy(local_file, destination)
+                pathlib.Path(dirname).mkdir(parents=True, exist_ok=True)
+            shutil.copy(local_file, destination)
             assert os.path.isfile(destination)
-        pl.Path(local_file).unlink()
+        pathlib.Path(local_file).unlink()
 
-    def process_extra(self, events: ak.Array) -> ak.Array:
+    def process_extra(self, events: awkward.Array) -> awkward.Array:
         raise NotImplementedError
 
-    def process(self, events: ak.Array) -> Dict[Any, Any]:
+    def process(self, events: awkward.Array) -> Dict[Any, Any]:
 
         # data or monte carlo?
-        data_kind = "mc" if "GenPart" in ak.fields(events) else "data"
+        data_kind = "mc" if "GenPart" in awkward.fields(events) else "data"
 
         # met filters
         met_filters = self.meta["flashggMetFilters"][data_kind]
-        filtered = ft.reduce(
-            op.and_,
+        filtered = functools.reduce(
+            operator.and_,
             (events.Flag[metfilter.split("_")[-1]] for metfilter in met_filters),
         )
 
-        triggered = ak.ones_like(filtered)
+        triggered = awkward.ones_like(filtered)
         if self.apply_trigger:
             triggers = self.meta["TriggerPaths"][self.trigger_group][self.analysis]
-            triggered = ft.reduce(
-                op.or_, (events.HLT[trigger[4:-1]] for trigger in triggers)
+            triggered = functools.reduce(
+                operator.or_, (events.HLT[trigger[4:-1]] for trigger in triggers)
             )
 
         # apply met filters and triggers to data
         events = events[filtered & triggered]
 
         # modifications to photons
+        photons = events.Photon
+        if self.chained_quantile is not None:
+            photons = self.chained_quantile.apply(events)
 
         # photon preselection
-        photons = self.photon_preselection(events.Photon)
+        photons = self.photon_preselection(photons)
         # sort photons in each event descending in pt
         # make descending-pt combinations of photons
-        photons = photons[ak.argsort(photons.pt, ascending=False)]
-        diphotons = ak.combinations(photons, 2, fields=["pho_lead", "pho_sublead"])
+        photons = photons[awkward.argsort(photons.pt, ascending=False)]
+        diphotons = awkward.combinations(photons, 2, fields=["pho_lead", "pho_sublead"])
         # the remaining cut is to select the leading photons
         # the previous sort assures the order
         diphotons = diphotons[diphotons["pho_lead"].pt > self.min_pt_lead_photon]
@@ -196,10 +208,10 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         diphotons["phi"] = diphoton_4mom.phi
         diphotons["mass"] = diphoton_4mom.mass
         diphotons["charge"] = diphoton_4mom.charge
-        diphotons = ak.with_name(diphotons, "PtEtaPhiMCandidate")
+        diphotons = awkward.with_name(diphotons, "PtEtaPhiMCandidate")
 
         # sort diphotons by pT
-        diphotons = diphotons[ak.argsort(diphotons.pt, ascending=False)]
+        diphotons = diphotons[awkward.argsort(diphotons.pt, ascending=False)]
 
         # baseline modifications to diphotons
         diphotons = self.add_diphoton_mva(diphotons, events)
@@ -217,24 +229,26 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
 
         # if there are taggers to run, arbitrate by them first
         if len(self.taggers):
-            counts = ak.num(diphotons.pt, axis=1)
-            flat_tags = np.stack(
+            counts = awkward.num(diphotons.pt, axis=1)
+            flat_tags = numpy.stack(
                 (
-                    ak.flatten(diphotons["_".join([tagger.name, str(tagger.priority)])])
+                    awkward.flatten(
+                        diphotons["_".join([tagger.name, str(tagger.priority)])]
+                    )
                     for tagger in self.taggers
                 ),
                 axis=1,
             )
-            tags = ak.from_regular(ak.unflatten(flat_tags, counts), axis=2)
-            winner = ak.min(tags[tags != 0], axis=2)
+            tags = awkward.from_regular(awkward.unflatten(flat_tags, counts), axis=2)
+            winner = awkward.min(tags[tags != 0], axis=2)
             diphotons["best_tag"] = winner
 
             # lowest priority is most important (ascending sort)
             # leave in order of diphoton pT in case of ties (stable sort)
-            sorted = ak.argsort(diphotons.best_tag, stable=True)
+            sorted = awkward.argsort(diphotons.best_tag, stable=True)
             diphotons = diphotons[sorted]
 
-        diphotons = ak.firsts(diphotons)
+        diphotons = awkward.firsts(diphotons)
 
         # annotate diphotons with event information
         diphotons["event"] = events.event
@@ -245,10 +259,10 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         # drop events without a tag, if there are tags
         if len(self.taggers):
             diphotons = diphotons[
-                ~(ak.is_none(diphotons) | ak.is_none(diphotons.best_tag))
+                ~(awkward.is_none(diphotons) | awkward.is_none(diphotons.best_tag))
             ]
         else:
-            diphotons = diphotons[~ak.is_none(diphotons)]
+            diphotons = diphotons[~awkward.is_none(diphotons)]
 
         if self.output_location is not None:
             df = self.diphoton_list_to_pandas(diphotons)
@@ -266,85 +280,11 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
     def postprocess(self, accumulant: Dict[Any, Any]) -> Any:
         raise NotImplementedError
 
-    def add_diphoton_mva(self, diphotons: ak.Array, events: ak.Array) -> ak.Array:
-        if self.diphoton_mva is None:
-            return diphotons
-
-        var_order = self.meta["flashggDiPhotonMVA"]["inputs"]
-
-        bdt_vars = {}
-
-        bdt_vars["dipho_leadIDMVA"] = diphotons.pho_lead.mvaID
-        bdt_vars["dipho_subleadIDMVA"] = diphotons.pho_sublead.mvaID
-        bdt_vars["dipho_leadEta"] = diphotons.pho_lead.eta
-        bdt_vars["dipho_subleadEta"] = diphotons.pho_sublead.eta
-        bdt_vars["dipho_lead_ptoM"] = diphotons.pho_lead.pt / diphotons.mass
-        bdt_vars["dipho_sublead_ptoM"] = diphotons.pho_sublead.pt / diphotons.mass
-
-        def calc_displacement(photons: ak.Array, events: ak.Array) -> ak.Array:
-            x = photons.x_calo - events.PV.x
-            y = photons.y_calo - events.PV.y
-            z = photons.z_calo - events.PV.z
-            return ak.zip({"x": x, "y": y, "z": z}, with_name="Vector3D")
-
-        v_lead = calc_displacement(diphotons.pho_lead, events)
-        v_sublead = calc_displacement(diphotons.pho_sublead, events)
-
-        p_lead = v_lead.unit() * diphotons.pho_lead.energyRaw
-        p_lead["energy"] = diphotons.pho_lead.energyRaw
-        p_lead = ak.with_name(p_lead, "Momentum4D")
-        p_sublead = v_sublead.unit() * diphotons.pho_sublead.energyRaw
-        p_sublead["energy"] = diphotons.pho_sublead.energyRaw
-        p_sublead = ak.with_name(p_sublead, "Momentum4D")
-
-        sech_lead = 1.0 / np.cosh(p_lead.eta)
-        sech_sublead = 1.0 / np.cosh(p_sublead.eta)
-        tanh_lead = np.cos(p_lead.theta)
-        tanh_sublead = np.cos(p_sublead.theta)
-
-        cos_dphi = np.cos(p_lead.deltaphi(p_sublead))
-
-        numerator_lead = sech_lead * (
-            sech_lead * tanh_sublead - tanh_lead * sech_sublead * cos_dphi
+    def add_diphoton_mva(
+        self, diphotons: awkward.Array, events: awkward.Array
+    ) -> awkward.Array:
+        return calculate_diphoton_mva(
+            (self.diphoton_mva, self.meta["flashggDiPhotonMVA"]["inputs"]),
+            diphotons,
+            events,
         )
-        numerator_sublead = sech_sublead * (
-            sech_sublead * tanh_lead - tanh_sublead * sech_lead * cos_dphi
-        )
-
-        denominator = (
-            1.0 - tanh_lead * tanh_sublead - sech_lead * sech_sublead * cos_dphi
-        )
-
-        add_reso = (
-            0.5
-            * (-np.sqrt(2.0) * events.BeamSpot.sigmaZ / denominator)
-            * (numerator_lead / p_lead.mag + numerator_sublead / p_sublead.mag)
-        )
-
-        dEnorm_lead = diphotons.pho_lead.energyErr / diphotons.pho_lead.energy
-        dEnorm_sublead = diphotons.pho_sublead.energyErr / diphotons.pho_sublead.energy
-
-        sigma_m = 0.5 * np.sqrt(dEnorm_lead ** 2 + dEnorm_sublead ** 2)
-        sigma_wv = np.sqrt(add_reso ** 2 + sigma_m ** 2)
-
-        vtx_prob = ak.full_like(sigma_m, 0.999)  # !!!! placeholder !!!!
-
-        bdt_vars["CosPhi"] = cos_dphi
-        bdt_vars["vtxprob"] = vtx_prob
-        bdt_vars["sigmarv"] = sigma_m
-        bdt_vars["sigmawv"] = sigma_wv
-
-        counts = ak.num(diphotons, axis=-1)
-        bdt_inputs = np.column_stack(
-            [ak.to_numpy(ak.flatten(bdt_vars[name])) for name in var_order]
-        )
-        tempmatrix = xg.DMatrix(bdt_inputs, feature_names=var_order)
-        scores = self.diphoton_mva.predict(tempmatrix)
-
-        for var, arr in bdt_vars.items():
-            if "dipho" not in var:
-                diphotons[var] = arr
-
-        diphotons["bdt_score"] = ak.unflatten(scores, counts)
-
-        return diphotons

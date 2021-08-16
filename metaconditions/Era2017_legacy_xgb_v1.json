@@ -335,16 +335,16 @@
    "PhoIdInputCorrections":
     {
 	"corrections_summary" : "aux-data/Taggers/PhoIdInputsCorrections/corrections_summary_2017_Legacy_xgb.json",
-	"SS_variables" :   ["f0 := Photon.pt",
-                            "f1 := Photon.eta",
-                            "f2 := Photon.phi",
+	"SS_variables" :   ["f0 := pt",
+                            "f1 := eta",
+                            "f2 := phi",
                             "f3 := fixedGridRhoAll",
-                            "f4 := Photon.sieip",
-                            "f5 := Photon.s4",
-                            "f6 := Photon.r9",
-                            "f7 := Photon.phiWidth",
-                            "f8 := Photon.sieip",
-                            "f9 := Photon.etaWidth"
+                            "f4 := sieip",
+                            "f5 := s4",
+                            "f6 := r9",
+                            "f7 := phiWidth",
+                            "f8 := sieip",
+                            "f9 := etaWidth"
                            ]
     },
 
