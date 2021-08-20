@@ -1,10 +1,28 @@
 {
-    
-    "mc":[
 
-"root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA04inpts/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/201215_235707/0000/nano106x_on_mini94x_2017_mc_NANO_7.root",
-        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_vA04inpts/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/201215_235707/0000/nano106x_on_mini94x_2017_mc_NANO_6.root",
- "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/anovak/PFNano/106X_v2_17rsb3/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17PFNanov2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/210509_154437/0000/nano_mc2017_18.root",
-        "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/anovak/PFNano/106X_v2_17rsb3/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17PFNanov2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/210509_154437/0000/nano_mc2017_27.root",
-        "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/anovak/PFNano/106X_v2_17rsb3/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17PFNanov2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/210509_154437/0000/nano_mc2017_26.root",
-        "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/anovak/PFNano/106X_v2_17rsb3/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17PFNanov2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/210509_154437/0000/nano_mc2017_23.root"]}
+    "mc":[
+"root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_1-94.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_139.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_15.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_158.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_140.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_171.root",
+
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_160.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_164.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_6.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_177.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_156.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_8.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_1-51.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_1-77.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_1-46.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_2-1.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_1-84.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_33.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_153.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_178.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_141.root",
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174413/0000/nano_mc2017_1.root"
+]
+}

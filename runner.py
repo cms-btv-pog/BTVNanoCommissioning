@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--wf',
                         '--workflow',
                         dest='workflow',
-                        choices=['ttcom', 'jet_AK4','mu_AK4','dilep','ctag','ctagtest'],
+                        choices=['ttcom', 'jet_AK4','mu_AK4','dilep_rawpT','dilep_sf','ctag_sf','ctag_rawpT','dilep_jec','ctag_jec','tightc','Wc_sf'],
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     parser.add_argument('--skipbadfiles', action='store_true', help='Skip bad files.')
     parser.add_argument('--only', type=str, default=None, help='Only process specific dataset or file')
     parser.add_argument('--limit', type=int, default=None, metavar='N', help='Limit to the first N files of each dataset in sample JSON')
-    parser.add_argument('--chunk', type=int, default=500000, metavar='N', help='Number of events per process chunk')
+    parser.add_argument('--chunk', type=int, default=5000000, metavar='N', help='Number of events per process chunk')
     parser.add_argument('--max', type=int, default=None, metavar='N', help='Max number of chunks to run in total')
 
     args = parser.parse_args()
@@ -78,7 +78,6 @@ if __name__ == '__main__':
 
         # load dataset
     with open(args.samplejson) as f:
-        print(f)
         sample_dict = json.load(f)
     for key in sample_dict.keys():
         sample_dict[key] = sample_dict[key][:args.limit]
@@ -138,14 +137,29 @@ if __name__ == '__main__':
     elif args.workflow == "mu_AK4":
         from workflows.muAK4_valid2 import NanoProcessor
         processor_instance = NanoProcessor()
-    elif args.workflow == "dilep":
-        from workflows.dilep_valid import NanoProcessor
+    elif args.workflow == "dilep_rawpT":
+        from workflows.dilep_valid2 import NanoProcessor
         processor_instance = NanoProcessor()
-    elif args.workflow == "ctagtest":
-        from workflows.ctag_valid_pT import NanoProcessor
+    elif args.workflow == "dilep_sf":
+        from workflows.dilep_valid_sep import NanoProcessor
         processor_instance = NanoProcessor()
-    elif args.workflow == "ctag":
+    elif args.workflow == "ctag_sf":
+        from workflows.ctag_valid_sep import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctag_rawpT":
         from workflows.ctag_valid import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctag_jec":
+        from workflows.ctag_valid_jec import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "dilep_jec":
+        from workflows.dilep_valid_jec import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "tightc":
+        from workflows.ctag_valid_tight import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "Wc_sf":
+        from workflows.Wc_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
         
     # elif args.workflow == "fattag":
@@ -232,7 +246,7 @@ if __name__ == '__main__':
                     HighThroughputExecutor(
                         label='coffea_parsl_condor',
                         address=address_by_query(),
-                        # max_workers=1,
+                        max_workers=1,
                         provider=CondorProvider(
                             nodes_per_block=1,
                             init_blocks=1,

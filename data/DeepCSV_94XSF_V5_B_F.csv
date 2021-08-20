@@ -1,4 +1,4 @@
-DeepCSV; OperatingPoint, measurementType, sysType, jetFlavor, etaMin, etaMax, ptMin, ptMax, discrMin, discrMax, formula
+DeepCSV;OperatingPoint, measurementType, sysType, jetFlavor, etaMin, etaMax, ptMin, ptMax, discrMin, discrMax, formula
 0, comb, central, 1, -2.5, 2.5, 20, 1000, 0, 1, "1.0942+(-(0.00468151*(log(x+19)*(log(x+18)*(3-(0.365115*log(x+18)))))))"
 0, comb, central, 0, -2.5, 2.5, 20, 1000, 0, 1, "1.0942+(-(0.00468151*(log(x+19)*(log(x+18)*(3-(0.365115*log(x+18)))))))"
 0, comb, down, 1, -2.5, 2.5, 20, 30, 0, 1, "1.0942+((-(0.00468151*(log(x+19)*(log(x+18)*(3-(0.365115*log(x+18)))))))-0.085154704749584198)"
@@ -249,6 +249,8 @@ DeepCSV; OperatingPoint, measurementType, sysType, jetFlavor, etaMin, etaMax, pt
 2, incl, up_correlated, 2, 0, 2.5, 20, 1000, 0, 1, "(0.744235+0.959064/sqrt(x))*(1+(0.17036+9.32161e-05*x+-3.11119e-08*x*x))"
 2, incl, up_uncorrelated, 2, 0, 2.5, 20, 1000, 0, 1, "(0.744235+0.959064/sqrt(x))*(1+(0.159667))"
 3, iterativefit, central, 1, 0.0, 2.5, 20.0, 10000, -15, 1.1, 1.0
+3, iterativefit, up_jes, 1, 0.0, 2.5, 20.0, 10000, -15, 1.1, 1.0
+3, iterativefit, down_jes, 1, 0.0, 2.5, 20.0, 10000, -15, 1.1, 1.0
 3, iterativefit, down_hfstats2, 0, 0.0, 2.5, 20, 30, -15, 0, 1.32588374615
 3, iterativefit, down_hfstats2, 0, 0.0, 2.5, 20, 30, 0, 0.097, 1.48576116562
 3, iterativefit, down_hfstats2, 0, 0.0, 2.5, 20, 30, 0.097, 0.219, -21.5128807741*(x-0.097)*(x-0.097)*(x-0.097)+23.3850054054*(x-0.097)*(x-0.097)-4.7453481666*(x-0.097)+1.4857611656188965

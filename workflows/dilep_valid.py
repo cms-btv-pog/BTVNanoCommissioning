@@ -1,24 +1,32 @@
 import gzip
-import pickle
+import pickle, os, sys, mplhep as hep, numpy as np
+
 import coffea
 from coffea import hist, processor
-import numpy as np
 import awkward as ak
 from coffea.analysis_tools import Weights
 from coffea.lumi_tools import LumiMask
 from coffea.btag_tools import BTagScaleFactor
-deepcsv_sf = BTagScaleFactor("data/DeepCSV_94XSF_V5_B_F.csv",BTagScaleFactor.RESHAPE,methods='iterativefit,iterativefit,iterativefit')
-deepjet_sf = BTagScaleFactor("data/DeepFlavour_94XSF_V4_B_F.csv",BTagScaleFactor.RESHAPE,methods='iterativefit,iterativefit,iterativefit')
+from cTagSFReader import *
+# from ROOT import TFile
 
-with gzip.open("corrections.pkl.gz") as fin:
+deepcsvb_sf = BTagScaleFactor("data/DeepCSV_94XSF_V5_B_F.csv",BTagScaleFactor.RESHAPE,methods='iterativefit,iterativefit,iterativefit')
+deepcsvc_sf = "data/DeepCSV_ctagSF_MiniAOD94X_2017_pTincl_v3_2_interp.root"
+deepjetb_sf = BTagScaleFactor("data/DeepFlavour_94XSF_V4_B_F.csv",BTagScaleFactor.RESHAPE,methods='iterativefit,iterativefit,iterativefit')
+deepjetc_sf = "data/DeepJet_ctagSF_MiniAOD94X_2017_pTincl_v3_2_interp.root"
+##import corrections, masks
+with gzip.open("data/corrections.pkl.gz") as fin:
     compiled = pickle.load(fin)
 def build_lumimask(filename):
     return LumiMask(filename)
 lumiMasks = {
-    '2016': build_lumimask('Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt'),
-    '2017': build_lumimask('Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt'),
-    '2018': build_lumimask('Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt'),
+    '2016': build_lumimask('data/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt'),
+    '2017': build_lumimask('data/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt'),
+    '2018': build_lumimask('data/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt'),
 }
+
+
+
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -30,33 +38,57 @@ class NanoProcessor(processor.ProcessorABC):
         flav_axis = hist.Bin("flav", r"Genflavour",[0,1,4,5,6])
         cutflow_axis   = hist.Cat("cut",   "Cut")
 
-
+        # Events
+        nmu_axis   = hist.Bin("nmu",   r"N muons",     [0,1,2,3,4,5,6,7,8,9,10])
         njet_axis  = hist.Bin("njet",  r"N jets",      [0,1,2,3,4,5,6,7,8,9,10])
-        nbjet_axis = hist.Bin("nbjet", r"N b-jets",    [0,1,2,3,4,5,6,7,8,9,10])
-    
+        nbjet_axis = hist.Bin("nbjet", r"N b-jets",    [0,1,2,3,4,5,6,7,8,9,10])       
+        ntbjet_axis = hist.Bin("ntbjet", r"N b-jets",    [0,1,2,3,4,5,6,7,8,9,10])       
+        lmupt_axis   = hist.Bin("lmupt",   r"Muon pt", 45, 20, 200)
+
+
         # Jet
-        jet_pt_axis   = hist.Bin("pt",   r"Jet $p_{T}$ [GeV]", 100, 20, 400)
+        jet_pt_axis   = hist.Bin("pt",   r"Jet $p_{T}$ [GeV]", 100, 0, 500)
+        jet_rawpt_axis   = hist.Bin("rawpt",   r"Jet $p_{T}$ [GeV]", 100, 0, 500)
         jet_eta_axis  = hist.Bin("eta",  r"Jet $\eta$", 60, -3, 3)
         jet_phi_axis  = hist.Bin("phi",  r"Jet $\phi$", 60, -3, 3)
         jet_mass_axis = hist.Bin("mass", r"Jet $m$ [GeV]", 100, 0, 50)
-        fatjet_pt_axis   = hist.Bin("fatjet_pt",   r"FatJet $p_{T}$ [GeV]", 50, 350, 1000)
-        fatjet_eta_axis  = hist.Bin("fatjet_eta",  r"FatJet $\eta$", 60, -3, 3)
-        fatjet_phi_axis  = hist.Bin("fatjet_phi",  r"FatJet $\phi$", 60, -3, 3)
-        fatjet_mass_axis = hist.Bin("fatjet_mass", r"FatJet $m$ [GeV]", 100, 0, 1000)
-        subjet_pt_axis   = hist.Bin("subjet_pt",   r"subJet $p_{T}$ [GeV]", 50, 350, 1000)
-        subjet_eta_axis  = hist.Bin("subjet_eta",  r"subJet $\eta$", 60, -3, 3)
-        subjet_phi_axis  = hist.Bin("subjet_phi",  r"subJet $\phi$", 60, -3, 3)
-        subjet_mass_axis = hist.Bin("subjet_mass", r"subJet $m$ [GeV]", 100, 0, 1000)
+        jet_dr_axis = hist.Bin("dr", r"Jet $\Delta$R(l,j)", 50, 0, 5)
         ljpt_axis     = hist.Bin("ljpt", r"Leading jet $p_{T}$ [GeV]", 100, 20, 400)
-        sljpt_axis     = hist.Bin("sljpt", r"Subleading jet $p_{T}$ [GeV]", 100, 20, 400)
+        sljpt_axis     = hist.Bin("sljpt", r"Subleading jet $p_{T}$ [GeV]", 100, 20, 400)        
+        ljrawpt_axis     = hist.Bin("ljrawpt", r"Leading jet $p_{T}$ [GeV]", 100, 20, 400)
+        sljrawpt_axis     = hist.Bin("sljrawpt", r"Subleading jet $p_{T}$ [GeV]", 100, 20, 400)        
+        ljdr_axis = hist.Bin("ljdr", "Leading jet $\Delta$R(l,j)", 50,0,5)
+        sljdr_axis = hist.Bin("sljdr", "Subleading jet $\Delta$R(l,j)", 50,0,5)
 
         # Define similar axes dynamically
-        disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC','btagDeepB_bb']
-        ddx_list = ["btagDDBvLV2","btagDDCvBV2","btagDDCvLV2"]
+        disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC']
         btag_axes = []
         for d in disc_list:
             btag_axes.append(hist.Bin(d, d, 50, 0, 1))     
-        deepddx_list = ["DDX_jetNTracks","DDX_jetNSecondaryVertices","DDX_tau1_trackEtaRel_0","DDX_tau1_trackEtaRel_1","DDX_tau1_trackEtaRel_2","DDX_tau2_trackEtaRel_0","DDX_tau2_trackEtaRel_1","DDX_tau2_trackEtaRel_3","DDX_tau1_flightDistance2dSig","DDX_tau2_flightDistance2dSig","DDX_tau1_vertexDeltaR","DDX_tau1_vertexEnergyRatio","DDX_tau2_vertexEnergyRatio","DDX_tau1_vertexMass","DDX_tau2_vertexMass","DDX_trackSip2dSigAboveBottom_0","DDX_trackSip2dSigAboveBottom_1","DDX_trackSip2dSigAboveCharm","DDX_trackSip3dSig_0","DDX_tau1_trackSip3dSig_0","DDX_tau1_trackSip3dSig_1","DDX_trackSip3dSig_1","DDX_tau2_trackSip3dSig_0","DDX_tau2_trackSip3dSig_1"]
+        deepb_axis = hist.Bin("btagDeepBSF", "btagDeepBSF", 50, 0, 1)     
+        deepc_axis = hist.Bin("btagDeepCSF", "btagDeepCSF", 50, 0, 1)  
+        deepjb_axis = hist.Bin("btagDeepFlavBSF", "btagDeepFlavBSF", 50, 0, 1)     
+        deepjc_axis = hist.Bin("btagDeepFlavCSF", "btagDeepFlavCSF", 50, 0, 1)
+        deepcsv_CvL_axis = hist.Bin("deepcsv_CvL", "deepcsv_CvL", 50, 0, 1)  
+        deepcsv_BvC_axis = hist.Bin("deepcsv_BvC", "deepcsv_BvC", 50, 0, 1)  
+        deepflav_CvL_axis = hist.Bin("deepflav_CvL", "deepflav_CvL", 50, 0, 1)  
+        deepflav_BvC_axis = hist.Bin("deepflav_BvC", "deepflav_BvC", 50, 0, 1)  
+        deepcsv_CvL_up_axis = hist.Bin("deepcsv_CvL_up", "deepcsv_CvL_up", 50, 0, 1)  
+        deepcsv_BvC_up_axis = hist.Bin("deepcsv_BvC_up", "deepcsv_BvC_up", 50, 0, 1)  
+        deepflav_CvL_up_axis = hist.Bin("deepflav_CvL_up", "deepflav_CvL_up", 50, 0, 1)  
+        deepflav_BvC_up_axis = hist.Bin("deepflav_BvC_up", "deepflav_BvC_up", 50, 0, 1)  
+        deepcsv_CvL_dn_axis = hist.Bin("deepcsv_CvL_dn", "deepcsv_CvL_dn", 50, 0, 1)  
+        deepcsv_BvC_dn_axis = hist.Bin("deepcsv_BvC_dn", "deepcsv_BvC_dn", 50, 0, 1)  
+        deepflav_CvL_dn_axis = hist.Bin("deepflav_CvL_dn", "deepflav_CvL_dn", 50, 0, 1)  
+        deepflav_BvC_dn_axis = hist.Bin("deepflav_BvC_dn", "deepflav_BvC_dn", 50, 0, 1)  
+        deepb_axis_up = hist.Bin("btagDeepBSF_up", "btagDeepBSF_up", 50, 0, 1)     
+        deepc_axis_up = hist.Bin("btagDeepCSF_up", "btagDeepCSF_up", 50, 0, 1)  
+        deepjb_axis_up = hist.Bin("btagDeepFlavBSF_up", "btagDeepFlavBSF_up", 50, 0, 1)     
+        deepjc_axis_up = hist.Bin("btagDeepFlavCSF_up", "btagDeepFlavCSF_up", 50, 0, 1)
+        deepb_axis_down = hist.Bin("btagDeepBSF_down", "btagDeepBSF_down", 50, 0, 1)     
+        deepc_axis_down = hist.Bin("btagDeepCSF_down", "btagDeepCSF_down", 50, 0, 1)  
+        deepjb_axis_down = hist.Bin("btagDeepFlavBSF_down", "btagDeepFlavBSF_down", 50, 0, 1)     
+        deepjc_axis_down = hist.Bin("btagDeepFlavCSF_down", "btagDeepFlavCSF_down", 50, 0, 1)     
         deepcsv_list = [
         "DeepCSV_trackDecayLenVal_0", "DeepCSV_trackDecayLenVal_1", "DeepCSV_trackDecayLenVal_2", "DeepCSV_trackDecayLenVal_3", "DeepCSV_trackDecayLenVal_4", "DeepCSV_trackDecayLenVal_5", 
         "DeepCSV_trackDeltaR_0", "DeepCSV_trackDeltaR_1", "DeepCSV_trackDeltaR_2", "DeepCSV_trackDeltaR_3", "DeepCSV_trackDeltaR_4", "DeepCSV_trackDeltaR_5",
@@ -101,63 +133,80 @@ class NanoProcessor(processor.ProcessorABC):
                 deepcsv_axes.append(hist.Bin(d, d, 5, 0, 5))
             else:
                 deepcsv_axes.append(hist.Bin(d, d, 50, 0, 5.))
-        deepddx_axes = []
-        for d in deepddx_list:
-            if "NTracks" in d:
-                deepddx_axes.append(hist.Bin(d, d, 10, 0, 10))
-            elif "NSecondaryVertices" in d:
-                deepddx_axes.append(hist.Bin(d, d, 10, 0, 10))
-            elif "EtaRel" in d:
-                deepddx_axes.append(hist.Bin(d, d, 50, 0, 10))
-            elif "DeltaR" in d: 
-                deepddx_axes.append(hist.Bin(d, d, 50, 0, 0.3)) 
-            elif "ValAboveCharm" in d:
-                deepddx_axes.append(hist.Bin(d, d, 50, 0, 0.3))
-            elif "EnergyRatio" in d:
-                deepddx_axes.append(hist.Bin(d, d, 50, 0, 1))
-            else :
-                deepddx_axes.append(hist.Bin(d, d, 50, 0, 5.))
         
+        # for deepcsv, axises in zip(deepcsv_list, deepcsv_axes):
+        #      _hist_deepcsv_dict[deepcsv] = hist.Hist("Counts", dataset_axis,flav_axis,  axises)
         # Define histograms from axes
         _hist_jet_dict = {
                 'pt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_pt_axis),
+                'rawpt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_rawpt_axis),
                 'eta' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis),
                 'phi' : hist.Hist("Counts", dataset_axis, flav_axis,jet_phi_axis),
                 'mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis)
+                # 'dr': hist.Hist("Counts", dataset_axis, flav_axis,jet_dr_axis)
             }
         _hist_deepcsv_dict = {
                 'pt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_pt_axis),
+                'rawpt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_rawpt_axis),
                 'eta' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis),
                 'phi' : hist.Hist("Counts", dataset_axis, flav_axis,jet_phi_axis),
-                'mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis),
+                'mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis)
+
             }
-        _hist_deepddx_dict = {
-                'pt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_pt_axis),
-                'eta' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis),
-                'phi' : hist.Hist("Counts", dataset_axis, flav_axis,jet_phi_axis),
-                'mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis),
-            }
-       
-        # Generate some histograms dynamically
         
+        _hist_deepcsvSF_dict={
+            'btagDeepBSF' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepb_axis),
+            'btagDeepCSF' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepc_axis),
+            'btagDeepBvC' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepcsv_BvC_axis),
+            'btagDeepCvL' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepcsv_CvL_axis),
+            'btagDeepFlavBSF' : hist.Hist("Counts", dataset_axis, flav_axis, jet_eta_axis, jet_pt_axis,deepjb_axis),
+            'btagDeepFlavCSF' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepjc_axis),
+            'btagDeepFlavBvC' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepflav_BvC_axis),
+            'btagDeepFlavCvL' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepflav_CvL_axis),
+            'btagDeepBSF_up' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepb_axis_up),
+            'btagDeepCSF_up' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepc_axis_up),
+            'btagDeepBvC_up' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepcsv_BvC_up_axis),
+            'btagDeepCvL_up' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepcsv_CvL_up_axis),
+            'btagDeepFlavBSF_up' : hist.Hist("Counts", dataset_axis, flav_axis, jet_eta_axis, jet_pt_axis,deepjb_axis_up),
+            'btagDeepFlavCSF_up' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepjc_axis_up),
+            'btagDeepFlavBvC_up' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepflav_BvC_up_axis),
+            'btagDeepFlavCvL_up' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepflav_CvL_up_axis),
+            'btagDeepBSF_down' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepb_axis_down),
+            'btagDeepCSF_down' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepc_axis_down),
+            'btagDeepBvC_down' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepcsv_BvC_dn_axis),
+            'btagDeepCvL_down' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepcsv_CvL_dn_axis),
+            'btagDeepFlavBSF_down' : hist.Hist("Counts", dataset_axis, flav_axis, jet_eta_axis, jet_pt_axis,deepjb_axis_down),
+            'btagDeepFlavCSF_down' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepjc_axis_down),
+            'btagDeepFlavBvC_down' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepflav_BvC_dn_axis),
+            'btagDeepFlavCvL_down' : hist.Hist("Counts", dataset_axis, flav_axis,jet_eta_axis, jet_pt_axis, deepflav_CvL_dn_axis)
+        }
+        # Generate some histograms dynamically
         for disc, axis in zip(disc_list, btag_axes):
-            _hist_deepcsv_dict[disc] = hist.Hist("Counts", dataset_axis,  flav_axis, axis)
+            _hist_deepcsv_dict[disc] = hist.Hist("Counts", dataset_axis, flav_axis, jet_eta_axis, jet_pt_axis,axis)
         for deepcsv, axises in zip(deepcsv_list, deepcsv_axes):
-            _hist_deepcsv_dict[deepcsv] = hist.Hist("Counts", dataset_axis,flav_axis,  axises)
+             _hist_deepcsv_dict[deepcsv] = hist.Hist("Counts", dataset_axis,flav_axis,  axises)
         _hist_event_dict = {
-                'njet'  : hist.Hist("Counts", dataset_axis, njet_axis),
-                'nbjet' : hist.Hist("Counts", dataset_axis, nbjet_axis),
-            'ljpt'  : hist.Hist("Counts", dataset_axis, flav_axis,ljpt_axis),
-            'sljpt'  : hist.Hist("Counts", dataset_axis, flav_axis,sljpt_axis),
+                'njet'  : hist.Hist("Counts", dataset_axis,  njet_axis),
+                'nbjet' : hist.Hist("Counts", dataset_axis,  nbjet_axis),
+                'ntbjet' : hist.Hist("Counts", dataset_axis,  ntbjet_axis),
+                'nmu'   : hist.Hist("Counts", dataset_axis,  nmu_axis),
+                'lmupt' : hist.Hist("Counts", dataset_axis,  lmupt_axis),
+                'ljpt'  : hist.Hist("Counts", dataset_axis, flav_axis, ljpt_axis),
+                'sljpt'  : hist.Hist("Counts", dataset_axis, flav_axis, sljpt_axis),
+                'ljrawpt'  : hist.Hist("Counts", dataset_axis, flav_axis, ljrawpt_axis),
+                'sljrawpt'  : hist.Hist("Counts", dataset_axis, flav_axis, sljrawpt_axis),
+                'ljdr'  : hist.Hist("Counts", dataset_axis, flav_axis, ljdr_axis),
+                'sljdr'  : hist.Hist("Counts", dataset_axis, flav_axis, sljdr_axis)
             }
         self.jet_hists = list(_hist_jet_dict.keys())
         self.deepcsv_hists = list(_hist_deepcsv_dict.keys())
-#        self.deepddx_hists = list(_hist_deepddx_dict.keys())
+        self.deepcsvSF_hists = list(_hist_deepcsvSF_dict.keys())
+        # self.deepddx_hists = list(_hist_deepddx_dict.keys())
         self.event_hists = list(_hist_event_dict.keys())
-        _hist_dict = {**_hist_deepcsv_dict,**_hist_event_dict}
+        _hist_dict = {**_hist_deepcsv_dict,**_hist_event_dict,**_hist_deepcsvSF_dict}
         self._accumulator = processor.dict_accumulator(_hist_dict)
         self._accumulator['sumw'] = processor.defaultdict_accumulator(float)
-
+        print(len(pickle.dumps(self._accumulator)))
 
     @property
     def accumulator(self):
@@ -165,22 +214,21 @@ class NanoProcessor(processor.ProcessorABC):
 
     def process(self, events):
         output = self.accumulator.identity()
-        # print(output.items())
         dataset = events.metadata['dataset']
-        # if(len(events)==0):continue
         isRealData = not hasattr(events, "genWeight")
         
         if(isRealData):output['sumw'][dataset] += 1.
         else:output['sumw'][dataset] += ak.sum(events.genWeight)
         req_lumi=np.ones(len(events), dtype='bool')
         if(isRealData): req_lumi=lumiMasks['2017'](events.run, events.luminosityBlock)
+        weights = Weights(len(events), storeIndividual=True)
+        if not isRealData:
+            weights.add('genweight',events.genWeight)
+            weights.add('puweight', compiled['2017_pileupweight'](events.Pileup.nPU))
         ##############
         # Trigger level
         triggers = [
-            "HLT_IsoMu24"
-        #"HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-        #"HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-        # "HLT_PFJet40" 
+        "HLT_IsoMu24",
         ]
         
         trig_arrs = [events.HLT[_trig.strip("HLT_")] for _trig in triggers]
@@ -189,101 +237,164 @@ class NanoProcessor(processor.ProcessorABC):
             req_trig = req_trig | t
 
         ############
+        # Event level
+        
         ## Muon cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
         events.Muon = events.Muon[(events.Muon.pt > 30) & (abs(events.Muon.eta < 2.4))& (events.Muon.tightId)]  
         events.Muon = ak.pad_none(events.Muon, 1, axis=1) 
         req_muon =(ak.count(events.Muon.pt, axis=1) == 1)
-        #event_muon = ak.pad_none(events.Muon, 1, axis=1)
-        ## Electron cuts
-        # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
+        
+        # ## Electron cuts
+        # # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
         events.Electron = events.Electron[(events.Electron.pt > 30) & (abs(events.Electron.eta) < 2.4)&(events.Electron.cutBased>3)]
-        #event_electron = ak.pad_none(events.Electron, 1, axis=1)
         events.Electron = ak.pad_none(events.Electron, 1, axis=1) 
         req_ele = (ak.count(events.Electron.pt, axis=1) == 1)
+        ## Jet cuts 
+        
+        req_opposite_charge = (events.Electron[:, 0].charge * events.Muon[:, 0].charge) == -1
+        # req_opposite_charge = ak.fill_none(req_opposite_charge,False)
+        event_jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.4)&(events.Jet.puId > 0) &(events.Jet.jetId>5)&(events.Jet.btagDeepB>0.) & (events.Jet.btagDeepB<1.) & (events.Jet.btagDeepC>0.) & (events.Jet.btagDeepC<1.) & (events.Jet.btagDeepFlavB>0.) & (events.Jet.btagDeepFlavB<1.) & (events.Jet.btagDeepFlavC>0.) & (events.Jet.btagDeepFlavC<1.)&(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))&(ak.all(events.Jet.metric_table(events.Electron) > 0.4, axis=2))]
+        req_jets = (ak.num(event_jet.puId) >= 2)
 
-        ## Jet cuts
-        events.Jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.5)&(events.Jet.puId > 5) & (events.Jet.jetId>0)]
-        #&(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))&(ak.all(events.Jet.metric_table(events.Electron) > 0.4, axis=2))]
-        req_jets = (ak.count(events.Jet.pt, axis=1) >= 2)    
-        
-        
-        req_opposite_charge = events.Electron[:, 0].charge * events.Muon[:, 0].charge == -1
-        event_dilep = events.Electron[:, 0]+events.Muon[:, 0]
-        req_dilep_mass = event_dilep.mass >= 12        
-        event_level = req_trig & req_muon & req_ele & req_opposite_charge & req_jets & req_lumi #& req_dilep_mass
-        
+        event_level=req_trig & req_lumi & req_muon & req_ele & req_jets & req_opposite_charge
+        if(len(event_level)>0):event_level = ak.fill_none(event_level,False)        
         # Selected
         selev = events[event_level]    
         
         #########
-        smu = selev.Muon[(selev.Muon.pt > 30) & (abs(selev.Muon.eta < 2.4))& (selev.Muon.tightId)]
-        sele = selev.Electron[(selev.Electron.pt > 30) & (abs(selev.Electron.eta) < 2.4)&(selev.Electron.cutBased>3)]
         
+        # Per muon
+        mu_eta   = (abs(selev.Muon.eta) < 2.4)
+        mu_pt    = selev.Muon.pt > 30
+        mu_idiso = (selev.Muon.tightId > .5)&(selev.Muon.pfRelIso04_all<0.12)
+        mu_level = mu_eta & mu_pt & mu_idiso
+        smu=selev.Muon[mu_level]
+
+        #Per Electron
+        el_eta = (abs(selev.Electron.eta)<2.4)
+        el_pt =  selev.Electron.pt > 30
+        el_idiso = selev.Electron.cutBased>3
+        el_level = el_eta & el_pt & el_idiso
+        sel = selev.Electron[el_level] 
         # Per jet : https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
         jet_eta    = (abs(selev.Jet.eta) <= 2.4)
-        jet_pt     = selev.Jet.pt > 25
-        jet_pu     = (selev.Jet.puId > 5)&(selev.Jet.jetId>0)
-        jet_dr = (ak.all(selev.Jet.metric_table(smu) > 0.4, axis=2)) & (ak.all(selev.Jet.metric_table(sele) > 0.4, axis=2)) 
-        jet_level  = jet_pu & jet_eta & jet_pt #& jet_dr
+        jet_pt     = selev.Jet.pt > 25 
+        jet_pu     = (selev.Jet.puId > 0) &(selev.Jet.jetId>5)
+        jet_dr     = (ak.all(selev.Jet.metric_table(smu) > 0.4, axis=2) & ak.all(selev.Jet.metric_table(sel) > 0.4, axis=2) )
+        jet_clean  = (selev.Jet.btagDeepB>0.) & (selev.Jet.btagDeepB<1.) & (selev.Jet.btagDeepC>0.) & (selev.Jet.btagDeepC<1.) & (selev.Jet.btagDeepFlavB>0.) & (selev.Jet.btagDeepFlavB<1.) & (selev.Jet.btagDeepFlavC>0.) & (selev.Jet.btagDeepFlavC<1.)
         
-        # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
-        bjet_disc  = selev.Jet.btagDeepB > 0.7264 # L=0.0494, M=0.2770, T=0.7264
-        bjet_level = jet_level & bjet_disc
-        
+        jet_level  = jet_pu & jet_eta & jet_pt & jet_clean & jet_dr
         sjets  = selev.Jet[jet_level]
+        sjets.btag_CvL_flav = ak.fill_none(sjets.btagDeepFlavC/(1.-sjets.btagDeepFlavB),-99)
+        sjets.btag_CvB_flav = ak.fill_none(sjets.btagDeepFlavC/(sjets.btagDeepFlavC+sjets.btagDeepFlavB),-99)
+        sjets.btag_CvL_csv = ak.fill_none(sjets.btagDeepC/(1.-sjets.btagDeepB),-99)
+        sjets.btag_CvB_csv = ak.fill_none(sjets.btagDeepC/(sjets.btagDeepC+sjets.btagDeepB),-99)
+        # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
+        bjet_disc  = selev.Jet.btagDeepB > 0.4941 
+        bjet_level = jet_level & bjet_disc
+
         sbjets = selev.Jet[bjet_level]
-        sjets_b = sjets
-        sjets_c = sjets
-        sjets_l = sjets
-        if(not isRealData):
-            sjets_b = selev.Jet[(jet_level)&(abs(selev.Jet.hadronFlavour)==5)]
-            sjets_c = selev.Jet[(jet_level)&(abs(selev.Jet.hadronFlavour)==4)]
-            sjets_l = selev.Jet[(jet_level)&(abs(selev.Jet.hadronFlavour)<4)]
-        
+        if not isRealData: stbjets = sbjets[sbjets.hadronFlavour==5]
+        # print(sbjets.hadronFlavour,stbjets.hadronFlavour)
+        # print(ak.num(sbjets),ak.num(stbjets))
+        if isRealData :
+            genflavor = ak.zeros_like(sjets.pt)
         else:
             par_flav = (sjets.partonFlavour == 0 ) & (sjets.hadronFlavour==0)
             genflavor = sjets.hadronFlavour + 1*par_flav 
-            weights.add('genweight',selev.genWeight)
-            weights.add('puweight', compiled['2017_pileupweight'](selev.Pileup.nPU))
-            
-        # Fill histograms dynamically  
+            genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
+            jetsfs_c = getSF(ak.to_numpy(ak.flatten(sjets.hadronFlavour)),ak.to_numpy(ak.flatten(sjets.btag_CvL_flav)),ak.to_numpy(ak.flatten(sjets.btag_CvB_flav)),deepjetc_sf)*genweiev
+            csvsfs_c = getSF(ak.to_numpy(ak.flatten(sjets.hadronFlavour)),ak.to_numpy(ak.flatten(sjets.btag_CvL_csv)),ak.to_numpy(ak.flatten(sjets.btag_CvB_csv),deepcsvc_sf))*genweiev
+            jetsfs_cup = getSF(ak.to_numpy(ak.flatten(sjets.hadronFlavour)),ak.to_numpy(ak.flatten(sjets.btag_CvL_flav)),ak.to_numpy(ak.flatten(sjets.btag_CvB_flav)),deepjetc_sf,"TotalUncUp")*genweiev
+            csvsfs_cup = getSF(ak.to_numpy(ak.flatten(sjets.hadronFlavour)),ak.to_numpy(ak.flatten(sjets.btag_CvL_csv)),ak.to_numpy(ak.flatten(sjets.btag_CvB_csv)),deepcsvc_sf,"TotalUncUp")*genweiev
+            jetsfs_cdn = getSF(ak.to_numpy(ak.flatten(sjets.hadronFlavour)),ak.to_numpy(ak.flatten(sjets.btag_CvL_flav)),ak.to_numpy(ak.flatten(sjets.btag_CvB_flav)),deepjetc_sf,"TotalUncDown")*genweiev
+            csvsfs_cdn = getSF(ak.to_numpy(ak.flatten(sjets.hadronFlavour)),ak.to_numpy(ak.flatten(sjets.btag_CvL_csv)),ak.to_numpy(ak.flatten(sjets.btag_CvB_csv)),deepcsvc_sf,"TotalUncDown")*genweiev
+            jetsfs_b=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level]*ak.fill_none(ak.prod(deepjetb_sf.eval('central',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepFlavB),axis=-1),1.),sjets['pt'])[0])
+            csvsfs_b=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level]*ak.fill_none(ak.prod(deepcsvb_sf.eval('central',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepB),axis=-1),1.),sjets['pt'])[0])
+            csvsfs_bup=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level]*ak.fill_none(ak.prod(deepcsvb_sf.eval('up_jes',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepB),axis=-1),1.),sjets['pt'])[0])
+            jetsfs_bup=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level]*ak.fill_none(ak.prod(deepjetb_sf.eval('up_jes',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepFlavB),axis=-1),1.),sjets['pt'])[0])
+            csvsfs_bdn=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level]*ak.fill_none(ak.prod(deepcsvb_sf.eval('down_jes',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepB),axis=-1),1.),sjets['pt'])[0])
+            jetsfs_bdn=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level]*ak.fill_none(ak.prod(deepjetb_sf.eval('down_jes',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepFlavB),axis=-1),1.),sjets['pt'])[0])
+        
+        ## Fill histograms dynamically  
         for histname, h in output.items():
             if histname in self.deepcsv_hists:
                 if(isRealData):
                     if histname == 'rawpt':
                         h.fill(dataset=dataset,flav=ak.flatten(genflavor), rawpt =ak.flatten(sjets.pt))
-                    else:
+                    elif "btag" not in histname :
                         fields = {l: ak.flatten(sjets[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets)}
                         h.fill(dataset=dataset,flav=5, **fields)
                 else:
                     if histname == 'rawpt':
-                        genweiev=ak.flatten(ak.broadcast_arrays(weights.weight(),sjets['pt'])[0])
                         h.fill(dataset=dataset,flav=ak.flatten(genflavor), rawpt =ak.flatten(sjets.pt*(1-sjets.rawFactor)) ,weight=genweiev)
-                    else:
+                    elif "btag" not in histname :
                         fields = {l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)}
-                        genweiev=ak.flatten(ak.broadcast_arrays(weights.weight(),sjets['pt'])[0])
                         h.fill(dataset=dataset,flav=ak.flatten(genflavor), **fields,weight=genweiev)
-            if histname in self.deepcsvSF_hists:
-                fields = {l: ak.flatten(sjets[l.replace('SF','')], axis=None) for l in h.fields if l.replace('SF','') in dir(sjets)}
-                if(isRealData):h.fill(dataset=dataset,flav=5, **fields)
+            
         if not isRealData:
-            if 'Flav' in histname:
-                jetsfs_b=ak.fill_none(ak.prod(deepjet_sf.eval('central',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepFlavB),axis=-1),1.)
-                flavsf_b=ak.flatten(ak.broadcast_arrays(weights.weight()*jetsfs_b,sjets['pt'])[0])
-                output['btagDeepFlavBSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), btagDeepFlavBSF=ak.flatten(sjets.btagDeepFlavB),weight=flavsf_b)
-                jetsfs_c=ak.fill_none(ak.prod(deepjet_sf.eval('central',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepFlavC),axis=-1),1.)
-                flavsf_c=ak.flatten(ak.broadcast_arrays(weights.weight()*jetsfs_c,sjets['pt'])[0])
-                output['btagDeepFlavCSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), btagDeepFlavCSF=ak.flatten(sjets.btagDeepFlavC),weight=flavsf_c)
-            else:
-                csvsfs_b=ak.fill_none(ak.prod(deepcsv_sf.eval('central',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepB),axis=-1),1.)
-                deepcsvsf_b=ak.flatten(ak.broadcast_arrays(weights.weight()*csvsfs_b,sjets['pt'])[0])
-                output['btagDeepBSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), btagDeepBSF=ak.flatten(sjets.btagDeepB),weight=deepcsvsf_b)
-                csvsfs_c=ak.fill_none(ak.prod(deepcsv_sf.eval('central',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepC),axis=-1),1.)
-                deepcsvsf_c=ak.flatten(ak.broadcast_arrays(weights.weight()*csvsfs_c,sjets['pt'])[0])
-                output['btagDeepCSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), btagDeepCSF=ak.flatten(sjets.btagDeepC),weight=deepcsvsf_c)
-
-
+            ###Fill no SFs
+            output['btagDeepFlavB'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavB=ak.flatten(sjets.btagDeepFlavB),weight=genweiev)
+            output['btagDeepFlavC'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavC=ak.flatten(sjets.btagDeepFlavC),weight=genweiev)
+            output['btagDeepB'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepB=ak.flatten(sjets.btagDeepB),weight=genweiev)
+            output['btagDeepC'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepC=ak.flatten(sjets.btagDeepC),weight=genweiev)
+            
+            ###Fill SFs-nominal
+            output['btagDeepFlavBSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavBSF=ak.flatten(sjets.btagDeepFlavB),weight=jetsfs_b)
+            output['btagDeepBSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepBSF=ak.flatten(sjets.btagDeepB),weight=csvsfs_b)
+            output['btagDeepFlavBSF_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavBSF_up=ak.flatten(sjets.btagDeepFlavB),weight=jetsfs_bup)
+            output['btagDeepBSF_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepBSF_up=ak.flatten(sjets.btagDeepB),weight=csvsfs_bup)
+            output['btagDeepFlavBSF_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavBSF_down=ak.flatten(sjets.btagDeepFlavB),weight=jetsfs_bdn)
+            output['btagDeepBSF_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepBSF_down=ak.flatten(sjets.btagDeepB),weight=csvsfs_bdn)
+            output['btagDeepFlavCSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavCSF=ak.flatten(sjets.btagDeepFlavC),weight=jetsfs_c)
+            output['btagDeepFlavBvC'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepflav_BvC=ak.flatten(sjets.btag_CvB_flav),weight=jetsfs_c)
+            output['btagDeepFlavCvL'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepflav_CvL=ak.flatten(sjets.btag_CvL_flav),weight=jetsfs_c)
+            output['btagDeepCSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepCSF=ak.flatten(sjets.btagDeepC),weight=csvsfs_c)
+            output['btagDeepBvC'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_BvC=ak.flatten(sjets.btag_CvB_csv),weight=csvsfs_c)
+            output['btagDeepCvL'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_CvL=ak.flatten(sjets.btag_CvL_csv),weight=csvsfs_c)
+            output['btagDeepCSF_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepCSF_up=ak.flatten(sjets.btagDeepC),weight=csvsfs_cup)
+            output['btagDeepBvC_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_BvC_up= ak.flatten(sjets.btag_CvB_csv),weight=csvsfs_cup)
+            output['btagDeepCvL_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_CvL_up= ak.flatten(sjets.btag_CvL_csv),weight=csvsfs_cup)
+            output['btagDeepCSF_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepCSF_down=ak.flatten(sjets.btagDeepC),weight=csvsfs_cdn)
+            output['btagDeepBvC_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_BvC_dn=ak.flatten(sjets.btag_CvB_csv),weight=csvsfs_cdn)
+            output['btagDeepCvL_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_CvL_dn=ak.flatten(sjets.btag_CvL_csv),weight=csvsfs_cdn)
+            output['btagDeepFlavCSF_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavCSF_up=ak.flatten(sjets.btagDeepFlavC),weight=jetsfs_cup)
+            output['btagDeepFlavBvC_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), deepflav_BvC_up=ak.flatten(sjets.btag_CvB_flav),weight=jetsfs_cup)
+            output['btagDeepFlavCvL_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), deepflav_CvL_up=ak.flatten(sjets.btag_CvL_flav),weight=jetsfs_cup)
+            output['btagDeepFlavCSF_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavCSF_down=ak.flatten(sjets.btagDeepFlavC),weight=jetsfs_cdn)
+            output['btagDeepFlavBvC_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepflav_BvC_dn=ak.flatten(sjets.btag_CvB_flav),weight=jetsfs_cdn)
+            output['btagDeepFlavCvL_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepflav_CvL_dn=ak.flatten(sjets.btag_CvL_flav),weight=jetsfs_cdn)
+        else:
+            output['btagDeepFlavB'].fill(dataset=dataset,flav=0, eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavB=ak.flatten(sjets.btagDeepFlavB))
+            output['btagDeepFlavC'].fill(dataset=dataset,flav=0, eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavC=ak.flatten(sjets.btagDeepFlavC))
+            output['btagDeepB'].fill(dataset=dataset,flav=0, eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepB=ak.flatten(sjets.btagDeepB))
+            output['btagDeepC'].fill(dataset=dataset,flav=0, eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepC=ak.flatten(sjets.btagDeepC))
+            #### Fill SFs-nominal
+            output['btagDeepFlavBSF'].fill(dataset=dataset,flav=0, eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavBSF=ak.flatten(sjets.btagDeepFlavB))
+            output['btagDeepBSF'].fill(dataset=dataset,flav=0, eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepBSF=ak.flatten(sjets.btagDeepB))
+            output['btagDeepFlavBSF_up'].fill(dataset=dataset,flav=0, eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavBSF_up=ak.flatten(sjets.btagDeepFlavB))
+            output['btagDeepBSF_up'].fill(dataset=dataset,flav=0, eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepBSF_up=ak.flatten(sjets.btagDeepB))
+            output['btagDeepFlavBSF_down'].fill(dataset=dataset,flav=0, eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavBSF_down=ak.flatten(sjets.btagDeepFlavB))
+            output['btagDeepBSF_down'].fill(dataset=dataset,flav=0, eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepBSF_down=ak.flatten(sjets.btagDeepB))
+            output['btagDeepFlavCSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavCSF=ak.flatten(sjets.btagDeepFlavC))
+            output['btagDeepFlavBvC'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepflav_BvC=ak.flatten(sjets.btag_CvB_flav))
+            output['btagDeepFlavCvL'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepflav_CvL=ak.flatten(sjets.btag_CvL_flav))
+            output['btagDeepCSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepCSF=ak.flatten(sjets.btagDeepC))
+            output['btagDeepBvC'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_BvC=ak.flatten(sjets.btag_CvB_csv))
+            output['btagDeepCvL'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_CvL=ak.flatten(sjets.btag_CvL_csv))
+            output['btagDeepCSF_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepCSF_up=ak.flatten(sjets.btagDeepC))
+            output['btagDeepBvC_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_BvC_up= ak.flatten(sjets.btag_CvB_csv))
+            output['btagDeepCvL_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_CvL_up= ak.flatten(sjets.btag_CvL_csv))
+            output['btagDeepCSF_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepCSF_down=ak.flatten(sjets.btagDeepC))
+            output['btagDeepBvC_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_BvC_dn=ak.flatten(sjets.btag_CvB_csv))
+            output['btagDeepCvL_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepcsv_CvL_dn=ak.flatten(sjets.btag_CvL_csv))
+            output['btagDeepFlavCSF_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavCSF_up=ak.flatten(sjets.btagDeepFlavC))
+            output['btagDeepFlavBvC_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), deepflav_BvC_up=ak.flatten(sjets.btag_CvB_flav))
+            output['btagDeepFlavCvL_up'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), deepflav_CvL_up=ak.flatten(sjets.btag_CvL_flav))
+            output['btagDeepFlavCSF_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavCSF_down=ak.flatten(sjets.btagDeepFlavC))
+            output['btagDeepFlavBvC_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepflav_BvC_dn=ak.flatten(sjets.btag_CvB_flav))
+            output['btagDeepFlavCvL_down'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),deepflav_CvL_dn=ak.flatten(sjets.btag_CvL_flav))
 
         def flatten(ar): # flatten awkward into a 1d array to hist
             return ak.flatten(ar, axis=None)
@@ -292,39 +403,22 @@ class NanoProcessor(processor.ProcessorABC):
             return ak.num(ak.fill_none(ar[~ak.is_none(ar)], 0), axis=0)
         if(isRealData):
             output['njet'].fill(dataset=dataset,  njet=flatten(ak.num(sjets)))
-            output['nmu'].fill(dataset=dataset,   nmu=flatten(ak.num(smu)))
-            output['lmupt'].fill(dataset=dataset, lmupt=flatten((smu.pt)))
+            output['nbjet'].fill(dataset=dataset,  nbjet=flatten(ak.num(sbjets)))
+            output['ntbjet'].fill(dataset=dataset,  ntbjet=flatten(ak.num(sbjets)))
             output['ljpt'].fill(dataset=dataset, flav=0, ljpt=flatten(sjets[:,0].pt))
             output['sljpt'].fill(dataset=dataset, flav=0, sljpt=flatten(sjets[:,1].pt))
-            output['ssljpt'].fill(dataset=dataset, flav=0, ssljpt=flatten(sjets[:,2].pt))
-            output['sssljpt'].fill(dataset=dataset, flav=0, sssljpt=flatten(sjets[:,3].pt))
             output['ljrawpt'].fill(dataset=dataset, flav=0, ljrawpt=flatten(sjets[:,0].pt))
             output['sljrawpt'].fill(dataset=dataset, flav=0, sljrawpt=flatten(sjets[:,1].pt))
-            output['ssljrawpt'].fill(dataset=dataset, flav=0, ssljrawpt=flatten(sjets[:,2].pt))
-            output['sssljrawpt'].fill(dataset=dataset, flav=0, sssljrawpt=flatten(sjets[:,3].pt))
-            output['ljdr'].fill(dataset=dataset, flav=0, ljdr=flatten(sjets[:,0].delta_r(smu)))
-            output['sljdr'].fill(dataset=dataset, flav=0, sljdr=flatten(sjets[:,1].delta_r(smu)))
-            output['ssljdr'].fill(dataset=dataset, flav=0, ssljdr=flatten(sjets[:,2].delta_r(smu)))
-            output['sssljdr'].fill(dataset=dataset, flav=0, sssljdr=flatten(sjets[:,3].delta_r(smu)))
-            output['met'].fill(dataset=dataset, met=flatten((selev.METFixEE2017.pt)))
         else:
             
-            output['njet'].fill(dataset=dataset,  njet=flatten(ak.num(sjets)),weight=weights.weight())
-            output['nmu'].fill(dataset=dataset,   nmu=flatten(ak.num(smu)),weight=weights.weight())
-            output['lmupt'].fill(dataset=dataset, lmupt=flatten((smu.pt)),weight=weights.weight())
-            output['ljpt'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljpt=flatten(sjets[:,0].pt),weight=weights.weight())
-            output['sljpt'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljpt=flatten(sjets[:,1].pt),weight=weights.weight())
-            output['ssljpt'].fill(dataset=dataset, flav=flatten(sjets[:,2].hadronFlavour), ssljpt=flatten(sjets[:,2].pt),weight=weights.weight())
-            output['sssljpt'].fill(dataset=dataset, flav=flatten(sjets[:,3].hadronFlavour), sssljpt=flatten(sjets[:,3].pt),weight=weights.weight())
-            output['ljrawpt'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljrawpt=flatten(sjets[:,0].pt*(1-sjets[:,0].rawFactor)),weight=weights.weight())
-            output['sljrawpt'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljrawpt=flatten(sjets[:,1].pt*(1-sjets[:,1].rawFactor)),weight=weights.weight())
-            output['ssljrawpt'].fill(dataset=dataset, flav=flatten(sjets[:,2].hadronFlavour), ssljrawpt=flatten(sjets[:,2].pt*(1-sjets[:,2].rawFactor)),weight=weights.weight())
-            output['sssljrawpt'].fill(dataset=dataset, flav=flatten(sjets[:,3].hadronFlavour), sssljrawpt=flatten(sjets[:,3].pt*(1-sjets[:,3].rawFactor)),weight=weights.weight())
-            output['ljdr'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljdr=flatten(sjets[:,0].delta_r(smu)),weight=weights.weight())
-            output['sljdr'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljdr=flatten(sjets[:,1].delta_r(smu)),weight=weights.weight())
-            output['ssljdr'].fill(dataset=dataset, flav=flatten(sjets[:,2].hadronFlavour), ssljdr=flatten(sjets[:,2].delta_r(smu)),weight=weights.weight())
-            output['sssljdr'].fill(dataset=dataset, flav=flatten(sjets[:,3].hadronFlavour), sssljdr=flatten(sjets[:,3].delta_r(smu)),weight=weights.weight())
-            output['met'].fill(dataset=dataset, met=flatten((selev.METFixEE2017.pt)),weight=weights.weight())
+            output['njet'].fill(dataset=dataset,  njet=flatten(ak.num(sjets)),weight=weights.weight()[event_level])
+            output['nbjet'].fill(dataset=dataset,  nbjet=flatten(ak.num(sbjets)),weight=weights.weight()[event_level])
+            output['ntbjet'].fill(dataset=dataset,  ntbjet=flatten(ak.num(stbjets)),weight=weights.weight()[event_level])
+            output['ljpt'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljpt=flatten(sjets[:,0].pt),weight=weights.weight()[event_level])
+            output['sljpt'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljpt=flatten(sjets[:,1].pt),weight=weights.weight()[event_level])
+            output['ljrawpt'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljrawpt=flatten(sjets[:,0].pt*(1-sjets[:,0].rawFactor)),weight=weights.weight()[event_level])
+            output['sljrawpt'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljrawpt=flatten(sjets[:,1].pt*(1-sjets[:,1].rawFactor)),weight=weights.weight()[event_level])
+            len(pickle.dumps(output)) 
         return output
 
     def postprocess(self, accumulator):

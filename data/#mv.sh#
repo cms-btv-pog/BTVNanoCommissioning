@@ -1,0 +1,19 @@
+mv RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.txt  RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt
+mv Summer19UL17_V5_MC_L1FastJet_AK4PFchs.txt Summer19UL17_V5_MC_L1FastJet_AK4PFchs.jec.txt
+mv  Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs.txt Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs.jec.txt
+mv Summer19UL17_JRV2_DATA_PtResolution_AK4PFchs.txt Summer19UL17_JRV2_DATA_PtResolution_AK4PFchs.jec.txt
+mv Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs.txt                Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs.jec.txt
+mv Summer19UL17_JRV2_DATA_SF_AK4PFchs.jec.txt          
+                Summer19UL17_RunE_V5_DATA_L1FastJet_AK4PFchs.jec.txt
+Summer19UL17_JRV2_MC_PtResolution_AK4PFchs.jec.txt 
+                 Summer19UL17_RunE_V5_DATA_L2Relative_AK4PFchs.jec.txt
+Summer19UL17_JRV2_MC_SF_AK4PFchs.jec.txt                            Summer19UL17_RunE_V5_DATA_L3Absolute_AK4PFchs.jec.txt
+Summer19UL17_RunB_V5_DATA_L1FastJet_AK4PFchs.jec.txt                Summer19UL17_RunE_V5_DATA_Uncertainty_AK4PFchs.jec.txt
+Summer19UL17_RunB_V5_DATA_L2Relative_AK4PFchs.jec.txt               Summer19UL17_RunF_V5_DATA_L1FastJet_AK4PFchs.jec.txt
+Summer19UL17_RunB_V5_DATA_L3Absolute_AK4PFchs.jec.txt               Summer19UL17_RunF_V5_DATA_L2Relative_AK4PFchs.jec.txt
+Summer19UL17_RunB_V5_DATA_Uncertainty_AK4PFchs.jec.txt              Summer19UL17_RunF_V5_DATA_L3Absolute_AK4PFchs.jec.txt
+Summer19UL17_RunC_V5_DATA_L1FastJet_AK4PFchs.jec.txt                Summer19UL17_RunF_V5_DATA_Uncertainty_AK4PFchs.jec.txt
+Summer19UL17_RunC_V5_DATA_L2Relative_AK4PFchs.jec.txt               Summer19UL17_V5_MC_L1FastJet_AK4PFchs.jec.txt
+Summer19UL17_RunC_V5_DATA_L3Absolute_AK4PFchs.jec.txt               Summer19UL17_V5_MC_L2Relative_AK4PFchs.jec.txt
+Summer19UL17_RunC_V5_DATA_Uncertainty_AK4PFchs.jec.txt              Summer19UL17_V5_MC_Uncertainty_AK4PFchs.jec.txt
+Summer19UL17_RunD_V5_DATA_L1FastJet_AK4PFchs.jec.txt

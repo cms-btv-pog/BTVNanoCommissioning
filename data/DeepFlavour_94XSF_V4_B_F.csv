@@ -216,6 +216,8 @@ DeepFlavour;OperatingPoint, measurementType, sysType, jetFlavor, etaMin, etaMax,
 2, incl, up_correlated, 2, 0, 2.5, 20, 1000, 0, 1, "(0.952956+0.000569069*x+-1.88872e-06*x*x+1.25729e-09*x*x*x)*(1+(0.181036+0.00018716*x+-2.08392e-07*x*x))"
 2, incl, up_uncorrelated, 2, 0, 2.5, 20, 1000, 0, 1, "(0.952956+0.000569069*x+-1.88872e-06*x*x+1.25729e-09*x*x*x)*(1+(0.143241))"
 3, iterativefit, central, 1, 0.0, 2.5, 20.0, 10000, -15, 1.1, 1.0
+3, iterativefit, down_jes, 1, 0.0, 2.5, 20.0, 10000, -15, 1.1, 1.0
+3, iterativefit, up_jes, 1, 0.0, 2.5, 20.0, 10000, -15, 1.1, 1.0
 3, iterativefit, down_hfstats2, 0, 0.0, 2.5, 20, 30, -15, 0, 0.0
 3, iterativefit, down_hfstats2, 0, 0.0, 2.5, 20, 30, 0, 0.086, 1.54437875748
 3, iterativefit, down_hfstats2, 0, 0.0, 2.5, 20, 30, 0.086, 0.192, 39.9012681074*(x-0.086)*(x-0.086)*(x-0.086)+32.1982057375*(x-0.086)*(x-0.086)-8.1710115617*(x-0.086)+1.5443787574768066
