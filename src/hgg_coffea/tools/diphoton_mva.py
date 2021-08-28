@@ -21,9 +21,9 @@ def calculate_diphoton_mva(
     diphotons: awkward.Array,
     events: awkward.Array,
 ) -> awkward.Array:
-    diphoton_mva = mva[0]
     if diphoton_mva is None:
         return diphotons
+    diphoton_mva = mva[0]
 
     var_order = mva[1]
 

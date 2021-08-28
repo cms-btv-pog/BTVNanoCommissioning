@@ -214,7 +214,8 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         diphotons = diphotons[awkward.argsort(diphotons.pt, ascending=False)]
 
         # baseline modifications to diphotons
-        diphotons = self.add_diphoton_mva(diphotons, events)
+        if self.diphoton_mva is not None:
+            diphotons = self.add_diphoton_mva(diphotons, events)
 
         # set diphotons as part of the event record
         events["diphotons"] = diphotons
