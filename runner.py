@@ -11,6 +11,7 @@ from coffea.util import save
 
 from hgg_coffea.workflows import taggers, workflows
 
+from functools import partial
 
 def validate(file):
     try:
@@ -186,6 +187,15 @@ def get_main_parser():
     )
     return parser
 
+def _worker_upload(dask_worker, data, fname):
+    dask_worker.loop.add_callback(
+        callback=dask_worker.upload_file,
+        comm=None,  # not used
+        filename=fname,
+        data=data,
+        load=True
+    )
+
 
 if __name__ == "__main__":
     metaCondsPath = os.path.join(os.path.dirname(__file__), "metaconditions")
@@ -206,8 +216,7 @@ if __name__ == "__main__":
         for key in sample_dict.keys():
             sample_dict[key] = [
                 path.replace(
-                    path[xrd_pfx_len : xrd_pfx_len + path[xrd_pfx_len:].find("/")]
-                    + "/",
+                    path[xrd_pfx_len : xrd_pfx_len + path[xrd_pfx_len:].find("/")],
                     "xcache",
                 )
                 for path in sample_dict[key]
@@ -460,10 +469,24 @@ if __name__ == "__main__":
 
         if args.executor == "dask/casa":
             client = Client("tls://localhost:8786")
+            print("Waiting for at least one worker...")  # noqa
+            client.wait_for_workers(1)
             import shutil
 
-            shutil.make_archive("workflows", "zip", base_dir="workflows")
-            client.upload_file("workflows.zip")
+            fname="hgg_coffea.zip"
+
+            shutil.make_archive("hgg_coffea", "zip", root_dir="src/", base_dir=".")
+            # client.upload_file(fname)
+            
+            with open(fname, "rb") as f:
+                data = f.read()
+
+            client.register_worker_callbacks(
+                setup=partial(
+                    _worker_upload, fname=fname, data=data,
+                )
+            )
+
         else:
             cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
             client = Client(cluster)
