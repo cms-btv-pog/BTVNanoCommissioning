@@ -253,7 +253,7 @@ if __name__ == "__main__":
                 desc=f"Validating {sample[:20]}...",
             )
             _results = list(_rmap)
-            counts = np.sum([r for r in _results if np.isreal(r)])
+            counts = np.sum([r for r in _results if r is not None])
             all_invalid += [r for r in _results if type(r) == str]
             print("Events:", np.sum(counts))  # noqa
         print("Bad files:")  # noqa
