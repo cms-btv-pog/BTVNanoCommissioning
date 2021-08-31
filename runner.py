@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
     # load workflow
     if args.workflow == "ttcom":
-        from workflows.ttbar_validation2 import NanoProcessor
+        from workflows.ttbar_validation import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "jet_AK4":
         from workflows.multijet_valid2 import NanoProcessor

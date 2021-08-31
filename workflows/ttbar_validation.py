@@ -93,10 +93,10 @@ class NanoProcessor(processor.ProcessorABC):
             }
         
         self.jet_hists = list(_hist_jet_dict.keys())
-        self.deepcsv_hists = list(_hist_deepcsv_dict.keys())
+        #self.deepcsv_hists = list(_hist_deepcsv_dict.keys())
         self.event_hists = list(_hist_event_dict.keys())
     
-        _hist_dict = {**_hist_jet_dict, **_hist_deepcsv_dict, **_hist_event_dict}
+        _hist_dict = {**_hist_jet_dict,  **_hist_event_dict} #**_hist_deepcsv_dict, **_hist_event_dict}
         self._accumulator = processor.dict_accumulator(_hist_dict)
         self._accumulator['sumw'] = processor.defaultdict_accumulator(float)
 
@@ -186,11 +186,11 @@ class NanoProcessor(processor.ProcessorABC):
         
         # output['pt'].fill(dataset=dataset, pt=selev.Jet.pt.flatten())
         # Fill histograms dynamically  
-        for histname, h in output.items():
-            if (histname not in self.jet_hists) and (histname not in self.deepcsv_hists): continue
+  #      for histname, h in output.items():
+   #         if (histname not in self.jet_hists) and (histname not in self.deepcsv_hists): continue
             # Get valid fields perhistogram to fill
-            fields = {k: ak.flatten(sjets[k], axis=None) for k in h.fields if k in dir(sjets)}
-            h.fill(dataset=dataset, **fields)
+#            fields = {k: ak.flatten(sjets[k], axis=None) for k in h.fields if k in dir(sjets)}
+ #           h.fill(dataset=dataset, **fields)
 
 
         def flatten(ar): # flatten awkward into a 1d array to hist
