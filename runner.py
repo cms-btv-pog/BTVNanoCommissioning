@@ -3,15 +3,16 @@ import json
 import os
 import sys
 import time
+from typing import List
 
 import numpy as np
 import uproot
 from coffea import processor
 from coffea.util import save
+from dask.distributed import Client, Worker, WorkerPlugin
 
 from hgg_coffea.workflows import taggers, workflows
 
-from functools import partial
 
 def validate(file):
     try:
@@ -33,6 +34,21 @@ def check_port(port):
         available = False
     sock.close()
     return available
+
+
+class DependencyInstaller(WorkerPlugin):
+    def __init__(self, dependencies: List[str]):
+        self._depencendies = " ".join(f"'{dep}'" for dep in dependencies)
+
+    def setup(self, worker: Worker):
+        os.system(f"pip install {self._depencendies}")
+
+
+dependency_installer = DependencyInstaller(
+    [
+        "git+https://github.com/lgray/hgg-coffea.git@master",
+    ]
+)
 
 
 def get_main_parser():
@@ -187,13 +203,14 @@ def get_main_parser():
     )
     return parser
 
+
 def _worker_upload(dask_worker, data, fname):
     dask_worker.loop.add_callback(
         callback=dask_worker.upload_file,
-        comm=None,  # not used
+        comm=None,
         filename=fname,
         data=data,
-        load=True
+        load=True,
     )
 
 
@@ -410,7 +427,6 @@ if __name__ == "__main__":
     elif "dask" in args.executor:
         from dask.distributed import performance_report
         from dask_jobqueue import HTCondorCluster, SLURMCluster
-        from distributed import Client
 
         if "lpc" in args.executor:
             env_extra = [
@@ -470,23 +486,8 @@ if __name__ == "__main__":
         if args.executor == "dask/casa":
             client = Client("tls://localhost:8786")
             print("Waiting for at least one worker...")  # noqa
-            client.wait_for_workers(1)
-            import shutil
-
-            fname="hgg_coffea.zip"
-
-            shutil.make_archive("hgg_coffea", "zip", root_dir="src/", base_dir=".")
-            # client.upload_file(fname)
-            
-            with open(fname, "rb") as f:
-                data = f.read()
-
-            client.register_worker_callbacks(
-                setup=partial(
-                    _worker_upload, fname=fname, data=data,
-                )
-            )
-
+            # client.wait_for_workers(1)
+            client.register_worker_plugin(dependency_installer)
         else:
             cluster.adapt(minimum=args.scaleout, maximum=args.max_scaleout)
             client = Client(cluster)
