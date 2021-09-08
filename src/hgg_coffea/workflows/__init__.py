@@ -5,4 +5,4 @@ workflows = {}
 
 workflows["dystudies"] = DYStudiesProcessor
 
-__all__ = ["workflows", "taggers"]
+__all__ = ["workflows", "taggers", "DYStudiesProcessor"]
