@@ -17,4 +17,7 @@ class DummyTagger1:
         return 20
 
     def __call__(self, events: awkward.Array) -> awkward.Array:
-        return self.priority * awkward.ones_like(events.diphotons.pt, dtype=numpy.int32)
+        return (
+            self.priority * awkward.ones_like(events.diphotons.pt, dtype=numpy.int32),
+            {},
+        )
