@@ -285,7 +285,7 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
                 subdirs.append(events.metadata["dataset"])
             self.dump_pandas(df, fname, self.output_location, subdirs)
 
-        return {}
+        return histos_etc
 
     def postprocess(self, accumulant: Dict[Any, Any]) -> Any:
         raise NotImplementedError
