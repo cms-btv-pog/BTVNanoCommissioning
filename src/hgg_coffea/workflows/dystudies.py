@@ -27,7 +27,7 @@ class DYStudiesProcessor(HggBaseProcessor):
         self.analysis = "mainAnalysis"
 
     def process_extra(self, events: ak.Array) -> ak.Array:
-        return events
+        return events, {}
 
     def postprocess(self, accumulant: Dict[Any, Any]) -> Any:
         pass

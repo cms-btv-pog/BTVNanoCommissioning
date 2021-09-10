@@ -220,13 +220,22 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         # set diphotons as part of the event record
         events["diphotons"] = diphotons
 
+        # here we start recording possible coffea accumulators
+        # most likely histograms, could be counters, arrays, ...
+        histos_etc = {}
+
         # workflow specific processing
-        events = self.process_extra(events)
+        events, process_extra = self.process_extra(events)
+        histos_etc.update(process_extra)
 
         # run taggers on the events list with added diphotons
         # the shape here is ensured to be broadcastable
         for tagger in self.taggers:
-            diphotons["_".join([tagger.name, str(tagger.priority)])] = tagger(events)
+            (
+                diphotons["_".join([tagger.name, str(tagger.priority)])],
+                tagger_extra,
+            ) = tagger(events)
+            histos_etc.update(tagger_extra)
 
         # if there are taggers to run, arbitrate by them first
         if len(self.taggers):
@@ -276,7 +285,7 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
                 subdirs.append(events.metadata["dataset"])
             self.dump_pandas(df, fname, self.output_location, subdirs)
 
-        return {}
+        return histos_etc
 
     def postprocess(self, accumulant: Dict[Any, Any]) -> Any:
         raise NotImplementedError
