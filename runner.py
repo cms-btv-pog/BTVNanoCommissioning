@@ -46,9 +46,9 @@ class DependencyInstaller(WorkerPlugin):
 
 dependency_installer = DependencyInstaller(
     [
-        "git+https://github.com/lgray/hgg-coffea.git@master",
+        "git+https://github.com/lgray/hgg-coffea.git@master", ##-- if develop a tagger, needs to be in this repo or in a fork 
     ]
-)
+) ##-- pointing to this repo for now to install dependencies. Doesn't work like this for now on LPC and lxplus 
 
 
 def get_main_parser():
@@ -128,9 +128,9 @@ def get_main_parser():
             "dask/slurm",
             "dask/lpc",
             "dask/lxplus",
-            "dask/casa",
+            "dask/casa", ##-- Use for coffea-casa 
         ],
-        default="futures",
+        default="futures", ##-- Local executor (named after concurrent futures package) 
         help="The type of executor to use (default: %(default)s). Other options can be implemented. "
         "For example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html"
         "- `parsl/slurm` - tested at DESY/Maxwell"

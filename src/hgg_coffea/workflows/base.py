@@ -226,9 +226,12 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         # run taggers on the events list with added diphotons
         # the shape here is ensured to be broadcastable
         for tagger in self.taggers:
-            diphotons["_".join([tagger.name, str(tagger.priority)])] = tagger(events)
+            diphotons["_".join([tagger.name, str(tagger.priority)])] = tagger(events) ## creates new column in diphotons - tagger priority, or 0, also return list of histrograms here? 
+            ##-- Can make categories by 10s place, 10, 11, 12, 13 e.g. for 4 WWgg categories in tagger.
 
         # if there are taggers to run, arbitrate by them first
+        ##-- Deal with order of tagger priorities 
+        ##-- Turn from diphoton jagged array to whether or not an event was selected 
         if len(self.taggers):
             counts = awkward.num(diphotons.pt, axis=1)
             flat_tags = numpy.stack(
