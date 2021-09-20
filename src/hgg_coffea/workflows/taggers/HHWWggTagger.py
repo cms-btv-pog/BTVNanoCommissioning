@@ -22,29 +22,48 @@ class HHWWggTagger:
     @property
     def priority(self) -> int:
         return 40
+    
+    def GetCategory(self, ievt) -> int:
+        
+        evt_nLeptons = self.nLeptons[ievt] 
+        evt_nJets = self.nJets[ievt]
+        
+        if(evt_nLeptons == 0):
+            cat = 0 
+        elif(evt_nLeptons == 1 and evt_nJets >= 4):
+            cat = 1 
+        elif(evt_nLeptons >= 2):
+            cat = 2
+        else:
+            cat = 3 
+            
+        return cat 
 
     def __call__(self, events: ak.Array) -> ak.Array:
         
-        counts = ak.num(events.diphotons.pt, axis=1) ##-- Number of entries per row. (N diphotons per row) 
-        cats = numpy.random.randint(low=0, high=4, size = len(ak.flatten(events.diphotons.pt))) ##-- Randomly assign categories. The length of this array is the number of diphotons 
-        cats = ak.unflatten(cats, counts) ##-- Back to size of events. 
+        electrons = events["electrons"]
+        muons = events["muons"]
+        jets = events["jets"]
         
-        default_cats = self.priority * ak.ones_like(events.diphotons.pt, dtype=numpy.int32)
-        updated_cats = self.priority + cats 
+        nElectrons = ak.num(electrons, axis=1)
+        nMuons = ak.num(muons, axis=1)
+        nLeptons = numpy.add(nElectrons, nMuons)
+        nJets = ak.num(jets, axis=1)
         
-        return (updated_cats, {})
+        self.nLeptons = nLeptons
+        self.nJets = nJets
+        
+        ievts = numpy.array([i for i in range(len(events))])
 
-        """
-        ##-- Derive new column from logic 
-        # tag per diphoton, not per event
-#         events.diphotons
-        counts = ak.num(events.diphoton.pt, axis=1) ##-- Number of entries per row. (N diphotons per row)  
-        cats = numpy.random.randint(low=0, high=4, size = len(ak.flatten(events.diphoton.pt)) ##-- Number of diphotons 
-        cats = ak.unflatten(cats, counts) ##-- Back to size of events ##-- Want to select highest pT diphoton object ##-- Zero out diphotons not being used. 
-        return (self.priority + cats) * ....
-        return (self.priority + 1) * ak.ones_like(events.diphotons.pt, dtype=numpy.int32) ##-- returning a column of all 20s. This is categorizing the events. Giving entire tagger outcome. 
-        """ 
-        return (
-            self.priority * ak.ones_like(events.diphotons.pt, dtype=numpy.int32),
-            {},
-        )
+        nDiphotons = ak.num(events.diphotons.pt, axis=1) ##-- Number of entries per row. (N diphotons per row) 
+        ievts_by_dipho = ak.flatten(ak.Array([nDipho*[evt_i] for evt_i, nDipho in enumerate(nDiphotons)]))
+        cat_vals = ak.Array(map(self.GetCategory, ievts_by_dipho))
+        print("cat_vals:",cat_vals)
+
+#         cats = numpy.random.randint(low=0, high=4, size = len(ak.flatten(events.diphotons.pt))) ##-- Randomly assign categories. The length of this array is the number of diphotons 
+        cats = ak.unflatten(cat_vals, nDiphotons) ##-- Back to size of events. 
+        
+        cats_by_diphoEvt = self.priority + cats 
+        print("cats_by_diphoEvt:",cats_by_diphoEvt)
+        
+        return (cats_by_diphoEvt, {})

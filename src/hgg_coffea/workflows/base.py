@@ -52,6 +52,16 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         self.min_full5x5_r9 = 0.8
         self.max_chad_iso = 20.0
         self.max_chad_rel_iso = 0.3
+        
+        # Electron selections 
+        self.min_pt_electron = 10.0
+        
+        # Muon selections 
+        self.min_pt_muon = 10.0   
+        
+        # Jet selections 
+        self.min_pt_jet = 30.0 
+        self.max_abs_eta_jet = 2.4
 
         self.taggers = []
         if taggers is not None:
@@ -90,8 +100,8 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
                 | (photons.pfRelIso03_chg < self.max_chad_iso)
                 | (photons.pfRelIso03_chg / photons.pt < self.max_chad_rel_iso)
             )
-        ]
-
+        ]  
+    
     def diphoton_list_to_pandas(self, diphotons: awkward.Array) -> pandas.DataFrame:
         output = pandas.DataFrame()
         for field in awkward.fields(diphotons):
@@ -105,6 +115,27 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
                 output[field] = awkward.to_numpy(diphotons[field])
         return output
 
+    ##-- Lepton selections 
+    def electron_selection(self, electrons: awkward.Array) -> awkward.Array:
+
+        return electrons[
+          (electrons.pt > self.min_pt_electron)
+        ]
+    
+    def muon_selection(self, muons: awkward.Array) -> awkward.Array:
+
+        return muons[
+          (muons.pt > self.min_pt_muon)
+        ]  
+    
+    ##-- Jet selections 
+    def jet_selection(self, jets: awkward.Array) -> awkward.Array:
+
+        return jets[
+          (jets.pt > self.min_pt_jet)
+            & (abs(jets.eta) < self.max_abs_eta_jet)
+        ]     
+    
     def dump_pandas(
         self,
         pddf: pandas.DataFrame,
@@ -188,6 +219,23 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
 
         # modifications to photons
         photons = events.Photon
+        
+        # Get base lepton collections for selections
+        electrons = events.Electron
+        muons = events.Muon 
+        
+        electrons = self.electron_selection(electrons)
+        muons = self.muon_selection(muons)
+        
+        # Get jets for jet selection
+        jets = events.Jet
+        jets = self.jet_selection(jets)
+        
+        ##-- Update event collections of leptons and jets 
+        events["electrons"] = electrons
+        events["muons"] = muons 
+        events["jets"] = jets 
+        
         if self.chained_quantile is not None:
             photons = self.chained_quantile.apply(events)
 
