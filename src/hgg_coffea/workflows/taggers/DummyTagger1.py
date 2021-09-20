@@ -17,6 +17,8 @@ class DummyTagger1:
         return 20
 
     def __call__(self, events: awkward.Array) -> awkward.Array:
+        ##-- Baseline example for subcategorization:
+        """
         ##-- Derive new column from logic 
         # tag per diphoton, not per event
 #         events.diphotons
@@ -25,4 +27,8 @@ class DummyTagger1:
         cats = ak.unflatten(cats, counts) ##-- Back to size of events ##-- Want to select highest pT diphoton object ##-- Zero out diphotons not being used. 
         return (self.priority + cats) * ....
         return (self.priority + 1) * awkward.ones_like(events.diphotons.pt, dtype=numpy.int32) ##-- returning a column of all 20s. This is categorizing the events. Giving entire tagger outcome. 
-        
+        """ 
+        return (
+            self.priority * awkward.ones_like(events.diphotons.pt, dtype=numpy.int32),
+            {},
+        )

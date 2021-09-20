@@ -19,4 +19,4 @@ class DummyTagger2:
     def __call__(self, events: awkward.Array) -> awkward.Array:
         counts = awkward.num(events.diphotons, axis=1)
         x = numpy.random.exponential(size=awkward.sum(counts))
-        return awkward.unflatten(self.priority * (x > 2), counts)
+        return awkward.unflatten(self.priority * (x > 2), counts), {}
