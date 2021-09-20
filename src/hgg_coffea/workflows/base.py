@@ -316,6 +316,14 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         diphotons["lumi"] = events.luminosityBlock
         diphotons["run"] = events.run
 
+        nElectrons = awkward.num(electrons, axis=1)
+        nMuons = awkward.num(muons, axis=1)
+        nLeptons = numpy.add(nElectrons, nMuons)
+        nJets = awkward.num(jets, axis=1)
+        
+        diphotons["nLeptons"] = nLeptons
+        diphotons["nJets"] = nJets
+        
         # drop events without a preselected diphoton candidate
         # drop events without a tag, if there are tags
         if len(self.taggers):

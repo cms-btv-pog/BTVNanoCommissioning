@@ -28,13 +28,13 @@ class HHWWggTagger:
         evt_nLeptons = self.nLeptons[ievt] 
         evt_nJets = self.nJets[ievt]
         
-        if(evt_nLeptons == 0):
+        if(evt_nLeptons == 1): ##-- Semileptonic
             cat = 0 
-        elif(evt_nLeptons == 1 and evt_nJets >= 4):
+        elif(evt_nLeptons == 0 and evt_nJets >= 4): ##-- Fullyhadronic 
             cat = 1 
-        elif(evt_nLeptons >= 2):
+        elif(evt_nLeptons >= 2): ##-- Fullyleptonic 
             cat = 2
-        else:
+        else: ##-- Untagged 
             cat = 3 
             
         return cat 
@@ -53,17 +53,26 @@ class HHWWggTagger:
         self.nLeptons = nLeptons
         self.nJets = nJets
         
+        ##-- Is there some cooler / possibly more time efficient way to do this with a dictionary like this? 
+#         self.CatDict = {
+#             ##-- nLeptons, nJets requirements 
+#             ["evt_nLeptons==1", "evt_nJets>=0"] : 0,
+#             ["evt_nLeptons==0", "evt_nJets>=4"] : 1,
+#             ["evt_nLeptons>=2", "evt_nJets>=0"] : 2
+#             ["evt_nLeptons==0", "evt_nJets<=3"] : 3 
+#         }
+        
         ievts = numpy.array([i for i in range(len(events))])
-
         nDiphotons = ak.num(events.diphotons.pt, axis=1) ##-- Number of entries per row. (N diphotons per row) 
         ievts_by_dipho = ak.flatten(ak.Array([nDipho*[evt_i] for evt_i, nDipho in enumerate(nDiphotons)]))
         cat_vals = ak.Array(map(self.GetCategory, ievts_by_dipho))
-        print("cat_vals:",cat_vals)
+#         print("cat_vals:",cat_vals)
 
-#         cats = numpy.random.randint(low=0, high=4, size = len(ak.flatten(events.diphotons.pt))) ##-- Randomly assign categories. The length of this array is the number of diphotons 
         cats = ak.unflatten(cat_vals, nDiphotons) ##-- Back to size of events. 
-        
         cats_by_diphoEvt = self.priority + cats 
-        print("cats_by_diphoEvt:",cats_by_diphoEvt)
+        
+#         print("nLeptons:",nLeptons)
+#         print("nJets:",nJets)
+#         print("cats_by_diphoEvt:",cats_by_diphoEvt)
         
         return (cats_by_diphoEvt, {})
