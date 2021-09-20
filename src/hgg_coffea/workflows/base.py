@@ -52,16 +52,6 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         self.min_full5x5_r9 = 0.8
         self.max_chad_iso = 20.0
         self.max_chad_rel_iso = 0.3
-        
-        # Electron selections 
-        self.min_pt_electron = 10.0
-        
-        # Muon selections 
-        self.min_pt_muon = 10.0   
-        
-        # Jet selections 
-        self.min_pt_jet = 30.0 
-        self.max_abs_eta_jet = 2.4
 
         self.taggers = []
         if taggers is not None:
@@ -113,28 +103,7 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
                     )
             else:
                 output[field] = awkward.to_numpy(diphotons[field])
-        return output
-
-    ##-- Lepton selections 
-    def electron_selection(self, electrons: awkward.Array) -> awkward.Array:
-
-        return electrons[
-          (electrons.pt > self.min_pt_electron)
-        ]
-    
-    def muon_selection(self, muons: awkward.Array) -> awkward.Array:
-
-        return muons[
-          (muons.pt > self.min_pt_muon)
-        ]  
-    
-    ##-- Jet selections 
-    def jet_selection(self, jets: awkward.Array) -> awkward.Array:
-
-        return jets[
-          (jets.pt > self.min_pt_jet)
-            & (abs(jets.eta) < self.max_abs_eta_jet)
-        ]     
+        return output 
     
     def dump_pandas(
         self,
@@ -219,23 +188,7 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
 
         # modifications to photons
         photons = events.Photon
-        
-        # Get base lepton collections for selections
-        electrons = events.Electron
-        muons = events.Muon 
-        
-        electrons = self.electron_selection(electrons)
-        muons = self.muon_selection(muons)
-        
-        # Get jets for jet selection
-        jets = events.Jet
-        jets = self.jet_selection(jets)
-        
-        ##-- Update event collections of leptons and jets 
-        events["electrons"] = electrons
-        events["muons"] = muons 
-        events["jets"] = jets 
-        
+                
         if self.chained_quantile is not None:
             photons = self.chained_quantile.apply(events)
 
@@ -284,7 +237,6 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
                 tagger_extra,
             ) = tagger(events) ## creates new column in diphotons - tagger priority, or 0, also return list of histrograms here? 
             histos_etc.update(tagger_extra)
-            ##-- Can make categories by 10s place, 10, 11, 12, 13 e.g. for 4 WWgg categories in tagger.
 
         # if there are taggers to run, arbitrate by them first
         ##-- Deal with order of tagger priorities 
@@ -316,13 +268,13 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         diphotons["lumi"] = events.luminosityBlock
         diphotons["run"] = events.run
 
-        nElectrons = awkward.num(electrons, axis=1)
-        nMuons = awkward.num(muons, axis=1)
-        nLeptons = numpy.add(nElectrons, nMuons)
-        nJets = awkward.num(jets, axis=1)
+#         nElectrons = awkward.num(electrons, axis=1)
+#         nMuons = awkward.num(muons, axis=1)
+#         nLeptons = numpy.add(nElectrons, nMuons)
+#         nJets = awkward.num(jets, axis=1)
         
-        diphotons["nLeptons"] = nLeptons
-        diphotons["nJets"] = nJets
+#         diphotons["nLeptons"] = nLeptons
+#         diphotons["nJets"] = nJets
         
         # drop events without a preselected diphoton candidate
         # drop events without a tag, if there are tags
