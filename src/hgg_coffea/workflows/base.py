@@ -90,8 +90,8 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
                 | (photons.pfRelIso03_chg < self.max_chad_iso)
                 | (photons.pfRelIso03_chg / photons.pt < self.max_chad_rel_iso)
             )
-        ]  
-    
+        ]
+
     def diphoton_list_to_pandas(self, diphotons: awkward.Array) -> pandas.DataFrame:
         output = pandas.DataFrame()
         for field in awkward.fields(diphotons):
@@ -103,8 +103,8 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
                     )
             else:
                 output[field] = awkward.to_numpy(diphotons[field])
-        return output 
-    
+        return output
+
     def dump_pandas(
         self,
         pddf: pandas.DataFrame,
@@ -122,10 +122,10 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
                 import XRootD.client
 
                 xrootd = True
-            except ImportError:
+            except ImportError as err:
                 raise ImportError(
                     "Install XRootD python bindings with: conda install -c conda-forge xroot"
-                )
+                ) from err
         local_file = (
             os.path.abspath(os.path.join(".", fname))
             if xrootd
@@ -188,7 +188,7 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
 
         # modifications to photons
         photons = events.Photon
-                
+
         if self.chained_quantile is not None:
             photons = self.chained_quantile.apply(events)
 
@@ -235,12 +235,14 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
             (
                 diphotons["_".join([tagger.name, str(tagger.priority)])],
                 tagger_extra,
-            ) = tagger(events) ## creates new column in diphotons - tagger priority, or 0, also return list of histrograms here? 
+            ) = tagger(
+                events
+            )  # creates new column in diphotons - tagger priority, or 0, also return list of histrograms here?
             histos_etc.update(tagger_extra)
 
         # if there are taggers to run, arbitrate by them first
-        ##-- Deal with order of tagger priorities 
-        ##-- Turn from diphoton jagged array to whether or not an event was selected 
+        # Deal with order of tagger priorities
+        # Turn from diphoton jagged array to whether or not an event was selected
         if len(self.taggers):
             counts = awkward.num(diphotons.pt, axis=1)
             flat_tags = numpy.stack(
@@ -268,14 +270,6 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
         diphotons["lumi"] = events.luminosityBlock
         diphotons["run"] = events.run
 
-#         nElectrons = awkward.num(electrons, axis=1)
-#         nMuons = awkward.num(muons, axis=1)
-#         nLeptons = numpy.add(nElectrons, nMuons)
-#         nJets = awkward.num(jets, axis=1)
-        
-#         diphotons["nLeptons"] = nLeptons
-#         diphotons["nJets"] = nJets
-        
         # drop events without a preselected diphoton candidate
         # drop events without a tag, if there are tags
         if len(self.taggers):
