@@ -6,5 +6,6 @@ include LICENSE README.md pyproject.toml setup.py setup.cfg
 global-exclude __pycache__ *.py[cod] .*
 
 include runner.py
-include dummy_samples.json
 include *.ipynb
+include *.json
+include *.md
