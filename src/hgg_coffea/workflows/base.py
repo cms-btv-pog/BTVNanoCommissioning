@@ -122,10 +122,10 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
                 import XRootD.client
 
                 xrootd = True
-            except ImportError:
+            except ImportError as err:
                 raise ImportError(
                     "Install XRootD python bindings with: conda install -c conda-forge xroot"
-                )
+                ) from err
         local_file = (
             os.path.abspath(os.path.join(".", fname))
             if xrootd
@@ -188,6 +188,7 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
 
         # modifications to photons
         photons = events.Photon
+
         if self.chained_quantile is not None:
             photons = self.chained_quantile.apply(events)
 
@@ -234,10 +235,14 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
             (
                 diphotons["_".join([tagger.name, str(tagger.priority)])],
                 tagger_extra,
-            ) = tagger(events)
+            ) = tagger(
+                events
+            )  # creates new column in diphotons - tagger priority, or 0, also return list of histrograms here?
             histos_etc.update(tagger_extra)
 
         # if there are taggers to run, arbitrate by them first
+        # Deal with order of tagger priorities
+        # Turn from diphoton jagged array to whether or not an event was selected
         if len(self.taggers):
             counts = awkward.num(diphotons.pt, axis=1)
             flat_tags = numpy.stack(

@@ -48,8 +48,8 @@ def create_evaluator(
         model = xgboost.Booster()
         model.load_model(weights)
         return wrapped_xgb(model=model, scale=scale, center=center, variables=variables)
-    except xgboost.core.XGBoostError:
-        raise ValueError(f"could not find: {weights}")
+    except xgboost.core.XGBoostError as err:
+        raise ValueError(f"could not find: {weights}") from err
 
 
 class ChainedQuantileRegression:
