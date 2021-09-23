@@ -100,3 +100,14 @@ After setting up and checking out this repository (either via the online termina
 python runner.py --wf ttcom --executor dask/casa
 ```
 Authentication is handled automatically via login auth token instead of a proxy. File paths need to replace xrootd redirector with "xcache", `runner.py` does this automatically.
+
+
+### Condor@DESY 
+```bash
+python runner.py --wf ttcom --executor dask/condor
+```
+
+### Maxwell@DESY 
+```bash
+python runner.py --wf ttcom --executor parsl/slurm
+```
