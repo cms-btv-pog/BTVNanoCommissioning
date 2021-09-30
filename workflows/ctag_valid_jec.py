@@ -12,21 +12,78 @@ from pympler import tracker,summary,muppy
 import objgraph
 import schedule
 from correction  import *
-# import tracemalloc
+import inspect
+from coffea.jetmet_tools import FactorizedJetCorrector, JetCorrectionUncertainty
+from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
+from coffea.lookup_tools import extractor
 
-# tracemalloc.start()
+ext = extractor()
+ext.add_weight_sets([
+    "* * data/Summer19UL17_V5_MC_L1FastJet_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_V5_MC_L2Relative_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_V5_MC_L3Absolute_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_V5_MC_L2L3Residual_AK4PFchs.jec.txt",
+#     "* * data/Summer19UL17_JRV2_MC_SF_AK4PFchs.jersf.txt",
+#     "* * data/Summer19UL17_JRV2_MC_PtResolution_AK4PFchs.jr.txt",  
+])
+# ext.add_weight_sets([
+#     "* * data/Fall17_17Nov2017_V32_MC_L1FastJet_AK4PFchs.jec.txt",
+#     "* * data/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFchs.jec.txt",
+#     "* * data/Fall17_17Nov2017_V32_MC_L3Absolute_AK4PFchs.jec.txt",
+#     "* * data/Fall17_17Nov2017_V32_MC_L2L3Residual_AK4PFchs.jec.txt",
+#     # "* * data/Fall17_V3b_MC_PtResolution_AK4PFchs.jr.txt",
+#     # "* * data/Fall17_V3b_MC_SF_AK4PFchs.jersf.txt",   
+# ])
+ext.finalize()
+jec_stack_names = [
+                    "Summer19UL17_V5_MC_L1FastJet_AK4PFchs",
+                   "Summer19UL17_V5_MC_L2Relative_AK4PFchs",
+                   "Summer19UL17_V5_MC_L3Absolute_AK4PFchs",
+                   "Summer19UL17_V5_MC_L2L3Residual_AK4PFchs",
+                   ]
+evaluator = ext.make_evaluator()
+jec_inputs = {name: evaluator[name] for name in jec_stack_names}
+jec_stack = JECStack(jec_inputs)
+ext_data = extractor()
+ext_data.add_weight_sets([
+    "* * data/Summer19UL17_RunD_V5_DATA_L1FastJet_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_RunD_V5_DATA_L2L3Residual_AK4PFchs.jec.txt"
+    # "* * data/Summer19UL17_JRV2_DATA_PtResolution_AK4PFchs.jr.txt",
+    # "* * data/Summer19UL17_JRV2_DATA_SF_AK4PFchs.jersf.txt"
+    ])
+# ext_data.add_weight_sets([
+#     "* * data/Fall17_17Nov2017DE_V32_DATA_L1FastJet_AK4PFchs.jec.txt",
+#     "* * data/Fall17_17Nov2017DE_V32_DATA_L2Relative_AK4PFchs.jec.txt",
+#     "* * data/Fall17_17Nov2017DE_V32_DATA_L3Absolute_AK4PFchs.jec.txt",
+#     "* * data/Fall17_17Nov2017DE_V32_DATA_L2L3Residual_AK4PFchs.jec.txt"
+#     ])
 
-# memory_tracker = tracker.SummaryTracker()
-# def dosomething():
-#     print("memory total")
-#     all_objects = muppy.get_objects()
-#     sum1 = summary.summarize(all_objects)
-#     summary.print_(sum1)
+ext_data.finalize()
+jec_datastack_names = [
+    "Summer19UL17_RunD_V5_DATA_L1FastJet_AK4PFchs",
+    "Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs",
+    "Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs",
+    "Summer19UL17_RunD_V5_DATA_L2L3Residual_AK4PFchs"
+    ]
+evaluator_data = ext_data.make_evaluator()
+jec_inputs_data = {name: evaluator_data[name] for name in jec_datastack_names}
+jec_stack_data = JECStack(jec_inputs_data)
 
-#     print("memory difference")                                                                                   
-#     memory_tracker.print_diff()                                                                                  
-#     objgraph.show_growth()
-#     pass
+
+# print(dir(evaluator))
+name_map = jec_stack.blank_name_map
+name_map['JetPt'] = 'pt'
+name_map['JetMass'] = 'mass'
+name_map['JetEta'] = 'eta'
+name_map['JetA'] = 'area'
+name_mapd = jec_stack_data.blank_name_map
+name_mapd['JetPt'] = 'pt'
+name_mapd['JetMass'] = 'mass'
+name_mapd['JetEta'] = 'eta'
+name_mapd['JetA'] = 'area'
+
 def update(events, collections):
     """Return a shallow copy of events array with some collections swapped out"""
     out = events
@@ -74,16 +131,12 @@ class NanoProcessor(processor.ProcessorABC):
         sssljdr_axis = hist.Bin("sssljdr", "4th jet $\Delta$R(l,j)", 50,0,5)
 
         # Define similar axes dynamically
-        disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC']
-        discSF_list = ['btagDeepBSF', 'btagDeepCSF', 'btagDeepFlavBSF', 'btagDeepFlavCSF']
+        disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC', 'deepcsv_CvB', 'deepcsv_CvL','deepflav_CvB','deepflav_CvL']
         ddx_list = ["btagDDBvLV2","btagDDCvBV2","btagDDCvLV2"]
         btag_axes = []
         for d in disc_list:
             btag_axes.append(hist.Bin(d, d, 50, 0, 1))     
-        deepb_axis = hist.Bin("btagDeepBSF", "btagDeepBSF", 50, 0, 1)     
-        deepc_axis = hist.Bin("btagDeepCSF", "btagDeepCSF", 50, 0, 1)  
-        deepjb_axis = hist.Bin("btagDeepFlavBSF", "btagDeepFlavBSF", 50, 0, 1)     
-        deepjc_axis = hist.Bin("btagDeepFlavCSF", "btagDeepFlavCSF", 50, 0, 1)     
+           
         deepddx_list = ["DDX_jetNTracks","DDX_jetNSecondaryVertices","DDX_tau1_trackEtaRel_0","DDX_tau1_trackEtaRel_1","DDX_tau1_trackEtaRel_2","DDX_tau2_trackEtaRel_0","DDX_tau2_trackEtaRel_1","DDX_tau2_trackEtaRel_3","DDX_tau1_flightDistance2dSig","DDX_tau2_flightDistance2dSig","DDX_tau1_vertexDeltaR","DDX_tau1_vertexEnergyRatio","DDX_tau2_vertexEnergyRatio","DDX_tau1_vertexMass","DDX_tau2_vertexMass","DDX_trackSip2dSigAboveBottom_0","DDX_trackSip2dSigAboveBottom_1","DDX_trackSip2dSigAboveCharm","DDX_trackSip3dSig_0","DDX_tau1_trackSip3dSig_0","DDX_tau1_trackSip3dSig_1","DDX_trackSip3dSig_1","DDX_tau2_trackSip3dSig_0","DDX_tau2_trackSip3dSig_1"]
         deepcsv_list = [
         "DeepCSV_trackDecayLenVal_0", "DeepCSV_trackDecayLenVal_1", "DeepCSV_trackDecayLenVal_2", "DeepCSV_trackDecayLenVal_3", "DeepCSV_trackDecayLenVal_4", "DeepCSV_trackDecayLenVal_5", 
@@ -146,7 +199,7 @@ class NanoProcessor(processor.ProcessorABC):
                 'phi' : hist.Hist("Counts", dataset_axis, flav_axis,jet_phi_axis),
                 'mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis),
                 'rawpt'  : hist.Hist("Counts", dataset_axis, flav_axis, jet_rawpt_axis),
-                'rawfactor': hist.Hist("Counts",dataset_axis, flav_axis, jet_rawfactor_axis)
+                # 'rawfactor': hist.Hist("Counts",dataset_axis, flav_axis, jet_rawfactor_axis)
             }
         
        
@@ -176,8 +229,6 @@ class NanoProcessor(processor.ProcessorABC):
             }
         self.jet_hists = list(_hist_jet_dict.keys())
         self.deepcsv_hists = list(_hist_deepcsv_dict.keys())
-        #self.deepcsvSF_hists = list(_hist_deepcsvSF_dict.keys())
-        # self.deepddx_hists = list(_hist_deepddx_dict.keys())
         self.event_hists = list(_hist_event_dict.keys())
         _hist_dict = {**_hist_deepcsv_dict,**_hist_event_dict}
         self._accumulator = processor.dict_accumulator(_hist_dict)
@@ -194,50 +245,7 @@ class NanoProcessor(processor.ProcessorABC):
         return self._accumulator
     
     def process(self, events):
-        # snapshot1 = tracemalloc.take_snapshot()
-        print("======>start process<======")      
-        objgraph.show_growth()    
-        # objgraph.show_backrefs([c1.get(0)], max_depth=5, filename='test.png')                                                     
-        print(gc.garbage)
-        isRealData = not hasattr(events, "genWeight")
-        # snapshot2 = tracemalloc.take_snapshot()
-        # top_stats = snapshot2.compare_to(snapshot1, 'lineno')
-        # print("[ Top 10 ]")
-        # print("=================================")
-        # for stat in top_stats[:50]:
-            # print(stat) 
-        print("=================================")
-        objgraph.show_growth()
-        if isRealData:
-            # Nominal JEC are already applied in data
-            gc.collect()
-            # print("memory total")
-            # all_objects = muppy.get_objects()
-            # sum1 = summary.summarize(all_objects)
-            # summary.print_(sum1)
 
-            # print("memory difference")                                                                                   
-            # memory_tracker.print_diff()                                                                                  
-            # objgraph.show_growth()
-            return self.process_shift(events, None)
-        print("======>before jet factory<======")                                                               
-        objgraph.show_growth()
-        jec_cache = {}
-        jets = jet_factory[f"2017mc"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll), jec_cache)
-        shifts = [ ({"Jet": jets}, None)]
-        
-        gc.collect()
-        # all_objects = muppy.get_objects()
-        # sum1 = summary.summarize(all_objects)
-        # summary.print_(sum1)
-
-        # print("memory difference")                                                                                   
-        # memory_tracker.print_diff()                   
-        #
-        print("======>before return<======")                                                               
-        objgraph.show_growth()
-        return processor.accumulate(self.process_shift(update(events, collections), name) for collections, name in shifts)
-    def process_shift(self, events,shift_name):
         print("======>process_shift<======")
         objgraph.show_growth()
         output = self.accumulator.identity()
@@ -276,11 +284,31 @@ class NanoProcessor(processor.ProcessorABC):
         
         req_muon =(ak.count(event_muon.pt, axis=1) == 1)
         ## Jet cuts 
+
+        jets = events.Jet
         
-        # event_jet = events.Jet[((events.Jet.pt*(1-events.Jet.rawFactor))> 50) & (abs(events.Jet.eta) <= 2.4)&(events.Jet.puId > 0)&(events.Jet.jetId > 0)&(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))]
-        event_jet = events.Jet[(events.Jet.pt> 25) & (abs(events.Jet.eta) <= 2.4)&(events.Jet.puId > 0)&(events.Jet.jetId > 0)&(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))]
-        # print(events.Jet.muonIdx1)                                                                               
-        
+        jets['pt_raw'] = (1 - jets['rawFactor']) * jets['pt']
+        jets['mass_raw'] = (1 - jets['rawFactor']) * jets['mass']
+        if not isRealData:jets['pt_gen'] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
+        jets['rho'] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
+        if not isRealData:
+            name_map['ptGenJet'] = 'pt_gen'
+            name_map['ptRaw'] = 'pt_raw'
+            name_map['massRaw'] = 'mass_raw'
+            name_map['Rho'] = 'rho'
+            events_cache = events.caches[0]
+            jet_factory = CorrectedJetsFactory(name_map, jec_stack)
+            corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
+        else :
+            # name_mapd['ptGenJet'] = 'pt_gen'
+            name_mapd['ptRaw'] = 'pt_raw'
+            name_mapd['massRaw'] = 'mass_raw'
+            name_mapd['Rho'] = 'rho'
+            events_cache = events.caches[0]
+            jet_factory_data = CorrectedJetsFactory(name_mapd, jec_stack_data)
+            corrected_jets = jet_factory_data.build(jets, lazy_cache=events_cache)
+        event_jet = corrected_jets[(corrected_jets.pt> 25) & (abs(corrected_jets.eta) <= 2.4)&(corrected_jets.puId > 0)&(corrected_jets.jetId > 0)&(ak.all(corrected_jets.metric_table(events.Muon) > 0.4, axis=2))]
+        # event_jet = events.Jet[(events.Jet.pt> 25) & (abs(events.Jet.eta) <= 2.4)&(events.Jet.puId > 0)&(events.Jet.jetId > 0)&(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))]
         req_jets = (ak.num(event_jet)>=4)
         req_MET = events.METFixEE2017.pt>50
         
@@ -288,9 +316,9 @@ class NanoProcessor(processor.ProcessorABC):
         #event_level = req_trig  & req_jets & req_muon&req_MET
         # Selected
         selev = events[event_level]    
-        
+   
         #########
-        
+ 
         # Per muon
         mu_eta   = (abs(selev.Muon.eta) < 2.4)
         mu_pt    = selev.Muon.pt > 30
@@ -299,22 +327,28 @@ class NanoProcessor(processor.ProcessorABC):
         
         smu=selev.Muon[mu_level]
         # Per jet : https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
-        jet_eta    = (abs(selev.Jet.eta) <= 2.4)
-        # jet_pt     = (selev.Jet.pt*(1-selev.Jet.rawFactor)) > 50 
-        jet_pt = selev.Jet.pt>25
-        jet_pu     = (selev.Jet.puId > 0) &(selev.Jet.jetId>0)
-        jet_dr     = (ak.all(selev.Jet.metric_table(smu) > 0.4, axis=2))
+        
+        jet_eta    = (abs(corrected_jets[event_level].eta) <= 2.4)
+        jet_pt =    corrected_jets[event_level].pt>25
+        jet_pu     = (corrected_jets[event_level].puId > 0) &(corrected_jets[event_level].jetId>0)
+        jet_dr     = (ak.all(corrected_jets[event_level].metric_table(smu) > 0.4, axis=2))
+        # jet_eta    = (abs(selev.Jet.eta) <= 2.4)
+        # jet_pt =    selev.Jet.pt>25
+        # jet_pu     = (selev.Jet.puId > 0) &(selev.Jet.jetId>0)
+        # jet_dr     = (ak.all(selev.Jet.metric_table(smu) > 0.4, axis=2))
 
         
         jet_level  = jet_pu & jet_eta & jet_pt & jet_dr
         
         # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
-        bjet_disc  = selev.Jet.btagDeepB > 0.7264 # L=0.0494, M=0.2770, T=0.7264
-        bjet_level = jet_level & bjet_disc
+        # bjet_disc  =corrected_jets[event_level].btagDeepB > 0.7264 # L=0.0494, M=0.2770, T=0.7264
+        # bjet_level = jet_level & bjet_disc
         
         
-        sjets  = selev.Jet[jet_level]
-        sbjets = selev.Jet[bjet_level]
+        # sjets  = corrected_jets[event_level]
+        sjets = events.Jet[event_level]
+        # sjets = selev.correct_jets[jet_level]
+        # sbjets = corrected_jets[event_level&corrected_jets[event_level].btagDeepB > 0.7264]
         
         if isRealData :
             genflavor = ak.zeros_like(sjets.pt)
@@ -323,27 +357,46 @@ class NanoProcessor(processor.ProcessorABC):
             genflavor = sjets.hadronFlavour + 1*par_flav 
             
                 
-            
+        gc.collect()
+        print("======>return output<======")
+        
+        del jets
+        del event_jet    
+        # del corrected_jets
+        del events_cache
         # Fill histograms dynamically  
         for histname, h in output.items():
             if histname in self.deepcsv_hists:
                 if(isRealData):
                     if histname == 'rawpt':
-                        h.fill(dataset=dataset,flav=ak.flatten(genflavor), rawpt =ak.flatten(sjets.pt*(1-sjets.rawFactor)))
-                    elif histname =='rawfactor':
-                        genweiev=1
-                    #     h.fill(dataset=dataset,flav=ak.flatten(genflavor), rawfactor =ak.flatten(1-sjets.rawFactor))
+                        h.fill(dataset=dataset,flav=5, rawpt =ak.flatten(events.Jet[event_level].pt))
+                    elif 'btagDeep' in histname or 'CvL' in histname or 'CvB' in histname:
+                         output['btagDeepFlavB'].fill(dataset=dataset,flav=5,  btagDeepFlavB=ak.flatten(sjets.btagDeepFlavB))
+                         output['btagDeepFlavC'].fill(dataset=dataset,flav=5,  btagDeepFlavC=ak.flatten(sjets.btagDeepFlavC)) 
+                         output['btagDeepB'].fill(dataset=dataset,flav=5,  btagDeepB=ak.flatten(sjets.btagDeepB))
+                         output['btagDeepC'].fill(dataset=dataset,flav=5,  btagDeepC=ak.flatten(sjets.btagDeepC))
+                         output['deepcsv_CvB'].fill(dataset=dataset,flav=5,  deepcsv_CvB=ak.flatten(sjets.btagDeepC/(1.-sjets.btagDeepB)))
+                         output['deepcsv_CvL'].fill(dataset=dataset,flav=5,  deepcsv_CvL=ak.flatten(sjets.btagDeepC/(sjets.btagDeepC+sjets.btagDeepB)))
+                         output['deepflav_CvB'].fill(dataset=dataset,flav=5,  deepflav_CvB=ak.flatten(sjets.btagDeepFlavC/(1.-sjets.btagDeepFlavB)))
+                         output['deepflav_CvL'].fill(dataset=dataset,flav=5,  deepflav_CvL=ak.flatten(sjets.btagDeepFlavC/(sjets.btagDeepFlavC+sjets.btagDeepFlavB)))
+
                     else:
-                        fields = {l: ak.flatten(sjets[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets)}
+                        fields = {l: ak.flatten(sjets[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(corrected_jets[event_level])}
                         h.fill(dataset=dataset,flav=5, **fields)
                 else:
+                    genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
                     if histname == 'rawpt' :
-                        genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
-                        h.fill(dataset=dataset,flav=ak.flatten(genflavor), rawpt =ak.flatten(sjets.pt*(1-sjets.rawFactor)) ,weight=genweiev)
-                    elif histname =='rawfactor':
                         
-                        genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
-                    #     h.fill(dataset=dataset,flav=ak.flatten(genflavor),  rawfactor =ak.flatten(1-sjets.rawFactor),weight=genweiev)
+                        h.fill(dataset=dataset,flav=ak.flatten(genflavor), rawpt =ak.flatten(sjets.pt*(1-sjets.rawFactor)) ,weight=genweiev)
+                    elif 'btagDeep' in histname or 'CvL' in histname or 'CvB' in histname:
+                         output['btagDeepFlavB'].fill(dataset=dataset,flav=ak.flatten(genflavor),  btagDeepFlavB=ak.flatten(sjets.btagDeepFlavB),weight=genweiev)
+                         output['btagDeepFlavC'].fill(dataset=dataset,flav=ak.flatten(genflavor),  btagDeepFlavC=ak.flatten(sjets.btagDeepFlavC),weight=genweiev) 
+                         output['btagDeepB'].fill(dataset=dataset,flav=ak.flatten(genflavor),  btagDeepB=ak.flatten(sjets.btagDeepB),weight=genweiev)
+                         output['btagDeepC'].fill(dataset=dataset,flav=ak.flatten(genflavor),  btagDeepC=ak.flatten(sjets.btagDeepC),weight=genweiev)
+                         output['deepcsv_CvB'].fill(dataset=dataset,flav=ak.flatten(genflavor),  deepcsv_CvB=ak.flatten(sjets.btagDeepC/(1.-sjets.btagDeepB)),weight=genweiev)
+                         output['deepcsv_CvL'].fill(dataset=dataset,flav=ak.flatten(genflavor),  deepcsv_CvL=ak.flatten(sjets.btagDeepC/(sjets.btagDeepC+sjets.btagDeepB)),weight=genweiev)
+                         output['deepflav_CvB'].fill(dataset=dataset,flav=ak.flatten(genflavor),  deepflav_CvB=ak.flatten(sjets.btagDeepFlavC/(1.-sjets.btagDeepFlavB)),weight=genweiev)
+                         output['deepflav_CvL'].fill(dataset=dataset,flav=ak.flatten(genflavor),  deepflav_CvL=ak.flatten(sjets.btagDeepFlavC/(sjets.btagDeepFlavC+sjets.btagDeepFlavB)),weight=genweiev)
                     else:
                         fields = {l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)}
                         genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
@@ -357,7 +410,7 @@ class NanoProcessor(processor.ProcessorABC):
         def num(ar):
             return ak.num(ak.fill_none(ar[~ak.is_none(ar)], 0), axis=0)
         if(isRealData):
-            output['njet'].fill(dataset=dataset,  njet=flatten(ak.num(sjets)))
+            output['njet'].fill(dataset=dataset,  njet=flatten(ak.num(corrected_jets[event_level])))
             output['nmu'].fill(dataset=dataset,   nmu=flatten(ak.num(smu)))
             output['lmupt'].fill(dataset=dataset, lmupt=flatten((smu.pt)))
             output['ljpt'].fill(dataset=dataset, flav=0, ljpt=flatten(sjets[:,0].pt))
@@ -391,10 +444,11 @@ class NanoProcessor(processor.ProcessorABC):
                 output['ssljdr'].fill(dataset=dataset, flav=flatten(sjets[:,2].hadronFlavour), ssljdr=flatten(sjets[:,2].delta_r(smu)),weight=weights.weight()[event_level])
                 output['sssljdr'].fill(dataset=dataset, flav=flatten(sjets[:,3].hadronFlavour), sssljdr=flatten(sjets[:,3].delta_r(smu)),weight=weights.weight()[event_level])
                 output['met'].fill(dataset=dataset, met=flatten((selev.METFixEE2017.pt)),weight=weights.weight()[event_level])
-        gc.collect()
-        print("======>return output<======")
+        
+        # del events_cache
         # schedule.every(20).minutes.do(dosomething)
         return output
+    
 
     def postprocess(self, accumulator):
         print("----------post--------")

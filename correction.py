@@ -32,7 +32,7 @@ with gzip.open("data/compiled_jec.pkl.gzt") as fin:
 jet_factory = jmestuff["jet_factory"]
 def add_jec_variables(jets, event_rho):
     print("========> begin jec var <==========")
-    objgraph.show_growth()
+    #objgraph.show_growth()
     jets["pt_raw"] = (1 - jets.rawFactor)*jets.pt
     jets["mass_raw"] = (1 - jets.rawFactor)*jets.mass
     jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
@@ -40,7 +40,7 @@ def add_jec_variables(jets, event_rho):
 
     gc.collect()
     print("====>after gc<=======")
-    objgraph.show_growth()
+    #objgraph.show_growth()
     return jets
 with gzip.open("data/corrections.pkl.gz") as fin:
     compiled = pickle.load(fin)

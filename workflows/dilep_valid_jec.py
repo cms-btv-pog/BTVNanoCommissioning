@@ -10,6 +10,63 @@ from coffea.btag_tools import BTagScaleFactor
 from cTagSFReader import *
 import cloudpickle
 import gc
+import inspect
+from coffea.jetmet_tools import FactorizedJetCorrector, JetCorrectionUncertainty
+from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
+from coffea.lookup_tools import extractor
+
+
+ext = extractor()
+ext.add_weight_sets([
+    "* * data/Summer19UL17_V5_MC_L1FastJet_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_V5_MC_L2Relative_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_V5_MC_L3Absolute_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_V5_MC_L2L3Residual_AK4PFchs.jec.txt",
+])
+
+ext.finalize()
+jec_stack_names = [
+                    "Summer19UL17_V5_MC_L1FastJet_AK4PFchs",
+                   "Summer19UL17_V5_MC_L2Relative_AK4PFchs",
+                   "Summer19UL17_V5_MC_L3Absolute_AK4PFchs",
+                   "Summer19UL17_V5_MC_L2L3Residual_AK4PFchs",
+                   ]
+evaluator = ext.make_evaluator()
+jec_inputs = {name: evaluator[name] for name in jec_stack_names}
+jec_stack = JECStack(jec_inputs)
+ext_data = extractor()
+ext_data.add_weight_sets([
+    "* * data/Summer19UL17_RunD_V5_DATA_L1FastJet_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs.jec.txt",
+    "* * data/Summer19UL17_RunD_V5_DATA_L2L3Residual_AK4PFchs.jec.txt"
+    ])
+
+
+ext_data.finalize()
+jec_datastack_names = [
+    "Summer19UL17_RunD_V5_DATA_L1FastJet_AK4PFchs",
+    "Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs",
+    "Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs",
+    "Summer19UL17_RunD_V5_DATA_L2L3Residual_AK4PFchs"
+    ]
+evaluator_data = ext_data.make_evaluator()
+jec_inputs_data = {name: evaluator_data[name] for name in jec_datastack_names}
+jec_stack_data = JECStack(jec_inputs_data)
+
+
+# print(dir(evaluator))
+name_map = jec_stack.blank_name_map
+name_map['JetPt'] = 'pt'
+name_map['JetMass'] = 'mass'
+name_map['JetEta'] = 'eta'
+name_map['JetA'] = 'area'
+name_mapd = jec_stack_data.blank_name_map
+name_mapd['JetPt'] = 'pt'
+name_mapd['JetMass'] = 'mass'
+name_mapd['JetEta'] = 'eta'
+name_mapd['JetA'] = 'area'
+
 deepcsvb_sf = BTagScaleFactor("data/DeepCSV_94XSF_V5_B_F.csv",BTagScaleFactor.RESHAPE,methods='iterativefit,iterativefit,iterativefit')
 deepcsvc_sf = "data/DeepCSV_ctagSF_MiniAOD94X_2017_pTincl_v3_2_interp.root"
 deepjetb_sf = BTagScaleFactor("data/DeepFlavour_94XSF_V4_B_F.csv",BTagScaleFactor.RESHAPE,methods='iterativefit,iterativefit,iterativefit')
@@ -76,16 +133,13 @@ class NanoProcessor(processor.ProcessorABC):
         sljdr_axis = hist.Bin("sljdr", "Subleading jet $\Delta$R(l,j)", 50,0,5)
 
         # Define similar axes dynamically
-        disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC']
+        disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC', 'deepcsv_CvB', 'deepcsv_CvL','deepflav_CvB','deepflav_CvL']
         discSF_list = ['btagDeepBSF', 'btagDeepCSF', 'btagDeepFlavBSF', 'btagDeepFlavCSF']
         ddx_list = ["btagDDBvLV2","btagDDCvBV2","btagDDCvLV2"]
         btag_axes = []
         for d in disc_list:
             btag_axes.append(hist.Bin(d, d, 50, 0, 1))     
-        deepb_axis = hist.Bin("btagDeepBSF", "btagDeepBSF", 50, 0, 1)     
-        deepc_axis = hist.Bin("btagDeepCSF", "btagDeepCSF", 50, 0, 1)  
-        deepjb_axis = hist.Bin("btagDeepFlavBSF", "btagDeepFlavBSF", 50, 0, 1)     
-        deepjc_axis = hist.Bin("btagDeepFlavCSF", "btagDeepFlavCSF", 50, 0, 1)     
+        
     
         deepcsv_list = [
         "DeepCSV_trackDecayLenVal_0", "DeepCSV_trackDecayLenVal_1", "DeepCSV_trackDecayLenVal_2", "DeepCSV_trackDecayLenVal_3", "DeepCSV_trackDecayLenVal_4", "DeepCSV_trackDecayLenVal_5", 
@@ -100,7 +154,9 @@ class NanoProcessor(processor.ProcessorABC):
         "DeepCSV_vertexCategory","DeepCSV_vertexEnergyRatio", "DeepCSV_vertexJetDeltaR","DeepCSV_vertexMass", 
         "DeepCSV_flightDistance2dVal","DeepCSV_flightDistance2dSig","DeepCSV_flightDistance3dVal","DeepCSV_flightDistance3dSig","DeepCSV_trackJetPt", 
         "DeepCSV_jetNSecondaryVertices","DeepCSV_jetNSelectedTracks","DeepCSV_jetNTracksEtaRel","DeepCSV_trackSumJetEtRatio","DeepCSV_trackSumJetDeltaR","DeepCSV_vertexNTracks"]
-    
+        btag_axes = []
+        for d in disc_list:
+            btag_axes.append(hist.Bin(d, d, 50, 0, 1))    
         deepcsv_axes = []
         for d in deepcsv_list:
             if "jetN" in d:
@@ -151,7 +207,7 @@ class NanoProcessor(processor.ProcessorABC):
                 'phi' : hist.Hist("Counts", dataset_axis, flav_axis,jet_phi_axis),
                 'mass': hist.Hist("Counts", dataset_axis, flav_axis,jet_mass_axis),
                 'rawpt'  : hist.Hist("Counts", dataset_axis, flav_axis,jet_pt_axis, jet_eta_axis, jet_rawpt_axis),
-                'rawfactor': hist.Hist("Counts",dataset_axis, flav_axis,jet_pt_axis, jet_eta_axis, jet_rawfactor_axis)
+                # 'rawfactor': hist.Hist("Counts",dataset_axis, flav_axis,jet_pt_axis, jet_eta_axis, jet_rawfactor_axis)
             }
         
         # _hist_deepcsvSF_dict={
@@ -162,7 +218,7 @@ class NanoProcessor(processor.ProcessorABC):
         # }
         # Generate some histograms dynamically
         for disc, axis in zip(disc_list, btag_axes):
-            _hist_deepcsv_dict[disc] = hist.Hist("Counts", dataset_axis, flav_axis, jet_eta_axis, jet_pt_axis,axis)
+            _hist_deepcsv_dict[disc] = hist.Hist("Counts", dataset_axis, flav_axis, axis)
         for deepcsv, axises in zip(deepcsv_list, deepcsv_axes):
              _hist_deepcsv_dict[deepcsv] = hist.Hist("Counts", dataset_axis,flav_axis,  axises)
         _hist_event_dict = {
@@ -191,22 +247,6 @@ class NanoProcessor(processor.ProcessorABC):
     def accumulator(self):
         return self._accumulator
     def process(self, events):
-        isRealData = not hasattr(events, "genWeight")
-
-        if isRealData:
-            # Nominal JEC are already applied in data
-            
-            return self.process_shift(events, None)
-
-        jec_cache = {}
-        jets = jet_factory[f"2017mc"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll), jec_cache)
-        shifts = [ ({"Jet": jets}, None)]
-
-        
-        
-        
-        return processor.accumulate(self.process_shift(update(events, collections), name) for collections, name in shifts)
-    def process_shift(self, events,shift_name):
         output = self.accumulator.identity()
         dataset = events.metadata['dataset']
         isRealData = not hasattr(events, "genWeight")
@@ -248,7 +288,30 @@ class NanoProcessor(processor.ProcessorABC):
         
         req_opposite_charge = (events.Electron[:, 0].charge * events.Muon[:, 0].charge) == -1
         # req_opposite_charge = ak.fill_none(req_opposite_charge,False)
-        event_jet = events.Jet[((events.Jet.pt*(1-events.Jet.rawFactor))> 50) & (abs(events.Jet.eta) <= 2.4)&(events.Jet.puId > 0) &(events.Jet.jetId>5)&(events.Jet.btagDeepB>0.) & (events.Jet.btagDeepB<1.) & (events.Jet.btagDeepC>0.) & (events.Jet.btagDeepC<1.) & (events.Jet.btagDeepFlavB>0.) & (events.Jet.btagDeepFlavB<1.) & (events.Jet.btagDeepFlavC>0.) & (events.Jet.btagDeepFlavC<1.)]
+        jets = events.Jet
+        
+        jets['pt_raw'] = (1 - jets['rawFactor']) * jets['pt']
+        jets['mass_raw'] = (1 - jets['rawFactor']) * jets['mass']
+        if not isRealData:jets['pt_gen'] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
+        jets['rho'] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
+        if not isRealData:
+            name_map['ptGenJet'] = 'pt_gen'
+            name_map['ptRaw'] = 'pt_raw'
+            name_map['massRaw'] = 'mass_raw'
+            name_map['Rho'] = 'rho'
+            events_cache = events.caches[0]
+            jet_factory = CorrectedJetsFactory(name_map, jec_stack)
+            corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
+        else :
+            # name_mapd['ptGenJet'] = 'pt_gen'
+            name_mapd['ptRaw'] = 'pt_raw'
+            name_mapd['massRaw'] = 'mass_raw'
+            name_mapd['Rho'] = 'rho'
+            events_cache = events.caches[0]
+            jet_factory_data = CorrectedJetsFactory(name_mapd, jec_stack_data)
+            corrected_jets = jet_factory_data.build(jets, lazy_cache=events_cache)
+        event_jet = corrected_jets[((corrected_jets.pt*(1-corrected_jets.rawFactor))> 50) & (abs(corrected_jets.eta) <= 2.4)&(corrected_jets.puId > 0) &(corrected_jets.jetId>5)&(corrected_jets.btagDeepB>0.) & (corrected_jets.btagDeepB<1.) & (corrected_jets.btagDeepC>0.) & (corrected_jets.btagDeepC<1.) & (corrected_jets.btagDeepFlavB>0.) & (corrected_jets.btagDeepFlavB<1.) & (corrected_jets.btagDeepFlavC>0.) & (corrected_jets.btagDeepFlavC<1.)]
+        #event_jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.4)&(events.Jet.puId > 0) &(events.Jet.jetId>5)&(events.Jet.btagDeepB>0.) & (events.Jet.btagDeepB<1.) & (events.Jet.btagDeepC>0.) & (events.Jet.btagDeepC<1.) & (events.Jet.btagDeepFlavB>0.) & (events.Jet.btagDeepFlavB<1.) & (events.Jet.btagDeepFlavC>0.) & (events.Jet.btagDeepFlavC<1.)&(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))&(ak.all(events.Jet.metric_table(events.Electron) > 0.4, axis=2))]
         req_jets = (ak.num(event_jet.puId) >= 2)
 
         event_level=req_trig & req_lumi & req_muon & req_ele & req_jets & req_opposite_charge
@@ -266,25 +329,25 @@ class NanoProcessor(processor.ProcessorABC):
         
         smu=selev.Muon[mu_level]
         # Per jet : https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
-        jet_eta    = (abs(selev.Jet.eta) <= 2.4)
-        jet_pt     = (selev.Jet.pt*(1-selev.Jet.rawFactor)) > 50  
-        jet_pu     = (selev.Jet.puId > 0) &(selev.Jet.jetId>5)
-        jet_clean  = (selev.Jet.btagDeepB>0.) & (selev.Jet.btagDeepB<1.) & (selev.Jet.btagDeepC>0.) & (selev.Jet.btagDeepC<1.) & (selev.Jet.btagDeepFlavB>0.) & (selev.Jet.btagDeepFlavB<1.) & (selev.Jet.btagDeepFlavC>0.) & (selev.Jet.btagDeepFlavC<1.)
+        jet_eta    = (abs(corrected_jets[event_level].eta) <= 2.4)
+        jet_pt     = (corrected_jets[event_level].pt*(1-corrected_jets[event_level].rawFactor)) > 50  
+        jet_pu     = (corrected_jets[event_level].puId > 0) &(corrected_jets[event_level].jetId>5)
+        jet_clean  = (corrected_jets[event_level].btagDeepB>0.) & (corrected_jets[event_level].btagDeepB<1.) & (corrected_jets[event_level].btagDeepC>0.) & (corrected_jets[event_level].btagDeepC<1.) & (corrected_jets[event_level].btagDeepFlavB>0.) & (corrected_jets[event_level].btagDeepFlavB<1.) & (corrected_jets[event_level].btagDeepFlavC>0.) & (corrected_jets[event_level].btagDeepFlavC<1.)
         
-        jet_level  = jet_pu & jet_eta & jet_pt & jet_clean
-        sjets  = selev.Jet[jet_level]
-        print(ak.num(sjets))
+        sjets  = corrected_jets[event_level]
+        # print(ak.num(sjets))
+        #sjets = events.Jet[event_level]
         # print(sjets[:,1].pt)
         # print(ak.num(selev.Jet[jet_level].pt))
         
         # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
-        bjet_disc  = selev.Jet.btagDeepB > 0.2770 # L=0.0494, M=0.2770, T=0.7264
-        bjet_level = jet_level & bjet_disc
+        # bjet_disc  = selev.Jet.btagDeepB > 0.2770 # L=0.0494, M=0.2770, T=0.7264
+        # bjet_level = jet_level & bjet_disc
         
         
         
         
-        sbjets = selev.Jet[bjet_level]
+        # sbjets = selev.Jet[bjet_level]
 
         if isRealData :
             genflavor = ak.zeros_like(sjets.pt)
@@ -300,8 +363,15 @@ class NanoProcessor(processor.ProcessorABC):
                 if(isRealData):
                     if histname == 'rawpt':
                         h.fill(dataset=dataset,flav=ak.flatten(genflavor), pt= ak.flatten(sjets.pt),eta=ak.flatten(sjets.eta), rawpt =ak.flatten(sjets.pt*(1-sjets.rawFactor)))
-                    elif histname =='rawfactor':
-                        h.fill(dataset=dataset,flav=ak.flatten(genflavor), pt= ak.flatten(sjets.pt),eta=ak.flatten(sjets.eta), rawfactor =ak.flatten(1-sjets.rawFactor))
+                    elif 'btagDeep' in histname or 'CvL' in histname or 'CvB' in histname:
+                         output['btagDeepFlavB'].fill(dataset=dataset,flav=5,  btagDeepFlavB=ak.flatten(sjets.btagDeepFlavB))
+                         output['btagDeepFlavC'].fill(dataset=dataset,flav=5,  btagDeepFlavC=ak.flatten(sjets.btagDeepFlavC)) 
+                         output['btagDeepB'].fill(dataset=dataset,flav=5,  btagDeepB=ak.flatten(sjets.btagDeepB))
+                         output['btagDeepC'].fill(dataset=dataset,flav=5,  btagDeepC=ak.flatten(sjets.btagDeepC))
+                         output['deepcsv_CvB'].fill(dataset=dataset,flav=5,  deepcsv_CvB=ak.flatten(sjets.btagDeepC/(1.-sjets.btagDeepB)))
+                         output['deepcsv_CvL'].fill(dataset=dataset,flav=5,  deepcsv_CvL=ak.flatten(sjets.btagDeepC/(sjets.btagDeepC+sjets.btagDeepB)))
+                         output['deepflav_CvB'].fill(dataset=dataset,flav=5,  deepflav_CvB=ak.flatten(sjets.btagDeepFlavC/(1.-sjets.btagDeepFlavB)))
+                         output['deepflav_CvL'].fill(dataset=dataset,flav=5,  deepflav_CvL=ak.flatten(sjets.btagDeepFlavC/(sjets.btagDeepFlavC+sjets.btagDeepFlavB)))
                     elif "btag" not in histname :
                         fields = {l: ak.flatten(sjets[l.replace('jet_','')], axis=None) for l in h.fields if l.replace('jet_','') in dir(sjets)}
                         h.fill(dataset=dataset,flav=5, **fields)
@@ -309,47 +379,21 @@ class NanoProcessor(processor.ProcessorABC):
                     if histname == 'rawpt' :
                         genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
                         h.fill(dataset=dataset,flav=ak.flatten(genflavor),pt= ak.flatten(sjets.pt),eta=ak.flatten(sjets.eta), rawpt =ak.flatten(sjets.pt*(1-sjets.rawFactor)) ,weight=genweiev)
-                    elif histname =='rawfactor':
-                        genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
-                        h.fill(dataset=dataset,flav=ak.flatten(genflavor), pt= ak.flatten(sjets.pt),eta=ak.flatten(sjets.eta), rawfactor =ak.flatten(1-sjets.rawFactor),weight=genweiev)
+                    elif 'btagDeep' in histname or 'CvL' in histname or 'CvB' in histname:
+                         output['btagDeepFlavB'].fill(dataset=dataset,flav=ak.flatten(genflavor),  btagDeepFlavB=ak.flatten(sjets.btagDeepFlavB),weight=genweiev)
+                         output['btagDeepFlavC'].fill(dataset=dataset,flav=ak.flatten(genflavor),  btagDeepFlavC=ak.flatten(sjets.btagDeepFlavC),weight=genweiev) 
+                         output['btagDeepB'].fill(dataset=dataset,flav=ak.flatten(genflavor),  btagDeepB=ak.flatten(sjets.btagDeepB),weight=genweiev)
+                         output['btagDeepC'].fill(dataset=dataset,flav=ak.flatten(genflavor),  btagDeepC=ak.flatten(sjets.btagDeepC),weight=genweiev)
+                         output['deepcsv_CvB'].fill(dataset=dataset,flav=ak.flatten(genflavor),  deepcsv_CvB=ak.flatten(sjets.btagDeepC/(1.-sjets.btagDeepB)),weight=genweiev)
+                         output['deepcsv_CvL'].fill(dataset=dataset,flav=ak.flatten(genflavor),  deepcsv_CvL=ak.flatten(sjets.btagDeepC/(sjets.btagDeepC+sjets.btagDeepB)),weight=genweiev)
+                         output['deepflav_CvB'].fill(dataset=dataset,flav=ak.flatten(genflavor),  deepflav_CvB=ak.flatten(sjets.btagDeepFlavC/(1.-sjets.btagDeepFlavB)),weight=genweiev)
+                         output['deepflav_CvL'].fill(dataset=dataset,flav=ak.flatten(genflavor),  deepflav_CvL=ak.flatten(sjets.btagDeepFlavC/(sjets.btagDeepFlavC+sjets.btagDeepFlavB)),weight=genweiev)
                     elif "btag" not in histname :
                         fields = {l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)}
                         genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
                         h.fill(dataset=dataset,flav=ak.flatten(genflavor), **fields,weight=genweiev)
             
-        if not isRealData:
-            genweiev=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level],sjets['pt'])[0])
-            
-            # jetsfs_b=ak.fill_none(ak.prod(deepjetb_sf.eval('central',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepFlavB),axis=-1),1.)
-            # flavsf_b=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level]*jetsfs_b,sjets['pt'])[0])
-            # output['btagDeepFlavBSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavBSF=ak.flatten(sjets.btagDeepFlavB),weight=flavsf_b)
-            output['btagDeepFlavB'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavB=ak.flatten(sjets.btagDeepFlavB),weight=genweiev)
-            # sjets.btag_CvL_flav = sjets.btagDeepFlavC/(1.-sjets.btagDeepFlavB)
-            # sjets.btag_CvB_flav = sjets.btagDeepFlavC/(sjets.btagDeepFlavC+sjets.btagDeepFlavB)
-            # jetsfs_c = getSF(ak.to_numpy(ak.flatten(sjets.hadronFlavour)),ak.to_numpy(ak.flatten(sjets.btag_CvL_flav)),ak.to_numpy(ak.flatten(sjets.btag_CvB_flav)),deepjetc_sf)*genweiev
-            # flavsf_c=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level]*jetsfs_c,sjets['pt'])[0])
-            # output['btagDeepFlavCSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavCSF=ak.flatten(sjets.btagDeepFlavC),weight=jetsfs_c)
-            output['btagDeepFlavC'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavC=ak.flatten(sjets.btagDeepFlavC),weight=genweiev)
-            # csvsfs_b=ak.fill_none(ak.prod(deepcsvb_sf.eval('central',sjets.hadronFlavour,abs(sjets.eta),sjets.pt,discr=sjets.btagDeepB),axis=-1),1.)
-            # deepcsvsf_b=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level]*csvsfs_b,sjets['pt'])[0])
-            # output['btagDeepBSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepBSF=ak.flatten(sjets.btagDeepB),weight=deepcsvsf_b)
-            output['btagDeepB'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepB=ak.flatten(sjets.btagDeepB),weight=genweiev)
-            # sjets.btag_CvL_csv = sjets.btagDeepC/(1.-sjets.btagDeepB)
-            # sjets.btag_CvB_csv = sjets.btagDeepC/(sjets.btagDeepC+sjets.btagDeepB)
-            # csvsfs_c = getSF(ak.to_numpy(ak.flatten(sjets.hadronFlavour)),ak.to_numpy(ak.flatten(sjets.btag_CvL_csv)),ak.to_numpy(ak.flatten(sjets.btag_CvB_csv)),deepcsvc_sf)*genweiev
-            # print(csvsfs_c)
-            # deepcsvsf_c=ak.flatten(ak.broadcast_arrays(weights.weight()[event_level]*csvsfs_c,sjets['pt'])[0])
-            # output['btagDeepCSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepCSF=ak.flatten(sjets.btagDeepC),weight=csvsfs_c)
-            output['btagDeepC'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepC=ak.flatten(sjets.btagDeepC),weight=genweiev)
-        else:
-            # output['btagDeepFlavBSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),btagDeepFlavBSF=ak.flatten(sjets.btagDeepFlavB))
-            # output['btagDeepFlavCSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavCSF=ak.flatten(sjets.btagDeepFlavC))
-            # output['btagDeepBSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepBSF=ak.flatten(sjets.btagDeepB))
-            # output['btagDeepCSF'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepCSF=ak.flatten(sjets.btagDeepC))
-            output['btagDeepFlavB'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt),btagDeepFlavB=ak.flatten(sjets.btagDeepFlavB))
-            output['btagDeepFlavC'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepFlavC=ak.flatten(sjets.btagDeepFlavC))
-            output['btagDeepB'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepB=ak.flatten(sjets.btagDeepB))
-            output['btagDeepC'].fill(dataset=dataset,flav=ak.flatten(genflavor), eta=ak.flatten(sjets.eta),pt=ak.flatten(sjets.pt), btagDeepC=ak.flatten(sjets.btagDeepC))
+        
 
 
 

@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
     # load workflow
     if args.workflow == "ttcom":
-        from workflows.ttbar_validation import NanoProcessor
+        from workflows.ttbar_validation2 import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "jet_AK4":
         from workflows.multijet_valid2 import NanoProcessor
@@ -141,10 +141,10 @@ if __name__ == '__main__':
         from workflows.dilep_valid2 import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "dilep_sf":
-        from workflows.dilep_valid_sep import NanoProcessor
+        from workflows.dilep_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "ctag_sf":
-        from workflows.ctag_valid_sep import NanoProcessor
+        from workflows.ctag_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "ctag_rawpT":
         from workflows.ctag_valid import NanoProcessor
@@ -154,9 +154,6 @@ if __name__ == '__main__':
         processor_instance = NanoProcessor()
     elif args.workflow == "dilep_jec":
         from workflows.dilep_valid_jec import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "tightc":
-        from workflows.ctag_valid_tight import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "Wc_sf":
         from workflows.Wc_valid_sf import NanoProcessor
