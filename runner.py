@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--wf',
                         '--workflow',
                         dest='workflow',
-                        choices=['ttcom', 'jet_AK4','mu_AK4','dilep_rawpT','dilep_sf','ctag_sf','ctag_rawpT','dilep_jec','ctag_jec','tightc','Wc_sf'],
+                        choices=['ttcom', 'ttdilep_sf','ttsemilep_sf','ctag_jec','dilep_jec','ctag_Wc_sf','ctag_DY_sf','ctag_ttdilep_sf','ctag_ttsemilep_sf'],
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
@@ -131,23 +131,11 @@ if __name__ == '__main__':
     if args.workflow == "ttcom":
         from workflows.ttbar_validation2 import NanoProcessor
         processor_instance = NanoProcessor()
-    elif args.workflow == "jet_AK4":
-        from workflows.multijet_valid2 import NanoProcessor
+    elif args.workflow == "ttdilep_sf":
+        from workflows.ttdilep_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
-    elif args.workflow == "mu_AK4":
-        from workflows.muAK4_valid2 import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "dilep_rawpT":
-        from workflows.dilep_valid2 import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "dilep_sf":
-        from workflows.dilep_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ctag_sf":
-        from workflows.ctag_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ctag_rawpT":
-        from workflows.ctag_valid import NanoProcessor
+    elif args.workflow == "ttsemilep_sf":
+        from workflows.ttsemilep_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "ctag_jec":
         from workflows.ctag_valid_jec import NanoProcessor
@@ -155,10 +143,18 @@ if __name__ == '__main__':
     elif args.workflow == "dilep_jec":
         from workflows.dilep_valid_jec import NanoProcessor
         processor_instance = NanoProcessor()
-    elif args.workflow == "Wc_sf":
-        from workflows.Wc_valid_sf import NanoProcessor
+    elif args.workflow == "ctag_Wc_sf":
+        from workflows.ctag_Wc_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
-        
+    elif args.workflow == "ctag_DY_sf":
+        from workflows.ctag_DY_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctag_ttdilep_sf":
+        from workflows.ctag_ttdilep_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctag_ttsemilep_sf":
+        from workflows.ctag_ttsemilep_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()        
     # elif args.workflow == "fattag":
     #     from workflows.fatjet_tagger import NanoProcessor
     #     processor_instance = NanoProcessor()

@@ -30,12 +30,15 @@ parser.add_argument('--norm',default=True,type=bool,help='Use for reshape SF, sc
 parser.add_argument('-d','--discr_list',nargs='+', default=['deepcsv_CvL','deepcsv_CvB','deepflav_CvL','deepflav_CvB','btagDeepB','btagDeepC','btagDeepFlavB','btagDeepFlavC'],help='discriminators')
 
 parser.add_argument('--ext', type=str, default='data', help='addional name')
+parser.add_argument('--output', type=str, help='output file')
 
 arg = parser.parse_args()
 datas=re.compile('(?=%s)'%(arg.ext))
 
 
-output=load('hists_ttsemilep_sf_ctag_AK4_runD.coffea')
+#output=load('hists_ttsemilep_sf_ctag_AK4_runD.coffea')
+#output=load('hists_%s_sf_%s_AK4.coffea' )
+output=load('hists_%s.coffea'%(arg.output))
 
 events = output['sumw']
 if arg.phase == 'dilep' :

@@ -75,3 +75,10 @@ jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
 ### FNAL/LPC Condor
 Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
 the singularity container run as `python runner.py --wf ttcom --executor dask/lpc`
+
+
+## Plotting code
+
+- data/MC comparison code
+
+`python plotdataMC.py --lumi ${lumi} --phase ttdilep --output ttdilep_sf_charm`
