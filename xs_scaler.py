@@ -11,6 +11,7 @@ def scale_xs(hist,lumi,events,xsfile="xsection.json"):
     xs_dict = read_xs(xsfile)
     scales={}
     for key in events:
+
         if type(key) != str or key=="Data" or "data" in key : continue
         scales[key]=xs_dict[key]*lumi/events[key]
     hist.scale(scales, axis="dataset")

@@ -6,8 +6,6 @@ import time
 
 import numpy as np
 
-
-#import uproot4 as uproot
 import uproot
 from coffea import hist
 from coffea.nanoevents import NanoEventsFactory
@@ -23,7 +21,19 @@ def validate(file):
         return
 
 
-if __name__ == '__main__':
+def check_port(port):
+    import socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        sock.bind(("0.0.0.0", port))
+        available = True
+    except:
+        available = False
+    sock.close()
+    return available
+
+
+def get_main_parser():
     parser = argparse.ArgumentParser(description='Run analysis on baconbits files using processor coffea files')
     # Inputs
     parser.add_argument('--wf',
@@ -70,7 +80,11 @@ if __name__ == '__main__':
     parser.add_argument('--limit', type=int, default=None, metavar='N', help='Limit to the first N files of each dataset in sample JSON')
     parser.add_argument('--chunk', type=int, default=50000000, metavar='N', help='Number of events per process chunk')
     parser.add_argument('--max', type=int, default=None, metavar='N', help='Max number of chunks to run in total')
+    return parser
 
+
+if __name__ == '__main__':
+    parser = get_main_parser()
     args = parser.parse_args()
     if args.output == parser.get_default('output'):
         args.output = f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.coffea'
