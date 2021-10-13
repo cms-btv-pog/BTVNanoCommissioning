@@ -29,7 +29,7 @@ if __name__ == '__main__':
     parser.add_argument('--wf',
                         '--workflow',
                         dest='workflow',
-                        choices=['ttcom', 'ttdilep_sf','ttsemilep_sf','ctag_jec','dilep_jec','ctag_Wc_sf','ctag_DY_sf','ctag_ttdilep_sf','ctag_ttsemilep_sf'],
+                        choices=['ttcom', 'ttdilep_sf','ttsemilep_sf','ctag_jec','dilep_jec','ctag_Wc_sf','ctag_DY_sf','ctag_ttdilep_sf','ctag_ttsemilep_sf','ettdilep_sf','ettsemilep_sf','ctag_jec','dilep_jec','ectag_Wc_sf','ectag_DY_sf','ectag_ttdilep_sf','ectag_ttsemilep_sf','emctag_ttdilep_sf','ttdilep_nosf'],
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     parser.add_argument('--skipbadfiles', action='store_true', help='Skip bad files.')
     parser.add_argument('--only', type=str, default=None, help='Only process specific dataset or file')
     parser.add_argument('--limit', type=int, default=None, metavar='N', help='Limit to the first N files of each dataset in sample JSON')
-    parser.add_argument('--chunk', type=int, default=5000000, metavar='N', help='Number of events per process chunk')
+    parser.add_argument('--chunk', type=int, default=50000000, metavar='N', help='Number of events per process chunk')
     parser.add_argument('--max', type=int, default=None, metavar='N', help='Max number of chunks to run in total')
 
     args = parser.parse_args()
@@ -134,8 +134,17 @@ if __name__ == '__main__':
     elif args.workflow == "ttdilep_sf":
         from workflows.ttdilep_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
+    elif args.workflow == "valid":
+        from workflows.dilep_valid_nosf import NanoProcessor
+        processor_instance = NanoProcessor()
     elif args.workflow == "ttsemilep_sf":
         from workflows.ttsemilep_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ettdilep_sf":
+        from workflows.e_ttdilep_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ettsemilep_sf":
+        from workflows.e_ttsemilep_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "ctag_jec":
         from workflows.ctag_valid_jec import NanoProcessor
@@ -146,14 +155,29 @@ if __name__ == '__main__':
     elif args.workflow == "ctag_Wc_sf":
         from workflows.ctag_Wc_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
+    elif args.workflow == "ectag_Wc_sf":
+        from workflows.ctag_eWc_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
     elif args.workflow == "ctag_DY_sf":
         from workflows.ctag_DY_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
+    elif args.workflow == "ectag_DY_sf":
+        from workflows.ctag_eDY_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "emctag_ttdilep_sf":
+        from workflows.ctag_emdileptt_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
     elif args.workflow == "ctag_ttdilep_sf":
-        from workflows.ctag_ttdilep_valid_sf import NanoProcessor
+        from workflows.ctag_dileptt_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ectag_ttdilep_sf":
+        from workflows.ctag_edileptt_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "ctag_ttsemilep_sf":
         from workflows.ctag_ttsemilep_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()        
+    elif args.workflow == "ectag_ttsemilep_sf":
+        from workflows.ctag_ettsemilep_valid_sf import NanoProcessor
         processor_instance = NanoProcessor()        
     # elif args.workflow == "fattag":
     #     from workflows.fatjet_tagger import NanoProcessor

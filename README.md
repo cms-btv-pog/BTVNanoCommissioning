@@ -98,6 +98,14 @@ ctag SF | b-enriched, semilepton ttbar | ctag_semilep_sf | Rereco17_singlemu.jso
 ctag SF | c-enriched,W+c | ctag_Wc_sf, electron channel | Rereco17_singlemu.json
 ctag SF | udsg-enriched, DY+jets | ctag_DY_sf, electron channel | ctag_DY.json
 
+### Validation - check different campaigns
+
+
+Only basic jet selections(PUID, ID, pT, $\eta$) applied. Put the json files with different campaigns
+
+```
+python runner.py --workflow valid --json {}
+```
 
 ## Scale-out (Sites)
 
