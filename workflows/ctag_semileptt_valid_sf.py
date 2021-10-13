@@ -88,34 +88,54 @@ class NanoProcessor(processor.ProcessorABC):
         "DeepCSV_jetNSecondaryVertices","DeepCSV_jetNSelectedTracks","DeepCSV_jetNTracksEtaRel","DeepCSV_trackSumJetEtRatio","DeepCSV_trackSumJetDeltaR","DeepCSV_vertexNTracks"]   
         deepcsv_axes = []
         for d in deepcsv_list:
-            if "jetN" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 16, 0, 15))
-            elif "vertexN" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 16, 0, 15))
+            if "flightDistance2dSig" in d or "flightDistance3dSig" in d :
+                deepcsv_axes.append(hist.Bin(d, d, 101, -0.1, 100))
+            elif "flightDistance2dVal" in d :
+                deepcsv_axes.append(hist.Bin(d, d, 27, -0.1, 2.6))
+            elif "flightDistance3dVal" in d :
+                deepcsv_axes.append(hist.Bin(d, d, 51, -0.1, 5.))
+            elif "trackDecayLenVal" in d :
+                deepcsv_axes.append(hist.Bin(d, d, 22, -0.1, 1.))
+            elif "trackPtRatio" in d or "DeltaR" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 30, -0.001, 0.301))
+            elif "trackEtaRel" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 30, 0, 9))
+            elif "trackJetDistVal" in d :
+                deepcsv_axes.append(hist.Bin(d, d, 35, -0.08,0.0025))
+            elif "trackJetPt" in d : 
+                deepcsv_axes.append(hist.Bin(d, d, 50, 0.,250.))
+            elif "trackPtRel" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 32, -0.1, 3.1))
+            elif "trackSip2dSigAboveCharm" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 22, -5.5, 5.5))
+            elif "trackSip2dSig_0" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 21, -5, 16))
+            elif "trackSip2dSig_1" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 18, -5, 13))
+            elif "trackSip2dSig_2" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 16, -6, 10))
+            elif "trackSip2dSig_3" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 26, -6, 7))
+            elif "trackSip2dSig_4" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 22, -6.5, 4.5))
+            elif "trackSip2dSig_5" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 18, -7, 2))
+            elif "trackSip2dValAboveCharm" in d or "trackSip3dValAboveCharm " in d:
+                deepcsv_axes.append(hist.Bin(d, d, 24, -0.06, 0.06))
+            elif "trackSip3dSigAboveCharm" in d :
+                deepcsv_axes.append(hist.Bin(d, d, 26, -6.5, 6.5)) 
+            elif "trackSip3dSig" in d : 
+                deepcsv_axes.append(hist.Bin(d, d, 25, -25, 50)) 
+            elif "trackSumJetEtRatio" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 25, 0., 1.4)) 
             elif "vertexCategory" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 3, 0, 2))
-            elif "EtaRel" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 20, 0, 5))
-            elif "ValAboveCharm" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 30, 0, 0.3))
-            elif "EnergyRatio" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 20, 0, 1))
-            elif "trackJetDistVal" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 20, 0., 0.1))
-            elif "trackPtRatio" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 30, 0, 0.3))
-            elif "DeltaR" in d: 
-                deepcsv_axes.append(hist.Bin(d, d, 30, 0, 0.3))
-            elif "jetNSecondaryVertices" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 5, 0, 5))
-            elif "vertexCategory" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 5, 0, 5))
-            elif "jetNSelectedTracks" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 5, 0, 5))
-            elif "vertexNTracks" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 5, 0, 5))
+                deepcsv_axes.append(hist.Bin(d, d, 32, -0.6,2.6)) 
+            elif "vertexEnergyRatio" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 25, 0,2.5)) 
+            elif "vertexMass" in d:
+                deepcsv_axes.append(hist.Bin(d, d, 20, 0,20))
             else:
-                deepcsv_axes.append(hist.Bin(d, d, 25, 0, 5.))
+                deepcsv_axes.append(hist.Bin(d, d, 25, -0.5,0.))
         # Define similar axes dynamically
         disc_list = ['btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC','deepcsv_CvL','deepcsv_CvB','deepflav_CvL','deepflav_CvB']
         syst_list = ['','SF','_up','_dn']
