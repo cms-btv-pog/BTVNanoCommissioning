@@ -1,7 +1,7 @@
 def read_xs(file):
     import json
 
-    f = open(file)
+    f = open("../metadata/%s" %file)
     data = json.load(f)
     xs_dict={}
     for obj in data:

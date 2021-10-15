@@ -145,8 +145,11 @@ Only basic jet selections(PUID, ID, pT, $\eta$) applied. Put the json files with
 ```
 python runner.py --workflow valid --json {}
 ```
+<<<<<<< HEAD
 </p>
 </details>
+=======
+>>>>>>> 55c5cc4594c4800d0b7e32d1443ee6a4241a0d36
 
 ## Scale-out (Sites)
 

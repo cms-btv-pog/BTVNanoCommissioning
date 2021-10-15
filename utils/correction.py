@@ -42,6 +42,7 @@ def add_jec_variables(jets, event_rho):
     #objgraph.show_growth()
     return jets'''
 <<<<<<< HEAD
+<<<<<<< HEAD
 with gzip.open("data/Rereco17_94X/94XPUwei_corrections.pkl.gz") as fin:
     compiled = pickle.load(fin)
 
@@ -60,6 +61,8 @@ ext.add_weight_sets(["mu_ID NUM_TightID_DEN_genTracks_pt_abseta data/Rereco17_94
 ext.add_weight_sets(["mu_ID_low NUM_TightID_DEN_genTracks_pt_abseta data/Rereco17_94X/Lepton/RunBCDEF_SF_MuID_lowpT.histo.root"])
 ext.add_weight_sets(["mu_Iso NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta data/Rereco17_94X/Lepton/RunBCDEF_SF_ISO.histo.root"])
 =======
+=======
+>>>>>>> 55c5cc4594c4800d0b7e32d1443ee6a4241a0d36
 with gzip.open("data/Rereco17_94X/corrections.pkl.gz") as fin:
     compiled = pickle.load(fin)
 
@@ -77,6 +80,9 @@ ext.add_weight_sets(["ele_Rereco EGamma_SF2D data/Rereco17_94X/ElectronRecoSF_94
 ext.add_weight_sets(["mu_ID NUM_TightID_DEN_genTracks_pt_abseta data/Rereco17_94X/RunBCDEF_SF_ID.histo.root"])
 ext.add_weight_sets(["mu_ID_low NUM_TightID_DEN_genTracks_pt_abseta data/Rereco17_94X/RunBCDEF_SF_MuID_lowpT.histo.root"])
 ext.add_weight_sets(["mu_Iso NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta data/Rereco17_94X/RunBCDEF_SF_ISO.histo.root"])
+<<<<<<< HEAD
+>>>>>>> 55c5cc4594c4800d0b7e32d1443ee6a4241a0d36
+=======
 >>>>>>> 55c5cc4594c4800d0b7e32d1443ee6a4241a0d36
 ext.finalize()
 evaluator = ext.make_evaluator()
