@@ -39,7 +39,7 @@ def get_main_parser():
     parser.add_argument('--wf',
                         '--workflow',
                         dest='workflow',
-                        choices=['ttcom', 'fattag'],
+                        choices=['ttcom', 'ttdilep_sf','ttsemilep_sf','ctag_jec','dilep_jec','ctag_Wc_sf','ctag_DY_sf','ctag_ttdilep_sf','ctag_ttsemilep_sf','ettdilep_sf','ettsemilep_sf','ctag_jec','dilep_jec','ectag_Wc_sf','ectag_DY_sf','ectag_ttdilep_sf','ectag_ttsemilep_sf','emctag_ttdilep_sf','ttdilep_nosf'],
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
@@ -78,7 +78,7 @@ def get_main_parser():
     parser.add_argument('--skipbadfiles', action='store_true', help='Skip bad files.')
     parser.add_argument('--only', type=str, default=None, help='Only process specific dataset or file')
     parser.add_argument('--limit', type=int, default=None, metavar='N', help='Limit to the first N files of each dataset in sample JSON')
-    parser.add_argument('--chunk', type=int, default=500000, metavar='N', help='Number of events per process chunk')
+    parser.add_argument('--chunk', type=int, default=50000000, metavar='N', help='Number of events per process chunk')
     parser.add_argument('--max', type=int, default=None, metavar='N', help='Max number of chunks to run in total')
     return parser
 
@@ -90,7 +90,7 @@ if __name__ == '__main__':
         args.output = f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.coffea'
 
 
-    # load dataset
+        # load dataset
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
     for key in sample_dict.keys():
@@ -143,8 +143,56 @@ if __name__ == '__main__':
 
     # load workflow
     if args.workflow == "ttcom":
-        from workflows.ttbar_validation2 import NanoProcessor
+        from workflows.ttbar_validation import NanoProcessor
         processor_instance = NanoProcessor()
+    elif args.workflow == "ttdilep_sf":
+        from workflows.ttdilep_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "validation":
+        from workflows.validation import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ttsemilep_sf":
+        from workflows.ttsemilep_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ettdilep_sf":
+        from workflows.e_ttdilep_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ettsemilep_sf":
+        from workflows.e_ttsemilep_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctag_jec":
+        from workflows.ctag_valid_jec import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "dilep_jec":
+        from workflows.dilep_valid_jec import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctag_Wc_sf":
+        from workflows.ctag_Wc_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ectag_Wc_sf":
+        from workflows.ctag_eWc_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctag_DY_sf":
+        from workflows.ctag_DY_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ectag_DY_sf":
+        from workflows.ctag_eDY_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "emctag_ttdilep_sf":
+        from workflows.ctag_emdileptt_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctag_ttdilep_sf":
+        from workflows.ctag_dileptt_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ectag_ttdilep_sf":
+        from workflows.ctag_edileptt_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "ctag_ttsemilep_sf":
+        from workflows.ctag_semileptt_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()        
+    elif args.workflow == "ectag_ttsemilep_sf":
+        from workflows.ctag_ettsemilep_valid_sf import NanoProcessor
+        processor_instance = NanoProcessor()        
     # elif args.workflow == "fattag":
     #     from workflows.fatjet_tagger import NanoProcessor
     #     processor_instance = NanoProcessor()
@@ -229,7 +277,7 @@ if __name__ == '__main__':
                     HighThroughputExecutor(
                         label='coffea_parsl_condor',
                         address=address_by_query(),
-                        # max_workers=1,
+                        max_workers=1,
                         provider=CondorProvider(
                             nodes_per_block=1,
                             init_blocks=1,
