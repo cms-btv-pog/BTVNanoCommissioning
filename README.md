@@ -1,24 +1,19 @@
+
+![hackmd-github-sync-badge](https://hackmd.io/OanqNrsDRLqvP6P5dCh9eQ/badge)
+
+
 # BTVNanoCommissioning
 Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD samples
 
-
-## Structure
-Example worfkflow for ttbar is included. 
-
-Each workflow can be a separate "processor" file, creating the mapping from NanoAOD to
-the histograms we need. Workflow processors can be passed to the `runner.py` script 
-along with the fileset these should run over. Multiple executors can be chosen 
-(for now iterative - one by one, uproot/futures - multiprocessing and dask-slurm). 
-
-To run the example, run:
-```
-python runner.py --workflow ttcom
-```
-
-Example plots can be found in ` make_some_plots.ipynb` though we might want to make
-that more automatic in the end.
-
 ## Requirements
+### Setup 
+```
+# only first time 
+git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
+
+# activate enviroment once you have coffea framework 
+conda activate coffea
+```
 ### Coffea installation with Miniconda
 For installing Miniconda, see also https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Local-or-remote
 ```
@@ -31,7 +26,7 @@ NOTE: always make sure that conda, python, and pip point to local Miniconda inst
 You can either use the default environment`base` or create a new one:
 ```
 # create new environment with python 3.7, e.g. environment of name `coffea`
-conda create --name coffea python=3.7
+conda create --name coffea python3.7
 # activate environment `coffea`
 conda activate coffea
 ```
@@ -69,6 +64,92 @@ Host *_f
 jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
 ```
 4. URL for notebook will be printed, copy and open in local browser
+
+
+
+## Structure
+Example worfkflow for ttbar is included. 
+
+Each workflow can be a separate "processor" file, creating the mapping from NanoAOD to
+the histograms we need. Workflow processors can be passed to the `runner.py` script 
+along with the fileset these should run over. Multiple executors can be chosen 
+(for now iterative - one by one, uproot/futures - multiprocessing and dask-slurm). 
+
+To run the example, run:
+```
+python runner.py --workflow ttcom
+```
+
+Example plots can be found in ` make_some_plots.ipynb` though we might want to make
+that more automatic in the end.
+
+
+### b-SFs 
+<details><summary>details</summary>
+<p>
+
+- Dileptonic ttbar phase space : check performance for btag SFs, muon channel
+
+```
+python runner.py --workflow ttdilep_sf --json Rereco17_doublemu.json
+```
+
+- Semileptonic ttbar phase space : check performance for btag SFs, muon channel
+
+```
+python runner.py --workflow ttsemilep_sf --json Rereco17_singlemu.json
+```
+
+</p>
+</details>
+
+### c-SFs
+<details><summary>details</summary>
+<p>
+
+- Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
+
+```
+python runner.py --workflow ctag_ttdilep_sf --json 94X_doublemu_PFNano.json
+```
+
+
+- Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
+
+```
+python runner.py --workflow ctag_ttsemilep_sf --json 94X_singlemu_PFNano.json
+```
+
+- W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
+
+```
+python runner.py --workflow ctag_ttdilep_sf --json 94X_singlemu_PFNano.json
+```
+
+- DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
+
+```
+python runner.py --workflow ctag_ttdilep_sf --json ctag_DY_mu_PFNano.json
+```
+
+</p>
+</details>
+
+### Validation - check different campaigns
+
+<details><summary>details</summary>
+<p>
+
+Only basic jet selections(PUID, ID, pT, $\eta$) applied. Put the json files with different campaigns
+
+```
+python runner.py --workflow valid --json {}
+```
+<<<<<<< HEAD
+</p>
+</details>
+=======
+>>>>>>> 55c5cc4594c4800d0b7e32d1443ee6a4241a0d36
 
 ## Scale-out (Sites)
 
@@ -110,4 +191,32 @@ python runner.py --wf ttcom --executor dask/condor
 ### Maxwell@DESY 
 ```bash
 python runner.py --wf ttcom --executor parsl/slurm
+```
+
+
+## Plotting code
+
+- data/MC comparison code
+
+```python
+python plotdataMC.py --lumi ${lumi} --phase ctag_ttdilep_sf --output ctag_ttdilep_sf (--discr zmass --log True/False --data data_runD)
+# lumi in /pb
+# phase = workflow 
+# output coffea file output = hist_$output$.coffea 
+# discr = input variables, the defaults are the discriminators, can add multiple variables with space
+# log = logorithm on y-axis
+# data = data name
+```
+
+- data/data, MC/MC comparison
+
+```python
+python comparison.py --phase ctag_ttdilep_sf --output ctag_ttdilep_sf -ref 2017_runB --compared 2017_runC 2017_runD (--discr zmass --log True/False --sepflav True/False)
+# phase = workflow 
+# output coffea file output = hist_$output$.coffea 
+# ref = reference data/MC sample
+# comapred = 
+# discr = input variables, the defaults are the discriminators, can add multiple variables with space
+# log = logorithm on y-axis
+# sepflav = separate the jets into different flavor
 ```
