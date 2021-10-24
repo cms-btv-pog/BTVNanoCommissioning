@@ -13,12 +13,8 @@ import vector
 from coffea import processor
 
 from hgg_coffea.tools.chained_quantile import ChainedQuantileRegression
-
-from hgg_coffea.tools.diphoton_mva import (  # isort:skip
-    calculate_diphoton_mva,
-    load_diphoton_mva,
-)
-
+from hgg_coffea.tools.diphoton_mva import calculate_diphoton_mva
+from hgg_coffea.tools.xgb_loader import load_bdt
 
 vector.register_awkward()
 
@@ -70,9 +66,7 @@ class HggBaseProcessor(processor.ProcessorABC):  # type: ignore
             self.chained_quantile = None
 
         # initialize diphoton mva
-        self.diphoton_mva = load_diphoton_mva(
-            self.meta["flashggDiPhotonMVA"]["weightFile"]
-        )
+        self.diphoton_mva = load_bdt(self.meta["flashggDiPhotonMVA"]["weightFile"])
 
     def photon_preselection(self, photons: awkward.Array) -> awkward.Array:
         photon_abs_eta = numpy.abs(photons.eta)

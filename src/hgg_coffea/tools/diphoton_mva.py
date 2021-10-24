@@ -1,19 +1,8 @@
-import warnings
 from typing import List, Optional, Tuple
 
 import awkward
 import numpy
 import xgboost
-
-
-def load_diphoton_mva(fname: str) -> Optional[xgboost.Booster]:
-    try:
-        diphoton_mva = xgboost.Booster()
-        diphoton_mva.load_model(fname)
-    except xgboost.core.XGBoostError:
-        warnings.warn(f"SKIPPING diphoton_mva, could not find: {fname}")
-        diphoton_mva = None
-    return diphoton_mva
 
 
 def calculate_diphoton_mva(

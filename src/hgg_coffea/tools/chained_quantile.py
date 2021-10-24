@@ -5,6 +5,8 @@ import awkward
 import numpy
 import xgboost
 
+from hgg_coffea.tools.bdt_loader import load_bdt
+
 
 class wrapped_xgb:
     def __init__(
@@ -44,12 +46,10 @@ def create_evaluator(
     variables: Optional[List[str]] = None,
     **kwargs: Dict[Any, Any],
 ) -> xgboost.Booster:
-    try:
-        model = xgboost.Booster()
-        model.load_model(weights)
-        return wrapped_xgb(model=model, scale=scale, center=center, variables=variables)
-    except xgboost.core.XGBoostError as err:
-        raise ValueError(f"could not find: {weights}") from err
+    model = load_bdt(weights)
+    if model is None:
+        raise RuntimeError(f"Could not load {weights}, check warnings!")
+    return wrapped_xgb(model=model, scale=scale, center=center, variables=variables)
 
 
 class ChainedQuantileRegression:
