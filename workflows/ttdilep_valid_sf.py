@@ -9,6 +9,7 @@ import awkward as ak
 import gc
 from utils.correction import *
 from definitions import *
+from coffea.analysis_tools import Weights
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -404,7 +405,6 @@ class NanoProcessor(processor.ProcessorABC):
             output['ljeta'].fill(dataset=dataset, flav=flatten(sjets[:,0].hadronFlavour), ljeta=flatten(sjets[:,0].eta),weight=weights.weight()[event_level])
             output['sljeta'].fill(dataset=dataset, flav=flatten(sjets[:,1].hadronFlavour), sljeta=flatten(sjets[:,1].eta),weight=weights.weight()[event_level])
         gc.collect()
-        schedule.every(20).minutes.do(dosomething)
 
         return output
 

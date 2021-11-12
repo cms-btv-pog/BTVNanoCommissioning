@@ -94,6 +94,7 @@ class NanoProcessor(processor.ProcessorABC):
         for d in deepcsv_list:
             binning, ranges = bininfo["Jet_%s"%d]
             if ranges[1] is None : ranges[1] = 0.
+            elif ranges[0] is None : ranges[0] = 0.
             deepcsv_axes.append(hist.Bin(d,d,binning,ranges[0],ranges[1]))
             
         # Define similar axes dynamically
@@ -230,9 +231,6 @@ class NanoProcessor(processor.ProcessorABC):
         soft_muon= ak.pad_none(soft_muon,1,axis=1)
         # pT ratio
         req_pTratio = ((soft_muon[:,0].pt/mu_jet[:,0].pt)<0.6)
-        #dilepton mass
-        # req_dilepmass = np.zeros(len(events), dtype='bool')
-        # req_dilepmass = req_muon&req_softmu
 
         req_QCDveto = (iso_ele.pfRelIso03_all<0.05) & (abs(iso_ele.dz)<0.01) & (abs(iso_ele.dxy)<0.002) & (iso_ele.ip3d < 0.2) & ((iso_ele.pt/mu_jet[:,0].pt<0.)|(iso_ele.pt/mu_jet[:,0].pt>0.75))
         event_level = req_trig & req_lumi & req_ele &  req_jets & req_softmu   &req_mujet & req_Wmass & req_dilepveto & req_QCDveto & req_pTratio
@@ -247,11 +245,9 @@ class NanoProcessor(processor.ProcessorABC):
        
         shmu=shmu[:,0]
         
-        sjets = selev.Jet[(selev.Jet.pt > 20) & (abs(selev.Jet.eta) <= 2.5)&(((selev.Jet.puId >=7)&( selev.Jet.pt<50))|(selev.Jet.pt>=50)) &(selev.Jet.jetId>=3)&(selev.Jet.btagDeepB>0.) & (selev.Jet.btagDeepB<1.) & (selev.Jet.btagDeepC>0.) & (selev.Jet.btagDeepC<1.) & (selev.Jet.btagDeepFlavB>0.) & (selev.Jet.btagDeepFlavB<1.) & (selev.Jet.btagDeepFlavC>0.) & (selev.Jet.btagDeepFlavC<1.)& (ak.all(selev.Jet.metric_table(shmu) > 0.5, axis=2))&((selev.Jet.muEF+selev.Jet.neEmEF)<0.7)]
+        sjets =  selev.Jet[(selev.Jet.pt > 20) & (abs(selev.Jet.eta) <= 2.5)&(((selev.Jet.puId >=7)&( selev.Jet.pt<50))|(selev.Jet.pt>=50)) &(selev.Jet.jetId>=3)&(selev.Jet.btagDeepB>0.) & (selev.Jet.btagDeepB<1.) & (selev.Jet.btagDeepC>0.) & (selev.Jet.btagDeepC<1.) & (selev.Jet.btagDeepFlavB>0.) & (selev.Jet.btagDeepFlavB<1.) & (selev.Jet.btagDeepFlavC>0.) & (selev.Jet.btagDeepFlavC<1.)& (ak.all(selev.Jet.metric_table(shmu) > 0.5, axis=2))]
         ## Soft Muon
         ssmu = selev.Muon[(selev.Muon.pt < 25) & (abs(selev.Muon.eta) < 2.4) & (selev.Muon.tightId > .5)&(selev.Muon.pfRelIso04_all>0.2)&(selev.Muon.jetIdx!=-1)]
-        print(ssmu.pt)
-        #ssmu=ssmu[:,0]
 
         ## MET
         smet =ak.zip({
@@ -263,16 +259,9 @@ class NanoProcessor(processor.ProcessorABC):
        
         ## Jets
         
-        
-        
-       
-        ## Muon Jet 
-        # print(sjets.pt)
-        
         #smuon_jet = sjets[(ak.all(sjets.metric_table(ssmu) <= 0.4, axis=2))&((sjets.muonIdx1!=-1)|(sjets.muonIdx2!=-1))]
         smuon_jet = sjets[(ak.all(sjets.metric_table(ssmu) <= 0.4, axis=2))]
-        print(ak.type(sjets.pt),sjets)
-        print(ak.type(smuon_jet),smuon_jet)
+
         smuon_jet = smuon_jet[:,0]
         ssmu = ssmu[:,0]
         sz=shmu+ssmu

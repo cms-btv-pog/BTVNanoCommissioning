@@ -1,0 +1,8 @@
+{
+    "WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8": [
+        "root://xrootd-cms.infn.it//store/user/anovak/PFNano/106X_v2_17rsb3/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17PFNanov2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/210509_154437/0000/nano_mc2017_123.root"],
+    "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8":[
+        "root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174326/0001/nano_mc2017_1-1664.root"],
+    "data":[ "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/anovak/PFNano/106X_v2_17rsb3/SingleMuon/Run2017B-31Mar2018-v1_PFNanov2/210509_154612/0000/nano_data2017_253.root"]
+
+}

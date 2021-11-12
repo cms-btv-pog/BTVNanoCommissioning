@@ -1,7 +1,4 @@
 
-![hackmd-github-sync-badge](https://hackmd.io/OanqNrsDRLqvP6P5dCh9eQ/badge)
-
-
 # BTVNanoCommissioning
 Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD samples
 
@@ -83,21 +80,26 @@ python runner.py --workflow ttcom
 Example plots can be found in ` make_some_plots.ipynb` though we might want to make
 that more automatic in the end.
 
+To test a small set of files to see whether the workflows run smoothly, run:
+```
+python runner.py --workflow ${workflow} --json metadata/test.json 
+```
 
 ### b-SFs 
+
 <details><summary>details</summary>
 <p>
 
 - Dileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttdilep_sf --json Rereco17_doublemu.json
+python runner.py --workflow ttdilep_sf --json metadata/94X_doublemu_PFNano.json
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttsemilep_sf --json Rereco17_singlemu.json
+python runner.py --workflow ttsemilep_sf --json metadata/94X_singlemu_PFNano.json
 ```
 
 </p>
@@ -110,20 +112,20 @@ python runner.py --workflow ttsemilep_sf --json Rereco17_singlemu.json
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json 94X_doublemu_PFNano.json
+python runner.py --workflow ctag_ttdilep_sf --json metadata/94X_doublemu_PFNano.json
 ```
 
 
 - Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttsemilep_sf --json 94X_singlemu_PFNano.json
+python runner.py --workflow ctag_ttsemilep_sf --json metadata/94X_singlemu_PFNano.json
 ```
 
 - W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json 94X_singlemu_PFNano.json
+python runner.py --workflow ctag_ttdilep_sf --json metadata/94X_singlemu_PFNano.json
 ```
 
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
@@ -145,11 +147,9 @@ Only basic jet selections(PUID, ID, pT, $\eta$) applied. Put the json files with
 ```
 python runner.py --workflow valid --json {}
 ```
-<<<<<<< HEAD
 </p>
 </details>
-=======
->>>>>>> 55c5cc4594c4800d0b7e32d1443ee6a4241a0d36
+
 
 ## Scale-out (Sites)
 
@@ -191,6 +191,15 @@ python runner.py --wf ttcom --executor dask/condor
 ### Maxwell@DESY 
 ```bash
 python runner.py --wf ttcom --executor parsl/slurm
+```
+
+
+## Make the json files
+
+Use the `fetch.py` in `filefetcher`, the `$input_DAS_list` is the info extract from DAS, and output json files in `metadata/`
+
+```
+python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
 ```
 
 

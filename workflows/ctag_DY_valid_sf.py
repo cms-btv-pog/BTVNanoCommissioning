@@ -233,18 +233,9 @@ class NanoProcessor(processor.ProcessorABC):
             
         for histname, h in output.items():
             if 'sumw' in histname:print('sumw')
-<<<<<<< HEAD
-<<<<<<< HEAD
+
             elif histname in self.deepcsv_hists:
                  fields = {l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)}
-=======
-            # elif histname in self.deepcsv_hists:
-            #     fields = {l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)}
->>>>>>> 55c5cc4594c4800d0b7e32d1443ee6a4241a0d36
-=======
-            # elif histname in self.deepcsv_hists:
-            #     fields = {l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)}
->>>>>>> 55c5cc4594c4800d0b7e32d1443ee6a4241a0d36
             #     if(isRealData):
             #         h.fill(dataset=dataset,flav=5, **fields)
             #     else:                    

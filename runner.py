@@ -87,7 +87,9 @@ if __name__ == '__main__':
     parser = get_main_parser()
     args = parser.parse_args()
     if args.output == parser.get_default('output'):
-        args.output = f'hists_{args.workflow}_{(args.samplejson).rstrip(".json")}.coffea'
+        index = args.samplejson.rfind('/')+1
+        sample_json = args.samplejson[index:]
+        args.output = f'hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
 
 
         # load dataset
