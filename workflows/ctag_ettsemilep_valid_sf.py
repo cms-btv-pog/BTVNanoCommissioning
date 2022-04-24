@@ -231,9 +231,7 @@ class NanoProcessor(processor.ProcessorABC):
         soft_muon= ak.pad_none(soft_muon,1,axis=1)
         # pT ratio
         req_pTratio = ((soft_muon[:,0].pt/mu_jet[:,0].pt)<0.6)
-        #dilepton mass
-        # req_dilepmass = np.zeros(len(events), dtype='bool')
-        # req_dilepmass = req_muon&req_softmu
+        
 
         req_QCDveto = (iso_ele.pfRelIso03_all<0.05) & (abs(iso_ele.dz)<0.01) & (abs(iso_ele.dxy)<0.002) & (iso_ele.ip3d < 0.2) & ((iso_ele.pt/mu_jet[:,0].pt<0.)|(iso_ele.pt/mu_jet[:,0].pt>0.75))
         event_level = req_trig & req_lumi & req_ele &  req_jets & req_softmu   &req_mujet & req_Wmass & req_dilepveto & req_QCDveto & req_pTratio
@@ -430,7 +428,6 @@ class NanoProcessor(processor.ProcessorABC):
             output['deepflav_CvL_dn_0'].fill(dataset=dataset,flav=5, deepflav_CvL_dn=smuon_jet.btagDeepFlavC/(smuon_jet.btagDeepFlavC+smuon_jet.btagDeepFlavB))
             
         gc.collect()
-        # schedule.every(20).minutes.do(dosomething)
 
         return output
 

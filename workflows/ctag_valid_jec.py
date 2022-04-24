@@ -1,95 +1,10 @@
-import gzip
-import pickle
-import coffea
 from coffea import hist, processor
 import numpy as np
 import awkward as ak
 from coffea.analysis_tools import Weights
-from coffea.lumi_tools import LumiMask
-import cloudpickle
 import gc
-from pympler import tracker,summary,muppy
-import objgraph
-import schedule
+
 from utils.correction  import *
-import inspect
-from coffea.jetmet_tools import FactorizedJetCorrector, JetCorrectionUncertainty
-from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
-from coffea.lookup_tools import extractor
-
-ext = extractor()
-ext.add_weight_sets([
-    "* * data/Summer19UL17_V5_MC_L1FastJet_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_V5_MC_L2Relative_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_V5_MC_L3Absolute_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_V5_MC_L2L3Residual_AK4PFchs.jec.txt",
-#     "* * data/Summer19UL17_JRV2_MC_SF_AK4PFchs.jersf.txt",
-#     "* * data/Summer19UL17_JRV2_MC_PtResolution_AK4PFchs.jr.txt",  
-])
-# ext.add_weight_sets([
-#     "* * data/Fall17_17Nov2017_V32_MC_L1FastJet_AK4PFchs.jec.txt",
-#     "* * data/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFchs.jec.txt",
-#     "* * data/Fall17_17Nov2017_V32_MC_L3Absolute_AK4PFchs.jec.txt",
-#     "* * data/Fall17_17Nov2017_V32_MC_L2L3Residual_AK4PFchs.jec.txt",
-#     # "* * data/Fall17_V3b_MC_PtResolution_AK4PFchs.jr.txt",
-#     # "* * data/Fall17_V3b_MC_SF_AK4PFchs.jersf.txt",   
-# ])
-ext.finalize()
-jec_stack_names = [
-                    "Summer19UL17_V5_MC_L1FastJet_AK4PFchs",
-                   "Summer19UL17_V5_MC_L2Relative_AK4PFchs",
-                   "Summer19UL17_V5_MC_L3Absolute_AK4PFchs",
-                   "Summer19UL17_V5_MC_L2L3Residual_AK4PFchs",
-                   ]
-evaluator = ext.make_evaluator()
-jec_inputs = {name: evaluator[name] for name in jec_stack_names}
-jec_stack = JECStack(jec_inputs)
-ext_data = extractor()
-ext_data.add_weight_sets([
-    "* * data/Summer19UL17_RunD_V5_DATA_L1FastJet_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_RunD_V5_DATA_L2L3Residual_AK4PFchs.jec.txt"
-    # "* * data/Summer19UL17_JRV2_DATA_PtResolution_AK4PFchs.jr.txt",
-    # "* * data/Summer19UL17_JRV2_DATA_SF_AK4PFchs.jersf.txt"
-    ])
-# ext_data.add_weight_sets([
-#     "* * data/Fall17_17Nov2017DE_V32_DATA_L1FastJet_AK4PFchs.jec.txt",
-#     "* * data/Fall17_17Nov2017DE_V32_DATA_L2Relative_AK4PFchs.jec.txt",
-#     "* * data/Fall17_17Nov2017DE_V32_DATA_L3Absolute_AK4PFchs.jec.txt",
-#     "* * data/Fall17_17Nov2017DE_V32_DATA_L2L3Residual_AK4PFchs.jec.txt"
-#     ])
-
-ext_data.finalize()
-jec_datastack_names = [
-    "Summer19UL17_RunD_V5_DATA_L1FastJet_AK4PFchs",
-    "Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs",
-    "Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs",
-    "Summer19UL17_RunD_V5_DATA_L2L3Residual_AK4PFchs"
-    ]
-evaluator_data = ext_data.make_evaluator()
-jec_inputs_data = {name: evaluator_data[name] for name in jec_datastack_names}
-jec_stack_data = JECStack(jec_inputs_data)
-
-
-# print(dir(evaluator))
-name_map = jec_stack.blank_name_map
-name_map['JetPt'] = 'pt'
-name_map['JetMass'] = 'mass'
-name_map['JetEta'] = 'eta'
-name_map['JetA'] = 'area'
-name_mapd = jec_stack_data.blank_name_map
-name_mapd['JetPt'] = 'pt'
-name_mapd['JetMass'] = 'mass'
-name_mapd['JetEta'] = 'eta'
-name_mapd['JetA'] = 'area'
-
-def update(events, collections):
-    """Return a shallow copy of events array with some collections swapped out"""
-    out = events
-    for name, value in collections.items():
-        out = ak.with_field(out, value, name)
-    return out
 
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
@@ -233,7 +148,6 @@ class NanoProcessor(processor.ProcessorABC):
         _hist_dict = {**_hist_deepcsv_dict,**_hist_event_dict}
         self._accumulator = processor.dict_accumulator(_hist_dict)
         self._accumulator['sumw'] = processor.defaultdict_accumulator(float)
-        print("----------pre--------")
         
 
 
@@ -241,15 +155,11 @@ class NanoProcessor(processor.ProcessorABC):
     
     def accumulator(self):
         # objgraph.show_growth()
-        print("----------accumulator--------")
         return self._accumulator
     
     def process(self, events):
 
-        print("======>process_shift<======")
-        objgraph.show_growth()
         output = self.accumulator.identity()
-        # print(output.items())
         dataset = events.metadata['dataset']
         isRealData = not hasattr(events, "genWeight")
         
@@ -279,34 +189,13 @@ class NanoProcessor(processor.ProcessorABC):
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
         events.Muon = events.Muon[(events.Muon.pt > 30) & (abs(events.Muon.eta) < 2.4) & (events.Muon.tightId > .5)&(events.Muon.pfRelIso04_all<0.12)] #
         
-        # print(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))
         event_muon = ak.pad_none(events.Muon, 1, axis=1) 
         
         req_muon =(ak.count(event_muon.pt, axis=1) == 1)
         ## Jet cuts 
 
-        jets = events.Jet
-        
-        jets['pt_raw'] = (1 - jets['rawFactor']) * jets['pt']
-        jets['mass_raw'] = (1 - jets['rawFactor']) * jets['mass']
-        if not isRealData:jets['pt_gen'] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
-        jets['rho'] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
-        if not isRealData:
-            name_map['ptGenJet'] = 'pt_gen'
-            name_map['ptRaw'] = 'pt_raw'
-            name_map['massRaw'] = 'mass_raw'
-            name_map['Rho'] = 'rho'
-            events_cache = events.caches[0]
-            jet_factory = CorrectedJetsFactory(name_map, jec_stack)
-            corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
-        else :
-            # name_mapd['ptGenJet'] = 'pt_gen'
-            name_mapd['ptRaw'] = 'pt_raw'
-            name_mapd['massRaw'] = 'mass_raw'
-            name_mapd['Rho'] = 'rho'
-            events_cache = events.caches[0]
-            jet_factory_data = CorrectedJetsFactory(name_mapd, jec_stack_data)
-            corrected_jets = jet_factory_data.build(jets, lazy_cache=events_cache)
+        if not isRealData: corrected_jets=jet_factory["mc"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),lazy_cache=events.caches[0])
+        else :corrected_jets=jet_factory["data"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),lazy_cache=events.caches[0])
         event_jet = corrected_jets[(corrected_jets.pt> 25) & (abs(corrected_jets.eta) <= 2.4)&(corrected_jets.puId > 0)&(corrected_jets.jetId > 0)&(ak.all(corrected_jets.metric_table(events.Muon) > 0.4, axis=2))]
         # event_jet = events.Jet[(events.Jet.pt> 25) & (abs(events.Jet.eta) <= 2.4)&(events.Jet.puId > 0)&(events.Jet.jetId > 0)&(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))]
         req_jets = (ak.num(event_jet)>=4)
@@ -358,12 +247,7 @@ class NanoProcessor(processor.ProcessorABC):
             
                 
         gc.collect()
-        print("======>return output<======")
         
-        del jets
-        del event_jet    
-        # del corrected_jets
-        del events_cache
         # Fill histograms dynamically  
         for histname, h in output.items():
             if histname in self.deepcsv_hists:
@@ -445,11 +329,8 @@ class NanoProcessor(processor.ProcessorABC):
                 output['sssljdr'].fill(dataset=dataset, flav=flatten(sjets[:,3].hadronFlavour), sssljdr=flatten(sjets[:,3].delta_r(smu)),weight=weights.weight()[event_level])
                 output['met'].fill(dataset=dataset, met=flatten((selev.METFixEE2017.pt)),weight=weights.weight()[event_level])
         
-        # del events_cache
-        # schedule.every(20).minutes.do(dosomething)
         return output
     
 
     def postprocess(self, accumulator):
-        print("----------post--------")
         return accumulator

@@ -1,103 +1,9 @@
-import gzip
 import pickle, os, sys, mplhep as hep, numpy as np
-
-import coffea
 from coffea import hist, processor
 import awkward as ak
 from coffea.analysis_tools import Weights
-from coffea.lumi_tools import LumiMask
-from coffea.btag_tools import BTagScaleFactor
-from cTagSFReader import *
-import cloudpickle
+from utils.correction import *
 import gc
-import inspect
-from coffea.jetmet_tools import FactorizedJetCorrector, JetCorrectionUncertainty
-from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
-from coffea.lookup_tools import extractor
-
-
-ext = extractor()
-ext.add_weight_sets([
-    "* * data/Summer19UL17_V5_MC_L1FastJet_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_V5_MC_L2Relative_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_V5_MC_L3Absolute_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_V5_MC_L2L3Residual_AK4PFchs.jec.txt",
-])
-
-ext.finalize()
-jec_stack_names = [
-                    "Summer19UL17_V5_MC_L1FastJet_AK4PFchs",
-                   "Summer19UL17_V5_MC_L2Relative_AK4PFchs",
-                   "Summer19UL17_V5_MC_L3Absolute_AK4PFchs",
-                   "Summer19UL17_V5_MC_L2L3Residual_AK4PFchs",
-                   ]
-evaluator = ext.make_evaluator()
-jec_inputs = {name: evaluator[name] for name in jec_stack_names}
-jec_stack = JECStack(jec_inputs)
-ext_data = extractor()
-ext_data.add_weight_sets([
-    "* * data/Summer19UL17_RunD_V5_DATA_L1FastJet_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs.jec.txt",
-    "* * data/Summer19UL17_RunD_V5_DATA_L2L3Residual_AK4PFchs.jec.txt"
-    ])
-
-
-ext_data.finalize()
-jec_datastack_names = [
-    "Summer19UL17_RunD_V5_DATA_L1FastJet_AK4PFchs",
-    "Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs",
-    "Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs",
-    "Summer19UL17_RunD_V5_DATA_L2L3Residual_AK4PFchs"
-    ]
-evaluator_data = ext_data.make_evaluator()
-jec_inputs_data = {name: evaluator_data[name] for name in jec_datastack_names}
-jec_stack_data = JECStack(jec_inputs_data)
-
-
-# print(dir(evaluator))
-name_map = jec_stack.blank_name_map
-name_map['JetPt'] = 'pt'
-name_map['JetMass'] = 'mass'
-name_map['JetEta'] = 'eta'
-name_map['JetA'] = 'area'
-name_mapd = jec_stack_data.blank_name_map
-name_mapd['JetPt'] = 'pt'
-name_mapd['JetMass'] = 'mass'
-name_mapd['JetEta'] = 'eta'
-name_mapd['JetA'] = 'area'
-
-deepcsvb_sf = BTagScaleFactor("data/DeepCSV_94XSF_V5_B_F.csv",BTagScaleFactor.RESHAPE,methods='iterativefit,iterativefit,iterativefit')
-deepcsvc_sf = "data/DeepCSV_ctagSF_MiniAOD94X_2017_pTincl_v3_2_interp.root"
-deepjetb_sf = BTagScaleFactor("data/DeepFlavour_94XSF_V4_B_F.csv",BTagScaleFactor.RESHAPE,methods='iterativefit,iterativefit,iterativefit')
-deepjetc_sf = "data/DeepJet_ctagSF_MiniAOD94X_2017_pTincl_v3_2_interp.root"
-##import corrections, masks
-with gzip.open("data/corrections.pkl.gz") as fin:
-    compiled = pickle.load(fin)
-def build_lumimask(filename):
-    return LumiMask(filename)
-lumiMasks = {
-    '2016': build_lumimask('data/Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt'),
-    '2017': build_lumimask('data/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt'),
-    '2018': build_lumimask('data/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt'),
-}
-
-with gzip.open("data/compiled_jec.pkl.gzt") as fin:
-    jmestuff = cloudpickle.load(fin)
-jet_factory = jmestuff["jet_factory"]
-def add_jec_variables(jets, event_rho):
-    jets["pt_raw"] = (1 - jets.rawFactor)*jets.pt
-    jets["mass_raw"] = (1 - jets.rawFactor)*jets.mass
-    jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
-    jets["event_rho"] = ak.broadcast_arrays(event_rho, jets.pt)[0]
-    return jets
-def update(events, collections):
-    """Return a shallow copy of events array with some collections swapped out"""
-    out = events
-    for name, value in collections.items():
-        out = ak.with_field(out, value, name)
-    return out
-
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -307,29 +213,10 @@ class NanoProcessor(processor.ProcessorABC):
         ## Jet cuts 
         
         req_opposite_charge = (events.Electron[:, 0].charge * events.Muon[:, 0].charge) == -1
-        # req_opposite_charge = ak.fill_none(req_opposite_charge,False)
-        jets = events.Jet
         
-        jets['pt_raw'] = (1 - jets['rawFactor']) * jets['pt']
-        jets['mass_raw'] = (1 - jets['rawFactor']) * jets['mass']
-        if not isRealData:jets['pt_gen'] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
-        jets['rho'] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, jets.pt)[0]
-        if not isRealData:
-            name_map['ptGenJet'] = 'pt_gen'
-            name_map['ptRaw'] = 'pt_raw'
-            name_map['massRaw'] = 'mass_raw'
-            name_map['Rho'] = 'rho'
-            events_cache = events.caches[0]
-            jet_factory = CorrectedJetsFactory(name_map, jec_stack)
-            corrected_jets = jet_factory.build(jets, lazy_cache=events_cache)
-        else :
-            # name_mapd['ptGenJet'] = 'pt_gen'
-            name_mapd['ptRaw'] = 'pt_raw'
-            name_mapd['massRaw'] = 'mass_raw'
-            name_mapd['Rho'] = 'rho'
-            events_cache = events.caches[0]
-            jet_factory_data = CorrectedJetsFactory(name_mapd, jec_stack_data)
-            corrected_jets = jet_factory_data.build(jets, lazy_cache=events_cache)
+        if not isRealData: corrected_jets=jet_factory["mc"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),lazy_cache=events.caches[0])
+        else :corrected_jets=jet_factory["data"].build(add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),lazy_cache=events.caches[0])
+        
         event_jet = corrected_jets[((corrected_jets.pt*(1-corrected_jets.rawFactor))> 50) & (abs(corrected_jets.eta) <= 2.4)&(corrected_jets.puId > 0) &(corrected_jets.jetId>5)&(corrected_jets.btagDeepB>0.) & (corrected_jets.btagDeepB<1.) & (corrected_jets.btagDeepC>0.) & (corrected_jets.btagDeepC<1.) & (corrected_jets.btagDeepFlavB>0.) & (corrected_jets.btagDeepFlavB<1.) & (corrected_jets.btagDeepFlavC>0.) & (corrected_jets.btagDeepFlavC<1.)]
         #event_jet = events.Jet[(events.Jet.pt > 25) & (abs(events.Jet.eta) <= 2.4)&(events.Jet.puId > 0) &(events.Jet.jetId>5)&(events.Jet.btagDeepB>0.) & (events.Jet.btagDeepB<1.) & (events.Jet.btagDeepC>0.) & (events.Jet.btagDeepC<1.) & (events.Jet.btagDeepFlavB>0.) & (events.Jet.btagDeepFlavB<1.) & (events.Jet.btagDeepFlavC>0.) & (events.Jet.btagDeepFlavC<1.)&(ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))&(ak.all(events.Jet.metric_table(events.Electron) > 0.4, axis=2))]
         req_jets = (ak.num(event_jet.puId) >= 2)
@@ -355,14 +242,7 @@ class NanoProcessor(processor.ProcessorABC):
         jet_clean  = (corrected_jets[event_level].btagDeepB>0.) & (corrected_jets[event_level].btagDeepB<1.) & (corrected_jets[event_level].btagDeepC>0.) & (corrected_jets[event_level].btagDeepC<1.) & (corrected_jets[event_level].btagDeepFlavB>0.) & (corrected_jets[event_level].btagDeepFlavB<1.) & (corrected_jets[event_level].btagDeepFlavC>0.) & (corrected_jets[event_level].btagDeepFlavC<1.)
         
         sjets  = corrected_jets[event_level]
-        # print(ak.num(sjets))
-        #sjets = events.Jet[event_level]
-        # print(sjets[:,1].pt)
-        # print(ak.num(selev.Jet[jet_level].pt))
         
-        # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
-        # bjet_disc  = selev.Jet.btagDeepB > 0.2770 # L=0.0494, M=0.2770, T=0.7264
-        # bjet_level = jet_level & bjet_disc
         
         
         

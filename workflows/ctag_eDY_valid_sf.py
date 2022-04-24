@@ -7,9 +7,6 @@ import coffea
 from coffea import hist, processor
 import awkward as ak
 from coffea.analysis_tools import Weights
-# from coffea.lumi_tools import LumiMask
-# from coffea.btag_tools import BTagScaleFactor
-# from cTagSFReader import *
 import gc
 from definitions import *
 from utils.correction import *

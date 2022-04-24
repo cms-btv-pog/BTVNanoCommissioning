@@ -245,12 +245,8 @@ class NanoProcessor(processor.ProcessorABC):
         dilep_mass_mu = iso_muon_mu[:,0]+iso_ele_mu[:,0]
         req_dilepmass_mu = ((dilep_mass_mu.mass>12.)&((dilep_mass_mu.mass<75)| (dilep_mass_mu.mass>105)))
 
-        # req_QCDveto = (iso_muon[:,0].pfRelIso04_all<0.05) & (abs(iso_muon[:,0].dz)<0.01) & (abs(iso_muon[:,0].dxy)<0.002) & (iso_muon[:,0].ip3d < 0.2) & ((iso_muon[:,0].pt/mu_jet[:,0].pt<0.)|(iso_muon[:,0].pt/mu_jet[:,0].pt>0.75))
         event_level =  req_lumi & req_MET & req_jets & req_softmu&req_mujet & ((req_trig_ele& req_dilepmass_ele&req_ele)|(req_trig_mu& req_dilepmass_mu & req_mu))
-        #& req_QCDveto
         
-        # req_trig & req_lumi  & req_muon & req_jets & req_MET # & req_softmu & req_mujet
-        #s &req_mujet #  & req_QCDveto & req_pTratio
         if(len(event_level)>0):event_level = ak.fill_none(event_level,False)        
         # Selected
         selev = events[event_level]    

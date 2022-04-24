@@ -39,7 +39,7 @@ def get_main_parser():
     parser.add_argument('--wf',
                         '--workflow',
                         dest='workflow',
-                        choices=['ttcom', 'ttdilep_sf','ttsemilep_sf','ctag_jec','dilep_jec','ctag_Wc_sf','ctag_DY_sf','ctag_ttdilep_sf','ctag_ttsemilep_sf','ettdilep_sf','ettsemilep_sf','ctag_jec','dilep_jec','ectag_Wc_sf','ectag_DY_sf','ectag_ttdilep_sf','ectag_ttsemilep_sf','emctag_ttdilep_sf','ttdilep_nosf'],
+                        choices=['ttcom', 'ttdilep_sf','ttsemilep_sf','ctag_jec','dilep_jec','ctag_Wc_sf','ctag_DY_sf','ctag_ttdilep_sf','ctag_ttsemilep_sf','ettdilep_sf','ettsemilep_sf','ctag_jec','dilep_jec','semilep_jec','ectag_Wc_sf','ectag_DY_sf','ectag_ttdilep_sf','ectag_ttsemilep_sf','emctag_ttdilep_sf','ttdilep_nosf'],
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
@@ -166,7 +166,10 @@ if __name__ == '__main__':
         from workflows.ctag_valid_jec import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "dilep_jec":
-        from workflows.dilep_valid_jec import NanoProcessor
+        from workflows.ttdilep_valid_jec import NanoProcessor
+        processor_instance = NanoProcessor()
+    elif args.workflow == "semilep_jec":
+        from workflows.ttsemilep_valid_jec import NanoProcessor
         processor_instance = NanoProcessor()
     elif args.workflow == "ctag_Wc_sf":
         from workflows.ctag_Wc_valid_sf import NanoProcessor
@@ -220,10 +223,11 @@ if __name__ == '__main__':
             'export XRD_RUNFORKHANDLER=1',
             f'export X509_USER_PROXY={_x509_path}',
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
-            f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
+            f'export PYTHONPATH=$PYTHONPATH:{os.getcwd()}',
         ]
         condor_extra = [
             f'source {os.environ["HOME"]}/.bashrc',
+            f'source activate coffea'
         ]
 
     #########
@@ -282,13 +286,14 @@ if __name__ == '__main__':
                         max_workers=1,
                         provider=CondorProvider(
                             nodes_per_block=1,
-                            init_blocks=1,
-                            max_blocks=1,
+                            init_blocks=args.workers,
+                            max_blocks=(args.workers)+2,
                             worker_init="\n".join(env_extra + condor_extra),
                             walltime="00:20:00",
                         ),
                     )
                 ]
+                retries=20,
             )
         else:
             raise NotImplementedError

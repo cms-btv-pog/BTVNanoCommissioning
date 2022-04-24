@@ -204,12 +204,20 @@ Use the `fetch.py` in `filefetcher`, the `$input_DAS_list` is the info extract f
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
 ```
 
+## Create compiled corretions file(`pkl.gz`)
+
+Use the `utils/compile_jec.py`, editted the path in the `dict` of `jet_factory` 
+
+```
+python -m utils.compile_jec data/JME/UL17_106X/jec_compiled.pkl.gz
+```
+
 ## Plotting code
 
 - data/MC comparison code
 
 ```python
-python plotdataMC.py --lumi ${lumi} --phase ctag_ttdilep_sf --output ctag_ttdilep_sf (--discr zmass --log True/False --data data_runD)
+python -m plotting.plotdataMC --lumi ${lumi} --phase ctag_ttdilep_sf --output ctag_ttdilep_sf (--discr zmass --log True/False --data data_runD)
 # lumi in /pb
 # phase = workflow 
 # output coffea file output = hist_$output$.coffea 
@@ -221,7 +229,7 @@ python plotdataMC.py --lumi ${lumi} --phase ctag_ttdilep_sf --output ctag_ttdile
 - data/data, MC/MC comparison
 
 ```python
-python comparison.py --phase ctag_ttdilep_sf --output ctag_ttdilep_sf -ref 2017_runB --compared 2017_runC 2017_runD (--discr zmass --log True/False --sepflav True/False)
+python -m plotting.comparison --phase ctag_ttdilep_sf --output ctag_ttdilep_sf -ref 2017_runB --compared 2017_runC 2017_runD (--discr zmass --log True/False --sepflav True/False)
 # phase = workflow 
 # output coffea file output = hist_$output$.coffea 
 # ref = reference data/MC sample
