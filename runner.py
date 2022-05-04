@@ -7,10 +7,10 @@ import time
 import numpy as np
 
 import uproot
-from coffea import hist
-from coffea.nanoevents import NanoEventsFactory
 from coffea.util import load, save
 from coffea import processor
+
+from BTVNanoCommissioning.workflows import workflows
 
 def validate(file):
     try:
@@ -39,7 +39,7 @@ def get_main_parser():
     parser.add_argument('--wf',
                         '--workflow',
                         dest='workflow',
-                        choices=['ttcom', 'ttdilep_sf','ttsemilep_sf','ctag_jec','dilep_jec','ctag_Wc_sf','ctag_DY_sf','ctag_ttdilep_sf','ctag_ttsemilep_sf','ettdilep_sf','ettsemilep_sf','ctag_jec','dilep_jec','semilep_jec','ectag_Wc_sf','ectag_DY_sf','ectag_ttdilep_sf','ectag_ttsemilep_sf','emctag_ttdilep_sf','ttdilep_nosf'],
+                        choices=list(workflows.keys()),
                         help='Which processor to run',
                         required=True)
     parser.add_argument('-o', '--output', default=r'hists.coffea', help='Output histogram filename (default: %(default)s)')
@@ -48,11 +48,11 @@ def get_main_parser():
                         )
 
     # Scale out
-    parser.add_argument('--executor', 
+    parser.add_argument('--executor',
                         choices=[
-                            'iterative', 'futures', 'parsl/slurm', 'parsl/condor', 
+                            'iterative', 'futures', 'parsl/slurm', 'parsl/condor',
                             'dask/condor', 'dask/slurm', 'dask/lpc', 'dask/lxplus', 'dask/casa',
-                        ], 
+                        ],
                         default='futures',
                         help='The type of executor to use (default: %(default)s). Other options can be implemented. '
                              'For example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html'
@@ -71,7 +71,7 @@ def get_main_parser():
                              'concurrent threads is ``workers x scaleout`` (default: %(default)s)'
                         )
     parser.add_argument('--voms', default=None, type=str,
-                        help='Path to voms proxy, accessible to worker nodes. By default a copy will be made to $HOME.'
+                        help='Path to voms proxy, made accessible to worker nodes. By default a copy will be made to $HOME.'
                         )
     # Debugging
     parser.add_argument('--validate', action='store_true', help='Do not process, just check all files are accessible')
@@ -79,6 +79,7 @@ def get_main_parser():
     parser.add_argument('--only', type=str, default=None, help='Only process specific dataset or file')
     parser.add_argument('--limit', type=int, default=None, metavar='N', help='Limit to the first N files of each dataset in sample JSON')
     parser.add_argument('--chunk', type=int, default=50000000, metavar='N', help='Number of events per process chunk')
+    parser.add_argument('--retries', type=int, default=3, metavar='N', help='Number of retries for coffea processor')
     parser.add_argument('--max', type=int, default=None, metavar='N', help='Max number of chunks to run in total')
     return parser
 
@@ -144,65 +145,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # load workflow
-    if args.workflow == "ttcom":
-        from workflows.ttbar_validation import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ttdilep_sf":
-        from workflows.ttdilep_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "validation":
-        from workflows.validation import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ttsemilep_sf":
-        from workflows.ttsemilep_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ettdilep_sf":
-        from workflows.e_ttdilep_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ettsemilep_sf":
-        from workflows.e_ttsemilep_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ctag_jec":
-        from workflows.ctag_valid_jec import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "dilep_jec":
-        from workflows.ttdilep_valid_jec import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "semilep_jec":
-        from workflows.ttsemilep_valid_jec import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ctag_Wc_sf":
-        from workflows.ctag_Wc_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ectag_Wc_sf":
-        from workflows.ctag_eWc_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ctag_DY_sf":
-        from workflows.ctag_DY_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ectag_DY_sf":
-        from workflows.ctag_eDY_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "emctag_ttdilep_sf":
-        from workflows.ctag_emdileptt_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ctag_ttdilep_sf":
-        from workflows.ctag_dileptt_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ectag_ttdilep_sf":
-        from workflows.ctag_edileptt_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()
-    elif args.workflow == "ctag_ttsemilep_sf":
-        from workflows.ctag_semileptt_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()        
-    elif args.workflow == "ectag_ttsemilep_sf":
-        from workflows.ctag_ettsemilep_valid_sf import NanoProcessor
-        processor_instance = NanoProcessor()        
-    # elif args.workflow == "fattag":
-    #     from workflows.fatjet_tagger import NanoProcessor
-    #     processor_instance = NanoProcessor()
-    else:
-        raise NotImplemented
+    processor_instance = workflows[args.workflow]()
 
     if args.executor not in ['futures', 'iterative', 'dask/lpc', 'dask/casa']:
         """
@@ -227,7 +170,7 @@ if __name__ == '__main__':
         ]
         condor_extra = [
             f'source {os.environ["HOME"]}/.bashrc',
-            f'source activate coffea'
+            f'conda activate coffea',
         ]
 
     #########
@@ -275,7 +218,7 @@ if __name__ == '__main__':
                         ),
                     )
                 ],
-                retries=20,
+                retries=args.retries,
             )
         elif 'condor' in args.executor:
             htex_config = Config(
@@ -287,13 +230,13 @@ if __name__ == '__main__':
                         provider=CondorProvider(
                             nodes_per_block=1,
                             init_blocks=args.workers,
-                            max_blocks=(args.workers)+2,
+                            max_blocks=(args.workers)+1,
                             worker_init="\n".join(env_extra + condor_extra),
                             walltime="00:20:00",
                         ),
                     )
-                ]
-                retries=20,
+                ],
+            retries=args.retries,
             )
         else:
             raise NotImplementedError
@@ -305,7 +248,7 @@ if __name__ == '__main__':
                                           processor_instance=processor_instance,
                                           executor=processor.parsl_executor,
                                           executor_args={
-                                              'skipbadfiles': True,
+                                              'skipbadfiles': args.skipbadfiles,
                                               'schema': processor.NanoAODSchema,
                                               'config': None,
                                           },
@@ -320,7 +263,7 @@ if __name__ == '__main__':
         if 'lpc' in args.executor:
             env_extra = [
                 f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
-            ] 
+            ]
             from lpcjobqueue import LPCCondorCluster
             cluster = LPCCondorCluster(
                 transfer_input_files='/srv/workflows/',
@@ -359,18 +302,18 @@ if __name__ == '__main__':
                 cores=args.workers,
                 processes=args.workers,
                 memory="200 GB",
-                retries=10,
+                retries=args.retries,
                 walltime='00:30:00',
                 env_extra=env_extra,
             )
         elif 'condor' in args.executor:
             cluster = HTCondorCluster(
-                 cores=args.workers, 
-                 memory='4GB', 
-                 disk='4GB', 
+                 cores=args.workers,
+                 memory='4GB',
+                 disk='4GB',
                  env_extra=env_extra,
             )
-        
+
         if args.executor == 'dask/casa':
             client = Client("tls://localhost:8786")
             import shutil
@@ -390,7 +333,7 @@ if __name__ == '__main__':
                                                   'client': client,
                                                   'skipbadfiles': args.skipbadfiles,
                                                   'schema': processor.NanoAODSchema,
-                                                  'retries': 3,
+                                                  'retries': args.retries,
                                               },
                                               chunksize=args.chunk,
                                               maxchunks=args.max)
