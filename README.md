@@ -4,6 +4,9 @@ Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD sa
 
 ## Requirements
 ### Setup 
+
+:heavy_exclamation_mark: suggested to install under `bash` environment
+
 ```
 # only first time 
 git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
@@ -20,14 +23,19 @@ bash Miniconda3-latest-Linux-x86_64.sh
 ```
 NOTE: always make sure that conda, python, and pip point to local Miniconda installation (`which conda` etc.).
 
-You can either use the default environment`base` or create a new one:
+You can either use the default environment `base` or create a new one:
 ```
 # create new environment with python 3.7, e.g. environment of name `coffea`
 conda create --name coffea python3.7
 # activate environment `coffea`
 conda activate coffea
 ```
-Install coffea, xrootd, and more:
+You could simply create the environment through the existing `env.yml` under your conda environment
+```
+conda env create -f env.yml -p ${conda_dir}/envs/coffea
+```
+
+Or install manually for the required packages, coffea, xrootd, and more:
 ```
 pip install git+https://github.com/CoffeaTeam/coffea.git #latest published release with `pip install coffea`
 conda install -c conda-forge xrootd
@@ -38,6 +46,7 @@ conda install -c anaconda bokeh
 conda install -c conda-forge 'fsspec>=0.3.3'
 conda install dask
 ```
+
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
 ### Running jupyter remotely
@@ -93,13 +102,13 @@ python runner.py --workflow ${workflow} --json metadata/test.json
 - Dileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttdilep_sf --json metadata/94X_doublemu_PFNano.json
+python runner.py --workflow (e)ttdilep_sf --json metadata/94X_doublemu_PFNano.json
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/94X_singlemu_PFNano.json
+python runner.py --workflow (e)ttsemilep_sf --json metadata/94X_singlemu_PFNano.json
 ```
 
 </p>
@@ -112,26 +121,26 @@ python runner.py --workflow ttsemilep_sf --json metadata/94X_singlemu_PFNano.jso
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json metadata/94X_doublemu_PFNano.json
+python runner.py --workflow (e)ctag_ttdilep_sf --json metadata/94X_doublemu_PFNano.json
 ```
 
 
 - Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttsemilep_sf --json metadata/94X_singlemu_PFNano.json
+python runner.py --workflow (e)ctag_ttsemilep_sf --json metadata/94X_singlemu_PFNano.json
 ```
 
 - W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json metadata/94X_singlemu_PFNano.json
+python runner.py --workflow (e)ctag_Wc_sf --json metadata/94X_singlemu_PFNano.json
 ```
 
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json ctag_DY_mu_PFNano.json
+python runner.py --workflow (e)ctag_DY_sf --json ctag_DY_mu_PFNano.json
 ```
 
 </p>
@@ -206,11 +215,13 @@ python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${
 
 ## Create compiled corretions file(`pkl.gz`)
 
-Use the `utils/compile_jec.py`, editted the path in the `dict` of `jet_factory` 
+Compile correction pickle files for a specific JEC campaign by changing the dict of jet_factory, and define the output file name by passing it as argument to the python script:
 
 ```
 python -m utils.compile_jec data/JME/UL17_106X/jec_compiled.pkl.gz
 ```
+
+
 
 ## Plotting code
 

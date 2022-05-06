@@ -46,6 +46,9 @@ def get_main_parser():
     parser.add_argument('--samples', '--json', dest='samplejson', default='dummy_samples.json',
                         help='JSON file containing dataset and file locations (default: %(default)s)'
                         )
+    parser.add_argument('--year', default='2017',help="Year")
+    parser.add_argument('--campaign', default='Rereco17_94X',help="Dataset campaign, change the corresponding correction files")
+
 
     # Scale out
     parser.add_argument('--executor',
@@ -145,7 +148,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     # load workflow
-    processor_instance = workflows[args.workflow]()
+    processor_instance = workflows[args.workflow](args.year,args.campaign)
 
     if args.executor not in ['futures', 'iterative', 'dask/lpc', 'dask/casa']:
         """
@@ -170,7 +173,7 @@ if __name__ == '__main__':
         ]
         condor_extra = [
             f'source {os.environ["HOME"]}/.bashrc',
-            f'conda activate coffea',
+            f'conda activate {os.environ["CONDA_PREFIX"]}',
         ]
 
     #########

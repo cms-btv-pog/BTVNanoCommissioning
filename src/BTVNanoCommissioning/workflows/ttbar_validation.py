@@ -1,13 +1,15 @@
 import coffea
 from coffea import hist, processor
 import numpy as np
-#import awkward1 as ak
 import awkward as ak
+from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 
 
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
-    def __init__(self):        
+    def __init__(self,year="2017",campaign="Rereco17_94X"):      
+        self._year = year
+        self._campaign= campaign   
         # Define axes
         # Should read axes from NanoAOD config
         dataset_axis = hist.Cat("dataset", "Primary dataset")
@@ -45,19 +47,19 @@ class NanoProcessor(processor.ProcessorABC):
         disc_list = ["btagCMVA", "btagCSVV2", 'btagDeepB', 'btagDeepC', 'btagDeepFlavB', 'btagDeepFlavC',]
         btag_axes = []
         for d in disc_list:
-            btag_axes.append(hist.Bin(d, d, 50, 0, 1))        
+            btag_axes.append(hist.Bin(d, d, 30, -0.2, 1))        
         
-        deepcsv_list = ["DeepCSV_vertexCategory","DeepCSV_vertexEnergyRatio", "DeepCSV_vertexJetDeltaR","DeepCSV_vertexMass", 
+        btagDeeplist = ["DeepCSV_vertexCategory","DeepCSV_vertexEnergyRatio", "DeepCSV_vertexJetDeltaR","DeepCSV_vertexMass", 
     "DeepCSV_flightDistance2dVal","DeepCSV_flightDistance2dSig","DeepCSV_flightDistance3dVal","DeepCSV_flightDistance3dSig","DeepCSV_trackJetPt", 
     "DeepCSV_jetNSecondaryVertices","DeepCSV_jetNSelectedTracks","DeepCSV_jetNTracksEtaRel","DeepCSV_trackSumJetEtRatio","DeepCSV_trackSumJetDeltaR","DeepCSV_vertexNTracks"]
-        deepcsv_axes = []
-        for d in deepcsv_list:
+        btagDeepaxes = []
+        for d in btagDeeplist:
             if "trackDecayLenVal" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 2.0))
+                btagDeepaxes.append(hist.Bin(d, d, 50, 0, 2.0))
             elif "DeltaR" in d:
-                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 0.4))
+                btagDeepaxes.append(hist.Bin(d, d, 50, 0, 0.4))
             else:
-                deepcsv_axes.append(hist.Bin(d, d, 50, 0, 5.))
+                btagDeepaxes.append(hist.Bin(d, d, 50, 0, 5.))
 
         # Define histograms from axes
         _hist_jet_dict = {
@@ -66,7 +68,7 @@ class NanoProcessor(processor.ProcessorABC):
                 'phi' : hist.Hist("Counts", dataset_axis, jet_phi_axis),
                 'mass': hist.Hist("Counts", dataset_axis, jet_mass_axis),
             }
-        _hist_deepcsv_dict = {
+        _hist_btagDeepdict = {
                 'pt'  : hist.Hist("Counts", dataset_axis, jet_pt_axis),
                 'eta' : hist.Hist("Counts", dataset_axis, jet_eta_axis),
                 'phi' : hist.Hist("Counts", dataset_axis, jet_phi_axis),
@@ -76,8 +78,8 @@ class NanoProcessor(processor.ProcessorABC):
         # Generate some histograms dynamically
         for disc, axis in zip(disc_list, btag_axes):
             _hist_jet_dict[disc] = hist.Hist("Counts", dataset_axis, axis)
-        for deepcsv, axis in zip(deepcsv_list, deepcsv_axes):
-            _hist_deepcsv_dict[deepcsv] = hist.Hist("Counts", dataset_axis, axis)
+        for deepcsv, axis in zip(btagDeeplist, btagDeepaxes):
+            _hist_btagDeepdict[deepcsv] = hist.Hist("Counts", dataset_axis, axis)
         
         _hist_event_dict = {
                 'njet'  : hist.Hist("Counts", dataset_axis, njet_axis),
@@ -93,13 +95,12 @@ class NanoProcessor(processor.ProcessorABC):
             }
         
         self.jet_hists = list(_hist_jet_dict.keys())
-        self.deepcsv_hists = list(_hist_deepcsv_dict.keys())
+        self.btagDeephists = list(_hist_btagDeepdict.keys())
         self.event_hists = list(_hist_event_dict.keys())
     
-        _hist_dict = {**_hist_jet_dict, **_hist_deepcsv_dict, **_hist_event_dict}
+        _hist_dict = {**_hist_jet_dict, **_hist_btagDeepdict, **_hist_event_dict}
         self._accumulator = processor.dict_accumulator(_hist_dict)
         self._accumulator['sumw'] = processor.defaultdict_accumulator(float)
-
 
     @property
     def accumulator(self):
@@ -184,10 +185,10 @@ class NanoProcessor(processor.ProcessorABC):
         sbjets_m = selev.Jet[bjet_level_m]
         sbjets_l = selev.Jet[bjet_level_l]
         
-        # output['pt'].fill(dataset=dataset, pt=selev.Jet.pt.flatten())
         # Fill histograms dynamically  
+           
         for histname, h in output.items():
-            if (histname not in self.jet_hists) and (histname not in self.deepcsv_hists): continue
+            if (histname not in self.jet_hists) and (histname not in self.btagDeephists): continue
             # Get valid fields perhistogram to fill
             fields = {k: ak.flatten(sjets[k], axis=None) for k in h.fields if k in dir(sjets)}
             h.fill(dataset=dataset, **fields)

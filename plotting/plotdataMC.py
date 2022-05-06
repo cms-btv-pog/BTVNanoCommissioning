@@ -6,7 +6,7 @@ from coffea.hist import plot
 from coffea import hist
 import re
 import argparse
-
+import sys
 
 data_err_opts = {
     'linestyle': 'none',
@@ -16,8 +16,8 @@ data_err_opts = {
     'elinewidth': 1,
 }
 from cycler import cycler
-colors=["#F44336","#E91E63","#9C27B0","#673AB7","#3F51B5","#2196F3","#03A9F4","#00BCD4","#009688","#4CAF50","#8BC34A","#CDDC39","#FFEB3B","#FFC107","#FF9800","#FF5722","#795548","#BDBDBD","#9E9E9E","#616161","#90BED4","#607D8B","#455A64"]
-from utils.xs_scaler import scale_xs
+sys.path.append('..')
+from BTVNanoCommissioning.utils.xs_scaler import scale_xs
 ptbin= [25, 30, 40, 60, 80, 100,150,200,300,500]
 etabin=[-2.5,-2.0,-1.5,-0.5,0.,0.5,1.5,2.0,2.5]
 notdata = re.compile('(?!data)')
@@ -26,17 +26,14 @@ parser.add_argument('--lumi',required=True,type=float,help='luminosity in /pb')
 parser.add_argument('-c','--combine', type=bool,help='combined all the jets')
 parser.add_argument('-p','--phase',required=True,choices=['dilep_sf','ttsemilep_sf','ctag_Wc_sf','ctag_DY_sf','ctag_ttsemilep_sf','ctag_ttdilep_sf'],dest='phase',help='which phase space')
 parser.add_argument('--log',type=bool,help='log on x axis')
-parser.add_argument('--norm',default=True,type=bool,help='Use for reshape SF, scale to same yield as no SFs case')
+parser.add_argument('--norm',default=False,type=bool,help='Use for reshape SF, scale to same yield as no SFs case')
 parser.add_argument('-d','--discr_list',nargs='+', default=['deepcsv_CvL','deepcsv_CvB','deepflav_CvL','deepflav_CvB','btagDeepB','btagDeepC','btagDeepFlavB','btagDeepFlavC'],help='discriminators')
-
 parser.add_argument('--ext', type=str, default='data', help='addional name')
-
+parser.add_argument('-i','--input', type=str,default='',help='input coffea files')
 arg = parser.parse_args()
 datas=re.compile('(?=%s)'%(arg.ext))
 
-
-output=load('hists_ttsemilep_sf_ctag_AK4_runD.coffea')
-
+output=load(arg.input)
 events = output['sumw']
 if arg.phase == 'dilep' :
     input_txt = 'dilepton ttbar'
@@ -45,10 +42,10 @@ elif arg.phase == 'ctag' :
     input_txt = 'semileptonic ttbar'
     nj=4
 else:
-    if arg.phase == "Wc"  : input_txt = "W+c"
-    elif arg.phase == "DY" : input_txt = "DY+jets"
-    elif arg.phase == "ttsemilep" : input_txt  = "semileptonic ttbar"
-    elif arg.phase == "ttdilep": input_txt  = "dileptonic ttbar"
+    if  "Wc"  in arg.phase  : input_txt = "W+c"
+    elif "DY" in arg.phase  : input_txt = "DY+jets"
+    elif "ttsemilep" in arg.phase : input_txt  = "semileptonic ttbar"
+    elif "ttdilep" in arg.phase: input_txt  = "dileptonic ttbar"
     nj=1 
 if arg.combine : nj=1
 if 'njet' in arg.discr_list or 'nbjet' in arg.discr_list or 'mu' in arg.discr_list: nj=1
@@ -60,7 +57,7 @@ for j in range(nj):
             hflav_0 = output['%sSF_0' %(discr)]
             hflav_1 = output['%sSF_1' %(discr)]
             hflav=hflav_0+hflav_1
-            if 'btag' in arg.discr_list or 'CvL' in arg.discr_list or 'CvB' in arg.discr_list:
+            if 'btag' in discr or 'CvL' in discr or 'CvB' in discr:
                 hflav_nosf0 = output['%s_0' %(discr)]
                 hflav_up0 = output['%s_up_0' %(discr)]
                 hflav_dn0 = output['%s_dn_0' %(discr)]
@@ -75,7 +72,7 @@ for j in range(nj):
                     hflav_2 = output['%sSF_2' %(discr)]
                     hflav_3 = output['%sSF_3' %(discr)]
                     hflav=hflav_0+hflav_1+hflav_2+hflav_3
-                    if 'btag' in arg.discr_list or 'CvL' in arg.discr_list or 'CvB' in arg.discr_list:
+                    if 'btag' in discr or 'CvL' in discr or 'CvB' in discr:
                         hflav_nosf2 = output['%s_2' %(discr)]
                         hflav_up2 = output['%s_up_2' %(discr)]
                         hflav_dn2 = output['%s_dn_2' %(discr)]
@@ -91,17 +88,17 @@ for j in range(nj):
                 hflav_up = output['%s_up_%d' %(discr,j)]
                 hflav_dn = output['%s_dn_%d' %(discr,j)]
                 hflav_nosf = output['%s_%d' %(discr,j)]  
-            elif 'nbjet' in arg.discr_list:
+            elif 'nbjet' in discr:
                 hflav = output[discr]
                 hflav_up=   output['%s_up' %(discr)]             
                 hflav_dn=   output['%s_dn' %(discr)]   
             else : hflav = output['%s' %(discr)] 
 
-        if 'mu' not in arg.discr_list and 'njet' not in arg.discr_list and 'nbjet'  not in arg.discr_list:
+        if 'btag' in discr or 'DeepCSV' in discr:
             hflav=hflav.rebin("flav",hist.Bin("flav", "flav", [0,1,4,5,6]))
 
         if ('btag' in discr or 'CvL' in discr or 'CvB' in discr) and arg.norm : 
-            if arg.phase == "Wc":
+            if "Wc" in arg.phase:
                 scale_sf=sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()])/sum(hflav[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()])
                 
             else :
@@ -110,12 +107,12 @@ for j in range(nj):
 
         
         if not arg.norm : scale_sf=1.
-        hflav=scale_xs(hflav,arg.lumi*scale_sf,events) 
+        hflav=scale_xs(hflav,arg.lumi,events) 
         if 'btag' in discr or 'CvL' in discr or 'CvB' in discr:
             hflav_nosf=scale_xs(hflav_nosf,arg.lumi,events)  
             hflav_up=scale_xs(hflav_up,arg.lumi*scale_sf,events)   
             hflav_dn=scale_xs(hflav_dn,arg.lumi*scale_sf,events) 
-            if arg.phase == "Wc":
+            if "Wc" in arg.phase:
                 print("============")
                 print(sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]))
                 print("b:%.3f\%",sum(hflav_nosf[notdata].integrate("dataset").integrate("flav",slice(5,6)).integrate("char").values()[()])/sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]))
@@ -130,13 +127,13 @@ for j in range(nj):
                 print("c:%.3f",sum(hflav_nosf[notdata].integrate("dataset").integrate("flav",slice(4,5)).values()[()])/sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").values()[()]))
                 print("l:%.3f",sum(hflav_nosf[notdata].integrate("dataset").integrate("flav",slice(0,4)).values()[()])/sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").values()[()]))
                 print("============")
-        elif 'nbjet' in arg.discr_list:
+        elif 'nbjet' in discr:
             hflav_up=scale_xs(hflav_up,arg.lumi,events)   
             hflav_dn=scale_xs(hflav_dn,arg.lumi,events) 
         fig, ((ax),(rax)) = plt.subplots(2, 1, figsize=(6, 6), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
         fig.subplots_adjust(hspace=.07)
         if 'btag' in discr or 'CvL' in discr or 'CvB' in discr:
-            if arg.phase == "Wc" :
+            if "Wc" in arg.phase :
                 if('C' in discr):
                     err_up=hflav_up[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]
                     err_dn=hflav_dn[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]
@@ -157,7 +154,7 @@ for j in range(nj):
             ratio_up=np.divide(err_up,data,out=np.zeros_like(err_up), where=data!=0)
             ratio_dn=np.divide(err_dn,data,out=np.zeros_like(err_up), where=data!=0)
             
-            if arg.phase == "Wc":
+            if "Wc" in arg.phase:
                 ax=plot.plot1d(hflav[notdata].sum("dataset").integrate("char"),overlay="flav",fill_opts={},error_opts=None,ax=ax,stack=True)
                 plot.plot1d(hflav[notdata].sum("dataset",sumw2=True).sum("flav").sum("char"), ax=ax, density=False, clear=False,error_opts={'linestyle': 'none',
                     'markersize':0,
@@ -255,7 +252,7 @@ for j in range(nj):
                                                 guide_opts={},
                                                 unc='num',
                                                 clear=False)                                    
-        elif 'nbjet' in arg.discr_list :
+        elif 'nbjet' in discr :
             
             err_up=np.add(hflav_up[notdata].integrate("dataset").values()[()],-1.*hflav[notdata].integrate("dataset").values()[()])
             err_dn=np.add(hflav[notdata].integrate("dataset").values()[()],-1.*hflav_dn[notdata].integrate("dataset").values()[()])
@@ -302,20 +299,97 @@ for j in range(nj):
                                             unc='num',
                                             clear=False)
   
-        
-        elif 'mu' not in arg.discr_list and 'njet' is not arg.discr_list :
-            data=hflav[datas].integrate("dataset").values()[()]
-            if not arg.log:maximum=max(max((hflav[notdata].integrate("dataset").values()[()])),max(data))
+        elif 'DeepCSV_' in discr:
+            
+            if "Wc" in arg.phase:maximum=max(max((hflav[notdata].sum("dataset").sum("char").sum("flav").values()[()])),max(hflav[datas].sum("dataset").sum("flav").sum("char").values()[()]))
+            else:maximum=max(max((hflav[notdata].sum("dataset").sum("flav").values()[()])),max(hflav[datas].sum("dataset").sum("flav").values()[()]))
+            
+            # maximum=max(max((hflav[notdata].integrate("dataset").integrate("flav").sum("c").values()[()])),max(data))
+            if "Wc" in arg.phase:
+                # ax=plot.plot1d(hflav[notdata].sum("flav").integrate("char"),overlay="dataset",fill_opts={},error_opts=None,ax=ax,stack=True)
+                print(hflav[datas].sum("flav").values())
+                ax = plot.plot1d(hflav[datas].sum("dataset").sum("flav").integrate("char"),error_opts=data_err_opts,ax=ax,  density=False)
+                # ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg','%s'%(arg.ext)],fontsize=13)
+                ax.legend(fontsize=8)
+                ax.set_xlabel(None)
+
+                ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
+                
+                rax = plot.plotratio(
+                                                num=hflav[datas].sum("dataset").sum("flav").sum("char"),
+                                                denom=hflav[notdata].sum("dataset").sum("flav").sum("char"),
+                                                ax=rax,
+                                                error_opts=data_err_opts,
+                                                denom_fill_opts={},
+                                                guide_opts={},
+                                                unc='num',
+                                                )
+                
+            else :
+                ax=plot.plot1d(hflav[notdata].sum("dataset"),overlay="flav",fill_opts={},error_opts=None,ax=ax,stack=True)
+
+                plot.plot1d(hflav[notdata].sum("dataset",sumw2=True).sum("flav"), ax=ax, density=False, clear=False,error_opts={'linestyle': 'none',
+                    'markersize':0,
+                    'elinewidth': 10,
+                    'color':'tab:brown',
+                    'alpha':.3,
+                    'yerr':[err_up,err_dn]})
+                plot.plot1d(hflav[notdata].sum("dataset").sum("flav"),ax=ax,error_opts={'linestyle': 'none',
+                    'markersize':0,
+                    'elinewidth': 10,
+                    'color':'tab:gray',
+                    'alpha':.3}, clear=False,  density=False)
+                
+                plot.plot1d(hflav_nosf[notdata].sum("dataset").sum("flav"),error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},ax=ax,clear=False)
+                plot.plot1d(hflav[datas].sum("dataset").sum("flav"),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
+                ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg','SFs Unc.','stat. Unc.','w/o SFs','%s'%(arg.ext)],fontsize=13)
+
+                ax.set_xlabel(None)
+
+                # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
+                rax = plot.plotratio(
+                                                num=hflav[datas].sum("dataset").sum("flav"),
+                                                denom=hflav[notdata].sum("dataset").sum("flav"),
+                                                ax=rax,
+                                                error_opts= {'linestyle': 'none','marker': '.', 'markersize': 0.,'color':'k'},
+                                                denom_fill_opts={'yerr':[ratio_up,ratio_dn]},
+                                                # denom_fill_opts={},
+                                                guide_opts={},
+                                                unc='num',
+                                                clear=False)
+                plot.plotratio(
+                                                num=hflav[datas].sum("dataset").sum("flav"),
+                                                denom=hflav[notdata].sum("dataset").sum("flav"),
+                                                ax=rax,
+                                                error_opts=data_err_opts,
+                                                denom_fill_opts={},
+                                                guide_opts={},
+                                                unc='num',
+                                                clear=False)
+                plot.plotratio(
+                                                num=hflav_nosf[datas].sum("dataset").sum("flav"),
+                                                denom=hflav_nosf[notdata].sum("dataset").sum("flav"),
+                                                ax=rax,
+                                                error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},
+                                                denom_fill_opts={},
+                                                guide_opts={},
+                                                unc='num',
+                                                clear=False)        
+        elif 'mu' not in discr and 'njet' is not discr :
+            data=hflav[datas].sum("dataset").sum('char').values()[()]
+            # print(data)
+            # if not arg.log:
+            maximum=max(max((hflav[notdata].sum("dataset").sum('char').values()[()])),max(data))
           
-            ax=plot.plot1d(hflav[notdata].sum("dataset"),error_opts=None,ax=ax)            
-            plot.plot1d(hflav[datas].sum("dataset"),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
+            ax=plot.plot1d(hflav[notdata].sum("dataset").sum('char'),error_opts=None,ax=ax)            
+            plot.plot1d(hflav[datas].sum("dataset").sum('char'),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
             ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['MC','%s'%(arg.ext)],fontsize=13)
             ax.set_xlabel(None)
             # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
             
             rax = plot.plotratio(
-                                            num=hflav[datas].sum("dataset"),
-                                            denom=hflav[notdata].sum("dataset"),
+                                            num=hflav[datas].sum("dataset").sum('char'),
+                                            denom=hflav[notdata].sum("dataset").sum('char'),
                                             ax=rax,
                                             error_opts=data_err_opts,
                                             denom_fill_opts={},
@@ -340,10 +414,10 @@ for j in range(nj):
                                             guide_opts={},
                                             unc='num',
                                             clear=False)
-        if arg.log: 
-            ax.set_ylim(1,maximum*100)
-            ax.semilogy()
-        else:ax.set_ylim(0,maximum*1.8)
+        # if arg.log: 
+        #     ax.set_ylim(1,maximum*100)
+        #     ax.semilogy()
+        # else:ax.set_ylim(0,maximum*1.8)
 
 
         
@@ -364,5 +438,5 @@ for j in range(nj):
         if arg.norm:scale="_norm"
         name="all"
         if not arg.combine:name=str(j)
-        if(arg.log):fig.savefig("plot/%s_unc_%s_inclusive%s_%s_%s.pdf" %(arg.phase, discrs, scale, arg.ext,name))
-        else:fig.savefig("plot/%s_unc_lin_%s_inclusive%s_%s_%s.pdf" %(arg.phase, discrs, scale, arg.ext,name))
+        if(arg.log):fig.savefig("%s_unc_%s_inclusive%s_%s_%s.pdf" %(arg.phase, discrs, scale, arg.ext,name))
+        else:fig.savefig("%s_unc_lin_%s_inclusive%s_%s_%s.pdf" %(arg.phase, discrs, scale, arg.ext,name))
