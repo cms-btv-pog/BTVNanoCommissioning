@@ -12,7 +12,6 @@ from BTVNanoCommissioning.helpers.definitions import definitions
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.utils.correction import lumiMasks, load_pu,load_BTV
 
-import gc
 
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
@@ -49,31 +48,18 @@ class NanoProcessor(processor.ProcessorABC):
         
         ljdr_axis = hist.Bin("ljdr", "Leading jet $\Delta$R(l,j)", 20,0,5)
         sljdr_axis = hist.Bin("sljdr", "Subleading jet $\Delta$R(l,j)", 20,0,5)
-        btagDeeplist = [
-        "DeepCSV_trackDecayLenVal_0", "DeepCSV_trackDecayLenVal_1", "DeepCSV_trackDecayLenVal_2", "DeepCSV_trackDecayLenVal_3", "DeepCSV_trackDecayLenVal_4", "DeepCSV_trackDecayLenVal_5", 
-        "DeepCSV_trackDeltaR_0", "DeepCSV_trackDeltaR_1", "DeepCSV_trackDeltaR_2", "DeepCSV_trackDeltaR_3", "DeepCSV_trackDeltaR_4", "DeepCSV_trackDeltaR_5",
-        "DeepCSV_trackEtaRel_0","DeepCSV_trackEtaRel_1","DeepCSV_trackEtaRel_2","DeepCSV_trackEtaRel_3", 	
-        "DeepCSV_trackJetDistVal_0","DeepCSV_trackJetDistVal_1","DeepCSV_trackJetDistVal_2","DeepCSV_trackJetDistVal_3","DeepCSV_trackJetDistVal_4","DeepCSV_trackJetDistVal_5", 
-        "DeepCSV_trackPtRatio_0","DeepCSV_trackPtRatio_1","DeepCSV_trackPtRatio_2","DeepCSV_trackPtRatio_3","DeepCSV_trackPtRatio_4","DeepCSV_trackPtRatio_5", 
-        "DeepCSV_trackPtRel_0", "DeepCSV_trackPtRel_1","DeepCSV_trackPtRel_2","DeepCSV_trackPtRel_3","DeepCSV_trackPtRel_4","DeepCSV_trackPtRel_5",
-        "DeepCSV_trackSip3dSig_0","DeepCSV_trackSip3dSig_1","DeepCSV_trackSip3dSig_2","DeepCSV_trackSip3dSig_3","DeepCSV_trackSip3dSig_4","DeepCSV_trackSip3dSig_5",
-        "DeepCSV_trackSip2dSig_0","DeepCSV_trackSip2dSig_1","DeepCSV_trackSip2dSig_2","DeepCSV_trackSip2dSig_3","DeepCSV_trackSip2dSig_4","DeepCSV_trackSip2dSig_5",
-        "DeepCSV_trackSip2dValAboveCharm","DeepCSV_trackSip2dSigAboveCharm","DeepCSV_trackSip3dValAboveCharm","DeepCSV_trackSip3dSigAboveCharm",
-        "DeepCSV_vertexCategory","DeepCSV_vertexEnergyRatio", "DeepCSV_vertexJetDeltaR","DeepCSV_vertexMass", 
-        "DeepCSV_flightDistance2dVal","DeepCSV_flightDistance2dSig","DeepCSV_flightDistance3dVal","DeepCSV_flightDistance3dSig","DeepCSV_trackJetPt", 
-        "DeepCSV_jetNSecondaryVertices","DeepCSV_jetNSelectedTracks","DeepCSV_jetNTracksEtaRel","DeepCSV_trackSumJetEtRatio","DeepCSV_trackSumJetDeltaR","DeepCSV_vertexNTracks"]   
+        
         btagDeepaxes = []
-        input_names,manual_ranges,bins = definitions()
-        bininfo = dict(zip(input_names,zip(bins,manual_ranges)))
-        for d in btagDeeplist:
-            binning, ranges = bininfo["Jet_%s"%d]
+        bininfo = definitions()
+        for d in bininfo.keys():
+            ranges = bininfo[d]['manual_ranges']
+            binning = bininfo[d]['bins']
             if ranges[1] is None : ranges[1] = 0.
             if ranges[0] is None : ranges[0] = -0.5
             btagDeepaxes.append(hist.Bin(d,d,binning,ranges[0],ranges[1]))
         # Define similar axes dynamically
         disc_list = ['btagDeepB_b',  'btagDeepFlavB', 'btagDeepCvB','btagDeepCvL','btagDeepFlavCvB','btagDeepFlavCvL']
-        syst_list = ['','SF','_up','_dn']
-        varlist=[]
+        
         btag_axes = []
         for d in disc_list:
             btag_axes.append(hist.Bin("%s" %d, "%s" %(d), 30, -0.2, 1.0)) 
@@ -82,9 +68,9 @@ class NanoProcessor(processor.ProcessorABC):
         _hist_btagDeepdict={}
         for disc, axis in zip(disc_list, btag_axes):
             _hist_btagDeepdict["%s" %(disc)] = hist.Hist("Counts", dataset_axis,flav_axis,  axis)
-        for deepcsv, axises in zip(btagDeeplist, btagDeepaxes):
+        for deepcsv, axises in zip(bininfo.keys(), btagDeepaxes):
              _hist_btagDeepdict["%s" %(deepcsv)] = hist.Hist("Counts", dataset_axis,flav_axis,  axises)
-        for deepcsv, axises in zip(btagDeeplist, btagDeepaxes):
+        for deepcsv, axises in zip(bininfo.keys(), btagDeepaxes):
             _hist_btagDeepdict[deepcsv] = hist.Hist("Counts", dataset_axis,flav_axis,  axises)
         _hist_event_dict = {
                 'njet'  : hist.Hist("Counts", dataset_axis,  njet_axis),

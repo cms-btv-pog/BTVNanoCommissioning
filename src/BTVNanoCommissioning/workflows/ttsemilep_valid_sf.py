@@ -61,24 +61,12 @@ class NanoProcessor(processor.ProcessorABC):
         _hist_btagDeepdict={}
         syst_axis = hist.Cat("syst",['noSF','SF','SFup','SFdn'])
 
-        btagDeeplist = [
-        "DeepCSV_trackDecayLenVal_0", "DeepCSV_trackDecayLenVal_1", "DeepCSV_trackDecayLenVal_2", "DeepCSV_trackDecayLenVal_3", "DeepCSV_trackDecayLenVal_4", "DeepCSV_trackDecayLenVal_5", 
-        "DeepCSV_trackDeltaR_0", "DeepCSV_trackDeltaR_1", "DeepCSV_trackDeltaR_2", "DeepCSV_trackDeltaR_3", "DeepCSV_trackDeltaR_4", "DeepCSV_trackDeltaR_5",
-        "DeepCSV_trackEtaRel_0","DeepCSV_trackEtaRel_1", "DeepCSV_trackEtaRel_2","DeepCSV_trackEtaRel_3", 	
-        "DeepCSV_trackJetDistVal_0","DeepCSV_trackJetDistVal_1", "DeepCSV_trackJetDistVal_2","DeepCSV_trackJetDistVal_3","DeepCSV_trackJetDistVal_4","DeepCSV_trackJetDistVal_5", 
-        "DeepCSV_trackPtRatio_0","DeepCSV_trackPtRatio_1", "DeepCSV_trackPtRatio_2","DeepCSV_trackPtRatio_3","DeepCSV_trackPtRatio_4","DeepCSV_trackPtRatio_5", 
-        "DeepCSV_trackPtRel_0", "DeepCSV_trackPtRel_1", "DeepCSV_trackPtRel_2","DeepCSV_trackPtRel_3","DeepCSV_trackPtRel_4","DeepCSV_trackPtRel_5",
-        "DeepCSV_trackSip3dSig_0","DeepCSV_trackSip3dSig_1", "DeepCSV_trackSip3dSig_2","DeepCSV_trackSip3dSig_3","DeepCSV_trackSip3dSig_4","DeepCSV_trackSip3dSig_5",
-        "DeepCSV_trackSip2dSig_0","DeepCSV_trackSip2dSig_1", "DeepCSV_trackSip2dSig_2","DeepCSV_trackSip2dSig_3","DeepCSV_trackSip2dSig_4","DeepCSV_trackSip2dSig_5",
-        "DeepCSV_trackSip2dValAboveCharm","DeepCSV_trackSip2dSigAboveCharm","DeepCSV_trackSip3dValAboveCharm","DeepCSV_trackSip3dSigAboveCharm",
-        "DeepCSV_vertexCategory","DeepCSV_vertexEnergyRatio", "DeepCSV_vertexJetDeltaR","DeepCSV_vertexMass", 
-        "DeepCSV_flightDistance2dVal","DeepCSV_flightDistance2dSig","DeepCSV_flightDistance3dVal","DeepCSV_flightDistance3dSig","DeepCSV_trackJetPt", 
-        "DeepCSV_jetNSecondaryVertices","DeepCSV_jetNSelectedTracks","DeepCSV_jetNTracksEtaRel","DeepCSV_trackSumJetEtRatio","DeepCSV_trackSumJetDeltaR","DeepCSV_vertexNTracks"]
+        
         btagDeepaxes = []
-        input_names,manual_ranges,bins = definitions()
-        bininfo = dict(zip(input_names,zip(bins,manual_ranges)))
-        for d in btagDeeplist:
-            binning, ranges = bininfo["Jet_%s"%d]
+        bininfo = definitions()
+        for d in bininfo.keys():
+            ranges = bininfo[d]['manual_ranges']
+            binning = bininfo[d]['bins']
             if ranges[1] is None : ranges[1] = 0.
             if ranges[0] is None : ranges[0] = -0.5
             btagDeepaxes.append(hist.Bin(d,d,binning,ranges[0],ranges[1]))
@@ -86,7 +74,7 @@ class NanoProcessor(processor.ProcessorABC):
             for i in range(4):
                 _hist_sf_dict["%s_%d" %(disc,i)] = hist.Hist("Counts", dataset_axis, flav_axis,syst_axis,axis)
         
-        for deepcsv, axises in zip(btagDeeplist, btagDeepaxes):
+        for deepcsv, axises in zip(bininfo.keys(), btagDeepaxes):
              _hist_btagDeepdict[deepcsv] = hist.Hist("Counts", dataset_axis,flav_axis,  axises)
         
     
@@ -224,15 +212,15 @@ class NanoProcessor(processor.ProcessorABC):
             csvsfs_c=collections.defaultdict(dict)
             csvsfs_b=collections.defaultdict(dict)
             for i in range(4):
-                jetsfs_c[i]["SF"] = getSF(ak.to_numpy(sjets[:,i].hadronFlavour),ak.to_numpy(sjets[:,i].btagDeepFlavCvL),ak.to_numpy(sjets[:,i].btagDeepFlavCvB),self._deepjetc_sf)
-                jetsfs_c[i]["SFup"] = getSF(ak.to_numpy(sjets[:,i].hadronFlavour),ak.to_numpy(sjets[:,i].btagDeepFlavCvL),ak.to_numpy(sjets[:,i].btagDeepFlavCvB),self._deepjetc_sf,"TotalUncUp")
-                jetsfs_c[i]["SFdn"] = getSF(ak.to_numpy(sjets[:,i].hadronFlavour),ak.to_numpy(sjets[:,i].btagDeepFlavCvL),ak.to_numpy(sjets[:,i].btagDeepFlavCvB),self._deepjetc_sf,"TotalUncDown")
+                jetsfs_c[i]["SF"] = getSF(sjets[:,i].hadronFlavour,sjets[:,i].btagDeepFlavCvL,sjets[:,i].btagDeepFlavCvB,self._deepjetc_sf)
+                jetsfs_c[i]["SFup"] = getSF(sjets[:,i].hadronFlavour,sjets[:,i].btagDeepFlavCvL,sjets[:,i].btagDeepFlavCvB,self._deepjetc_sf,"TotalUncUp")
+                jetsfs_c[i]["SFdn"] = getSF(sjets[:,i].hadronFlavour,sjets[:,i].btagDeepFlavCvL,sjets[:,i].btagDeepFlavCvB,self._deepjetc_sf,"TotalUncDown")
                 jetsfs_b[i]["SF"] = self._deepjetb_sf.eval('central',sjets[:,i].hadronFlavour,abs(sjets[:,i].eta),sjets[:,i].pt,discr=sjets[:,i].btagDeepFlavB)
                 jetsfs_b[i]["SFup"] = self._deepjetb_sf.eval('up_jes',sjets[:,i].hadronFlavour,abs(sjets[:,i].eta),sjets[:,i].pt,discr=sjets[:,i].btagDeepFlavB)
                 jetsfs_b[i]["SFdn"] = self._deepjetb_sf.eval('down_jes',sjets[:,i].hadronFlavour,abs(sjets[:,i].eta),sjets[:,i].pt,discr=sjets[:,i].btagDeepFlavB)
-                csvsfs_c[i]["SF"] = getSF(ak.to_numpy(sjets[:,i].hadronFlavour),ak.to_numpy(sjets[:,i].btagDeepFlavCvL),ak.to_numpy(sjets[:,i].btagDeepFlavCvB),self._deepcsvc_sf)
-                csvsfs_c[i]["SFup"] = getSF(ak.to_numpy(sjets[:,i].hadronFlavour),ak.to_numpy(sjets[:,i].btagDeepFlavCvL),ak.to_numpy(sjets[:,i].btagDeepFlavCvB),self._deepcsvc_sf,"TotalUncUp")
-                csvsfs_c[i]["SFdn"] = getSF(ak.to_numpy(sjets[:,i].hadronFlavour),ak.to_numpy(sjets[:,i].btagDeepFlavCvL),ak.to_numpy(sjets[:,i].btagDeepFlavCvB),self._deepcsvc_sf,"TotalUncDown")
+                csvsfs_c[i]["SF"] = getSF(sjets[:,i].hadronFlavour,sjets[:,i].btagDeepCvL,sjets[:,i].btagDeepCvB,self._deepcsvc_sf)
+                csvsfs_c[i]["SFup"] = getSF(sjets[:,i].hadronFlavour,sjets[:,i].btagDeepCvL,sjets[:,i].btagDeepCvB,self._deepcsvc_sf,"TotalUncUp")
+                csvsfs_c[i]["SFdn"] = getSF(sjets[:,i].hadronFlavour,sjets[:,i].btagDeepCvL,sjets[:,i].btagDeepCvB,self._deepcsvc_sf,"TotalUncDown")
                 csvsfs_b[i]["SFup"] = self._deepcsvb_sf.eval('up_jes',sjets[:,i].hadronFlavour,abs(sjets[:,i].eta),sjets[:,i].pt,discr=sjets[:,i].btagDeepB)
                 csvsfs_b[i]["SF"] = self._deepcsvb_sf.eval('central',sjets[:,i].hadronFlavour,abs(sjets[:,i].eta),sjets[:,i].pt,discr=sjets[:,i].btagDeepB)
                 csvsfs_b[i]["SFdn"] = self._deepcsvb_sf.eval('down_jes',sjets[:,i].hadronFlavour,abs(sjets[:,i].eta),sjets[:,i].pt,discr=sjets[:,i].btagDeepB)

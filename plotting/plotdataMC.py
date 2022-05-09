@@ -31,7 +31,7 @@ parser.add_argument('-d','--discr_list',nargs='+', default=['deepcsv_CvL','deepc
 parser.add_argument('--ext', type=str, default='data', help='addional name')
 parser.add_argument('-i','--input', type=str,default='',help='input coffea files')
 arg = parser.parse_args()
-datas=re.compile('(?=%s)'%(arg.ext))
+datas=re.compile(f'(?={arg.ext})')
 
 output=load(arg.input)
 events = output['sumw']
@@ -54,103 +54,72 @@ if 'njet' in arg.discr_list or 'nbjet' in arg.discr_list or 'mu' in arg.discr_li
 for j in range(nj):
     for discr in arg.discr_list:
         if arg.combine:
-            hflav_0 = output['%sSF_0' %(discr)]
-            hflav_1 = output['%sSF_1' %(discr)]
+            hflav_0 = output[f'{discr}_0']
+            hflav_1 = output[f'{discr}_1']
             hflav=hflav_0+hflav_1
-            if 'btag' in discr or 'CvL' in discr or 'CvB' in discr:
-                hflav_nosf0 = output['%s_0' %(discr)]
-                hflav_up0 = output['%s_up_0' %(discr)]
-                hflav_dn0 = output['%s_dn_0' %(discr)]
-                hflav_nosf1 = output['%s_1' %(discr)]
-                hflav_up1 = output['%s_up_1' %(discr)]
-                hflav_dn1 = output['%s_dn_1' %(discr)]
-                hflav_nosf=hflav_nosf0+hflav_nosf1
-                hflav_up=hflav_up0+hflav_up1
-                hflav_dn=hflav_dn0+hflav_dn1    
-
-                if(arg.phase=='ctag'):
-                    hflav_2 = output['%sSF_2' %(discr)]
-                    hflav_3 = output['%sSF_3' %(discr)]
+            if arg.phase=='ctag':
+                    hflav_2 = output[f'{discr}_2']
+                    hflav_3 = output[f'{discr}_3']
                     hflav=hflav_0+hflav_1+hflav_2+hflav_3
-                    if 'btag' in discr or 'CvL' in discr or 'CvB' in discr:
-                        hflav_nosf2 = output['%s_2' %(discr)]
-                        hflav_up2 = output['%s_up_2' %(discr)]
-                        hflav_dn2 = output['%s_dn_2' %(discr)]
-                        hflav_nosf3 = output['%s_3' %(discr)]
-                        hflav_up3 = output['%s_up_3' %(discr)]
-                        hflav_dn3 = output['%s_dn_3' %(discr)]
-                        hflav_nosf=hflav_nosf0+hflav_nosf1+hflav_nosf2+hflav_nosf3
-                        hflav_up=hflav_up0+hflav_up1+hflav_up2+hflav_up3
-                        hflav_dn=hflav_dn0+hflav_dn1+hflav_dn2+hflav_dn3  
         else:
             if 'btag' in discr or 'CvL' in discr or 'CvB' in discr:
-                hflav = output['%sSF_%d' %(discr,j)]     
-                hflav_up = output['%s_up_%d' %(discr,j)]
-                hflav_dn = output['%s_dn_%d' %(discr,j)]
-                hflav_nosf = output['%s_%d' %(discr,j)]  
-            elif 'nbjet' in discr:
-                hflav = output[discr]
-                hflav_up=   output['%s_up' %(discr)]             
-                hflav_dn=   output['%s_dn' %(discr)]   
-            else : hflav = output['%s' %(discr)] 
+                hflav = output[f'{discr}_{j}' ]     
+            else : hflav = output[discr] 
 
         if 'btag' in discr or 'DeepCSV' in discr:
             hflav=hflav.rebin("flav",hist.Bin("flav", "flav", [0,1,4,5,6]))
 
         if ('btag' in discr or 'CvL' in discr or 'CvB' in discr) and arg.norm : 
             if "Wc" in arg.phase:
-                scale_sf=sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()])/sum(hflav[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()])
+                scale_sf=sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav").integrate("char").values()[()])/sum(hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").integrate("char").values()[()])
                 
             else :
-                scale_sf=sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").values()[()])/sum(hflav[notdata].integrate("dataset").integrate("flav").values()[()])
+                scale_sf=sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav").values()[()])/sum(hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").values()[()])
                 
 
         
         if not arg.norm : scale_sf=1.
         hflav=scale_xs(hflav,arg.lumi,events) 
         if 'btag' in discr or 'CvL' in discr or 'CvB' in discr:
-            hflav_nosf=scale_xs(hflav_nosf,arg.lumi,events)  
-            hflav_up=scale_xs(hflav_up,arg.lumi*scale_sf,events)   
-            hflav_dn=scale_xs(hflav_dn,arg.lumi*scale_sf,events) 
+            hflav=scale_xs(hflav,arg.lumi,events)  
             if "Wc" in arg.phase:
                 print("============")
-                print(sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]))
-                print("b:%.3f\%",sum(hflav_nosf[notdata].integrate("dataset").integrate("flav",slice(5,6)).integrate("char").values()[()])/sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]))
-                print("c:%.3f\%",sum(hflav_nosf[notdata].integrate("dataset").integrate("flav",slice(4,5)).integrate("char").values()[()])/sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]))
-                print("l:%.3f\%",sum(hflav_nosf[notdata].integrate("dataset").integrate("flav",slice(0,4)).integrate("char").values()[()])/sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]))
+                print(sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav").integrate("char").values()[()]))
+                print("b:%.3f\%",sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav",slice(5,6)).integrate("char").values()[()])/sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav").integrate("char").values()[()]))
+                print("c:%.3f\%",sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav",slice(4,5)).integrate("char").values()[()])/sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav").integrate("char").values()[()]))
+                print("l:%.3f\%",sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav",slice(0,4)).integrate("char").values()[()])/sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav").integrate("char").values()[()]))
                 print("============")
 
             else :
                 print("============")
-                print(sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").values()[()]))
-                print("b:%.3f",sum(hflav_nosf[notdata].integrate("dataset").integrate("flav",slice(5,6)).values()[()])/sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").values()[()]))
-                print("c:%.3f",sum(hflav_nosf[notdata].integrate("dataset").integrate("flav",slice(4,5)).values()[()])/sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").values()[()]))
-                print("l:%.3f",sum(hflav_nosf[notdata].integrate("dataset").integrate("flav",slice(0,4)).values()[()])/sum(hflav_nosf[notdata].integrate("dataset").integrate("flav").values()[()]))
+                print(sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav").values()[()]))
+                print("b:%.3f",sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav",slice(5,6)).values()[()])/sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav").values()[()]))
+                print("c:%.3f",sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav",slice(4,5)).values()[()])/sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav").values()[()]))
+                print("l:%.3f",sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav",slice(0,4)).values()[()])/sum(hflav[notdata].integrate("dataset").integrate("syst","noSF").integrate("flav").values()[()]))
                 print("============")
         elif 'nbjet' in discr:
-            hflav_up=scale_xs(hflav_up,arg.lumi,events)   
-            hflav_dn=scale_xs(hflav_dn,arg.lumi,events) 
+            hflav=scale_xs(hflav,arg.lumi,events)   
         fig, ((ax),(rax)) = plt.subplots(2, 1, figsize=(6, 6), gridspec_kw={"height_ratios": (3, 1)}, sharex=True)
         fig.subplots_adjust(hspace=.07)
         if 'btag' in discr or 'CvL' in discr or 'CvB' in discr:
             if "Wc" in arg.phase :
                 if('C' in discr):
-                    err_up=hflav_up[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]
-                    err_dn=hflav_dn[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]
+                    err_up=hflav[notdata].integrate("dataset").integrate("syst","SFup").integrate("flav").integrate("char").values()[()]
+                    err_dn=hflav[notdata].integrate("dataset").integrate("syst","SFdn").integrate("flav").integrate("char").values()[()]
                 else:
-                    err_up=np.sqrt(np.add(np.power(np.add(hflav_up[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()],-1.*hflav[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]),2),np.power(2*np.add(hflav_up[notdata].integrate("dataset").integrate("flav",slice(5,6)).integrate("char").values()[()],-1.*hflav[notdata].integrate("dataset").integrate("flav",slice(5,6)).integrate("char").values()[()]),2)))
-                    err_dn=np.sqrt(np.add(np.power(np.add(hflav[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()],-1.*hflav_dn[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]),2),np.power(2*np.add(hflav[notdata].integrate("dataset").integrate("flav",slice(5,6)).integrate("char").values()[()],-1.*hflav_dn[notdata].integrate("dataset").integrate("flav",slice(5,6)).integrate("char").values()[()]),2)))
-                data=hflav[datas].integrate("dataset").integrate("flav").integrate("char").values()[()]
-                maximum=max(max((hflav[notdata].integrate("dataset").integrate("flav").integrate("char").values()[()]+err_up)),max(data))
+                    err_up=np.sqrt(np.add(np.power(np.add(hflav[notdata].integrate("dataset").integrate("syst","SFup").integrate("flav").integrate("char").values()[()],-1.*hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").integrate("char").values()[()]),2),np.power(2*np.add(hflav[notdata].integrate("dataset").integrate("syst","SFup").integrate("flav",slice(5,6)).integrate("char").values()[()],-1.*hflav[notdata].integrate("dataset").integrate("flav",slice(5,6)).integrate("char").values()[()]),2)))
+                    err_dn=np.sqrt(np.add(np.power(np.add(hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").integrate("char").values()[()],-1.*hflav[notdata].integrate("dataset").integrate("syst","SFdn").integrate("flav").integrate("char").values()[()]),2),np.power(2*np.add(hflav[notdata].integrate("dataset").integrate("flav",slice(5,6)).integrate("char").values()[()],-1.*hflav[notdata].integrate("dataset").integrate("syst","SFdn").integrate("flav",slice(5,6)).integrate("char").values()[()]),2)))
+                data=hflav[datas].integrate("dataset").integrate("syst","noSF").integrate("flav").integrate("char").values()[()]
+                maximum=max(max((hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").integrate("char").values()[()]+err_up)),max(data))
             else :
                 if('C' in discr):
-                    err_up=hflav_up[notdata].integrate("dataset").integrate("flav").values()[()]
-                    err_dn=hflav_dn[notdata].integrate("dataset").integrate("flav").values()[()]
+                    err_up=hflav[notdata].integrate("dataset").integrate("syst","SFup").integrate("flav").values()[()]
+                    err_dn=hflav[notdata].integrate("dataset").integrate("syst","SFdn").integrate("flav").values()[()]
                 else:
-                    err_up=np.sqrt(np.add(np.power(np.add(hflav_up[notdata].integrate("dataset").integrate("flav").values()[()],-1.*hflav[notdata].integrate("dataset").integrate("flav").values()[()]),2),np.power(2*np.add(hflav_up[notdata].integrate("dataset").integrate("flav",slice(5,6)).values()[()],-1.*hflav[notdata].integrate("dataset").integrate("flav",slice(5,6)).values()[()]),2)))
-                    err_dn=np.sqrt(np.add(np.power(np.add(hflav[notdata].integrate("dataset").integrate("flav").values()[()],-1.*hflav_dn[notdata].integrate("dataset").integrate("flav").values()[()]),2),np.power(2*np.add(hflav[notdata].integrate("dataset").integrate("flav",slice(5,6)).values()[()],-1.*hflav_dn[notdata].integrate("dataset").integrate("flav",slice(5,6)).values()[()]),2)))
+                    err_up=np.sqrt(np.add(np.power(np.add(hflav[notdata].integrate("dataset").integrate("syst","SFup").integrate("flav").values()[()],-1.*hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").values()[()]),2),np.power(2*np.add(hflav[notdata].integrate("dataset").integrate("syst","SFup").integrate("flav",slice(5,6)).values()[()],-1.*hflav[notdata].integrate("dataset").integrate("flav",slice(5,6)).values()[()]),2)))
+                    err_dn=np.sqrt(np.add(np.power(np.add(hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").values()[()],-1.*hflav[notdata].integrate("dataset").integrate("syst","SFdn").integrate("flav").values()[()]),2),np.power(2*np.add(hflav[notdata].integrate("dataset").integrate("flav",slice(5,6)).values()[()],-1.*hflav[notdata].integrate("dataset").integrate("syst","SFdn").integrate("flav",slice(5,6)).values()[()]),2)))
                 data=hflav[datas].integrate("dataset").integrate("flav").values()[()]
-                maximum=max(max((hflav[notdata].integrate("dataset").integrate("flav").values()[()]+err_up)),max(data))
+                maximum=max(max((hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").values()[()]+err_up)),max(data))
             ratio_up=np.divide(err_up,data,out=np.zeros_like(err_up), where=data!=0)
             ratio_dn=np.divide(err_dn,data,out=np.zeros_like(err_up), where=data!=0)
             
@@ -168,9 +137,9 @@ for j in range(nj):
                     'color':'tab:gray',
                     'alpha':.3}, clear=False,  density=False)
                 
-                plot.plot1d(hflav_nosf[notdata].sum("dataset").integrate("char").sum("flav"),error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},ax=ax,clear=False)
+                plot.plot1d(hflav[notdata].sum("dataset").integrate("syst","noSF").integrate("char").sum("flav"),error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},ax=ax,clear=False)
                 plot.plot1d(hflav[datas].sum("dataset").sum("flav").sum("char"),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
-                ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg','SFs Unc.','stat. Unc.','w/o SFs','%s'%(arg.ext)],fontsize=13)
+                ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg','SFs Unc.','stat. Unc.','w/o SFs',arg.ext],fontsize=13)
                 ax.set_xlabel(None)
 
                 ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
@@ -194,8 +163,8 @@ for j in range(nj):
                                                 unc='num',
                                                 clear=False)
                 plot.plotratio(
-                                                num=hflav_nosf[datas].sum("dataset").sum("flav").sum("char"),
-                                                denom=hflav_nosf[notdata].sum("dataset").sum("flav").sum("char"),
+                                                num=hflav[datas].sum("dataset").integrate("syst","noSF").sum("flav").sum("char"),
+                                                denom=hflav[notdata].sum("dataset").integrate("syst","noSF").sum("flav").sum("char"),
                                                 ax=rax,
                                                 error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},
                                                 denom_fill_opts={},
@@ -217,9 +186,9 @@ for j in range(nj):
                     'color':'tab:gray',
                     'alpha':.3}, clear=False,  density=False)
                 
-                plot.plot1d(hflav_nosf[notdata].sum("dataset").sum("flav"),error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},ax=ax,clear=False)
+                plot.plot1d(hflav[notdata].sum("dataset").integrate("syst","noSF").sum("flav"),error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},ax=ax,clear=False)
                 plot.plot1d(hflav[datas].sum("dataset").sum("flav"),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
-                ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg','SFs Unc.','stat. Unc.','w/o SFs','%s'%(arg.ext)],fontsize=13)
+                ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg','SFs Unc.','stat. Unc.','w/o SFs',arg.ext],fontsize=13)
 
                 ax.set_xlabel(None)
 
@@ -244,8 +213,8 @@ for j in range(nj):
                                                 unc='num',
                                                 clear=False)
                 plot.plotratio(
-                                                num=hflav_nosf[datas].sum("dataset").sum("flav"),
-                                                denom=hflav_nosf[notdata].sum("dataset").sum("flav"),
+                                                num=hflav[datas].sum("dataset").integrate("syst","noSF").sum("flav"),
+                                                denom=hflav[notdata].sum("dataset").integrate("syst","noSF").sum("flav"),
                                                 ax=rax,
                                                 error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},
                                                 denom_fill_opts={},
@@ -254,8 +223,8 @@ for j in range(nj):
                                                 clear=False)                                    
         elif 'nbjet' in discr :
             
-            err_up=np.add(hflav_up[notdata].integrate("dataset").values()[()],-1.*hflav[notdata].integrate("dataset").values()[()])
-            err_dn=np.add(hflav[notdata].integrate("dataset").values()[()],-1.*hflav_dn[notdata].integrate("dataset").values()[()])
+            err_up=np.add(hflav[notdata].integrate("dataset").integrate("syst","SFup").values()[()],-1.*hflav[notdata].integrate("dataset").values()[()])
+            err_dn=np.add(hflav[notdata].integrate("dataset").values()[()],-1.*hflav[notdata].integrate("dataset").integrate("syst","SFdn").values()[()])
             data=hflav[datas].integrate("dataset").values()[()]
             if not arg.log:maximum=max(max((hflav[notdata].integrate("dataset").values()[()]+err_up)),max(data))
             ratio_up=np.divide(err_up,data,out=np.zeros_like(err_up), where=data!=0)
@@ -276,7 +245,7 @@ for j in range(nj):
                 'alpha':.3}, clear=False,  density=False)
             
             plot.plot1d(hflav[datas].sum("dataset"),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
-            ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['MC','SFs Unc.','stat. Unc.','%s'%(arg.ext)],fontsize=13)
+            ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['MC','SFs Unc.','stat. Unc.',arg.ext],fontsize=13)
             ax.set_xlabel(None)
 
             rax = plot.plotratio(
@@ -304,12 +273,12 @@ for j in range(nj):
             if "Wc" in arg.phase:maximum=max(max((hflav[notdata].sum("dataset").sum("char").sum("flav").values()[()])),max(hflav[datas].sum("dataset").sum("flav").sum("char").values()[()]))
             else:maximum=max(max((hflav[notdata].sum("dataset").sum("flav").values()[()])),max(hflav[datas].sum("dataset").sum("flav").values()[()]))
             
-            # maximum=max(max((hflav[notdata].integrate("dataset").integrate("flav").sum("c").values()[()])),max(data))
+            # maximum=max(max((hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").sum("c").values()[()])),max(data))
             if "Wc" in arg.phase:
                 # ax=plot.plot1d(hflav[notdata].sum("flav").integrate("char"),overlay="dataset",fill_opts={},error_opts=None,ax=ax,stack=True)
                 print(hflav[datas].sum("flav").values())
                 ax = plot.plot1d(hflav[datas].sum("dataset").sum("flav").integrate("char"),error_opts=data_err_opts,ax=ax,  density=False)
-                # ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg','%s'%(arg.ext)],fontsize=13)
+                # ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg',arg.ext],fontsize=13)
                 ax.legend(fontsize=8)
                 ax.set_xlabel(None)
 
@@ -340,9 +309,9 @@ for j in range(nj):
                     'color':'tab:gray',
                     'alpha':.3}, clear=False,  density=False)
                 
-                plot.plot1d(hflav_nosf[notdata].sum("dataset").sum("flav"),error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},ax=ax,clear=False)
+                plot.plot1d(hflav[notdata].sum("dataset").integrate("syst","noSF").sum("flav"),error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},ax=ax,clear=False)
                 plot.plot1d(hflav[datas].sum("dataset").sum("flav"),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
-                ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg','SFs Unc.','stat. Unc.','w/o SFs','%s'%(arg.ext)],fontsize=13)
+                ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg','SFs Unc.','stat. Unc.','w/o SFs',arg.ext],fontsize=13)
 
                 ax.set_xlabel(None)
 
@@ -367,8 +336,8 @@ for j in range(nj):
                                                 unc='num',
                                                 clear=False)
                 plot.plotratio(
-                                                num=hflav_nosf[datas].sum("dataset").sum("flav"),
-                                                denom=hflav_nosf[notdata].sum("dataset").sum("flav"),
+                                                num=hflav[datas].sum("dataset").integrate("syst","noSF").sum("flav"),
+                                                denom=hflav[notdata].sum("dataset").integrate("syst","noSF").sum("flav"),
                                                 ax=rax,
                                                 error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},
                                                 denom_fill_opts={},
@@ -383,7 +352,7 @@ for j in range(nj):
           
             ax=plot.plot1d(hflav[notdata].sum("dataset").sum('char'),error_opts=None,ax=ax)            
             plot.plot1d(hflav[datas].sum("dataset").sum('char'),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
-            ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['MC','%s'%(arg.ext)],fontsize=13)
+            ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['MC',arg.ext],fontsize=13)
             ax.set_xlabel(None)
             # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
             
@@ -397,11 +366,11 @@ for j in range(nj):
                                             unc='num',
                                             clear=False)                                    
         else:
-            if not arg.log:maximum=max(max((hflav[notdata].integrate("dataset").integrate("flav").values()[()])),max(data))
+            if not arg.log:maximum=max(max((hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").values()[()])),max(data))
           
             ax=plot.plot1d(hflav[notdata].sum("dataset"),overlay="flav",fill_opts={},error_opts=None,ax=ax,stack=True)            
             plot.plot1d(hflav[datas].sum("dataset").sum("flav"),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
-            ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg','%s'%(arg.ext)],fontsize=13)
+            ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg',arg.ext],fontsize=13)
             ax.set_xlabel(None)
             # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
             
@@ -426,8 +395,8 @@ for j in range(nj):
         if 'CvL' in discr :discrs=discr.replace('CvL','CvB')
         elif 'CvB' in discr :discrs=discr.replace('CvB','CvL')
         else :discrs=discr
-        if arg.combine :rax.set_xlabel("%s"%(discrs),fontsize=15)
-        else :rax.set_xlabel("%s[%d]"%(discrs,j),fontsize=15)
+        if arg.combine :rax.set_xlabel(discrs,fontsize=15)
+        else :rax.set_xlabel(f"{discrs}[{j}]",fontsize=15)
         rax.set_ylim(0.5,1.5)
         
         at = AnchoredText(input_txt+"\n"
@@ -438,5 +407,5 @@ for j in range(nj):
         if arg.norm:scale="_norm"
         name="all"
         if not arg.combine:name=str(j)
-        if(arg.log):fig.savefig("%s_unc_%s_inclusive%s_%s_%s.pdf" %(arg.phase, discrs, scale, arg.ext,name))
-        else:fig.savefig("%s_unc_lin_%s_inclusive%s_%s_%s.pdf" %(arg.phase, discrs, scale, arg.ext,name))
+        if(arg.log):fig.savefig(f"{arg.phase}_unc_{discrs}_inclusive{scale}_{arg.ext}_{name}.pdf")
+        else:fig.savefig(f"{arg.phase}_unc_lin_{discrs}_inclusive{scale}_{arg.ext}_{name}.pdf")

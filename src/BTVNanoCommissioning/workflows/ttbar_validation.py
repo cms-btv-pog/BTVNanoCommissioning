@@ -3,6 +3,7 @@ from coffea import hist, processor
 import numpy as np
 import awkward as ak
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
+from BTVNanoCommissioning.helpers.definitions import definitions
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -49,17 +50,14 @@ class NanoProcessor(processor.ProcessorABC):
         for d in disc_list:
             btag_axes.append(hist.Bin(d, d, 30, -0.2, 1))        
         
-        btagDeeplist = ["DeepCSV_vertexCategory","DeepCSV_vertexEnergyRatio", "DeepCSV_vertexJetDeltaR","DeepCSV_vertexMass", 
-    "DeepCSV_flightDistance2dVal","DeepCSV_flightDistance2dSig","DeepCSV_flightDistance3dVal","DeepCSV_flightDistance3dSig","DeepCSV_trackJetPt", 
-    "DeepCSV_jetNSecondaryVertices","DeepCSV_jetNSelectedTracks","DeepCSV_jetNTracksEtaRel","DeepCSV_trackSumJetEtRatio","DeepCSV_trackSumJetDeltaR","DeepCSV_vertexNTracks"]
         btagDeepaxes = []
-        for d in btagDeeplist:
-            if "trackDecayLenVal" in d:
-                btagDeepaxes.append(hist.Bin(d, d, 50, 0, 2.0))
-            elif "DeltaR" in d:
-                btagDeepaxes.append(hist.Bin(d, d, 50, 0, 0.4))
-            else:
-                btagDeepaxes.append(hist.Bin(d, d, 50, 0, 5.))
+        bininfo = definitions()
+        for d in bininfo.keys():
+            ranges = bininfo[d]['manual_ranges']
+            binning = bininfo[d]['bins']
+            if ranges[1] is None : ranges[1] = 0.
+            if ranges[0] is None : ranges[0] = -0.5
+            btagDeepaxes.append(hist.Bin(d,d,binning,ranges[0],ranges[1]))
 
         # Define histograms from axes
         _hist_jet_dict = {
@@ -78,7 +76,7 @@ class NanoProcessor(processor.ProcessorABC):
         # Generate some histograms dynamically
         for disc, axis in zip(disc_list, btag_axes):
             _hist_jet_dict[disc] = hist.Hist("Counts", dataset_axis, axis)
-        for deepcsv, axis in zip(btagDeeplist, btagDeepaxes):
+        for deepcsv, axis in zip(bininfo.keys(), btagDeepaxes):
             _hist_btagDeepdict[deepcsv] = hist.Hist("Counts", dataset_axis, axis)
         
         _hist_event_dict = {
