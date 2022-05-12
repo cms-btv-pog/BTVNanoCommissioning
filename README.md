@@ -6,7 +6,7 @@ Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD sa
 ### Setup 
 ```
 # only first time 
-git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
+git clone git@github.com:<cms-btv-pog/XavierAtCERN/...>/BTVNanoCommissioning.git 
 
 # activate enviroment once you have coffea framework 
 conda activate coffea
@@ -23,9 +23,9 @@ NOTE: always make sure that conda, python, and pip point to local Miniconda inst
 You can either use the default environment`base` or create a new one:
 ```
 # create new environment with python 3.7, e.g. environment of name `coffea`
-conda create --name coffea python3.7
+conda create --name btv_nano_commissioning python=3.7
 # activate environment `coffea`
-conda activate coffea
+conda activate btv_nano_commissioning
 ```
 Install coffea, xrootd, and more:
 ```
