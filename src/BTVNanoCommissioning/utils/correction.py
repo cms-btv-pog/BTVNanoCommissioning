@@ -18,16 +18,23 @@ from coffea.lookup_tools import extractor
 # FIXME make jsons campaing configurable
 lumiMasks = {}
 _lumi_path = "BTVNanoCommissioning.data.lumiMasks"
-with importlib.resources.path(_lumi_path, "Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt") as filename:
+with importlib.resources.path(
+    _lumi_path, "Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt"
+) as filename:
     lumiMasks["2016"] = LumiMask(filename)
-with importlib.resources.path(_lumi_path, "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt") as filename:
+with importlib.resources.path(
+    _lumi_path, "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt"
+) as filename:
     lumiMasks["2017"] = LumiMask(filename)
-with importlib.resources.path(_lumi_path, "Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt") as filename:
+with importlib.resources.path(
+    _lumi_path,
+    "Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt",
+) as filename:
     lumiMasks["2018"] = LumiMask(filename)
 
 ##JEC
-def load_jetfactory(campaign,path):
-    _jet_path =f"BTVNanoCommissioning.data.JME.{campaign}"
+def load_jetfactory(campaign, path):
+    _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
     with importlib.resources.path(_jet_path, path) as filename:
         with gzip.open(filename) as fin:
             jmestuff = cloudpickle.load(fin)
@@ -35,35 +42,48 @@ def load_jetfactory(campaign,path):
     jet_factory = jmestuff["jet_factory"]
     return jet_factory
 
+
 def add_jec_variables(jets, event_rho):
-    jets["pt_raw"] = (1 - jets.rawFactor)*jets.pt
-    jets["mass_raw"] = (1 - jets.rawFactor)*jets.mass
-    if hasattr(jets, "genJetIdxG"):jets["pt_gen"] = ak.values_astype(ak.fill_none(jets.matched_gen.pt, 0), np.float32)
+    jets["pt_raw"] = (1 - jets.rawFactor) * jets.pt
+    jets["mass_raw"] = (1 - jets.rawFactor) * jets.mass
+    if hasattr(jets, "genJetIdxG"):
+        jets["pt_gen"] = ak.values_astype(
+            ak.fill_none(jets.matched_gen.pt, 0), np.float32
+        )
     jets["event_rho"] = ak.broadcast_arrays(event_rho, jets.pt)[0]
     return jets
 
+
 ## PU weight
-def load_pu(campaign,path):
-    _pu_path =f"BTVNanoCommissioning.data.PU.{campaign}"
+def load_pu(campaign, path):
+    _pu_path = f"BTVNanoCommissioning.data.PU.{campaign}"
     with importlib.resources.path(_pu_path, path) as filename:
         with gzip.open(filename) as fin:
             compiled = cloudpickle.load(fin)
     return compiled
 
-## BTag SFs
-def load_BTV(campaign,path):
-    _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
-    
-    with importlib.resources.path(_btag_path,path['DeepCSVB']) as filename:
-        deepcsvb_sf = BTagScaleFactor(filename, BTagScaleFactor.RESHAPE,
-                                    methods='iterativefit,iterativefit,iterativefit')
-    with importlib.resources.path(_btag_path, path['DeepJetB']) as filename:
-        deepjetb_sf = BTagScaleFactor(filename, BTagScaleFactor.RESHAPE,
-                                    methods='iterativefit,iterativefit,iterativefit')
 
-    deepcsvc_sf = "BTVNanoCommissioning/data/BTV/"+campaign+"/"+path['DeepCSVC']
-    deepjetc_sf = "BTVNanoCommissioning/data/BTV/"+campaign+"/"+path['DeepJetC']
-    return deepcsvb_sf,deepcsvc_sf,deepjetb_sf,deepjetc_sf
+## BTag SFs
+def load_BTV(campaign, path):
+    _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
+
+    with importlib.resources.path(_btag_path, path["DeepCSVB"]) as filename:
+        deepcsvb_sf = BTagScaleFactor(
+            filename,
+            BTagScaleFactor.RESHAPE,
+            methods="iterativefit,iterativefit,iterativefit",
+        )
+    with importlib.resources.path(_btag_path, path["DeepJetB"]) as filename:
+        deepjetb_sf = BTagScaleFactor(
+            filename,
+            BTagScaleFactor.RESHAPE,
+            methods="iterativefit,iterativefit,iterativefit",
+        )
+
+    deepcsvc_sf = "BTVNanoCommissioning/data/BTV/" + campaign + "/" + path["DeepCSVC"]
+    deepjetc_sf = "BTVNanoCommissioning/data/BTV/" + campaign + "/" + path["DeepJetC"]
+    return deepcsvb_sf, deepcsvc_sf, deepjetb_sf, deepjetc_sf
+
 
 ### Lepton SFs
 
@@ -88,34 +108,47 @@ def load_BTV(campaign,path):
 #     ext.finalize()
 # evaluator = ext.make_evaluator()
 ### Lepton SFs
-def eleSFs(ele,campaign,path):
+def eleSFs(ele, campaign, path):
     _ele_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
     ext = extractor()
     with contextlib.ExitStack() as stack:
-        real_paths = [stack.enter_context(importlib.resources.path(_ele_path, f)) for f in path.values()]
-        ext.add_weight_sets([f"{path} {file}" for path, file in zip(path.keys(), real_paths)])
-    
+        real_paths = [
+            stack.enter_context(importlib.resources.path(_ele_path, f))
+            for f in path.values()
+        ]
+        ext.add_weight_sets(
+            [f"{path} {file}" for path, file in zip(path.keys(), real_paths)]
+        )
+
     ext.finalize()
     evaluator = ext.make_evaluator()
-    ele_eta = ak.fill_none(ele.eta,0.)
-    ele_pt = ak.fill_none(ele.pt,0.)
-    weight=1.
+    ele_eta = ak.fill_none(ele.eta, 0.0)
+    ele_pt = ak.fill_none(ele.pt, 0.0)
+    weight = 1.0
     for paths in path.keys():
-        if 'ele' in paths:weight =  weight*evaluator[paths[:paths.find(' ')]](ele_eta,ele_pt)
+        if "ele" in paths:
+            weight = weight * evaluator[paths[: paths.find(" ")]](ele_eta, ele_pt)
     return weight
 
-def muSFs(mu,campaign,path):
+
+def muSFs(mu, campaign, path):
     _ele_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
     ext = extractor()
     with contextlib.ExitStack() as stack:
-        real_paths = [stack.enter_context(importlib.resources.path(_ele_path, f)) for f in path.values() ]
-        ext.add_weight_sets([f"{path} {file}" for path, file in zip(path.keys(), real_paths)])
+        real_paths = [
+            stack.enter_context(importlib.resources.path(_ele_path, f))
+            for f in path.values()
+        ]
+        ext.add_weight_sets(
+            [f"{path} {file}" for path, file in zip(path.keys(), real_paths)]
+        )
 
     ext.finalize()
     evaluator = ext.make_evaluator()
-    mu_eta=ak.fill_none(mu.eta,0.)
-    mu_pt= ak.fill_none(mu.pt,0.)
-    weight=1.
+    mu_eta = ak.fill_none(mu.eta, 0.0)
+    mu_pt = ak.fill_none(mu.pt, 0.0)
+    weight = 1.0
     for paths in path.keys():
-        if 'mu' in paths:weight =  weight*evaluator[paths[:paths.find(' ')]](mu_eta,mu_pt)
+        if "mu" in paths:
+            weight = weight * evaluator[paths[: paths.find(" ")]](mu_eta, mu_pt)
     return weight
