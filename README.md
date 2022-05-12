@@ -1,10 +1,7 @@
 
 # BTVNanoCommissioning
 [![Linting](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml/badge.svg)](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml)
-[![QCD](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml/badge.svg)](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml)
-[![QCD Mu Enriched](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml/badge.svg)](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml)
 [![TTbar](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml/badge.svg)](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml)
-[![Boosted](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml/badge.svg)](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD samples
