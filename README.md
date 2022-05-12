@@ -47,6 +47,11 @@ conda install -c conda-forge 'fsspec>=0.3.3'
 conda install dask
 ```
 
+Once the environment is set up, compile the python package:
+```
+pip install -e .
+```
+
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
 ### Running jupyter remotely
