@@ -28,7 +28,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Set up miniconda
-    # taken from https://github.com/marketplace/actions/setup-miniconda
       uses: conda-incubator/setup-miniconda@v2
       with:
         auto-update-conda: true
@@ -46,7 +45,8 @@ jobs:
         conda install -c anaconda bokeh 
         conda install -c conda-forge 'fsspec>=0.3.3'
         conda install dask
+        pip install -e .
 
     - name: Run workflow
       run: |
-        python runner.py --workflow $ttcom --json metadata/test.json 
+        python runner.py --workflow ttcom --json metadata/test.json 

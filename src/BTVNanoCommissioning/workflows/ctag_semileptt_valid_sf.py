@@ -37,7 +37,7 @@ class NanoProcessor(processor.ProcessorABC):
         # Events
 
         njet_axis = hist.Bin("njet", r"N jets", [0, 1, 2, 3])
-        ## Muons
+        # Muons
         hard_lpt_axis = hist.Bin("pt", r"Hard lepton pt", 40, 0, 200)
 
         hard_leta_axis = hist.Bin("eta", r"Lepton $\eta$", 25, -2.5, 2.5)
@@ -57,7 +57,7 @@ class NanoProcessor(processor.ProcessorABC):
         l_dz_axis = hist.Bin("dz", r"dz", 20, 0, 0.01)
         l_sip3d_axis = hist.Bin("dz", r"dz", 20, 0, 0.2)
 
-        ## Z/W
+        # Z/W
         zmass_axis = hist.Bin("zmass", r"Z Mass", 25, 50, 100)
         zpt_axis = hist.Bin("zpt", r"Z $p_{T}$", 25, 0, 100)
         zeta_axis = hist.Bin("zeta", r"Z $\eta$", 25, -2.5, 2.5)
@@ -70,11 +70,11 @@ class NanoProcessor(processor.ProcessorABC):
         weta_axis = hist.Bin("weta", r"W $\eta$", 25, -2.5, 2.5)
         wphi_axis = hist.Bin("wphi", r"W $\phi$", 30, -3, 3)
 
-        ## MET
+        # MET
         met_axis = hist.Bin("pt", r"MET $p_{T}$", 50, 0, 500)
         metphi_axis = hist.Bin("phi", r"met $\phi$", 30, -3, 3)
 
-        ## Muon jets
+        # Muon jets
         mujet_pt_axis = hist.Bin("pt", r"Jet $p_{T}$ [GeV]", 50, 0, 500)
         mujet_eta_axis = hist.Bin("eta", r"Jet $\eta$", 25, -2.5, 2.5)
         mujet_phi_axis = hist.Bin("phi", r"Jet $\phi$", 30, -3, 3)
@@ -180,7 +180,7 @@ class NanoProcessor(processor.ProcessorABC):
         # ,**_hist_btagDeepdict}
         self._accumulator = processor.dict_accumulator(_hist_dict)
         self._accumulator["sumw"] = processor.defaultdict_accumulator(float)
-        ## Load corrections
+        # Load corrections
         (
             self._deepcsvb_sf,
             self._deepcsvc_sf,
@@ -276,7 +276,7 @@ class NanoProcessor(processor.ProcessorABC):
             weights.add(
                 "puweight", self._pu[f"{self._year}_pileupweight"](events.Pileup.nPU)
             )
-        ##############
+
         # Trigger level
         triggers = [
             # "HLT_IsoMu24",
@@ -288,9 +288,8 @@ class NanoProcessor(processor.ProcessorABC):
         for t in trig_arrs:
             req_trig = req_trig | t
 
-        ############
         # Event level
-        ## Muon cuts
+        # Muon cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
         iso_muon = events.Muon[
             (events.Muon.pt > 30)
@@ -339,7 +338,7 @@ class NanoProcessor(processor.ProcessorABC):
         Wmass = MET + iso_muon
         req_Wmass = Wmass.mass > 55
 
-        ## Jet cuts
+        # Jet cuts
         event_jet = events.Jet[
             (events.Jet.pt > 20)
             & (abs(events.Jet.eta) <= 2.5)
@@ -359,7 +358,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_jets = ak.num(event_jet.puId) >= 4
 
-        ## Soft Muon cuts
+        # Soft Muon cuts
 
         soft_muon = events.Muon[
             (events.Muon.pt < 25)
@@ -415,9 +414,9 @@ class NanoProcessor(processor.ProcessorABC):
             event_level = ak.fill_none(event_level, False)
         # Selected
         selev = events[event_level]
-        #########
+        #
 
-        ## Hard Muon
+        # Hard Muon
         shmu = selev.Muon[
             (selev.Muon.pt > 30)
             & (abs(selev.Muon.eta) < 2.4)
