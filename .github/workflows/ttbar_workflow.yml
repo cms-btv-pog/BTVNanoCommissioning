@@ -1,6 +1,10 @@
 name: TTbar
 
 on:
+  push:
+    branches: [ CI ]
+  pull_request:
+    branches: [ CI ]
   workflow_run:
     workflows: ["Linting"]
     types:
