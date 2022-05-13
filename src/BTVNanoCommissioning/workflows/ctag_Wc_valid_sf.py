@@ -27,7 +27,7 @@ class NanoProcessor(processor.ProcessorABC):
     def num(ar):
         return ak.num(ak.fill_none(ar[~ak.is_none(ar)], 0), axis=0)
 
-    def __init__(self, year="2017", campaign="Rereco17_94X"):
+    def __init__(self, year='2017', campaign="Rereco17_94X"):
         self._year = year
         self._campaign = campaign
         # Define axes
