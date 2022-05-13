@@ -1,5 +1,9 @@
 
 # BTVNanoCommissioning
+[![Linting](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml/badge.svg)](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/python_linting.yml)
+[![TTbar](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/ttbar_workflow.yml/badge.svg)](https://github.com/XavierAtCERN/BTVNanoCommissioning/actions/workflows/ttbar_workflow.yml)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD samples
 
 ## Requirements
@@ -26,9 +30,9 @@ NOTE: always make sure that conda, python, and pip point to local Miniconda inst
 You can either use the default environment `base` or create a new one:
 ```
 # create new environment with python 3.7, e.g. environment of name `coffea`
-conda create --name coffea python3.7
+conda create --name btv_nano_commissioning python=3.7
 # activate environment `coffea`
-conda activate coffea
+conda activate btv_nano_commissioning
 ```
 You could simply create the environment through the existing `env.yml` under your conda environment
 ```
