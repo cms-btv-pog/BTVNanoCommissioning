@@ -13,7 +13,7 @@ Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD sa
 
 ```
 # only first time 
-git clone git@github.com:<cms-btv-pog/XavierAtCERN/...>/BTVNanoCommissioning.git 
+git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
 
 # activate enviroment once you have coffea framework 
 conda activate coffea
