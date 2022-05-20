@@ -1,0 +1,52 @@
+name: TTbar
+
+on:
+  push:
+    branches: [ CI ]
+  pull_request:
+    branches: [ CI ]
+  workflow_run:
+    workflows: ["Linting"]
+    types:
+      - completed
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.7, 3.8, 3.9]
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Set up miniconda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        auto-update-conda: true
+        activate-environment: btv_nano_commissioning
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install Dependencies
+    # might not be needed for local tests
+      run: |
+        pip install git+https://github.com/CoffeaTeam/coffea.git
+        conda install -c conda-forge xrootd
+        conda install -c conda-forge ca-certificates
+        conda install -c conda-forge ca-policy-lcg
+        conda install -c conda-forge dask-jobqueue
+        conda install -c anaconda bokeh 
+        conda install -c conda-forge 'fsspec>=0.3.3'
+        conda install dask
+        pip install -e .
+
+    - name: Run workflow
+      run: |
+        python runner.py --workflow ttcom --json metadata/test.json 
