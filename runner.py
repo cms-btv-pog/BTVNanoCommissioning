@@ -358,7 +358,7 @@ if __name__ == "__main__":
             from lpcjobqueue import LPCCondorCluster
 
             cluster = LPCCondorCluster(
-                transfer_input_files="/srv/workflows/",
+                transfer_input_files="/srv/src/",
                 ship_env=True,
                 env_extra=env_extra,
             )
