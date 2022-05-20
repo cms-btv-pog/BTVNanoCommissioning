@@ -224,10 +224,10 @@ python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${
 
 ## Create compiled corretions file(`pkl.gz`)
 
-Compile correction pickle files for a specific JEC campaign by changing the dict of jet_factory, and define the output file name by passing it as argument to the python script:
+Compile correction pickle files for a specific JEC campaign by changing the dict of jet_factory, and define the MC campaign and the output file name by passing it as arguments to the python script:
 
 ```
-python -m utils.compile_jec data/JME/UL17_106X/jec_compiled.pkl.gz
+python -m utils.compile_jec UL17_106X data/JME/UL17_106X/jec_compiled.pkl.gz
 ```
 
 
