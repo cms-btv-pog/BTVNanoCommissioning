@@ -1012,44 +1012,6 @@ for j in range(nj):
 
                 # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
                 rax = plot.plotratio(
-<<<<<<< HEAD
-                                                num=hflav[datas].sum("dataset").sum("flav"),
-                                                denom=hflav[notdata].sum("dataset").sum("flav"),
-                                                ax=rax,
-                                                error_opts= {'linestyle': 'none','marker': '.', 'markersize': 0.,'color':'k'},
-                                                denom_fill_opts={'yerr':[ratio_up,ratio_dn]},
-                                                # denom_fill_opts={},
-                                                guide_opts={},
-                                                unc='num',
-                                                clear=False)
-                plot.plotratio(
-                                                num=hflav[datas].sum("dataset").sum("flav"),
-                                                denom=hflav[notdata].sum("dataset").sum("flav"),
-                                                ax=rax,
-                                                error_opts=data_err_opts,
-                                                denom_fill_opts={},
-                                                guide_opts={},
-                                                unc='num',
-                                                clear=False)
-                plot.plotratio(
-                                                num=hflav[datas].sum("dataset").integrate("syst","noSF").sum("flav"),
-                                                denom=hflav[notdata].sum("dataset").integrate("syst","noSF").sum("flav"),
-                                                ax=rax,
-                                                error_opts= {'linestyle': 'none','marker': 'o', 'markersize': 5.,'mfc': 'none','color' :'tab:pink' , 'elinewidth': 1.5},
-                                                denom_fill_opts={},
-                                                guide_opts={},
-                                                unc='num',
-                                                clear=False)        
-        elif 'mu' not in discr and 'njet' is not discr :
-            data=hflav[datas].sum("dataset").sum('char').values()[()]
-            # print(data)
-            # if not arg.log:
-            maximum=max(max((hflav[notdata].sum("dataset").sum('char').values()[()])),max(data))
-          
-            ax=plot.plot1d(hflav[notdata].sum("dataset").sum('char'),error_opts=None,ax=ax)            
-            plot.plot1d(hflav[datas].sum("dataset").sum('char'),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
-            ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['MC',arg.ext],fontsize=13)
-=======
                     num=hflav[datas].sum("dataset").sum("flav"),
                     denom=hflav[notdata].sum("dataset").sum("flav"),
                     ax=rax,
@@ -1123,27 +1085,10 @@ for j in range(nj):
                 labels=["MC", arg.ext],
                 fontsize=13,
             )
->>>>>>> upstream/master
             ax.set_xlabel(None)
             # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
 
             rax = plot.plotratio(
-<<<<<<< HEAD
-                                            num=hflav[datas].sum("dataset").sum('char'),
-                                            denom=hflav[notdata].sum("dataset").sum('char'),
-                                            ax=rax,
-                                            error_opts=data_err_opts,
-                                            denom_fill_opts={},
-                                            guide_opts={},
-                                            unc='num',
-                                            clear=False)                                    
-        else:
-            if not arg.log:maximum=max(max((hflav[notdata].integrate("dataset").integrate("syst","SF").integrate("flav").values()[()])),max(data))
-          
-            ax=plot.plot1d(hflav[notdata].sum("dataset"),overlay="flav",fill_opts={},error_opts=None,ax=ax,stack=True)            
-            plot.plot1d(hflav[datas].sum("dataset").sum("flav"),error_opts=data_err_opts,ax=ax,clear=False,  density=False)
-            ax.legend(ncol=2,loc="upper right",handles=ax.get_legend_handles_labels()[0],labels=['b','c','pileup','udsg',arg.ext],fontsize=13)
-=======
                 num=hflav[datas].sum("dataset").sum("char"),
                 denom=hflav[notdata].sum("dataset").sum("char"),
                 ax=rax,
@@ -1190,22 +1135,10 @@ for j in range(nj):
                 labels=["b", "c", "pileup", "udsg", arg.ext],
                 fontsize=13,
             )
->>>>>>> upstream/master
             ax.set_xlabel(None)
             # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
 
             rax = plot.plotratio(
-<<<<<<< HEAD
-                                            num=hflav[datas].sum("dataset").sum("flav"),
-                                            denom=hflav[notdata].sum("dataset").sum("flav"),
-                                            ax=rax,
-                                            error_opts=data_err_opts,
-                                            denom_fill_opts={},
-                                            guide_opts={},
-                                            unc='num',
-                                            clear=False)
-        # if arg.log: 
-=======
                 num=hflav[datas].sum("dataset").sum("flav"),
                 denom=hflav[notdata].sum("dataset").sum("flav"),
                 ax=rax,
@@ -1216,34 +1149,10 @@ for j in range(nj):
                 clear=False,
             )
         # if arg.log:
->>>>>>> upstream/master
         #     ax.set_ylim(1,maximum*100)
         #     ax.semilogy()
         # else:ax.set_ylim(0,maximum*1.8)
 
-<<<<<<< HEAD
-
-        
-        ax.set_ylabel("Events",fontsize=15)
-        rax.set_ylabel('Data/MC',fontsize=15)
-        if 'CvL' in discr :discrs=discr.replace('CvL','CvB')
-        elif 'CvB' in discr :discrs=discr.replace('CvB','CvL')
-        else :discrs=discr
-        if arg.combine :rax.set_xlabel(discrs,fontsize=15)
-        else :rax.set_xlabel(f"{discrs}[{j}]",fontsize=15)
-        rax.set_ylim(0.5,1.5)
-        
-        at = AnchoredText(input_txt+"\n"
-                                #+ "inclusive pT, $\eta$"
-                                , loc=2, prop=dict(size=15),frameon=False)
-        ax.add_artist(at)
-        scale=""
-        if arg.norm:scale="_norm"
-        name="all"
-        if not arg.combine:name=str(j)
-        if(arg.log):fig.savefig(f"{arg.phase}_unc_{discrs}_inclusive{scale}_{arg.ext}_{name}.pdf")
-        else:fig.savefig(f"{arg.phase}_unc_lin_{discrs}_inclusive{scale}_{arg.ext}_{name}.pdf")
-=======
         ax.set_ylabel("Events", fontsize=15)
         rax.set_ylabel("Data/MC", fontsize=15)
         if "CvL" in discr:
@@ -1281,4 +1190,3 @@ for j in range(nj):
             fig.savefig(
                 f"{arg.phase}_unc_lin_{discrs}_inclusive{scale}_{arg.ext}_{name}.pdf"
             )
->>>>>>> upstream/master
