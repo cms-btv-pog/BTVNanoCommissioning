@@ -1,0 +1,13 @@
+name: btv_coffea
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - voms
+  - ca-policy-lcg
+  - ca-certificates
+  - xrootd
+  - openssl
+  - fsspec[version='>=0.3.3']
+
