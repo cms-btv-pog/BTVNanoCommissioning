@@ -1,52 +1,81 @@
-name: TTbar
+name: Baseline Workflow
 
 on:
   push:
-    branches: [ CI ]
-  pull_request:
-    branches: [ CI ]
-  workflow_run:
-    workflows: ["Linting"]
-    types:
-      - completed
+    branches: [ master ]
+  pull_request_target:
+    branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
       matrix:
         python-version: [3.7, 3.8, 3.9]
+    
+    defaults:
+      run:
+        shell: "bash -l {0}"
 
     steps:
     - uses: actions/checkout@v2
-
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+    - uses: cvmfs-contrib/github-action-cvmfs@v2
       with:
-        python-version: ${{ matrix.python-version }}
+        cvmfs_repositories: 'grid.cern.ch'
 
-    - name: Set up miniconda
+    - name: Set conda environment
       uses: conda-incubator/setup-miniconda@v2
       with:
-        auto-update-conda: true
-        activate-environment: btv_nano_commissioning
         python-version: ${{ matrix.python-version }}
+        mamba-version: "*"
+        channels: conda-forge,defaults
+        channel-priority: true
+        auto-update-conda: true
+        activate-environment: btv_coffea
+        environment-file: test_env.yml
+        auto-activate-base: false
 
-    - name: Install Dependencies
-    # might not be needed for local tests
+    - name: Verify environment
       run: |
-        pip install git+https://github.com/CoffeaTeam/coffea.git
-        conda install -c conda-forge xrootd
-        conda install -c conda-forge ca-certificates
-        conda install -c conda-forge ca-policy-lcg
-        conda install -c conda-forge dask-jobqueue
-        conda install -c anaconda bokeh 
-        conda install -c conda-forge 'fsspec>=0.3.3'
-        conda install dask
+        conda info
+        conda env list
+        conda list
+        
+    - name: Set up proxy
+      # https://awesome-workshop.github.io/gitlab-cms/03-vomsproxy/index.html
+      # continue-on-error: true
+      env:
+        # To genereate secrets use (strip all \n)
+        # base64 -i ~/.globus/usercert.pem | awk NF=NF RS= OFS=
+        # base64 -i ~/.globus/userkey.pem | awk NF=NF RS= OFS=
+        # Cross check roundtrip by adding ``| base64 -d `` and see if same as input
+        GRID_USERKEY: ${{ secrets.GRID_USERKEY }}
+        GRID_USERCERT: ${{ secrets.GRID_USERCERT }}
+        # Read automatically by voms-proxy-init
+        X509_VOMS_DIR: /cvmfs/grid.cern.ch/etc/grid-security/vomsdir/
+        X509_VOMSES: /cvmfs/grid.cern.ch/etc/grid-security/vomses/
+        X509_DEFAULT_USER_CERT: $HOME/.globus/usercert.pem
+        X509_DEFAULT_USER_KEY: $HOME/.globus/userkey.pem
+      run: |
+        mkdir $HOME/.globus
+        printf $GRID_USERKEY | base64 -d > $HOME/.globus/userkey.pem
+        printf $GRID_USERCERT | base64 -d > $HOME/.globus/usercert.pem
+        # DEBUG: dump decoded cert, cert is public, but don't dump key!
+        # base64 -i $HOME/.globus/usercert.pem
+        chmod 400 $HOME/.globus/userkey.pem
+        openssl rand -out $HOME/.rnd  -hex 256
+        printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms:/cms/dcms --vomses ${X509_VOMSES} --debug --pwstdin
+        
+    - name: Test xrootd
+      run: |
+        xrdcp root://xrootd-cms.infn.it///store/user/anovak/PFNano/106X_v2_17/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17PFNanoAODv2-PU2017_12Apr2018_new_pmx_94X_mc2017_realistic_v14-v1PFNanoV2/210101_174326/0001/nano_mc2017_1-1664.root .
+      
+    - name: Install Repo
+      run: |
         pip install -e .
 
     - name: Run workflow
       run: |
-        python runner.py --workflow ttcom --json metadata/test.json 
+        python runner.py --workflow ttcom --json metadata/test.json  --limit 1 --only TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8 --executor iterative
