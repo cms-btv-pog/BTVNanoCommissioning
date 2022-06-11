@@ -66,19 +66,12 @@ workflows["ectag_ttdilep_sf"] = CTAGEDilepttValidSFProcessor
 workflows["ctag_ttsemilep_sf"] = CTAGSemilepttValidSFProcessor
 workflows["ectag_ttsemilep_sf"] = CTAGETTSemilepValidSFProcessor
 
-<<<<<<< HEAD
-# W+c 
-workflows["ctag_Wc_sf"] = CTAGWcValidSFProcessor
-workflows["ectag_Wc_sf"] = CTAGeWcValidSFProcessor
 
-# DY 
-=======
 # W+c
 workflows["ctag_Wc_sf"] = CTAGWcValidSFProcessor
 workflows["ectag_Wc_sf"] = CTAGeWcValidSFProcessor
 
 # DY
->>>>>>> upstream/master
 workflows["ctag_DY_sf"] = CTAGDYValidSFProcessor
 workflows["ectag_DY_sf"] = CTAGeDYValidSFProcessor
 
@@ -88,10 +81,6 @@ workflows["dilep_jec"] = TTdilepValidJECProcessor
 workflows["semilep_jec"] = TTsemilepValidJECProcessor
 
 
-<<<<<<< HEAD
 
-
-=======
->>>>>>> upstream/master
 __all__ = ["workflows"]
 # __all__ = ["workflows", "taggers", "DYStudiesProcessor"]

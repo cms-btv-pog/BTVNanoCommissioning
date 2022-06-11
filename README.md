@@ -36,11 +36,6 @@ conda activate btv_nano_commissioning
 ```
 You could simply create the environment through the existing `env.yml` under your conda environment
 ```
-<<<<<<< HEAD
-You could simply create the environment through the existing `env.yml` under your conda environment
-```
-=======
->>>>>>> upstream/master
 conda env create -f env.yml -p ${conda_dir}/envs/coffea
 ```
 
@@ -56,14 +51,11 @@ conda install -c conda-forge 'fsspec>=0.3.3'
 conda install dask
 ```
 
-<<<<<<< HEAD
-=======
 Once the environment is set up, compile the python package:
 ```
 pip install -e .
 ```
 
->>>>>>> upstream/master
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
 ### Running jupyter remotely
