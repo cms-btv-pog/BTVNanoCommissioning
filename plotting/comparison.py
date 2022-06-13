@@ -10,7 +10,13 @@ import argparse
 
 from cycler import cycler
 
-# colors = ["#F44336","#E91E63","#9C27B0","#673AB7","#3F51B5","#2196F3","#03A9F4","#00BCD4","#009688","#4CAF50","#8BC34A","#CDDC39","#FFEB3B","#FFC107","#FF9800","#FF5722","#795548","#BDBDBD","#9E9E9E","#616161","#90BED4","#607D8B","#455A64"]
+data_err_opts = {
+    "linestyle": "none",
+    "markersize": 10.0,
+    "marker": ".",
+    "color": "k",
+    "elinewidth": 1,
+}
 markers = ["o", "^", "s", "+", "x", "D", "*"]
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument(
@@ -21,7 +27,8 @@ parser.add_argument(
     dest="phase",
     help="which phase space",
 )
-# parser.add_argument('--ext', type=str, default='data', help='addional name')
+
+parser.add_argument("--ext", type=str, default="data", help="addional name")
 parser.add_argument("-o", "--output", required=True, type=str, help="files set")
 parser.add_argument("-r", "--ref", required=True, help="referance dataset")
 parser.add_argument(
@@ -51,8 +58,8 @@ parser.add_argument(
 )
 arg = parser.parse_args()
 output = load("hists_%s.coffea" % (arg.output))
-print(output)
 events = output["sumw"]
+notdata = re.compile("(?!(data|Run|run))")
 if arg.phase == "ttdilep":
     input_txt = "dilepton ttbar"
     nj = 2
@@ -373,8 +380,7 @@ for j in range(nj):
                 rax.set_ylim(0.5, 1.5)
                 rax2.set_ylim(0.5, 1.5)
                 rax3.set_ylim(0.5, 1.5)
-                # ax.set_ylim(0.1,10)
-                # ax.semilogy()
+
                 fig.savefig("plot/%s_lin_inclusive%s_nocut.png" % (arg.phase, discrs))
             else:
                 ax = plot.plot1d(
@@ -398,23 +404,10 @@ for j in range(nj):
                     fontsize=10,
                 )
                 ax.set_xlabel(None)
-                # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
 
                 for c in range(len(arg.compared) - 1):
                     if c == 0:
-                        scale_sf = sum(
-                            hflav_nosf[notdata]
-                            .integrate("dataset")
-                            .integrate("flav")
-                            .integrate("char")
-                            .values()[()]
-                        ) / sum(
-                            hflav[notdata]
-                            .integrate("dataset")
-                            .integrate("flav")
-                            .integrate("char")
-                            .values()[()]
-                        )
+
                         rax = plot.plotratio(
                             num=hflav[arg.compared[0][0]].sum("dataset").sum("flav"),
                             denom=hflav[arg.ref].sum("dataset").sum("flav"),

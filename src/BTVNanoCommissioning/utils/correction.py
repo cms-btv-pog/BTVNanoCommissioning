@@ -126,7 +126,9 @@ def eleSFs(ele, campaign, path):
     ele_pt = ak.fill_none(ele.pt, 0.0)
     weight = 1.0
     for paths in path.keys():
-        if "ele" in paths:
+        if "ele_Trig" in paths:
+            weight = weight * evaluator[paths[: paths.find(" ")]](ele_pt)
+        elif "ele" in paths:
             weight = weight * evaluator[paths[: paths.find(" ")]](ele_eta, ele_pt)
     return weight
 

@@ -612,7 +612,7 @@ class NanoProcessor(processor.ProcessorABC):
                     l: smuon_jet[histname] for l in h.fields if l in dir(smuon_jet)
                 }
                 if isRealData:
-                    h.fill(dataset=dataset, flav=5, **fields, weight=osss)
+                    h.fill(dataset=dataset, flav=5, **fields)
                 else:
                     h.fill(
                         dataset=dataset,
