@@ -11,11 +11,12 @@ import argparse
 from cycler import cycler
 
 data_err_opts = {
-    'linestyle': 'none',
-    'markersize': 10.,
-    'marker': '.',
-    'color': 'k',
-    'elinewidth': 1}
+    "linestyle": "none",
+    "markersize": 10.0,
+    "marker": ".",
+    "color": "k",
+    "elinewidth": 1,
+}
 markers = ["o", "^", "s", "+", "x", "D", "*"]
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument(
@@ -27,7 +28,7 @@ parser.add_argument(
     help="which phase space",
 )
 
-parser.add_argument('--ext', type=str, default='data', help='addional name')
+parser.add_argument("--ext", type=str, default="data", help="addional name")
 parser.add_argument("-o", "--output", required=True, type=str, help="files set")
 parser.add_argument("-r", "--ref", required=True, help="referance dataset")
 parser.add_argument(
@@ -58,7 +59,7 @@ parser.add_argument(
 arg = parser.parse_args()
 output = load("hists_%s.coffea" % (arg.output))
 events = output["sumw"]
-notdata =  re.compile("(?!(data|Run|run))")
+notdata = re.compile("(?!(data|Run|run))")
 if arg.phase == "ttdilep":
     input_txt = "dilepton ttbar"
     nj = 2

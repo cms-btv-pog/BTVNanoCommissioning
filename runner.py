@@ -12,6 +12,7 @@ from coffea import processor
 
 from BTVNanoCommissioning.workflows import workflows
 
+
 def validate(file):
     try:
         fin = uproot.open(file)
@@ -252,7 +253,7 @@ if __name__ == "__main__":
             "export XRD_RUNFORKHANDLER=1",
             f"export X509_USER_PROXY={_x509_path}",
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
-            f'export PYTHONPATH=$PYTHONPATH:{os.getcwd()}',
+            f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
         ]
         condor_extra = [
             f'source {os.environ["HOME"]}/.bashrc',

@@ -108,35 +108,49 @@ def load_BTV(campaign, path):
 #     ext.finalize()
 # evaluator = ext.make_evaluator()
 ### Lepton SFs
-def eleSFs(ele,campaign,path):
+def eleSFs(ele, campaign, path):
     _ele_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
     ext = extractor()
     with contextlib.ExitStack() as stack:
-        real_paths = [stack.enter_context(importlib.resources.path(_ele_path, f)) for f in path.values()]
-        ext.add_weight_sets([f"{path} {file}" for path, file in zip(path.keys(), real_paths)])
-    
+        real_paths = [
+            stack.enter_context(importlib.resources.path(_ele_path, f))
+            for f in path.values()
+        ]
+        ext.add_weight_sets(
+            [f"{path} {file}" for path, file in zip(path.keys(), real_paths)]
+        )
+
     ext.finalize()
     evaluator = ext.make_evaluator()
-    ele_eta = ak.fill_none(ele.eta,0.)
-    ele_pt = ak.fill_none(ele.pt,0.)
-    weight=1.
+    ele_eta = ak.fill_none(ele.eta, 0.0)
+    ele_pt = ak.fill_none(ele.pt, 0.0)
+    weight = 1.0
     for paths in path.keys():
-        if 'ele_Trig' in paths:weight =  weight*evaluator[paths[:paths.find(' ')]](ele_pt)
-        elif 'ele' in paths :weight =  weight*evaluator[paths[:paths.find(' ')]](ele_eta,ele_pt)
+        if "ele_Trig" in paths:
+            weight = weight * evaluator[paths[: paths.find(" ")]](ele_pt)
+        elif "ele" in paths:
+            weight = weight * evaluator[paths[: paths.find(" ")]](ele_eta, ele_pt)
     return weight
 
-def muSFs(mu,campaign,path):
+
+def muSFs(mu, campaign, path):
     _ele_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
     ext = extractor()
     with contextlib.ExitStack() as stack:
-        real_paths = [stack.enter_context(importlib.resources.path(_ele_path, f)) for f in path.values() ]
-        ext.add_weight_sets([f"{path} {file}" for path, file in zip(path.keys(), real_paths)])
+        real_paths = [
+            stack.enter_context(importlib.resources.path(_ele_path, f))
+            for f in path.values()
+        ]
+        ext.add_weight_sets(
+            [f"{path} {file}" for path, file in zip(path.keys(), real_paths)]
+        )
 
     ext.finalize()
     evaluator = ext.make_evaluator()
-    mu_eta=ak.fill_none(mu.eta,0.)
-    mu_pt= ak.fill_none(mu.pt,0.)
-    weight=1.
+    mu_eta = ak.fill_none(mu.eta, 0.0)
+    mu_pt = ak.fill_none(mu.pt, 0.0)
+    weight = 1.0
     for paths in path.keys():
-        if 'mu' in paths:weight =  weight*evaluator[paths[:paths.find(' ')]](mu_eta,mu_pt)
+        if "mu" in paths:
+            weight = weight * evaluator[paths[: paths.find(" ")]](mu_eta, mu_pt)
     return weight

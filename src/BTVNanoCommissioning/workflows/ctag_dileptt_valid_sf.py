@@ -21,6 +21,7 @@ from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.helpers.definitions import definitions
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 
+
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
 
