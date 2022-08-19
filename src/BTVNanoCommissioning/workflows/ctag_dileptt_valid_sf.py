@@ -1,18 +1,13 @@
-import gzip
-import pickle, os, sys, mplhep as hep, numpy as np
+import numpy as np
 import collections
-import re
 
-from matplotlib.pyplot import jet
 
-import coffea
 from coffea import hist, processor
 import awkward as ak
 from coffea.analysis_tools import Weights
 
 from BTVNanoCommissioning.utils.correction import (
     lumiMasks,
-    eleSFs,
     muSFs,
     load_pu,
     load_BTV,
@@ -77,9 +72,6 @@ class NanoProcessor(processor.ProcessorABC):
         zpt_axis = hist.Bin("zpt", r"Z $p_{T}$", 25, 0, 100)
         zeta_axis = hist.Bin("zeta", r"Z $\eta$", 25, -2.5, 2.5)
         zphi_axis = hist.Bin("zphi", r"Z $\phi$", 30, -3, 3)
-        drmumu_axis = hist.Bin(
-            "drmumu", r"$\Delta$R($\mu_{soft}$,$\mu_{hard}$)", 25, 0, 5
-        )
 
         ## MET
         met_axis = hist.Bin("pt", r"MET $p_{T}$", 50, 0, 500)

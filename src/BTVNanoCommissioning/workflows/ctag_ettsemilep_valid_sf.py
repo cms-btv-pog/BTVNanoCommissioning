@@ -1,16 +1,12 @@
-import gzip
-import pickle, os, sys, mplhep as hep, numpy as np
+import numpy as np
 import collections
 
-from matplotlib.pyplot import jet
 
-import coffea
 from coffea import hist, processor
 import awkward as ak
 from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.utils.correction import lumiMasks, eleSFs, load_pu, load_BTV
 from BTVNanoCommissioning.helpers.definitions import definitions
-import gc
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 
@@ -28,7 +24,6 @@ class NanoProcessor(processor.ProcessorABC):
         # Should read axes from NanoAOD config
         dataset_axis = hist.Cat("dataset", "Primary dataset")
         flav_axis = hist.Bin("flav", r"Genflavour", [0, 1, 4, 5, 6])
-        charge_axis = hist.Bin("char", r"Charge", [-2, 0, 2])
 
         # Jet
         jet_pt_axis = hist.Bin("pt", r"Jet $p_{T}$ [GeV]", 50, 0, 500)
@@ -77,10 +72,6 @@ class NanoProcessor(processor.ProcessorABC):
         metphi_axis = hist.Bin("phi", r"met $\phi$", 30, -3, 3)
 
         ## Muon jets
-        mujet_pt_axis = hist.Bin("pt", r"Jet $p_{T}$ [GeV]", 50, 0, 500)
-        mujet_eta_axis = hist.Bin("eta", r"Jet $\eta$", 25, -2.5, 2.5)
-        mujet_phi_axis = hist.Bin("phi", r"Jet $\phi$", 30, -3, 3)
-        mujet_mass_axis = hist.Bin("mass", r"Jet $m$ [GeV]", 50, 0, 500)
         dr_mujetsoftmu_axis = hist.Bin(
             "drjet_smu", r"$\Delta$R($\mu_{soft}$,j)", 25, 0, 5
         )
@@ -496,7 +487,6 @@ class NanoProcessor(processor.ProcessorABC):
                     1.0,
                 ),
             )
-        njet = ak.count(sjets.pt, axis=1)
 
         def flatten(ar):  # flatten awkward into a 1d array to hist
             return ak.flatten(ar, axis=None)
@@ -606,8 +596,8 @@ class NanoProcessor(processor.ProcessorABC):
             }
         for histname, h in output.items():
             if not isRealData:
-               smpu = (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
-               genflavor = 1 * smpu + smuon_jet.hadronFlavour
+                smpu = (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
+                genflavor = 1 * smpu + smuon_jet.hadronFlavour
             if histname in self.btagDeephists:
                 fields = {
                     l: smuon_jet[histname] for l in h.fields if l in dir(smuon_jet)
