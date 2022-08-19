@@ -734,7 +734,9 @@ class NanoProcessor(processor.ProcessorABC):
                 if isRealData:
                     h.fill(dataset=dataset, flav=5, syst="noSF", **fields)
                 else:
-                    smpu = (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
+                    smpu = (smuon_jet.partonFlavour == 0) & (
+                        smuon_jet.hadronFlavour == 0
+                    )
                     smflav = 1 * smpu + smuon_jet.hadronFlavour
                     h.fill(
                         dataset=dataset,
