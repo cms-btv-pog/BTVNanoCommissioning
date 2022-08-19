@@ -78,4 +78,4 @@ jobs:
 
     - name: Run workflow
       run: |
-        python runner.py --workflow ttcom --json metadata/test.json  --limit 1 --only TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8 --executor iterative
+        python runner.py --workflow ttcom --json metadata/test_w_dj.json  --limit 1 --executor iterative
