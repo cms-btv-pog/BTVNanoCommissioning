@@ -1,5 +1,5 @@
 {
     "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8":[
-        "root://xrootd-cms.infn.it///store/user/mullerd/ttbar_w_dj/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL17PFNanoAOD-106X_mc2017_realistic_v6-v2/220819_080626/0000/nano106Xv8_on_mini106X_2017_mc_NANO_py_NANO_1.root"]
+        "root://eoscms.cern.ch//eos/cms/store/group/phys_btag/nano-commissioning/test_w_dj.root"]
 
 }
