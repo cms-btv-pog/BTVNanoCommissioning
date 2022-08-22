@@ -485,16 +485,16 @@ class NanoProcessor(processor.ProcessorABC):
                 discr=sjets[:, 0].btagDeepB,
             )
 
-        disc_list = {
-            "btagDeepB": csvsfs_b,
-            "btagDeepC": csvsfs_b,
-            "btagDeepFlavB": jetsfs_b,
-            "btagDeepFlavC": jetsfs_b,
-            "btagDeepCvL": csvsfs_c,
-            "btagDeepCvB": csvsfs_c,
-            "btagDeepFlavCvL": jetsfs_c,
-            "btagDeepFlavCvB": jetsfs_c,
-        }
+            disc_list = {
+                "btagDeepB": csvsfs_b,
+                "btagDeepC": csvsfs_b,
+                "btagDeepFlavB": jetsfs_b,
+                "btagDeepFlavC": jetsfs_b,
+                "btagDeepCvL": csvsfs_c,
+                "btagDeepCvB": csvsfs_c,
+                "btagDeepFlavCvL": jetsfs_c,
+                "btagDeepFlavCvB": jetsfs_c,
+            }
         for histname, h in output.items():
             if histname in self.btagDeephists:
                 fields = {

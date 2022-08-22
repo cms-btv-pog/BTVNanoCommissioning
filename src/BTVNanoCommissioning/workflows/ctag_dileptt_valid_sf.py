@@ -1,18 +1,13 @@
-import gzip
-import pickle, os, sys, mplhep as hep, numpy as np
+import numpy as np
 import collections
-import re
 
-from matplotlib.pyplot import jet
 
-import coffea
 from coffea import hist, processor
 import awkward as ak
 from coffea.analysis_tools import Weights
 
 from BTVNanoCommissioning.utils.correction import (
     lumiMasks,
-    eleSFs,
     muSFs,
     load_pu,
     load_BTV,
@@ -77,9 +72,6 @@ class NanoProcessor(processor.ProcessorABC):
         zpt_axis = hist.Bin("zpt", r"Z $p_{T}$", 25, 0, 100)
         zeta_axis = hist.Bin("zeta", r"Z $\eta$", 25, -2.5, 2.5)
         zphi_axis = hist.Bin("zphi", r"Z $\phi$", 30, -3, 3)
-        drmumu_axis = hist.Bin(
-            "drmumu", r"$\Delta$R($\mu_{soft}$,$\mu_{hard}$)", 25, 0, 5
-        )
 
         ## MET
         met_axis = hist.Bin("pt", r"MET $p_{T}$", 50, 0, 500)
@@ -648,19 +640,20 @@ class NanoProcessor(processor.ProcessorABC):
                     discr=sjets[:, 1].btagDeepB,
                 )
 
-        disc_list = {
-            "btagDeepB": csvsfs_b,
-            "btagDeepC": csvsfs_b,
-            "btagDeepFlavB": jetsfs_b,
-            "btagDeepFlavC": jetsfs_b,
-            "btagDeepCvL": csvsfs_c,
-            "btagDeepCvB": csvsfs_c,
-            "btagDeepFlavCvL": jetsfs_c,
-            "btagDeepFlavCvB": jetsfs_c,
-        }
+                disc_list = {
+                    "btagDeepB": csvsfs_b,
+                    "btagDeepC": csvsfs_b,
+                    "btagDeepFlavB": jetsfs_b,
+                    "btagDeepFlavC": jetsfs_b,
+                    "btagDeepCvL": csvsfs_c,
+                    "btagDeepCvB": csvsfs_c,
+                    "btagDeepFlavCvL": jetsfs_c,
+                    "btagDeepFlavCvB": jetsfs_c,
+                }
         for histname, h in output.items():
-            smpu = (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
-            smflav = 1 * smpu + smuon_jet.hadronFlavour
+            if not isRealData:
+                smpu = (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
+                smflav = 1 * smpu + smuon_jet.hadronFlavour
             if histname in self.btagDeephists:
                 fields = {
                     l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)
@@ -741,6 +734,10 @@ class NanoProcessor(processor.ProcessorABC):
                 if isRealData:
                     h.fill(dataset=dataset, flav=5, syst="noSF", **fields)
                 else:
+                    smpu = (smuon_jet.partonFlavour == 0) & (
+                        smuon_jet.hadronFlavour == 0
+                    )
+                    smflav = 1 * smpu + smuon_jet.hadronFlavour
                     h.fill(
                         dataset=dataset,
                         flav=smflav,

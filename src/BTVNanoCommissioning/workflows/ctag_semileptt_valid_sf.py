@@ -609,19 +609,20 @@ class NanoProcessor(processor.ProcessorABC):
                 discr=smuon_jet.btagDeepB,
             )
 
-        disc_list = {
-            "btagDeepB": csvsfs_b,
-            "btagDeepC": csvsfs_b,
-            "btagDeepFlavB": jetsfs_b,
-            "btagDeepFlavC": jetsfs_b,
-            "btagDeepCvL": csvsfs_c,
-            "btagDeepCvB": csvsfs_c,
-            "btagDeepFlavCvL": jetsfs_c,
-            "btagDeepFlavCvB": jetsfs_c,
-        }
+            disc_list = {
+                "btagDeepB": csvsfs_b,
+                "btagDeepC": csvsfs_b,
+                "btagDeepFlavB": jetsfs_b,
+                "btagDeepFlavC": jetsfs_b,
+                "btagDeepCvL": csvsfs_c,
+                "btagDeepCvB": csvsfs_c,
+                "btagDeepFlavCvL": jetsfs_c,
+                "btagDeepFlavCvB": jetsfs_c,
+            }
         for histname, h in output.items():
-            smpu = (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
-            genflavor = 1 * smpu + smuon_jet.hadronFlavour
+            if not isRealData:
+                smpu = (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
+                genflavor = 1 * smpu + smuon_jet.hadronFlavour
             if histname in self.btagDeephists:
                 fields = {
                     l: smuon_jet[histname] for l in h.fields if l in dir(smuon_jet)

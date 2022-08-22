@@ -97,8 +97,8 @@ class NanoProcessor(processor.ProcessorABC):
             binning = bininfo[d]["bins"]
             if ranges[1] is None:
                 ranges[1] = 0.0
-            elif ranges[0] is None:
-                ranges[0] = 0.0
+            if ranges[0] is None:
+                ranges[0] = -0.5
             btagDeepaxes.append(hist.Bin(d, d, binning, ranges[0], ranges[1]))
 
         # Define similar axes dynamically
@@ -603,19 +603,20 @@ class NanoProcessor(processor.ProcessorABC):
                 discr=smuon_jet.btagDeepB,
             )
 
-        disc_list = {
-            "btagDeepB": csvsfs_b,
-            "btagDeepC": csvsfs_b,
-            "btagDeepFlavB": jetsfs_b,
-            "btagDeepFlavC": jetsfs_b,
-            "btagDeepCvL": csvsfs_c,
-            "btagDeepCvB": csvsfs_c,
-            "btagDeepFlavCvL": jetsfs_c,
-            "btagDeepFlavCvB": jetsfs_c,
-        }
-        smflav = smuon_jet.hadronFlavour + 1 * (smuon_jet.partonFlavour == 0) & (
-            smuon_jet.hadronFlavour == 0
-        )
+            disc_list = {
+                "btagDeepB": csvsfs_b,
+                "btagDeepC": csvsfs_b,
+                "btagDeepFlavB": jetsfs_b,
+                "btagDeepFlavC": jetsfs_b,
+                "btagDeepCvL": csvsfs_c,
+                "btagDeepCvB": csvsfs_c,
+                "btagDeepFlavCvL": jetsfs_c,
+                "btagDeepFlavCvB": jetsfs_c,
+            }
+        if not isRealData:
+            smflav = smuon_jet.hadronFlavour + 1 * (smuon_jet.partonFlavour == 0) & (
+                smuon_jet.hadronFlavour == 0
+            )
         for histname, h in output.items():
             if histname in self.btagDeephists:
                 fields = {
