@@ -4,9 +4,11 @@ import collections
 
 from matplotlib.pyplot import jet
 
+
 from coffea import processor
 import awkward as ak
 from coffea.analysis_tools import Weights
+
 from BTVNanoCommissioning.utils.correction import (
     lumiMasks,
     eleSFs,
@@ -55,6 +57,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
         _hist_event_dict = histogrammer("ectag_DY_sf")   
         self.make_output =  lambda:{'sumw': processor.defaultdict_accumulator(float),**_hist_event_dict}
+
     @property
     def accumulator(self):
         return self._accumulator

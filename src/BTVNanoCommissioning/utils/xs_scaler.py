@@ -1,3 +1,4 @@
+
 import copy
 import hist 
 from coffea import processor
@@ -83,3 +84,4 @@ def getSumW(accumulator):
     for key, accus in accumulator.items():
         sumw[key] = accus['sumw']
     return sumw
+

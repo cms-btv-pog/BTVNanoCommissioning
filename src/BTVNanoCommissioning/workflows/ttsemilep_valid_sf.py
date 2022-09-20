@@ -48,11 +48,13 @@ class NanoProcessor(processor.ProcessorABC):
             )
         _hist_event_dict = histogrammer("ttsemilep_sf")   
         self.make_output =  lambda:{'sumw': processor.defaultdict_accumulator(float),**_hist_event_dict}
+
     @property
     def accumulator(self):
         return self._accumulator
 
     def process(self, events):
+
         output = self.make_output()
 
         dataset = events.metadata["dataset"]
@@ -67,6 +69,7 @@ class NanoProcessor(processor.ProcessorABC):
                     add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
                     lazy_cache=events.caches[0],
                 )
+
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
@@ -246,6 +249,7 @@ class NanoProcessor(processor.ProcessorABC):
             jetsfs_b = collections.defaultdict(dict)
             csvsfs_c = collections.defaultdict(dict)
             csvsfs_b = collections.defaultdict(dict)
+
             if self.isCorr:
                 for i in range(4):
                     jetsfs_c[i]["SF"] = getSF(

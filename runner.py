@@ -12,13 +12,6 @@ from coffea import processor
 
 from BTVNanoCommissioning.workflows import workflows
 
-# This would crash if the ExampleWorkflow does not exist
-# from ExampleWorkflow.workflows import workflows
-# from VHcc.workflows import workflows
-from Hpluscharm.workflows import workflows
-
-# Should come up with a smarter way to import all worflows from subdirectories of ./src/
-
 
 def validate(file):
     try:
@@ -170,24 +163,6 @@ def get_main_parser():
         metavar="N",
         help="Max number of chunks to run in total",
     )
-    parser.add_argument(
-        "--export_array",
-        action="store_true",
-        default=False,
-        help="stored selected events to np.arrays",
-    )
-    parser.add_argument(
-        "--systematics",
-        action="store_true",
-        default=False,
-        help="process systematics",
-    )
-    parser.add_argument(
-        "--isData",
-        default=False,
-        action="store_true",
-        help="process systematics",
-    )
     return parser
 
 
@@ -259,13 +234,6 @@ if __name__ == "__main__":
 
     # load workflow
     processor_instance = workflows[args.workflow](args.year, args.campaign)
-    if args.export_array is not None:
-    processor_instance = workflows[args.workflow](
-           year=args.year, campaign=args.campaign, export_array=args.export_array
-       ,systematics=args.systematics,isData=args.isData)
-    
-    # AS: not all workflows will have these two parameter, so probably
-    #     we want to avoid always calling it like that in the future
 
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """
@@ -348,6 +316,25 @@ if __name__ == "__main__":
                             partition="all",
                             worker_init="\n".join(env_extra),
                             walltime="00:120:00",
+                        ),
+                    )
+                ],
+                retries=args.retries,
+
+            )
+        elif "condor" in args.executor:
+            htex_config = Config(
+                executors=[
+                    HighThroughputExecutor(
+                        label="coffea_parsl_condor",
+                        address=address_by_query(),
+                        max_workers=1,
+                        provider=CondorProvider(
+                            nodes_per_block=1,
+                            init_blocks=args.workers,
+                            max_blocks=(args.workers) + 1,
+                            worker_init="\n".join(env_extra + condor_extra),
+                            walltime="00:20:00",
                         ),
                     )
                 ],

@@ -933,7 +933,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 4.0],
+            "manual_ranges": [0.0, 4.06],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_14": {

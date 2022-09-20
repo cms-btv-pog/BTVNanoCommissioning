@@ -22,11 +22,13 @@ from BTVNanoCommissioning.helpers.func  import flatten
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
+
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
 
     def num(ar):
         return ak.num(ak.fill_none(ar[~ak.is_none(ar)], 0), axis=0)
+
 
     def __init__(self, year="2017", campaign="Rereco17_94X", isCorr=True, isJERC= False):
         self._year = year
@@ -54,6 +56,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
         _hist_event_dict = histogrammer("ctag_DY_sf")   
         self.make_output =  lambda:{'sumw': processor.defaultdict_accumulator(float),**_hist_event_dict}
+
     @property
     def accumulator(self):
         return self._accumulator
@@ -129,6 +132,7 @@ class NanoProcessor(processor.ProcessorABC):
                 -1,
             )
         if isRealData:
+
             output["sumw"] = len(events)
         else:
             output["sumw"] = ak.sum(events.genWeight)
@@ -137,6 +141,7 @@ class NanoProcessor(processor.ProcessorABC):
                     add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
                     lazy_cache=events.caches[0],
                 )
+
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)

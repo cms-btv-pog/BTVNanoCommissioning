@@ -53,6 +53,7 @@ parser.add_argument(
 )
 parser.add_argument("--ext", type=str, default="data", help="addional name")
 
+
 args = parser.parse_args()
 output={}
 if len(args.input.split(","))>1:
@@ -297,3 +298,4 @@ for discr in args.discr_list:
         fig.savefig(f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_lin_inclusive{discr}.pdf")
         fig.savefig(f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_lin_inclusive{discr}.png")
         
+

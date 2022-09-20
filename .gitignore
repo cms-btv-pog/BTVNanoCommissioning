@@ -1,5 +1,6 @@
 *.coffea
 *.pyc
+
 *.py~
 .ipynb_checkpoints/
 \#*
@@ -8,7 +9,6 @@ plotting/plot/
 src/BTVNanoCommissioning/version.py
 src/BTVNanoCommissioning.egg-info/
 __pycache__
-src/Hpluscharm/
 workflows/__pycache__/
 .vscode/
 dask-report.html

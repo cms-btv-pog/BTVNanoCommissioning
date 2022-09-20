@@ -139,6 +139,7 @@ class NanoProcessor(processor.ProcessorABC):
             output["sumw"] += 1.0
         else:
             output["sumw"] += ak.sum(events.genWeight)
+
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)

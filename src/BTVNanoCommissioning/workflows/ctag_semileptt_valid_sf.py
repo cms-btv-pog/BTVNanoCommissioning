@@ -21,6 +21,7 @@ from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
 
+
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
 
@@ -57,6 +58,7 @@ class NanoProcessor(processor.ProcessorABC):
         _hist_event_dict = histogrammer("ctag_ttsemilep_sf")   
         self.make_output =  lambda:{'sumw': processor.defaultdict_accumulator(float),**_hist_event_dict}
 
+
     @property
     def accumulator(self):
         return self._accumulator
@@ -75,6 +77,7 @@ class NanoProcessor(processor.ProcessorABC):
                     add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
                     lazy_cache=events.caches[0],
                 )
+
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
@@ -378,7 +381,6 @@ class NanoProcessor(processor.ProcessorABC):
                 ),
             )
 
-        
 
         if isRealData:
             genflavor = ak.zeros_like(sjets.pt)
@@ -484,6 +486,7 @@ class NanoProcessor(processor.ProcessorABC):
                 "btagDeepFlavCvL": jetsfs_c,
                 "btagDeepFlavCvB": jetsfs_c,
             }
+
         for histname, h in output.items():            
             if "Deep" in histname and "btag" not in histname:
                 h.fill(flatten(genflavor),flatten(sjets[histname]),weight=flatten(ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[0]))

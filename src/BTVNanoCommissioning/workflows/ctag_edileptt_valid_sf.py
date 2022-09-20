@@ -26,6 +26,7 @@ from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
 
+
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
 
@@ -61,6 +62,7 @@ class NanoProcessor(processor.ProcessorABC):
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,
         }
+
 
     @property
     def accumulator(self):
@@ -292,6 +294,7 @@ class NanoProcessor(processor.ProcessorABC):
         isomu1 = shmu[:, 1]
 
         ## Jets
+
         sjets = selev.Jet[
             (selev.Jet.pt > 20)
             & (abs(selev.Jet.eta) <= 2.5)
@@ -371,6 +374,7 @@ class NanoProcessor(processor.ProcessorABC):
                     smuon_jet.btagDeepCvB,
                     self._deepcsvc_sf,
                 )
+
                 csvsfs_c[0]["SFup"] = getSF(
                     smuon_jet.hadronFlavour,
                     smuon_jet.btagDeepCvL,
@@ -489,7 +493,6 @@ class NanoProcessor(processor.ProcessorABC):
                         sjets[:, 1].pt,
                         discr=sjets[:, 1].btagDeepB,
                     )
-
                 disc_list = {
                     "btagDeepB": csvsfs_b,
                     "btagDeepC": csvsfs_b,
@@ -573,6 +576,7 @@ class NanoProcessor(processor.ProcessorABC):
                                 -0.2,
                                 smuon_jet[histname.replace("_0", "")],
                             ),
+
                             weight=weights.weight()[event_level]
                             * disc_list[histname.replace("_0", "")][0][syst],
                         )
@@ -638,6 +642,7 @@ class NanoProcessor(processor.ProcessorABC):
         output["z_phi"].fill(flatten(sz.phi), weight=weights.weight()[event_level])
         output["z_mass"].fill(flatten(sz.mass), weight=weights.weight()[event_level])
         return {dataset: output}
+
 
     def postprocess(self, accumulator):
         return accumulator

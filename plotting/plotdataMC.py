@@ -3,6 +3,7 @@ import argparse,sys,os,arrow
 from coffea.util import load
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
+
 import mplhep as hep
 import hist
 from hist.intervals import ratio_uncertainty
@@ -11,6 +12,7 @@ from BTVNanoCommissioning.utils.xs_scaler import getSumW,collate,scaleSumW
 
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
+
 parser.add_argument(
     "-p",
     "--phase",

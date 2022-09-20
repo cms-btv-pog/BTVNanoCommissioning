@@ -4,6 +4,7 @@ import collections
 from matplotlib.pyplot import jet
 
 import coffea
+
 from coffea import  processor
 import awkward as ak
 import gc
@@ -22,7 +23,6 @@ from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.helpers.func  import flatten
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
-
 
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
@@ -53,12 +53,12 @@ class NanoProcessor(processor.ProcessorABC):
             )
         _hist_event_dict = histogrammer("ttdilep_sf")   
         self.make_output =  lambda:{'sumw': processor.defaultdict_accumulator(float),**_hist_event_dict}
+
     @property
     def accumulator(self):
         return self._accumulator
 
-    def process(self, events):
-        
+    def process(self, events):        
         output = self.make_output()
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
@@ -200,8 +200,7 @@ class NanoProcessor(processor.ProcessorABC):
             event_level = ak.fill_none(event_level, False)
         # Selected
         selev = events[event_level]
-    
-        # print(req_trig)
+
         #########
 
         # Per muon
@@ -209,8 +208,7 @@ class NanoProcessor(processor.ProcessorABC):
         mu_pt = selev.Muon.pt > 30
         mu_idiso = (selev.Muon.tightId > 0.5) & (selev.Muon.pfRelIso04_all < 0.12)
         mu_level = mu_eta & mu_pt & mu_idiso
-        smu = selev.Muon[mu_level]
-        
+        smu = selev.Muon[mu_level]        
         smu = ak.pad_none(smu, 1, axis=1)
         
 
@@ -233,6 +231,7 @@ class NanoProcessor(processor.ProcessorABC):
         sel = sel[:,0]
         smu = smu[:,0]
         jet_level = jet_pu & jet_eta & jet_pt  & jet_dr
+
         sjets = selev.Jet[jet_level]
         sel_jets = sjets
         sjets = sjets[:, :2]

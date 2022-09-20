@@ -3,6 +3,7 @@ import contextlib
 from coffea.lookup_tools import extractor
 from coffea.jetmet_tools import JECStack, CorrectedJetsFactory, CorrectedMETFactory
 
+
 jec_name_map = {
     "JetPt": "pt",
     "JetMass": "mass",
@@ -226,6 +227,69 @@ def jet_factories(campaign):
                     "data/JME/UL18/Summer19UL18_RunD_V5_DATA_L3Absolute_AK4PFchs.jec.txt",
                     # "data/JME/UL18/Summer19UL18_RunD_V5_DATA_Uncertainty_AK4PFchs.junc.txt",
                     # "data/JME/UL18/Summer19UL18_RunD_V5_DATA_UncertaintySources_AK4PFchs.junc.txt",
+        "Rereco17_94X": {
+            "mc": jet_factory_factory(
+                files=[
+                    "data/JME/Rereco17_94X/MC/Fall17_V3b_MC_PtResolution_AK4PFchs.jr.txt",
+                    "data/JME/Rereco17_94X/MC/Fall17_V3b_MC_SF_AK4PFchs.jersf.txt",
+                    "data/JME/Rereco17_94X/MC/Fall17_17Nov2017_V32_MC_L1FastJet_AK4PFchs.jec.txt",
+                    "data/JME/Rereco17_94X/MC/Fall17_17Nov2017_V32_MC_L2Relative_AK4PFchs.jec.txt",
+                    "data/JME/Rereco17_94X/MC/Fall17_17Nov2017_V32_MC_L3Absolute_AK4PFchs.jec.txt",
+                    "data/JME/Rereco17_94X/MC/Fall17_17Nov2017_V32_MC_L2L3Residual_AK4PFchs.jec.txt",
+                ]
+            ),
+            "data": jet_factory_factory(
+                files=[
+                    "data/JME/Rereco17_94X/RunDE/Fall17_17Nov2017DE_V32_DATA_L1FastJet_AK4PFchs.jec.txt",
+                    "data/JME/Rereco17_94X/RunDE/Fall17_17Nov2017DE_V32_DATA_L2Relative_AK4PFchs.jec.txt",
+                    "data/JME/Rereco17_94X/RunDE/Fall17_17Nov2017DE_V32_DATA_L3Absolute_AK4PFchs.jec.txt",
+                ]
+            ),
+        },
+        "UL17_106X": {
+            "mc": jet_factory_factory(
+                files=[
+                    "data/JME/UL17_106X/MC/Summer19UL17_JRV2_MC_PtResolution_AK4PFchs.jr.txt",
+                    "data/JME/UL17_106X/MC/Summer19UL17_JRV2_MC_SF_AK4PFchs.jersf.txt",
+                    "data/JME/UL17_106X/MC/Summer19UL17_V5_MC_L1FastJet_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/MC/Summer19UL17_V5_MC_L2Relative_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/MC/Summer19UL17_V5_MC_L3Absolute_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/MC/Summer19UL17_V5_MC_L2L3Residual_AK4PFchs.jec.txt",
+                ]
+            ),
+            "dataB": jet_factory_factory(
+                files=[
+                    "data/JME/UL17_106X/RunB/Summer19UL17_RunB_V5_DATA_L1FastJet_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/RunB/Summer19UL17_RunB_V5_DATA_L2Relative_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/RunB/Summer19UL17_RunB_V5_DATA_L3Absolute_AK4PFchs.jec.txt",
+                ]
+            ),
+            "dataC": jet_factory_factory(
+                files=[
+                    "data/JME/UL17_106X/RunC/Summer19UL17_RunC_V5_DATA_L1FastJet_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/RunC/Summer19UL17_RunC_V5_DATA_L2Relative_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/RunC/Summer19UL17_RunC_V5_DATA_L3Absolute_AK4PFchs.jec.txt",
+                ]
+            ),
+            "dataD": jet_factory_factory(
+                files=[
+                    "data/JME/UL17_106X/RunD/Summer19UL17_RunD_V5_DATA_L1FastJet_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/RunD/Summer19UL17_RunD_V5_DATA_L2Relative_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/RunD/Summer19UL17_RunD_V5_DATA_L3Absolute_AK4PFchs.jec.txt",
+                ]
+            ),
+            "dataE": jet_factory_factory(
+                files=[
+                    "data/JME/UL17_106X/RunE/Summer19UL17_RunE_V5_DATA_L1FastJet_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/RunE/Summer19UL17_RunE_V5_DATA_L2Relative_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/RunE/Summer19UL17_RunE_V5_DATA_L3Absolute_AK4PFchs.jec.txt",
+                ]
+            ),
+            "dataF": jet_factory_factory(
+                files=[
+                    "data/JME/UL17_106X/RunF/Summer19UL17_RunF_V5_DATA_L1FastJet_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/RunF/Summer19UL17_RunF_V5_DATA_L2Relative_AK4PFchs.jec.txt",
+                    "data/JME/UL17_106X/RunF/Summer19UL17_RunF_V5_DATA_L3Absolute_AK4PFchs.jec.txt",
                 ]
             ),
         },

@@ -1,7 +1,6 @@
 import numpy as np
 import collections
 
-
 import coffea
 from coffea import processor
 import awkward as ak
@@ -20,7 +19,6 @@ from BTVNanoCommissioning.helpers.func  import flatten
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
-
 
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
@@ -51,6 +49,7 @@ class NanoProcessor(processor.ProcessorABC):
         ## Load histogram
         _hist_event_dict = histogrammer("ectag_ttsemilep_sf")   
         self.make_output =  lambda:{'sumw': processor.defaultdict_accumulator(float),**_hist_event_dict}
+
     @property
     def accumulator(self):
         return self._accumulator
@@ -310,14 +309,17 @@ class NanoProcessor(processor.ProcessorABC):
         )
 
         ## Muon Jet
+
         smuon_jet = sjets[
             (ak.all(sjets.metric_table(ssmu) <= 0.4, axis=2))
             & ((sjets.muonIdx1 != -1) | (sjets.muonIdx2 != -1))
         ]
+
         smuon_jet = smuon_jet[:, 0]
         ssmu = ssmu[:, 0]
         sz = shmu + ssmu
         sw = shmu + smet
+
         if not isRealData and self.isCorr:
             weights.add(
                 "lep1sf",
@@ -449,6 +451,7 @@ class NanoProcessor(processor.ProcessorABC):
                     smuon_jet.pt,
                     discr=smuon_jet.btagDeepB,
                 )
+
 
             disc_list = {
                 "btagDeepB": csvsfs_b,

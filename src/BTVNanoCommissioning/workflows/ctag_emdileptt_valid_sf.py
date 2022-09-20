@@ -19,6 +19,7 @@ from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
 
+
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
     def num(ar):
@@ -50,6 +51,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
         _hist_event_dict = histogrammer("emctag_ttdilep_sf")   
         self.make_output =  lambda:{'sumw': processor.defaultdict_accumulator(float),**_hist_event_dict}
+
     @property
     def accumulator(self):
         return self._accumulator

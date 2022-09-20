@@ -58,6 +58,7 @@ class NanoProcessor(processor.ProcessorABC):
         _hist_event_dict = histogrammer("ectag_Wc_sf")   
         self.make_output =  lambda:{'sumw': processor.defaultdict_accumulator(float),**_hist_event_dict}
 
+
     @property
     def accumulator(self):
         return self._accumulator
@@ -467,7 +468,7 @@ class NanoProcessor(processor.ProcessorABC):
                 "btagDeepFlavCvL": jetsfs_c,
                 "btagDeepFlavCvB": jetsfs_c,
             }
-        
+
         for histname, h in output.items():            
             if "Deep" in histname and "btag" not in histname:
                 h.fill(flatten(genflavor),flatten(sjets[histname]),weight=flatten(ak.broadcast_arrays(weights.weight()[event_level]*osss, sjets["pt"])[0]))

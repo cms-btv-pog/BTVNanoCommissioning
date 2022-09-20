@@ -24,6 +24,7 @@ from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
 
+
 class NanoProcessor(processor.ProcessorABC):
 
     # Define histograms
@@ -58,6 +59,7 @@ class NanoProcessor(processor.ProcessorABC):
         _hist_event_dict = histogrammer("ctag_Wc_sf")   
         self.make_output =  lambda:{'sumw': processor.defaultdict_accumulator(float),**_hist_event_dict}
 
+
     @property
     def accumulator(self):
         return self._accumulator
@@ -76,6 +78,7 @@ class NanoProcessor(processor.ProcessorABC):
                     add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
                     lazy_cache=events.caches[0],
                 )
+
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
@@ -245,6 +248,7 @@ class NanoProcessor(processor.ProcessorABC):
         soft_muon = ak.pad_none(soft_muon, 1, axis=1)
         # pT ratio
         req_pTratio = (soft_muon[:, 0].pt / mu_jet[:, 0].pt) < 0.4
+
         dilep_mass = iso_muon + soft_muon[:, 0]
         req_dilepmass = (dilep_mass.mass > 12.0) & (
             (dilep_mass.mass < 80) | (dilep_mass.mass > 100)
@@ -381,6 +385,7 @@ class NanoProcessor(processor.ProcessorABC):
             jetsfs_b = collections.defaultdict(dict)
             csvsfs_c = collections.defaultdict(dict)
             csvsfs_b = collections.defaultdict(dict)
+
             if self.isCorr:
                 jetsfs_c[0]["SF"] = getSF(
                     smuon_jet.hadronFlavour,

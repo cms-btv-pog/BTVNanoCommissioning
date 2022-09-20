@@ -20,6 +20,7 @@ from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
+
 class NanoProcessor(processor.ProcessorABC):
     # Define histograms
 
@@ -54,6 +55,7 @@ class NanoProcessor(processor.ProcessorABC):
         _hist_event_dict = histogrammer("ctag_ttdilep_sf")   
         self.make_output =  lambda:{'sumw': processor.defaultdict_accumulator(float),**_hist_event_dict}
         
+
     @property
     def accumulator(self):
         return self._accumulator
@@ -72,6 +74,7 @@ class NanoProcessor(processor.ProcessorABC):
                     add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
                     lazy_cache=events.caches[0],
                 )
+
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
@@ -245,6 +248,7 @@ class NanoProcessor(processor.ProcessorABC):
             & (selev.Muon.tightId > 0.5)
             & (selev.Muon.pfRelIso04_all <= 0.15)
         ]
+
         ## Soft Muon
         ssmu = selev.Muon[
             (selev.Muon.pt < 25)
@@ -496,6 +500,7 @@ class NanoProcessor(processor.ProcessorABC):
                     discr=sjets[:, 1].btagDeepB,
                 )
 
+
             disc_list = {
                 "btagDeepB": csvsfs_b,
                 "btagDeepC": csvsfs_b,
@@ -533,10 +538,12 @@ class NanoProcessor(processor.ProcessorABC):
                             * disc_list[histname.replace("_0", "")][0][syst],
                         )
                 
+
             elif (
                 "btagDeep" in histname and "1" in histname and all(i > 1 for i in njet)
             ):
                 sljets = sjets[:, 1]
+
                 h.fill(flav=genflavor[:, 1], syst="noSF", discr=np.where(sljets[histname.replace("_1","")] < 0, -0.2, sljets[histname.replace("_1","")]),weight=weights.weight()[event_level])
                 if not isRealData and self.isCorr:
                     for syst in disc_list[histname.replace("_1", "")][1].keys():
