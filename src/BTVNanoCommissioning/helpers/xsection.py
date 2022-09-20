@@ -1,4 +1,4 @@
-xsection=[
+xsection = [
     {
         "id": "61641f28294617432cff1379",
         "process_name": "QCD_Pt-30to50_EMEnriched_TuneCP5_13TeV-pythia8",
@@ -10,7 +10,7 @@ xsection=[
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
         "matrix_generator": "none",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "61641f29294617432cff137a",
@@ -23,7 +23,7 @@ xsection=[
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
         "matrix_generator": "none",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "61641f2a294617432cff137b",
@@ -36,7 +36,7 @@ xsection=[
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
         "matrix_generator": "none",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "61641f25294617432cff1374",
@@ -49,7 +49,7 @@ xsection=[
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
         "matrix_generator": "none",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "61641f26294617432cff1376",
@@ -62,7 +62,7 @@ xsection=[
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
         "matrix_generator": "none",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "61641f28294617432cff1378",
@@ -75,7 +75,7 @@ xsection=[
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
         "matrix_generator": "none",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aa73f368576cbd3d4d07",
@@ -85,7 +85,7 @@ xsection=[
         "DAS": "/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aa76f368576cbd3d4d0c",
@@ -95,7 +95,7 @@ xsection=[
         "DAS": "/QCD_Pt-20to30_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aa79f368576cbd3d4d10",
@@ -105,7 +105,7 @@ xsection=[
         "DAS": "/QCD_Pt-30to50_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aa7cf368576cbd3d4d15",
@@ -115,7 +115,7 @@ xsection=[
         "DAS": "/QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aa7df368576cbd3d4d16",
@@ -125,7 +125,7 @@ xsection=[
         "DAS": "/QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aa71f368576cbd3d4d05",
@@ -135,7 +135,7 @@ xsection=[
         "DAS": "/QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aa75f368576cbd3d4d0a",
@@ -145,7 +145,7 @@ xsection=[
         "DAS": "/QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5f6c27c8f368571e6ae3c3c5",
@@ -156,18 +156,18 @@ xsection=[
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
         "matrix_generator": "none",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aa7bf368576cbd3d4d13",
         "process_name": "QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
-        "cross_section":" 79",
+        "cross_section": " 79",
         "total_uncertainty": "0.1789",
         "DAS": "/QCD_Pt-470to600_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
-    },    
+        "energy": "13",
+    },
     {
         "id": "5f6c27c9f368571e6ae3c3c6",
         "process_name": "QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
@@ -182,8 +182,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "Automatically computed"
-        
+        "comments": "Automatically computed",
     },
     {
         "id": "5f6c27c9f368571e6ae3c3c7",
@@ -199,8 +198,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "Automatically computed"
-        
+        "comments": "Automatically computed",
     },
     {
         "id": "5f6c27c5f368571e6ae3c3bf",
@@ -211,7 +209,7 @@ xsection=[
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
         "matrix_generator": "none",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5f695547f368571e6ae3bb23",
@@ -224,7 +222,7 @@ xsection=[
         "fraction_negative_weight": "0.00544",
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44a986f368576cbd3d4ba7",
@@ -236,7 +234,7 @@ xsection=[
         "equivalent_lumi": "33.89",
         "fraction_negative_weight": "0.005416",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5f695539f368571e6ae3bb0a",
@@ -248,7 +246,7 @@ xsection=[
         "fraction_negative_weight": "0.00522",
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "61641e96294617432cff12a8",
@@ -260,7 +258,7 @@ xsection=[
         "fraction_negative_weight": "2e-05",
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "61641eb3294617432cff12d2",
@@ -276,7 +274,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "5f819e4ef368571e6ae3e83d",
@@ -292,7 +290,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "5f819e4ef368571e6ae3e83d",
@@ -308,9 +306,9 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
-    {     
+    {
         "id": "621f115e29461703023b3efb",
         "process_name": "HWplusJ_HToWWTo2L2Nu_WTo2L_M-125_TuneCP5_13TeV-powheg-pythia8",
         "status": "new",
@@ -324,7 +322,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "621f115d29461703023b3efa",
@@ -340,7 +338,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "621f115f29461703023b3efd",
@@ -356,7 +354,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "5b44ad08f368576cbd3d50bf",
@@ -371,7 +369,7 @@ xsection=[
         "fraction_negative_weight": "0.009538",
         "shower": "Pythia8",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "5b44abfff368576cbd3d4f4a",
@@ -381,7 +379,7 @@ xsection=[
         "DAS": "/WW_TuneCP5_13TeV-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44ac04f368576cbd3d4f51",
@@ -391,7 +389,7 @@ xsection=[
         "DAS": "/WZ_TuneCP5_13TeV-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44acc5f368576cbd3d5068",
@@ -401,7 +399,7 @@ xsection=[
         "DAS": "/ZZ_TuneCP5_13TeV-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5f81a066f368571e6ae3ebc1",
@@ -419,14 +417,14 @@ xsection=[
         "kFactor": "",
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "process_name": "ZZTo2Q2L_mllmin4p0_TuneCP5_13TeV-amcatnloFXFX-pythia8",
         "cross_section": "3.74",
         "shower": "Pythia8",
         "matrix_generator": "amcatnloFXFX",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "60d0634e2946173d80086b31",
@@ -441,7 +439,7 @@ xsection=[
         "fraction_negative_weight": "0.00209",
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44ac03f368576cbd3d4f4f",
@@ -455,7 +453,7 @@ xsection=[
         "equivalent_lumi": "77.14",
         "fraction_negative_weight": "0.1879",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "61641f8a294617432cff1405",
@@ -470,7 +468,7 @@ xsection=[
         "fraction_negative_weight": "0.1884",
         "shower": "Pythia8",
         "matrix_generator": "none",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5f81a066f368571e6ae3ebc1",
@@ -488,21 +486,21 @@ xsection=[
         "kFactor": "",
         "shower": "Pythia8",
         "matrix_generator": "Powheg",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "process_name": "WWJJToLNuLNu_EWK_noTop_TuneCP5_13TeV-madgraph-pythia8",
         "cross_section": "0.284",
         "shower": "Pythia8",
         "matrix_generator": "amcatnloFXFX",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "process_name": "WWJJToLNuLNu_QCD_noTop_TuneCP5_13TeV-madgraph-pythia8",
         "cross_section": "2.19",
         "shower": "Pythia8",
         "matrix_generator": "amcatnloFXFX",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44abfdf368576cbd3d4f47",
@@ -516,7 +514,7 @@ xsection=[
         "equivalent_lumi": "3680.0",
         "fraction_negative_weight": "0.06197",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44abfef368576cbd3d4f48",
@@ -530,7 +528,7 @@ xsection=[
         "equivalent_lumi": "4770.0",
         "fraction_negative_weight": "0.05631",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44ac04f368576cbd3d4f50",
@@ -544,7 +542,7 @@ xsection=[
         "equivalent_lumi": "13850.0",
         "fraction_negative_weight": "0.06099",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44acc4f368576cbd3d5067",
@@ -558,7 +556,7 @@ xsection=[
         "equivalent_lumi": "52140.0",
         "fraction_negative_weight": "0.0731",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b45c7f7f368576cbd3d532f",
@@ -568,15 +566,15 @@ xsection=[
         "DAS": "/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/MINIAODSIM",
         "fraction_negative_weight": "0.0004079",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b45c7f7f368576cbd3d532f",
         "process_name": "WJetsToLNu_012JetsNLO_34JetsLO_EWNLOcorr_13TeV-sherpa",
         "cross_section": "46745",
-    "fraction_negative_weight": "0.0004079",
+        "fraction_negative_weight": "0.0004079",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b45c7f7f368576cbd3d532f",
@@ -586,7 +584,7 @@ xsection=[
         "DAS": "/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v2/MINIAODSIM",
         "fraction_negative_weight": "0.0004079",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "60d062fb2946173d80086b12",
@@ -602,7 +600,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "60d062fd2946173d80086b13",
@@ -618,7 +616,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "60d062ff2946173d80086b14",
@@ -634,7 +632,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "5b44abdcf368576cbd3d4f15",
@@ -649,7 +647,7 @@ xsection=[
         "fraction_negative_weight": "0.00113",
         "shower": "Pythia8",
         "energy": "13",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "5da44b3af368571e6ae3b183",
@@ -670,7 +668,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DY1JetsToLL_M-10to50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8",
@@ -688,7 +686,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DY2JetsToLL_M-10to50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8",
@@ -706,7 +704,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DY3JetsToLL_M-10to50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8",
@@ -724,7 +722,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DY4JetsToLL_M-10to50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8",
@@ -742,7 +740,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DY1JetsToLL_M-50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8",
@@ -760,7 +758,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DY2JetsToLL_M-50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8",
@@ -778,7 +776,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DY3JetsToLL_M-50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8",
@@ -796,7 +794,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DY4JetsToLL_M-50_MatchEWPDG20_TuneCP5_13TeV-madgraphMLM-pythia8",
@@ -814,7 +812,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DYJetsToLL_M-50_HT-70to100_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8",
@@ -832,7 +830,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DYJetsToLL_M-50_HT-100to200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8",
@@ -850,7 +848,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8",
@@ -868,7 +866,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DYJetsToLL_M-50_HT-400to600_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8",
@@ -886,7 +884,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DYJetsToLL_M-50_HT-600to800_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8",
@@ -904,7 +902,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DYJetsToLL_M-50_HT-800to1200_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8",
@@ -922,7 +920,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DYJetsToLL_M-50_HT-1200to2500_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8",
@@ -940,7 +938,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
     {
         "process_name": "DYJetsToLL_M-50_HT-2500toInf_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8",
@@ -958,9 +956,8 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
         "energy": "13",
-        "comments": "Computed using GenXSecAnalyzer."
+        "comments": "Computed using GenXSecAnalyzer.",
     },
-    
     {
         "id": "5be159a8f368572e353ddaad",
         "process_name": "DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8",
@@ -974,7 +971,7 @@ xsection=[
         "kFactor": "",
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "61641e8f294617432cff129d",
@@ -989,7 +986,7 @@ xsection=[
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5be159a8f368572e353ddaad",
@@ -1004,7 +1001,7 @@ xsection=[
         "kFactor": "",
         "shower": "Pythia8",
         "matrix_generator": "Madgraph",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5f69541ff368571e6ae3b91a",
@@ -1019,7 +1016,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "Take from https://github.com/mastrolorenzo/AnalysisTools-1/blob/07a3386692642e76ad78c9671a8b906757e88362/VHccAnalysis/cfg/samples_2017_vhcc.txt"
+        "comments": "Take from https://github.com/mastrolorenzo/AnalysisTools-1/blob/07a3386692642e76ad78c9671a8b906757e88362/VHccAnalysis/cfg/samples_2017_vhcc.txt",
     },
     {
         "id": "5f695420f368571e6ae3b91b",
@@ -1034,7 +1031,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "https://github.com/mastrolorenzo/AnalysisTools-1/blob/07a3386692642e76ad78c9671a8b906757e88362/VHccAnalysis/cfg/samples_2017_vhcc.txt#L118"
+        "comments": "https://github.com/mastrolorenzo/AnalysisTools-1/blob/07a3386692642e76ad78c9671a8b906757e88362/VHccAnalysis/cfg/samples_2017_vhcc.txt#L118",
     },
     {
         "id": "5f695420f368571e6ae3b91b",
@@ -1049,7 +1046,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "https://github.com/mastrolorenzo/AnalysisTools-1/blob/07a3386692642e76ad78c9671a8b906757e88362/VHccAnalysis/cfg/samples_2017_vhcc.txt#L119"
+        "comments": "https://github.com/mastrolorenzo/AnalysisTools-1/blob/07a3386692642e76ad78c9671a8b906757e88362/VHccAnalysis/cfg/samples_2017_vhcc.txt#L119",
     },
     {
         "id": "5f695420f368571e6ae3b91b",
@@ -1064,7 +1061,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "GENXSAnalyzer"
+        "comments": "GENXSAnalyzer",
     },
     {
         "id": "5f695420f368571e6ae3b91b",
@@ -1079,7 +1076,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "GENXSAnalyzer"
+        "comments": "GENXSAnalyzer",
     },
     {
         "id": "5f695420f368571e6ae3b91b",
@@ -1092,7 +1089,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "GenXSanalyzer"
+        "comments": "GenXSanalyzer",
     },
     {
         "id": "5f695420f368571e6ae3b91b",
@@ -1107,7 +1104,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "GenXSanalyzer"
+        "comments": "GenXSanalyzer",
     },
     {
         "id": "5f695420f368571e6ae3b91b",
@@ -1122,7 +1119,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "GenXSanalyzer"
+        "comments": "GenXSanalyzer",
     },
     {
         "id": "5f695420f368571e6ae3b91b",
@@ -1137,7 +1134,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "GENXSanalyzer"
+        "comments": "GENXSanalyzer",
     },
     {
         "id": "60d05b7b2946173d8008686f",
@@ -1152,7 +1149,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "https://cms-gen-dev.cern.ch/xsdb/?columns=40632192&currentPage=0&pageSize=10&searchQuery=process_name%3DDYJetsToLL_Pt-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8"
+        "comments": "https://cms-gen-dev.cern.ch/xsdb/?columns=40632192&currentPage=0&pageSize=10&searchQuery=process_name%3DDYJetsToLL_Pt-50To100_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8",
     },
     {
         "id": "60d05b752946173d8008686c",
@@ -1167,7 +1164,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "https://cms-gen-dev.cern.ch/xsdb/?columns=40632192&currentPage=0&pageSize=10&searchQuery=process_name%3DDYJetsToLL_Pt-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8"
+        "comments": "https://cms-gen-dev.cern.ch/xsdb/?columns=40632192&currentPage=0&pageSize=10&searchQuery=process_name%3DDYJetsToLL_Pt-100To250_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8",
     },
     {
         "id": "60d05b772946173d8008686d",
@@ -1182,7 +1179,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "https://cms-gen-dev.cern.ch/xsdb/?columns=40632192&currentPage=0&pageSize=10&searchQuery=process_name%3DDYJetsToLL_Pt-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8"
+        "comments": "https://cms-gen-dev.cern.ch/xsdb/?columns=40632192&currentPage=0&pageSize=10&searchQuery=process_name%3DDYJetsToLL_Pt-250To400_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8",
     },
     {
         "id": "60d05b792946173d8008686e",
@@ -1197,7 +1194,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "https://cms-gen-dev.cern.ch/xsdb/?columns=40632192&currentPage=0&pageSize=10&searchQuery=process_name%3DDYJetsToLL_Pt-400To650_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8"
+        "comments": "https://cms-gen-dev.cern.ch/xsdb/?columns=40632192&currentPage=0&pageSize=10&searchQuery=process_name%3DDYJetsToLL_Pt-400To650_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8",
     },
     {
         "id": "60d05b7e2946173d80086870",
@@ -1212,7 +1209,7 @@ xsection=[
         "shower": "Pythia8",
         "matrix_generator": "none",
         "energy": "13",
-        "comments": "https://cms-gen-dev.cern.ch/xsdb/?columns=40632192&currentPage=0&pageSize=10&searchQuery=process_name%3DDYJetsToLL_Pt-650ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8"
+        "comments": "https://cms-gen-dev.cern.ch/xsdb/?columns=40632192&currentPage=0&pageSize=10&searchQuery=process_name%3DDYJetsToLL_Pt-650ToInf_MatchEWPDG20_TuneCP5_13TeV-amcatnloFXFX-pythia8",
     },
     {
         "id": "5b44ab37f368576cbd3d4e20",
@@ -1222,7 +1219,7 @@ xsection=[
         "DAS": "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44ab2cf368576cbd3d4e0f",
@@ -1232,7 +1229,7 @@ xsection=[
         "DAS": "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.004373",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44ab3df368576cbd3d4e2a",
@@ -1242,7 +1239,7 @@ xsection=[
         "DAS": "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/MINIAODSIM",
         "fraction_negative_weight": "0.003957",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aad2f368576cbd3d4d90",
@@ -1252,7 +1249,7 @@ xsection=[
         "DAS": "/ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.003758",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aacef368576cbd3d4d8b",
@@ -1262,7 +1259,7 @@ xsection=[
         "DAS": "/ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0034",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aacbf368576cbd3d4d86",
@@ -1272,7 +1269,7 @@ xsection=[
         "DAS": "/ST_t-channel_top_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aac8f368576cbd3d4d82",
@@ -1282,7 +1279,7 @@ xsection=[
         "DAS": "/ST_t-channel_antitop_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aacbf368576cbd3d4d86",
@@ -1292,7 +1289,7 @@ xsection=[
         "DAS": "/ST_t-channel_top_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aac8f368576cbd3d4d82",
@@ -1302,7 +1299,7 @@ xsection=[
         "DAS": "/ST_t-channel_antitop_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5b44aac4f368576cbd3d4d7d",
@@ -1312,7 +1309,7 @@ xsection=[
         "DAS": "/ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.1875",
         "shower": "Pythia8",
-        "energy": "13"
+        "energy": "13",
     },
     {
         "id": "5f6c2a01f368571e6ae3c791",
@@ -1323,23 +1320,11 @@ xsection=[
         "fraction_negative_weight": "0.1867",
         "shower": "Pythia8",
         "matrix_generator": "none",
-        "energy": "13"
-    },  
-    {   "process_name": "gchcZZ2L2Q",
-        "cross_section":"0.00032625826"
+        "energy": "13",
     },
-    {   "process_name": "gchcZZ2L2Nu",
-        "cross_section":"0.00009333531"
-    },
-    {   "process_name": "gchcWW2QLNu",
-        "cross_section":"0.00821330551"
-    },
-    {   "process_name": "gchcWW2L2Nu",
-        "cross_section":"0.00396958157"
-    },
-    {   "process_name": "gchcWW2L2Nu_4f",
-        "cross_section":"0.00204444792"
-    }
-
-
+    {"process_name": "gchcZZ2L2Q", "cross_section": "0.00032625826"},
+    {"process_name": "gchcZZ2L2Nu", "cross_section": "0.00009333531"},
+    {"process_name": "gchcWW2QLNu", "cross_section": "0.00821330551"},
+    {"process_name": "gchcWW2L2Nu", "cross_section": "0.00396958157"},
+    {"process_name": "gchcWW2L2Nu_4f", "cross_section": "0.00204444792"},
 ]

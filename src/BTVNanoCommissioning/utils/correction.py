@@ -135,15 +135,15 @@ def load_jetfactory(campaign, path):
     jet_factory = jmestuff["jet_factory"]
     return jet_factory
 
+
 def load_jmefactory(campaign, path):
     _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
     with importlib.resources.path(_jet_path, path) as filename:
         with gzip.open(filename) as fin:
             jmestuff = cloudpickle.load(fin)
 
-        #jet_factory = jmestuff["jet_factory"]
+        # jet_factory = jmestuff["jet_factory"]
     return jmestuff
-
 
 
 def add_jec_variables(jets, event_rho):
@@ -165,7 +165,6 @@ def load_metfactory(campaign, path):
 
     met_factory = jmestuff["met_factory"]
     return met_factory
-
 
 
 ## PU weight
@@ -238,7 +237,6 @@ def eleSFs(ele, campaign, path):
     return weight
 
 
-
 def muSFs(mu, campaign, path):
     _ele_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
     ext = extractor()
@@ -260,4 +258,3 @@ def muSFs(mu, campaign, path):
         if "mu" in paths:
             weight = weight * evaluator[paths[: paths.find(" ")]](mu_eta, mu_pt)
     return weight
-

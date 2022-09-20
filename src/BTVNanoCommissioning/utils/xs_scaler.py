@@ -1,10 +1,8 @@
-
 import copy
-import hist 
+import hist
 from coffea import processor
 import os
 from BTVNanoCommissioning.helpers.xsection import xsection
-
 
 
 def scale_xs(hist, lumi, events):
@@ -33,7 +31,9 @@ def scale_xs_arr(events, lumi):
 
         wei_array[key] = scales[key]
     return wei_array
-def scaleSumW(accumulator, lumi, sumw, dyscale=1.,xsfile="xsection.json"):
+
+
+def scaleSumW(accumulator, lumi, sumw, dyscale=1.0, xsfile="xsection.json"):
     scaled = {}
     xs_dict = {}
     for obj in xsection:
@@ -41,47 +41,56 @@ def scaleSumW(accumulator, lumi, sumw, dyscale=1.,xsfile="xsection.json"):
     for sample, accu in accumulator.items():
         scaled[sample] = {}
         for key, h_obj in accu.items():
-            scaled[sample]['sumw']=sumw[sample]
+            scaled[sample]["sumw"] = sumw[sample]
             if isinstance(h_obj, hist.Hist):
                 h = copy.deepcopy(h_obj)
-                if sample in xs_dict.keys():h = h * xs_dict[sample] *lumi/sumw[sample]
+                if sample in xs_dict.keys():
+                    h = h * xs_dict[sample] * lumi / sumw[sample]
                 else:
                     if not (("data" in sample) or ("Run" in sample)):
                         continue
-                    else: h = h
+                    else:
+                        h = h
                 scaled[sample][key] = h
-    
+
     return scaled
-def additional_scale(accumulator,scale, target):
+
+
+def additional_scale(accumulator, scale, target):
     scaled = {}
     for sample, accu in accumulator.items():
         scaled[sample] = {}
         for key, h_obj in accu.items():
             if isinstance(h_obj, hist.Hist):
                 h = copy.deepcopy(h_obj)
-                if sample in target:h = h * scale
-                
-                else: h = h
+                if sample in target:
+                    h = h * scale
+
+                else:
+                    h = h
                 scaled[sample][key] = h
     return scaled
+
+
 def collate(output, mergemap):
-    out = {}    
+    out = {}
     merged = {}
     for files in output.keys():
-        if 'sumw' not in output[files].keys():
+        if "sumw" not in output[files].keys():
             for m in output[files].keys():
-                merged[m]=dict(output[files][m].items())
+                merged[m] = dict(output[files][m].items())
         else:
-            
-            merged[files]=dict(output[files].items())
+
+            merged[files] = dict(output[files].items())
     for group, names in mergemap.items():
-        print(group,names)
+        print(group, names)
         out[group] = processor.accumulate([v for k, v in merged.items() if k in names])
-    
+
     return out
+
+
 def getSumW(accumulator):
     sumw = {}
     for key, accus in accumulator.items():
-        sumw[key] = accus['sumw']
+        sumw[key] = accus["sumw"]
     return sumw
-

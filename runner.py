@@ -320,7 +320,6 @@ if __name__ == "__main__":
                     )
                 ],
                 retries=args.retries,
-
             )
         elif "condor" in args.executor:
             htex_config = Config(

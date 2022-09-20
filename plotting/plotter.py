@@ -3,13 +3,20 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 import argparse
 from matplotlib.offsetbox import AnchoredText
-from BTVNanoCommissioning.utils.xs_scaler import getSumW,collate,scaleSumW,additional_scale
+from BTVNanoCommissioning.utils.xs_scaler import (
+    getSumW,
+    collate,
+    scaleSumW,
+    additional_scale,
+)
 from coffea.util import load
 from coffea.hist import plot
+
 # from coffea import hist
 import hist
 import os, math, re, json, shutil, arrow
 from Hpluscharm.dylist import dylist
+
 time = arrow.now().format("YY_MM_DD")
 ### style settings
 plt.style.use(hep.style.ROOT)
@@ -118,9 +125,8 @@ with open(f"../src/{args.analysis}/metadata/{args.input}") as inputs:
     input_map = json.load(inputs)
 
 output = {
-        i: load(f"{input_map[args.version][i]}")
-        for i in input_map[args.version].keys()
-    }
+    i: load(f"{input_map[args.version][i]}") for i in input_map[args.version].keys()
+}
 
 ### set year info and luminosity info
 if "16" in args.campaign:
@@ -140,19 +146,20 @@ if not os.path.isdir(f"plot/{args.analysis}_{args.campaign}_{args.version}_{time
 
 for out in output.keys():
     ## Scale XS for each hist
-    if 'data'  in out: continue
-    output[out] = scaleSumW(output[out],lumis,getSumW(output[out]))
-    
-    output[out] = additional_scale(output[out],0.5,dylist)# multiple Z+jets
-collated = collate(output,merge_map[args.version])
+    if "data" in out:
+        continue
+    output[out] = scaleSumW(output[out], lumis, getSumW(output[out]))
+
+    output[out] = additional_scale(output[out], 0.5, dylist)  # multiple Z+jets
+collated = collate(output, merge_map[args.version])
 for var in plot_map["var_map"].keys():
     if var == "array" or var == "sumw" or var == "cutflow":
         continue
     if args.dataMC:
-        
+
         scales = args.scalesig
         for region in args.region.split(","):
-            
+
             if not os.path.isdir(
                 f"plot/{args.analysis}_{args.campaign}_{args.version}_{time}/{region}"
             ):
@@ -183,52 +190,59 @@ for var in plot_map["var_map"].keys():
 
                 hbkglist = []
                 labels = []
-                vhist_axes={'lepflav':chs,'flav':sum,'region':region}
+                vhist_axes = {"lepflav": chs, "flav": sum, "region": region}
                 if args.splitflav is not None:
                     for sample in plot_map["order"]:
                         if sample == "signal":
                             continue
                         if sample == args.splitflav:
                             hbkglist.append(
-                                collated[sample][var][{'lepflav':chs,'region':region,'flav':0}].project(collated[sample][var].axes[-1])+collated[sample][var][{'lepflav':chs,'region':region,'flav':1}].project(collated[sample][var].axes[-1])
+                                collated[sample][var][
+                                    {"lepflav": chs, "region": region, "flav": 0}
+                                ].project(collated[sample][var].axes[-1])
+                                + collated[sample][var][
+                                    {"lepflav": chs, "region": region, "flav": 1}
+                                ].project(collated[sample][var].axes[-1])
                             )
                             hbkglist.append(
-                                collated[sample][var][{'lepflav':chs,'region':region,'flav':2}].project(collated[sample][var].axes[-1])
+                                collated[sample][var][
+                                    {"lepflav": chs, "region": region, "flav": 2}
+                                ].project(collated[sample][var].axes[-1])
                             )
                             hbkglist.append(
-                                collated[sample][var][{'lepflav':chs,'region':region,'flav':3}].project(collated[sample][var].axes[-1])
+                                collated[sample][var][
+                                    {"lepflav": chs, "region": region, "flav": 3}
+                                ].project(collated[sample][var].axes[-1])
                             )
                             labels.append("Z+l")
                             labels.append("Z+c")
                             labels.append("Z+b")
                         else:
-                            hbkglist.append(
-                                collated[sample][var][vhist_axes]
-                            )
+                            hbkglist.append(collated[sample][var][vhist_axes])
                             labels.append(sample)
 
                 else:
                     hbkglist = [
-                    collated[sample][var][vhist_axes]
-                        for sample in plot_map["order"] if 'data' not in sample and sample!="hc"
+                        collated[sample][var][vhist_axes]
+                        for sample in plot_map["order"]
+                        if "data" not in sample and sample != "hc"
                     ]
                 hep.histplot(
                     hbkglist,
                     stack=True,
                     histtype="fill",
                     ax=ax,
-                    label=["V+jets","ttbar","Single Top", "Diboson","Higgs"],
+                    label=["V+jets", "ttbar", "Single Top", "Diboson", "Higgs"],
                     color=plot_map["color_map"][:-1],
                 )
 
-                hdata = collated[f'data_{chs}'][var][vhist_axes]
-                    
-                
+                hdata = collated[f"data_{chs}"][var][vhist_axes]
+
                 hscales = scales / 100
                 if chs == "emu":
                     hscales = hscales / 5
                 hep.histplot(
-                    collated['higgs'][var][vhist_axes]*hscales,
+                    collated["higgs"][var][vhist_axes] * hscales,
                     color=plot_map["color_map"][-2],
                     linewidth=2,
                     label=f"Higgsx{int(hscales)}",
@@ -236,7 +250,7 @@ for var in plot_map["var_map"].keys():
                     ax=ax,
                 )
                 hep.histplot(
-                    collated['hc'][var][vhist_axes]*scales,
+                    collated["hc"][var][vhist_axes] * scales,
                     color=plot_map["color_map"][-1],
                     linewidth=2,
                     label=f"signalx{scales}",
@@ -252,25 +266,29 @@ for var in plot_map["var_map"].keys():
                     yerr=True,
                     ax=ax,
                 )
-        
-                i=0
+
+                i = 0
                 for sample in collated.keys():
-                    if 'data'  in sample : continue
-                    if i==0: hmc = collated[sample][var][vhist_axes]
-                    else: hmc = collated[sample][var][vhist_axes] + hmc
-                    i = i+1
+                    if "data" in sample:
+                        continue
+                    if i == 0:
+                        hmc = collated[sample][var][vhist_axes]
+                    else:
+                        hmc = collated[sample][var][vhist_axes] + hmc
+                    i = i + 1
                 if not args.disable_ratio:
                     from hist.intervals import ratio_uncertainty
+
                     rax.errorbar(
-                    x= hdata.axes[0].centers,
-                    y= hdata.values() / hmc.values(),
-                    yerr=ratio_uncertainty(hdata.values(), hmc.values()),
-                    color="k",
-                    linestyle="none",
-                    marker="o",
-                    elinewidth=1,
-                    )   
-                    
+                        x=hdata.axes[0].centers,
+                        y=hdata.values() / hmc.values(),
+                        yerr=ratio_uncertainty(hdata.values(), hmc.values()),
+                        color="k",
+                        linestyle="none",
+                        marker="o",
+                        elinewidth=1,
+                    )
+
                     rax.axhline(y=1.0, linestyle="dashed", color="gray")
 
                     rax.set_ylim(0.5, 1.5)
