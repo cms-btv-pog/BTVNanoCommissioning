@@ -753,7 +753,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.03],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackDeltaR_19": {
@@ -762,7 +762,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.03],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackDeltaR_2": {
@@ -780,7 +780,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.03],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackDeltaR_21": {
@@ -789,7 +789,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.03],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackDeltaR_22": {
@@ -798,7 +798,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.03],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackDeltaR_23": {
@@ -807,7 +807,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.03],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackDeltaR_24": {
@@ -816,7 +816,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.03],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackDeltaR_3": {
@@ -897,7 +897,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 6.54],
+            "manual_ranges": [0.0, 7.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_10": {
@@ -906,7 +906,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 4.74],
+            "manual_ranges": [0.0, 5.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_11": {
@@ -915,7 +915,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 4.38],
+            "manual_ranges": [0.0, 4.5],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_12": {
@@ -924,7 +924,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 4.27],
+            "manual_ranges": [0.0, 4.5],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_13": {
@@ -933,7 +933,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 4.06],
+            "manual_ranges": [0.0, 4.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_14": {
@@ -942,7 +942,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 3.77],
+            "manual_ranges": [0.0, 4.],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_15": {
@@ -960,7 +960,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 2.87],
+            "manual_ranges": [0.0, 3.],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_17": {
@@ -969,7 +969,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 2.45],
+            "manual_ranges": [0.0, 2.5],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_18": {
@@ -978,7 +978,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.5],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_19": {
@@ -987,7 +987,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.5],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_2": {
@@ -1005,7 +1005,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.5],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_21": {
@@ -1014,7 +1014,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.5],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_22": {
@@ -1023,7 +1023,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.5],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_23": {
@@ -1032,7 +1032,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.5],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_24": {
@@ -1041,7 +1041,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.5],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackEtaRel_3": {
@@ -1185,7 +1185,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [-0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "cm",
         },
         "DeepJet_Cpfcan_BtagPf_trackJetDistVal_17": {
@@ -1194,7 +1194,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [-0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "cm",
         },
         "DeepJet_Cpfcan_BtagPf_trackJetDistVal_18": {
@@ -1203,7 +1203,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "cm",
         },
         "DeepJet_Cpfcan_BtagPf_trackJetDistVal_19": {
@@ -1212,7 +1212,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "cm",
         },
         "DeepJet_Cpfcan_BtagPf_trackJetDistVal_2": {
@@ -1230,7 +1230,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "cm",
         },
         "DeepJet_Cpfcan_BtagPf_trackJetDistVal_21": {
@@ -1239,7 +1239,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "cm",
         },
         "DeepJet_Cpfcan_BtagPf_trackJetDistVal_22": {
@@ -1248,7 +1248,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "cm",
         },
         "DeepJet_Cpfcan_BtagPf_trackJetDistVal_23": {
@@ -1257,7 +1257,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "cm",
         },
         "DeepJet_Cpfcan_BtagPf_trackJetDistVal_24": {
@@ -1266,7 +1266,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "cm",
         },
         "DeepJet_Cpfcan_BtagPf_trackJetDistVal_3": {
@@ -1428,7 +1428,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.99],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPParRatio_19": {
@@ -1437,7 +1437,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.99],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPParRatio_2": {
@@ -1455,7 +1455,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.99],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPParRatio_21": {
@@ -1464,7 +1464,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.99],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPParRatio_22": {
@@ -1473,7 +1473,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.99],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPParRatio_23": {
@@ -1482,7 +1482,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.99],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPParRatio_24": {
@@ -1491,7 +1491,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.99],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPParRatio_3": {
@@ -1653,7 +1653,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.19],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPPar_19": {
@@ -1662,7 +1662,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.19],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPPar_2": {
@@ -1680,7 +1680,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.19],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPPar_21": {
@@ -1689,7 +1689,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.19],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPPar_22": {
@@ -1698,7 +1698,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.19],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPPar_23": {
@@ -1707,7 +1707,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.19],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPPar_24": {
@@ -1716,7 +1716,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 2.19],
             "inputVar_units": "$GeV$",
         },
         "DeepJet_Cpfcan_BtagPf_trackPPar_3": {
@@ -1878,7 +1878,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.16],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_19": {
@@ -1887,7 +1887,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.16],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_2": {
@@ -1905,7 +1905,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.16],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_21": {
@@ -1914,7 +1914,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.16],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_22": {
@@ -1923,7 +1923,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.16],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_23": {
@@ -1932,7 +1932,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.16],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_24": {
@@ -1941,7 +1941,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.16],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_3": {
@@ -2103,7 +2103,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.5, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dSig_19": {
@@ -2112,7 +2112,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.5, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dSig_2": {
@@ -2130,7 +2130,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.5, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dSig_21": {
@@ -2139,7 +2139,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.5, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dSig_22": {
@@ -2148,7 +2148,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.5, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dSig_23": {
@@ -2157,7 +2157,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.5, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dSig_24": {
@@ -2166,7 +2166,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.5, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dSig_3": {
@@ -2310,7 +2310,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [-0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dVal_17": {
@@ -2319,7 +2319,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [-0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dVal_18": {
@@ -2328,7 +2328,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dVal_19": {
@@ -2337,7 +2337,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dVal_2": {
@@ -2355,7 +2355,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dVal_21": {
@@ -2364,7 +2364,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dVal_22": {
@@ -2373,7 +2373,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dVal_23": {
@@ -2382,7 +2382,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dVal_24": {
@@ -2391,7 +2391,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dVal_3": {
@@ -2544,7 +2544,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.05, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dSig_18": {
@@ -2553,7 +2553,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.05, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dSig_19": {
@@ -2562,7 +2562,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.05, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dSig_2": {
@@ -2580,7 +2580,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.05, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dSig_21": {
@@ -2589,7 +2589,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.05, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dSig_22": {
@@ -2598,7 +2598,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.05, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dSig_23": {
@@ -2607,7 +2607,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.05, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dSig_24": {
@@ -2616,7 +2616,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.05, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dSig_3": {
@@ -2751,7 +2751,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [-0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dVal_16": {
@@ -2760,7 +2760,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [-0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dVal_17": {
@@ -2769,7 +2769,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dVal_18": {
@@ -2778,7 +2778,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dVal_19": {
@@ -2787,7 +2787,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dVal_2": {
@@ -2805,7 +2805,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dVal_21": {
@@ -2814,7 +2814,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dVal_22": {
@@ -2823,7 +2823,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dVal_23": {
@@ -2832,7 +2832,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dVal_24": {
@@ -2841,7 +2841,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.01,0.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_BtagPf_trackSip3dVal_3": {
@@ -3201,7 +3201,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_chi2_16": {
@@ -3210,7 +3210,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_chi2_17": {
@@ -3219,7 +3219,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_chi2_18": {
@@ -3228,7 +3228,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_chi2_19": {
@@ -3237,7 +3237,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_chi2_2": {
@@ -3255,7 +3255,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_chi2_21": {
@@ -3264,7 +3264,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_chi2_22": {
@@ -3273,7 +3273,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_chi2_23": {
@@ -3282,7 +3282,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_chi2_24": {
@@ -3291,7 +3291,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_chi2_3": {
@@ -3678,7 +3678,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_ptrel_19": {
@@ -3687,7 +3687,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_ptrel_2": {
@@ -3705,7 +3705,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_ptrel_21": {
@@ -3714,7 +3714,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_ptrel_22": {
@@ -3723,7 +3723,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_ptrel_23": {
@@ -3732,7 +3732,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_ptrel_24": {
@@ -3741,7 +3741,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Cpfcan_ptrel_3": {
@@ -3903,7 +3903,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.3],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_puppiw_19": {
@@ -3912,7 +3912,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.3],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_puppiw_2": {
@@ -3930,7 +3930,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.3],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_puppiw_21": {
@@ -3939,7 +3939,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.3],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_puppiw_22": {
@@ -3948,7 +3948,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.3],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_puppiw_23": {
@@ -3957,7 +3957,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.3],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_puppiw_24": {
@@ -3966,7 +3966,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.3],
             "inputVar_units": "",
         },
         "DeepJet_Cpfcan_puppiw_3": {
@@ -4335,7 +4335,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.5],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_HadFrac_17": {
@@ -4344,7 +4344,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.5],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_HadFrac_18": {
@@ -4353,7 +4353,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.5],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_HadFrac_19": {
@@ -4362,7 +4362,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.5],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_HadFrac_2": {
@@ -4380,7 +4380,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.5],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_HadFrac_21": {
@@ -4389,7 +4389,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.5],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_HadFrac_22": {
@@ -4398,7 +4398,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.5],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_HadFrac_23": {
@@ -4407,7 +4407,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.5],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_HadFrac_24": {
@@ -4416,7 +4416,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.5],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_HadFrac_3": {
@@ -4560,7 +4560,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.2, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_deltaR_17": {
@@ -4569,7 +4569,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.2, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_deltaR_18": {
@@ -4578,7 +4578,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.2, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_deltaR_19": {
@@ -4587,7 +4587,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.2, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_deltaR_2": {
@@ -4605,7 +4605,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.2, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_deltaR_21": {
@@ -4614,7 +4614,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.2, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_deltaR_22": {
@@ -4623,7 +4623,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.2, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_deltaR_23": {
@@ -4632,7 +4632,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.2, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_deltaR_24": {
@@ -4641,7 +4641,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.2, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_deltaR_3": {
@@ -5235,7 +5235,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Npfcan_ptrel_17": {
@@ -5244,7 +5244,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Npfcan_ptrel_18": {
@@ -5253,7 +5253,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Npfcan_ptrel_19": {
@@ -5262,7 +5262,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Npfcan_ptrel_2": {
@@ -5280,7 +5280,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Npfcan_ptrel_21": {
@@ -5289,7 +5289,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Npfcan_ptrel_22": {
@@ -5298,7 +5298,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Npfcan_ptrel_23": {
@@ -5307,7 +5307,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Npfcan_ptrel_24": {
@@ -5316,7 +5316,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.9, 0.0],
             "inputVar_units": "GeV",
         },
         "DeepJet_Npfcan_ptrel_3": {
@@ -5442,7 +5442,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_15": {
@@ -5451,7 +5451,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_16": {
@@ -5460,7 +5460,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_17": {
@@ -5469,7 +5469,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_18": {
@@ -5478,7 +5478,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_19": {
@@ -5487,7 +5487,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_2": {
@@ -5505,7 +5505,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_21": {
@@ -5514,7 +5514,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_22": {
@@ -5523,7 +5523,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_23": {
@@ -5532,7 +5532,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_24": {
@@ -5541,7 +5541,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.01],
             "inputVar_units": "",
         },
         "DeepJet_Npfcan_puppiw_3": {
@@ -5676,7 +5676,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 3.0],
             "inputVar_units": "",
         },
         "DeepJet_sv_costhetasvpv_0": {
@@ -5712,7 +5712,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.0],
             "inputVar_units": "",
         },
         "DeepJet_sv_d3d_0": {
@@ -5739,7 +5739,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.39],
+            "manual_ranges": [0.0, 0.4],
             "inputVar_units": "cm",
         },
         "DeepJet_sv_d3d_3": {
@@ -5748,7 +5748,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.4],
             "inputVar_units": "cm",
         },
         "DeepJet_sv_d3dsig_0": {
@@ -5784,7 +5784,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 8.0],
             "inputVar_units": "cm",
         },
         "DeepJet_sv_deltaR_0": {
@@ -5820,7 +5820,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [-0.46, 0.0],
             "inputVar_units": "",
         },
         "DeepJet_sv_dxy_0": {
@@ -5856,7 +5856,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.20],
             "inputVar_units": "cm",
         },
         "DeepJet_sv_dxysig_0": {
@@ -5892,7 +5892,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 8.0],
             "inputVar_units": "cm",
         },
         "DeepJet_sv_enratio_0": {
@@ -5928,7 +5928,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 0.1],
             "inputVar_units": "",
         },
         "DeepJet_sv_mass_0": {
@@ -5964,7 +5964,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.5],
             "inputVar_units": "",
         },
         "DeepJet_sv_normchi2_0": {
@@ -6000,7 +6000,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 1.3],
             "inputVar_units": "",
         },
         "DeepJet_sv_ntracks_0": {
@@ -6072,7 +6072,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.0, 0.0],
+            "manual_ranges": [0.0, 15.],
             "inputVar_units": "GeV",
         },
     }
