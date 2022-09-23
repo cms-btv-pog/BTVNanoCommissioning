@@ -160,10 +160,6 @@ def histogrammer(workflow):
     for d in bininfo.keys():
         ranges = bininfo[d]["manual_ranges"]
         binning = bininfo[d]["bins"]
-        if ranges[1] is None:
-            ranges[1] = 0.0
-        if ranges[0] is None:
-            ranges[0] = -0.5
         _hist_dict[d] = Hist.Hist(
             flav_axis,
             Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=d),

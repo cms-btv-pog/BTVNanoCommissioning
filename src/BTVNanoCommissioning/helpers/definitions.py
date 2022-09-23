@@ -56,7 +56,7 @@ def definitions():
     definitions_dict = {
         "DeepCSV_jetNSelectedTracks": {
             "displayname": "Jet N Selected Tracks",
-            "manual_ranges": [-0.5, None],
+            "manual_ranges": [0., 25],
             "ylabel_text": "Jets",
             "format_unit": "2f",
             "format_unit_digits": 2,
@@ -65,7 +65,7 @@ def definitions():
         },
         "DeepCSV_vertexNTracks": {
             "displayname": "Vertex N Tracks",
-            "manual_ranges": [-0.5, None],
+            "manual_ranges": [0., 25],
             "ylabel_text": "Jets",
             "format_unit": "2f",
             "format_unit_digits": 2,
@@ -83,7 +83,7 @@ def definitions():
         },
         "DeepCSV_trackSumJetEtRatio": {
             "displayname": "Track Sum Jet $E_T$ Ratio",
-            "manual_ranges": [None, 1.4],
+            "manual_ranges": [0., 5],
             "ylabel_text": "Jets",
             "format_unit": "2f",
             "format_unit_digits": 2,
@@ -281,7 +281,7 @@ def definitions():
         },
         "DeepCSV_jetNTracksEtaRel": {
             "displayname": "Jet N Tracks $\\eta_{rel}$",
-            "manual_ranges": [-0.5, None],
+            "manual_ranges": [0., 25],
             "ylabel_text": "Jets",
             "format_unit": "2f",
             "format_unit_digits": 2,
@@ -371,7 +371,7 @@ def definitions():
         },
         "eta": {
             "displayname": "Jet $\\eta$",
-            "manual_ranges": [None, None],
+            "manual_ranges": [-2.5, 2.5],
             "ylabel_text": "Jets",
             "format_unit": "2f",
             "format_unit_digits": 2,
@@ -461,7 +461,7 @@ def definitions():
         },
         "DeepCSV_jetNSecondaryVertices": {
             "displayname": "Jet N Secondary Vertices",
-            "manual_ranges": [-0.5, None],
+            "manual_ranges": [0., 10],
             "ylabel_text": "Jets",
             "format_unit": "2f",
             "format_unit_digits": 2,
@@ -5613,7 +5613,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0, None],
+            "manual_ranges": [0, 100],
             "inputVar_units": "",
         },
         "DeepJet_nNpfcand": {
@@ -5622,7 +5622,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0, None],
+            "manual_ranges": [0, 100],
             "inputVar_units": "",
         },
         "DeepJet_npv": {
@@ -5631,7 +5631,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0, None],
+            "manual_ranges": [0, 100],
             "inputVar_units": "",
         },
         "DeepJet_nsv": {
@@ -5982,6 +5982,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
+           
             "manual_ranges": [0.0, 3.39],
             "inputVar_units": "",
         },
@@ -6009,7 +6010,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0, None],
+            "manual_ranges": [0, 20],
             "inputVar_units": "",
         },
         "DeepJet_sv_ntracks_1": {
@@ -6018,7 +6019,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0, None],
+            "manual_ranges": [0, 20],
             "inputVar_units": "",
         },
         "DeepJet_sv_ntracks_2": {
@@ -6027,7 +6028,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0, None],
+            "manual_ranges": [0, 20],
             "inputVar_units": "",
         },
         "DeepJet_sv_ntracks_3": {
@@ -6036,7 +6037,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0, None],
+            "manual_ranges": [0, 20],
             "inputVar_units": "",
         },
         "DeepJet_sv_pt_0": {
