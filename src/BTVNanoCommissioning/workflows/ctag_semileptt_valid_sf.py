@@ -148,6 +148,8 @@ class NanoProcessor(processor.ProcessorABC):
                 ),
                 -1,
             )
+        if hasattr(events, "METFixEE2017"):
+            events.MET = events.METFixEE2017
         if not isRealData:
             weights.add("genweight", events.genWeight)
             if self.isCorr:
@@ -202,14 +204,12 @@ class NanoProcessor(processor.ProcessorABC):
             ak.count(dilep_mu.pt, axis=1) + ak.count(dilep_ele.pt, axis=1) != 2
         )
 
-        # MET = events.METFixEE2017
-
         MET = ak.zip(
             {
-                "pt": events.METFixEE2017.pt,
-                "eta": ak.zeros_like(events.METFixEE2017.pt),
-                "phi": events.METFixEE2017.phi,
-                "mass": ak.zeros_like(events.METFixEE2017.pt),
+                "pt": events.MET.pt,
+                "eta": ak.zeros_like(events.MET.pt),
+                "phi": events.MET.phi,
+                "mass": ak.zeros_like(events.MET.pt),
             },
             with_name="PtEtaPhiMLorentzVector",
         )
@@ -325,10 +325,10 @@ class NanoProcessor(processor.ProcessorABC):
         ## MET
         smet = ak.zip(
             {
-                "pt": selev.METFixEE2017.pt,
-                "eta": ak.zeros_like(selev.METFixEE2017.pt),
-                "phi": selev.METFixEE2017.phi,
-                "mass": ak.zeros_like(selev.METFixEE2017.pt),
+                "pt": selev.MET.pt,
+                "eta": ak.zeros_like(selev.MET.pt),
+                "phi": selev.MET.phi,
+                "mass": ak.zeros_like(selev.MET.pt),
             },
             with_name="PtEtaPhiMLorentzVector",
         )
@@ -528,7 +528,7 @@ class NanoProcessor(processor.ProcessorABC):
                 )
             elif "MET" in histname:
                 h.fill(
-                    flatten(selev.METFixEE2017[histname.replace("MET_", "")]),
+                    flatten(selev.MET[histname.replace("MET_", "")]),
                     weight=weights.weight()[event_level],
                 )
             elif "mujet_" in histname:

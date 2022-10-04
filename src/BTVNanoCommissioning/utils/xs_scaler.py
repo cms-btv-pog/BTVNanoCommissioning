@@ -11,7 +11,7 @@ def scale_xs(hist, lumi, events):
         xs_dict[obj["process_name"]] = float(obj["cross_section"])
     scales = {}
     for key in events:
-        if type(key) != str or key == "Data" or "Run" in key:
+        if type(key) != str or "Data" in key or "Run" in key or "data" in key:
             continue
         scales[key] = xs_dict[key] * lumi / events[key]
     hist.scale(scales, axis="dataset")
@@ -25,7 +25,7 @@ def scale_xs_arr(events, lumi):
     scales = {}
     wei_array = {}
     for key in events:
-        if type(key) != str or key == "Data" or "Run" in key:
+        if type(key) != str or "Data" in key or "Run" in key or "data" in key:
             continue
         scales[key] = xs_dict[key] * lumi / events[key]
 
@@ -33,7 +33,7 @@ def scale_xs_arr(events, lumi):
     return wei_array
 
 
-def scaleSumW(accumulator, lumi, sumw, dyscale=1.0, xsfile="xsection.json"):
+def scaleSumW(accumulator, lumi, sumw, dyscale=1.0):
     scaled = {}
     xs_dict = {}
     for obj in xsection:

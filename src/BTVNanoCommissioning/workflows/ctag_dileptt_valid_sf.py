@@ -146,6 +146,8 @@ class NanoProcessor(processor.ProcessorABC):
                 ),
                 -1,
             )
+        if hasattr(events, "METFixEE2017"):
+            events.MET = events.METFixEE2017
         if not isRealData:
             weights.add("genweight", events.genWeight)
             if self.isCorr:
@@ -552,7 +554,7 @@ class NanoProcessor(processor.ProcessorABC):
                 )
             elif "MET_" in histname:
                 h.fill(
-                    flatten(selev.METFixEE2017[histname.replace("MET_", "")]),
+                    flatten(selev.MET[histname.replace("MET_", "")]),
                     weight=weights.weight()[event_level],
                 )
             elif "lmujet_" in histname:

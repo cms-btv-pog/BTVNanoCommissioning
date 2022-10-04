@@ -44,28 +44,36 @@ parser.add_argument(
 )
 parser.add_argument("--SF", action="store_true", default=False, help="SF comparisons")
 parser.add_argument("--ext", type=str, default="data", help="addional name")
-parser.add_argument("-i", "--input", type=str, default="", help="input coffea files")
+parser.add_argument("-o", "--output", type=str, default="", help="input coffea files")
 arg = parser.parse_args()
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/"):
     os.makedirs(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/")
-if len(arg.input.split(",")) > 1:
-    output = {i: load(arg.input.split(",")[i]) for i in arg.input.split(",")}
+if len(arg.output.split(",")) > 1:
+    output = {i: load(arg.output.split(",")[i]) for i in arg.output.split(",")}
 else:
-    output = load(arg.input)
+    output = load(arg.output)
     # output = scaleSumW(output,arg.lumi,getSumW(output))
 mergemap = {}
 for f in output.keys():
 
     if "sumw" not in output[f].keys():
-        mergemap["data"] = [m for m in output[f].keys() if "Run" in m or "data" in m]
+        mergemap["data"] = [
+            m for m in output[f].keys() if "Run" in m or "data" in m or "Data" in m
+        ]
         mergemap["mc"] = [
-            m for m in output[f].keys() if "Run" not in m and "data" not in m
+            m
+            for m in output[f].keys()
+            if "Run" not in m and "data" not in m and "Data" not in m
         ]
     else:
-        mergemap["data"] = [m for m in output.keys() if "Run" in m or "data" in m]
+        mergemap["data"] = [
+            m for m in output.keys() if "Run" in m or "data" in m or "Data" in m
+        ]
         mergemap["mc"] = [
-            m for m in output.keys() if "Run" not in m and "data" not in m
+            m
+            for m in output.keys()
+            if "Run" not in m and "data" not in m and "Data" not in m
         ]
 collated = collate(output, mergemap)
 print(collated["data"]["sumw"], collated["mc"]["sumw"])

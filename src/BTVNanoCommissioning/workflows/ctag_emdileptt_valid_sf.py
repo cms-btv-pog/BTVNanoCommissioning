@@ -141,6 +141,8 @@ class NanoProcessor(processor.ProcessorABC):
                 ),
                 -1,
             )
+        if hasattr(events, "METFixEE2017"):
+            events.MET = events.METFixEE2017
         if not isRealData:
             weights.add("genweight", events.genWeight)
             if self.isCorr:
@@ -212,7 +214,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_mu = (ak.count(iso_muon_mu.pt, axis=1) == 1) & (
             ak.count(iso_ele_mu.pt, axis=1) == 1
         )
-        req_MET = events.METFixEE2017.pt > 40
+        req_MET = events.MET.pt > 40
 
         ## Jet cuts
         event_jet = events.Jet[
@@ -428,10 +430,8 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
             genflavor = sjets.hadronFlavour + 1 * par_flav
-            smflav = (
-                1 * (smuon_jet.partonFlavour == 0)
-                & (smuon_jet.hadronFlavour == 0) + smuon_jet.hadronFlavour
-            )
+            smpu = (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
+            smflav = 1 * smpu + smuon_jet.hadronFlavour
             jetsfs_c = collections.defaultdict(dict)
             jetsfs_b = collections.defaultdict(dict)
             csvsfs_c = collections.defaultdict(dict)
@@ -479,8 +479,8 @@ class NanoProcessor(processor.ProcessorABC):
             )
             csvsfs_c[0]["SF"] = getSF(
                 smuon_jet.hadronFlavour,
-                smuon_jet.btagDeepFlavCvL,
-                smuon_jet.btagDeepFlavCvB,
+                smuon_jet.btagDeepCvL,
+                smuon_jet.btagDeepCvB,
                 self._deepcsvc_sf,
             )
             csvsfs_c[0]["SFup"] = getSF(
@@ -525,12 +525,6 @@ class NanoProcessor(processor.ProcessorABC):
                     sjets[:, 1].btagDeepFlavCvB,
                     self._deepjetc_sf,
                 )
-                csvsfs_c[1]["SF"] = getSF(
-                    smuon_jet.hadronFlavour,
-                    smuon_jet.btagDeepCvL,
-                    smuon_jet.btagDeepCvB,
-                    self._deepcsvc_sf,
-                )
                 jetsfs_c[1]["SFup"] = getSF(
                     sjets[:, 1].hadronFlavour,
                     sjets[:, 1].btagDeepFlavCvL,
@@ -538,25 +532,11 @@ class NanoProcessor(processor.ProcessorABC):
                     self._deepjetc_sf,
                     "TotalUncUp",
                 )
-                csvsfs_c[1]["SFup"] = getSF(
-                    smuon_jet.hadronFlavour,
-                    smuon_jet.btagDeepCvL,
-                    smuon_jet.btagDeepCvB,
-                    self._deepcsvc_sf,
-                    "TotalUncUp",
-                )
                 jetsfs_c[1]["SFdn"] = getSF(
-                    sjets[:, 1].hadronFlavour,
-                    sjets[:, 1].btagDeepFlavCvL,
-                    sjets[:, 1].btagDeepFlavCvB,
-                    self._deepjetc_sf,
-                    "TotalUncDown",
-                )
-                csvsfs_c[1]["SFdn"] = getSF(
                     smuon_jet.hadronFlavour,
-                    smuon_jet.btagDeepCvL,
-                    smuon_jet.btagDeepCvB,
-                    self._deepcsvc_sf,
+                    smuon_jet.btagDeepFlavCvL,
+                    smuon_jet.btagDeepFlavCvB,
+                    self._deepjetc_sf,
                     "TotalUncDown",
                 )
                 jetsfs_b[1]["SF"] = self._deepjetb_sf.eval(
@@ -566,13 +546,6 @@ class NanoProcessor(processor.ProcessorABC):
                     sjets[:, 1].pt,
                     discr=sjets[:, 1].btagDeepFlavB,
                 )
-                csvsfs_b[1]["SF"] = self._deepcsvb_sf.eval(
-                    "central",
-                    sjets[:, 1].hadronFlavour,
-                    abs(sjets[:, 1].eta),
-                    sjets[:, 1].pt,
-                    discr=sjets[:, 1].btagDeepB,
-                )
                 jetsfs_b[1]["SFup"] = self._deepjetb_sf.eval(
                     "up_jes",
                     sjets[:, 1].hadronFlavour,
@@ -580,19 +553,46 @@ class NanoProcessor(processor.ProcessorABC):
                     sjets[:, 1].pt,
                     discr=sjets[:, 1].btagDeepFlavB,
                 )
-                csvsfs_b[1]["SFup"] = self._deepcsvb_sf.eval(
-                    "up_jes",
-                    sjets[:, 1].hadronFlavour,
-                    abs(sjets[:, 1].eta),
-                    sjets[:, 1].pt,
-                    discr=sjets[:, 1].btagDeepB,
-                )
                 jetsfs_b[1]["SFdn"] = self._deepjetb_sf.eval(
                     "down_jes",
                     sjets[:, 1].hadronFlavour,
                     abs(sjets[:, 1].eta),
                     sjets[:, 1].pt,
                     discr=sjets[:, 1].btagDeepFlavB,
+                )
+                csvsfs_c[1]["SF"] = getSF(
+                    smuon_jet.hadronFlavour,
+                    smuon_jet.btagDeepCvL,
+                    smuon_jet.btagDeepCvB,
+                    self._deepcsvc_sf,
+                )
+                csvsfs_c[1]["SFup"] = getSF(
+                    smuon_jet.hadronFlavour,
+                    smuon_jet.btagDeepCvL,
+                    smuon_jet.btagDeepCvB,
+                    self._deepcsvc_sf,
+                    "TotalUncUp",
+                )
+                csvsfs_c[1]["SFdn"] = getSF(
+                    smuon_jet.hadronFlavour,
+                    smuon_jet.btagDeepCvL,
+                    smuon_jet.btagDeepCvB,
+                    self._deepcsvc_sf,
+                    "TotalUncDown",
+                )
+                csvsfs_b[1]["SF"] = self._deepcsvb_sf.eval(
+                    "central",
+                    sjets[:, 1].hadronFlavour,
+                    abs(sjets[:, 1].eta),
+                    sjets[:, 1].pt,
+                    discr=sjets[:, 1].btagDeepB,
+                )
+                csvsfs_b[1]["SFup"] = self._deepcsvb_sf.eval(
+                    "up_jes",
+                    sjets[:, 1].hadronFlavour,
+                    abs(sjets[:, 1].eta),
+                    sjets[:, 1].pt,
+                    discr=sjets[:, 1].btagDeepB,
                 )
                 csvsfs_b[1]["SFdn"] = self._deepcsvb_sf.eval(
                     "down_jes",
@@ -650,7 +650,7 @@ class NanoProcessor(processor.ProcessorABC):
                 )
             elif "MET_" in histname:
                 h.fill(
-                    flatten(selev.METFixEE2017[histname.replace("MET_", "")]),
+                    flatten(selev.MET[histname.replace("MET_", "")]),
                     weight=weights.weight()[event_level],
                 )
             elif "lmujet_" in histname:

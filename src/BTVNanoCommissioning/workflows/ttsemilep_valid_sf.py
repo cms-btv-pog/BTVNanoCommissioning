@@ -141,6 +141,8 @@ class NanoProcessor(processor.ProcessorABC):
                 ),
                 -1,
             )
+        if hasattr(events, "METFixEE2017"):
+            events.MET = events.METFixEE2017
         if not isRealData:
             weights.add("genweight", events.genWeight)
             if self.isCorr:
@@ -185,18 +187,13 @@ class NanoProcessor(processor.ProcessorABC):
         ]
 
         req_jets = ak.num(event_jet) >= 4
-        if hasattr(events, "METFixEE2017"):
-            req_MET = events.METFixEE2017.pt > 50
-        else:
-            req_MET = events.MET.pt > 50
+
+        req_MET = events.MET.pt > 50
 
         event_level = req_trig & req_jets & req_muon & req_MET & req_lumi
         # Selected
         selev = events[event_level]
-        if hasattr(events, "METFixEE2017"):
-            MET = selev.METFixEE2017.pt
-        else:
-            MET = selev.MET.pt
+
         #########
 
         # Per muon
@@ -395,11 +392,10 @@ class NanoProcessor(processor.ProcessorABC):
                     weight=weights.weight()[event_level],
                 )
             elif (
-                "MET_" in histname
-                and histname.replace("MET_", "") in selev.METFixEE2017.fields
+                "MET_" in histname and histname.replace("MET_", "") in selev.MET.fields
             ):
                 h.fill(
-                    flatten(selev.METFixEE2017[histname.replace("MET_", "")]),
+                    flatten(selev.MET[histname.replace("MET_", "")]),
                     weight=weights.weight()[event_level],
                 )
             elif "jet" in histname and "dr" not in histname and "njet" != histname:

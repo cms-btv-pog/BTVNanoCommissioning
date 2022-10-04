@@ -18,9 +18,6 @@ def histogrammer(workflow):
         20, 0.2, 4.2, name="pfRelIso03_all", label="Rel. Iso"
     )
     dr_axis = Hist.axis.Regular(20, 0, 4, name="dr", label="$\Delta$R")
-    sliso_axis = Hist.axis.Regular(
-        30, 0.2, 4.0, name="pfRelIso03_all", label="Rel. Iso"
-    )
     dxy_axis = Hist.axis.Regular(40, -0.05, 0.05, name="dxy", label="d_{xy}")
     dz_axis = Hist.axis.Regular(40, 0, 0.1, name="dz", label="d_{z}")
     sip3d_axis = Hist.axis.Regular(20, 0, 0.2, name="sip3d", label="SIP 3D")
@@ -28,7 +25,16 @@ def histogrammer(workflow):
     n_axis = Hist.axis.IntCategory([0, 1, 2, 3, 4, 5], name="n", label="N obj")
 
     ### Workflow specific
-    if "ttdilep_sf" == workflow:
+    if "validation" == workflow:
+        obj_list = ["jet0", "jet1"]
+    elif "ttcom" == workflow:
+        obj_list = ["mu", "ele"]
+        for i in range(2):
+            obj_list.append(f"jet{i}")
+            _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
+                flav_axis, dr_axis, Hist.storage.Weight()
+            )
+    elif "ttdilep_sf" == workflow:
         obj_list = ["mu", "ele"]
         for i in range(2):
             obj_list.append(f"jet{i}")
@@ -36,12 +42,17 @@ def histogrammer(workflow):
                 flav_axis, dr_axis, Hist.storage.Weight()
             )
         for i in ["mu", "ele"]:
-            _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                iso_axis, Hist.storage.Weight()
-            )
+            if i == "mu":
+                _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
+                    iso_axis, Hist.storage.Weight()
+                )
+            else:
+                _hist_dict[f"{i}_pfRelIso03_all"] = Hist.Hist(
+                    iso_axis, Hist.storage.Weight()
+                )
             _hist_dict[f"{i}_dxy"] = Hist.Hist(dxy_axis, Hist.storage.Weight())
             _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
-    if "ttsemilep_sf" == workflow:
+    elif "ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
         for i in range(4):
             obj_list.append(f"jet{i}")
@@ -57,16 +68,18 @@ def histogrammer(workflow):
     elif "ctag_ttdilep_sf" in workflow:
         obj_list = ["hl", "sl", "soft_l", "MET", "z", "lmujet"]
         _hist_dict["z_mass"] = Hist.Hist(
-            Hist.axis.Regular(50, 50, 100, name="mass", label=" $p_{T}$ [GeV]"),
+            Hist.axis.Regular(50, 50, 100, name="mass", label=" $m_Z$ [GeV]"),
             Hist.storage.Weight(),
         )
-
+        # delta R between soft muon and mu-jet
         _hist_dict["dr_lmujetsmu"] = Hist.Hist(
             flav_axis, dr_axis, Hist.storage.Weight()
         )
+        # delta R between hard muon and mu-jet
         _hist_dict["dr_lmujethmu"] = Hist.Hist(
             flav_axis, dr_axis, Hist.storage.Weight()
         )
+        # delta R between soft muon and hard muon
         _hist_dict["dr_lmusmu"] = Hist.Hist(dr_axis, Hist.storage.Weight())
         for i in ["hl", "sl", "soft_l"]:
             if i == "soft_l":
@@ -77,6 +90,7 @@ def histogrammer(workflow):
                 _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
                     iso_axis, Hist.storage.Weight()
                 )
+            # lepton / jet pT ratio
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 flav_axis, ptratio_axis, Hist.storage.Weight()
             )
@@ -85,20 +99,22 @@ def histogrammer(workflow):
     elif "ctag_ttsemilep_sf" in workflow or "Wc_sf" in workflow:
         obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
         _hist_dict["z_mass"] = Hist.Hist(
-            Hist.axis.Regular(50, 50, 100, name="mass", label=" $p_{T}$ [GeV]"),
+            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_Z$ [GeV]"),
             Hist.storage.Weight(),
         )
         _hist_dict["w_mass"] = Hist.Hist(
-            Hist.axis.Regular(50, 50, 100, name="mass", label=" $p_{T}$ [GeV]"),
+            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_W$ [GeV]"),
             Hist.storage.Weight(),
         )
-
+        # delta R between soft muon and mu-jet
         _hist_dict["dr_lmujetsmu"] = Hist.Hist(
             flav_axis, dr_axis, Hist.storage.Weight()
         )
+        # delta R between hard muon and mu-jet
         _hist_dict["dr_lmujethmu"] = Hist.Hist(
             flav_axis, dr_axis, Hist.storage.Weight()
         )
+        # delta R between hard muon and soft-muon
         _hist_dict["dr_lmusmu"] = Hist.Hist(dr_axis, Hist.storage.Weight())
         for i in ["hl", "soft_l"]:
             if i == "soft_l":
@@ -117,7 +133,7 @@ def histogrammer(workflow):
     elif "DY_sf" in workflow:
         obj_list = ["posl", "negl", "z", "jet"]
         _hist_dict["z_mass"] = Hist.Hist(
-            Hist.axis.Regular(50, 50, 100, name="mass", label=" $p_{T}$ [GeV]"),
+            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_Z$ [GeV]"),
             Hist.storage.Weight(),
         )
         _hist_dict["dr_mumu"] = Hist.Hist(dr_axis, Hist.storage.Weight())
@@ -177,12 +193,12 @@ def histogrammer(workflow):
         "btagDeepFlavCvB",
     ]
     for disc in disc_list:
-        nlep = 1
+        njet = 1
         if "ttdilep_sf" in workflow:
-            nlep = 2
+            njet = 2
         elif "ttsemilep_sf" in workflow:
-            nlep = 4
-        for i in range(nlep):
+            njet = 4
+        for i in range(njet):
             _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                 flav_axis,
                 syst_axis,

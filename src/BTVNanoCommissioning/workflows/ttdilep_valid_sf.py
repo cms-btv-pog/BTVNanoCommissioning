@@ -76,8 +76,8 @@ class NanoProcessor(processor.ProcessorABC):
                     lazy_cache=events.caches[0],
                 )
         req_lumi = np.ones(len(events), dtype="bool")
-        # if isRealData:
-        #     req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
+        if isRealData:
+            req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
         weights = Weights(len(events), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events.genWeight)
@@ -154,7 +154,6 @@ class NanoProcessor(processor.ProcessorABC):
         ##############
         # Trigger level
         triggers = [
-            # "HLT_IsoMu24",
             "HLT_IsoMu24",
         ]
 

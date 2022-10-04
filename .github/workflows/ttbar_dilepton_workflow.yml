@@ -1,4 +1,4 @@
-name: Baseline Workflow
+name: ttbar dilepton Workflow
 
 on:
   push:
@@ -76,6 +76,16 @@ jobs:
       run: |
         pip install -e .
 
-    - name: Run example workflow
+    - name: btag dileptonic ttbar workflow
       run: |
-        python runner.py --workflow ttcom --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+    
+    - name: ctag dileptonic muon ttbar workflows
+      run: |
+        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+    - name: ctag dileptonic electron ttbar workflows
+      run: |
+        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+    - name: ctag dileptonic emu ttbar workflows
+      run: |
+        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative

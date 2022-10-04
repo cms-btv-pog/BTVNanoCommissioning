@@ -1,4 +1,4 @@
-name: Baseline Workflow
+name: ctag W+c Workflow
 
 on:
   push:
@@ -76,6 +76,14 @@ jobs:
       run: |
         pip install -e .
 
-    - name: Run example workflow
+    - name: ctag muon W+c workflows
       run: |
-        python runner.py --workflow ttcom --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow ctag_Wc_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+    
+    - name: ctag electron W+c workflows
+      run: |
+        python runner.py --workflow ectag_Wc_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+    
+    
+    
+    

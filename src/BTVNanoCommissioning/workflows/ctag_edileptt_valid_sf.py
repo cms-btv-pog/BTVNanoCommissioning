@@ -156,6 +156,8 @@ class NanoProcessor(processor.ProcessorABC):
                 ),
                 -1,
             )
+        if hasattr(events, "METFixEE2017"):
+            events.MET = events.METFixEE2017
         ##############
         # Trigger level
         triggers = ["Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"]
@@ -192,7 +194,7 @@ class NanoProcessor(processor.ProcessorABC):
         ]
         req_dilepveto = ak.count(dilep_mu.pt, axis=1) == 0
 
-        req_MET = events.METFixEE2017.pt > 40
+        req_MET = events.MET.pt > 40
 
         ## Jet cuts
         event_jet = events.Jet[
@@ -539,7 +541,7 @@ class NanoProcessor(processor.ProcessorABC):
                 )
             elif "MET" in histname:
                 h.fill(
-                    flatten(selev.METFixEE2017[histname.replace("MET_", "")]),
+                    flatten(selev.MET[histname.replace("MET_", "")]),
                     weight=weights.weight()[event_level],
                 )
             elif "lmujet_" in histname:

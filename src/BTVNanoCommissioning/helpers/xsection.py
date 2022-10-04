@@ -1,7 +1,7 @@
 xsection = [
     {
         "id": "61641f28294617432cff1379",
-        "process_name": "QCD_Pt-30to50_EMEnriched_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-30to50_EMEnriched_TuneCP5_13TeV_pythia8",
         "status": "new",
         "cross_section": "6447000.0",
         "total_uncertainty": "19870.0",
@@ -14,7 +14,7 @@ xsection = [
     },
     {
         "id": "61641f29294617432cff137a",
-        "process_name": "QCD_Pt-50to80_EMEnriched_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-50to80_EMEnriched_TuneCP5_13TeV_pythia8",
         "status": "new",
         "cross_section": "1988000.0",
         "total_uncertainty": "5961.0",
@@ -27,7 +27,7 @@ xsection = [
     },
     {
         "id": "61641f2a294617432cff137b",
-        "process_name": "QCD_Pt-80to120_EMEnriched_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-80to120_EMEnriched_TuneCP5_13TeV_pythia8",
         "status": "new",
         "cross_section": "367500.0",
         "total_uncertainty": "1091.0",
@@ -40,7 +40,7 @@ xsection = [
     },
     {
         "id": "61641f25294617432cff1374",
-        "process_name": "QCD_Pt-120to170_EMEnriched_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-120to170_EMEnriched_TuneCP5_13TeV_pythia8",
         "status": "new",
         "cross_section": "66590.0",
         "total_uncertainty": "196.6",
@@ -53,7 +53,7 @@ xsection = [
     },
     {
         "id": "61641f26294617432cff1376",
-        "process_name": "QCD_Pt-170to300_EMEnriched_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-170to300_EMEnriched_TuneCP5_13TeV_pythia8",
         "status": "new",
         "cross_section": "16620.0",
         "total_uncertainty": "49.1",
@@ -66,7 +66,7 @@ xsection = [
     },
     {
         "id": "61641f28294617432cff1378",
-        "process_name": "QCD_Pt-300toInf_EMEnriched_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-300toInf_EMEnriched_TuneCP5_13TeV_pythia8",
         "status": "new",
         "cross_section": "1104.0",
         "total_uncertainty": "3.282",
@@ -79,7 +79,7 @@ xsection = [
     },
     {
         "id": "5b44aa73f368576cbd3d4d07",
-        "process_name": "QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-15To20_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "cross_section": "3820000",
         "total_uncertainty": "8817.0",
         "DAS": "/QCD_Pt-15to20_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
@@ -99,7 +99,7 @@ xsection = [
     },
     {
         "id": "5b44aa79f368576cbd3d4d10",
-        "process_name": "QCD_Pt-30To50_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-30To50_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "cross_section": "1652471",
         "total_uncertainty": "4275.0",
         "DAS": "/QCD_Pt-30to50_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
@@ -109,7 +109,7 @@ xsection = [
     },
     {
         "id": "5b44aa7cf368576cbd3d4d15",
-        "process_name": "QCD_Pt-50To80_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-50To80_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "cross_section": "437504",
         "total_uncertainty": "1178.0",
         "DAS": "/QCD_Pt-50to80_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
@@ -119,7 +119,7 @@ xsection = [
     },
     {
         "id": "5b44aa7df368576cbd3d4d16",
-        "process_name": "QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-80To120_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "cross_section": "106033",
         "total_uncertainty": "276.1",
         "DAS": "/QCD_Pt-80to120_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
@@ -129,7 +129,7 @@ xsection = [
     },
     {
         "id": "5b44aa71f368576cbd3d4d05",
-        "process_name": "QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "cross_section": "24720",
         "total_uncertainty": "65.63",
         "DAS": "/QCD_Pt-120to170_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
@@ -139,7 +139,7 @@ xsection = [
     },
     {
         "id": "5b44aa75f368576cbd3d4d0a",
-        "process_name": "QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-170To300_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "cross_section": "8654",
         "total_uncertainty": "21.62",
         "DAS": "/QCD_Pt-170to300_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
@@ -149,7 +149,7 @@ xsection = [
     },
     {
         "id": "5f6c27c8f368571e6ae3c3c5",
-        "process_name": "QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-300To470_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "cross_section": "797",
         "total_uncertainty": "1.889",
         "DAS": "/QCD_Pt-300to470_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
@@ -160,7 +160,7 @@ xsection = [
     },
     {
         "id": "5b44aa7bf368576cbd3d4d13",
-        "process_name": "QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-470To600_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "cross_section": " 79",
         "total_uncertainty": "0.1789",
         "DAS": "/QCD_Pt-470to600_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
@@ -170,7 +170,7 @@ xsection = [
     },
     {
         "id": "5f6c27c9f368571e6ae3c3c6",
-        "process_name": "QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-600To800_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "status": "new",
         "cross_section": "25",
         "total_uncertainty": "0.05469",
@@ -186,7 +186,7 @@ xsection = [
     },
     {
         "id": "5f6c27c9f368571e6ae3c3c7",
-        "process_name": "QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-800To1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "status": "new",
         "cross_section": "4.7",
         "total_uncertainty": "0.009809",
@@ -202,7 +202,7 @@ xsection = [
     },
     {
         "id": "5f6c27c5f368571e6ae3c3bf",
-        "process_name": "QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV-pythia8",
+        "process_name": "QCD_Pt-1000_MuEnrichedPt5_TuneCP5_13TeV_pythia8",
         "cross_section": "1.6",
         "total_uncertainty": "0.003236",
         "DAS": "/QCD_Pt-1000toInf_MuEnrichedPt5_TuneCP5_13TeV_pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
