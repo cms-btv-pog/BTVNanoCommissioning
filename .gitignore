@@ -1,10 +1,16 @@
 *.coffea
 *.pyc
-.ipynb_checkpoints/
 
+*.py~
+.ipynb_checkpoints/
+\#*
+
+plotting/plot/
 src/BTVNanoCommissioning/version.py
 src/BTVNanoCommissioning.egg-info/
-
+__pycache__
 workflows/__pycache__/
+.vscode/
 dask-report.html
 dask-worker-space/
+.job_wrapper_failure

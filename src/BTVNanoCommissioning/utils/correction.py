@@ -9,6 +9,7 @@ import awkward as ak
 from coffea.lookup_tools.lookup_base import lookup_base
 from coffea.lookup_tools import extractor
 
+from coffea.analysis_tools import Weights
 
 from coffea.lumi_tools import LumiMask
 from coffea.btag_tools import BTagScaleFactor
@@ -31,6 +32,98 @@ with importlib.resources.path(
     "Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt",
 ) as filename:
     lumiMasks["2018"] = LumiMask(filename)
+with importlib.resources.path(
+    _lumi_path,
+    "Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt",
+) as filename:
+    lumiMasks["UL16"] = LumiMask(filename)
+with importlib.resources.path(
+    _lumi_path,
+    "Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt",
+) as filename:
+    lumiMasks["UL17"] = LumiMask(filename)
+with importlib.resources.path(
+    _lumi_path,
+    "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt",
+) as filename:
+    lumiMasks["UL18"] = LumiMask(filename)
+## MET filters
+met_filters = {
+    "UL16": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHaloUL16Filter",
+            "HBHENoiseFilter",
+            "HBHENoiseIsoFilter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "eeBadScFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "HBHENoiseFilter",
+            "HBHENoiseIsoFilter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "eeBadScFilter",
+        ],
+    },
+    "UL17": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "HBHENoiseFilter",
+            "HBHENoiseIsoFilter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+            "ecalBadCalibFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "HBHENoiseFilter",
+            "HBHENoiseIsoFilter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+            "ecalBadCalibFilter",
+        ],
+    },
+    "UL18": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "HBHENoiseFilter",
+            "HBHENoiseIsoFilter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+            "ecalBadCalibFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "HBHENoiseFilter",
+            "HBHENoiseIsoFilter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+            "ecalBadCalibFilter",
+        ],
+    },
+}
 
 ##JEC
 def load_jetfactory(campaign, path):
@@ -41,6 +134,16 @@ def load_jetfactory(campaign, path):
 
     jet_factory = jmestuff["jet_factory"]
     return jet_factory
+
+
+def load_jmefactory(campaign, path):
+    _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
+    with importlib.resources.path(_jet_path, path) as filename:
+        with gzip.open(filename) as fin:
+            jmestuff = cloudpickle.load(fin)
+
+        # jet_factory = jmestuff["jet_factory"]
+    return jmestuff
 
 
 def add_jec_variables(jets, event_rho):
@@ -54,48 +157,49 @@ def add_jec_variables(jets, event_rho):
     return jets
 
 
+def load_metfactory(campaign, path):
+    _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
+    with importlib.resources.path(_jet_path, path) as filename:
+        with gzip.open(filename) as fin:
+            jmestuff = cloudpickle.load(fin)
+
+    met_factory = jmestuff["met_factory"]
+    return met_factory
+
+
 ## PU weight
 def load_pu(campaign, path):
     _pu_path = f"BTVNanoCommissioning.data.PU.{campaign}"
     with importlib.resources.path(_pu_path, path) as filename:
-        with gzip.open(filename) as fin:
-            compiled = cloudpickle.load(fin)
+
+        if str(filename).endswith(".pkl.gz"):
+            with gzip.open(filename) as fin:
+                compiled = cloudpickle.load(fin)
+        elif str(filename).endswith(".histo.root"):
+            ext = extractor()
+            ext.add_weight_sets([f"* * {filename}"])
+            ext.finalize()
+            compiled = ext.make_evaluator()
+
     return compiled
 
 
 ## BTag SFs
-def load_BTV(campaign, path):
+def load_BTV(campaign, path, tagger):
     _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
-
-    with importlib.resources.path(_btag_path, path["DeepCSVB"]) as filename:
-        deepcsvb_sf = BTagScaleFactor(
-            filename,
-            BTagScaleFactor.RESHAPE,
-            methods="iterativefit,iterativefit,iterativefit",
-        )
-    with importlib.resources.path(_btag_path, path["DeepJetB"]) as filename:
-        deepjetb_sf = BTagScaleFactor(
-            filename,
-            BTagScaleFactor.RESHAPE,
-            methods="iterativefit,iterativefit,iterativefit",
-        )
-
-    deepcsvc_sf = "BTVNanoCommissioning/data/BTV/" + campaign + "/" + path["DeepCSVC"]
-    deepjetc_sf = "BTVNanoCommissioning/data/BTV/" + campaign + "/" + path["DeepJetC"]
-    return deepcsvb_sf, deepcsvc_sf, deepjetb_sf, deepjetc_sf
+    if tagger == "DeepCSVB" or tagger == "DeepJetB":
+        with importlib.resources.path(_btag_path, path[tagger]) as filename:
+            deepsf = BTagScaleFactor(
+                filename,
+                BTagScaleFactor.RESHAPE,
+                methods="iterativefit,iterativefit,iterativefit",
+            )
+    elif tagger == "DeepCSVC" or tagger == "DeepJetC":
+        deepsf = "BTVNanoCommissioning/data/BTV/" + campaign + "/" + path[tagger]
+    return deepsf
 
 
 ### Lepton SFs
-
-# ext = extractor()
-# ele_sf_mapping = {
-#     "ele_Trig TrigSF": "Ele32_L1DoubleEG_TrigSF_vhcc.histo.root",
-#     "ele_ID EGamma_SF2D": "ElectronIDSF_94X_MVA80WP.histo.root",
-#     "ele_Rereco EGamma_SF2D": "ElectronRecoSF_94X.histo.root",
-#     "mu_ID NUM_TightID_DEN_genTracks_pt_abseta": "RunBCDEF_SF_ID.histo.root",
-#     "mu_ID_low NUM_TightID_DEN_genTracks_pt_abseta": "RunBCDEF_SF_MuID_lowpT.histo.root",
-#     "mu_Iso NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta": "RunBCDEF_SF_ISO.histo.root",
-# }
 
 # with contextlib.ExitStack() as stack:
 #     # this would work even in zipballs but since extractor keys on file extension and

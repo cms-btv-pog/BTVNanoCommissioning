@@ -5,14 +5,22 @@ import collections
 from matplotlib.pyplot import jet
 
 import coffea
-from coffea import hist, processor
+from coffea import processor
 import awkward as ak
 from coffea.analysis_tools import Weights
-
-from BTVNanoCommissioning.helpers.definitions import definitions
-from BTVNanoCommissioning.utils.correction import lumiMasks, muSFs, load_pu, load_BTV
+from BTVNanoCommissioning.utils.correction import (
+    lumiMasks,
+    eleSFs,
+    muSFs,
+    load_pu,
+    load_BTV,
+    load_jetfactory,
+    add_jec_variables,
+)
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
+from BTVNanoCommissioning.helpers.func import flatten
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
+from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -21,132 +29,48 @@ class NanoProcessor(processor.ProcessorABC):
     def num(ar):
         return ak.num(ak.fill_none(ar[~ak.is_none(ar)], 0), axis=0)
 
-    def __init__(self, year="2017", campaign="Rereco17_94X"):
+    def __init__(self, year="2017", campaign="Rereco17_94X", isCorr=True, isJERC=False):
         self._year = year
         self._campaign = campaign
-        # Define axes
-        # Should read axes from NanoAOD config
-        dataset_axis = hist.Cat("dataset", "Primary dataset")
-        flav_axis = hist.Bin("flav", r"Genflavour", [0, 1, 4, 5, 6])
-
-        # Jet
-        jet_pt_axis = hist.Bin("pt", r"Jet $p_{T}$ [GeV]", 50, 0, 500)
-        jet_eta_axis = hist.Bin("eta", r"Jet $\eta$", 25, -2.5, 2.5)
-        jet_phi_axis = hist.Bin("phi", r"Jet $\phi$", 30, -3, 3)
-        jet_mass_axis = hist.Bin("mass", r"Jet $m$ [GeV]", 50, 0, 500)
-
-        # Events
-        njet_axis = hist.Bin("njet", r"N jets", [0, 1, 2, 3])
-        ## Muons
-        hard_lpt_axis = hist.Bin("pt", r"Hard lepton pt", 40, 0, 200)
-        hard_leta_axis = hist.Bin("eta", r"Lepton $\eta$", 25, -2.5, 2.5)
-        hard_lphi_axis = hist.Bin("phi", r"Lepton $\phi$", 30, -3, 3)
-        hard_liso_axis = hist.Bin("pfRelIso04_all", r"Hard Muon Rel. Iso", 40, 0, 4.0)
-        soft_lpt_axis = hist.Bin("pt", r"Soft lepton pt", 40, 0, 40)
-        soft_leta_axis = hist.Bin("eta", r"Lepton $\eta$", 25, -2.5, 2.5)
-        soft_lphi_axis = hist.Bin("phi", r"Lepton $\phi$", 30, -3, 3)
-        soft_liso_axis = hist.Bin("pfRelIso04_all", r"Soft Muon Rel. Iso", 40, 0, 4.0)
-        l_dxy_axis = hist.Bin("dxy", r"dxy", 20, 0, 0.002)
-        l_dz_axis = hist.Bin("dz", r"dz", 20, 0, 0.01)
-        l_sip3d_axis = hist.Bin("dz", r"dz", 20, 0, 0.2)
-
-        ## Z
-        zmass_axis = hist.Bin("zmass", r"Z Mass", 25, 50, 100)
-        zpt_axis = hist.Bin("zpt", r"Z $p_{T}$", 25, 0, 100)
-        zeta_axis = hist.Bin("zeta", r"Z $\eta$", 25, -2.5, 2.5)
-        zphi_axis = hist.Bin("zphi", r"Z $\phi$", 30, -3, 3)
-        drmumu_axis = hist.Bin(
-            "drmumu", r"$\Delta$R($\mu_{soft}$,$\mu_{hard}$)", 25, 0, 5
+        ## Load corrections
+        self._deepjetc_sf = load_BTV(
+            self._campaign, correction_config[self._campaign]["BTV"], "DeepJetC"
+        )
+        self._deepjetb_sf = load_BTV(
+            self._campaign, correction_config[self._campaign]["BTV"], "DeepJetB"
+        )
+        self._deepcsvc_sf = load_BTV(
+            self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVC"
+        )
+        self._deepcsvb_sf = load_BTV(
+            self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVB"
         )
 
-        syst_axis = hist.Cat("syst", ["noSF", "SF", "SFup", "SFdn"])
-
-        btagDeepaxes = []
-        bininfo = definitions()
-        for d in bininfo.keys():
-            ranges = bininfo[d]["manual_ranges"]
-            binning = bininfo[d]["bins"]
-            if ranges[1] is None:
-                ranges[1] = 0.0
-            if ranges[0] is None:
-                ranges[0] = -0.5
-            btagDeepaxes.append(hist.Bin(d, d, binning, ranges[0], ranges[1]))
-        # Define similar axes dynamically
-        disc_list = [
-            "btagDeepB",
-            "btagDeepC",
-            "btagDeepFlavB",
-            "btagDeepFlavC",
-            "btagDeepCvL",
-            "btagDeepCvB",
-            "btagDeepFlavCvL",
-            "btagDeepFlavCvB",
-        ]
-        btag_axes = []
-        for d in disc_list:
-            btag_axes.append(hist.Bin("%s" % (d), "%s" % (d), 30, -0.2, 1))
-
-        _hist_sf_dict = {}
-        _hist_btagDeepdict = {
-            "pt": hist.Hist("Counts", dataset_axis, flav_axis, jet_pt_axis),
-            "eta": hist.Hist("Counts", dataset_axis, flav_axis, jet_eta_axis),
-            "phi": hist.Hist("Counts", dataset_axis, flav_axis, jet_phi_axis),
-            "mass": hist.Hist("Counts", dataset_axis, flav_axis, jet_mass_axis),
-        }
-        for disc, axis in zip(disc_list, btag_axes):
-            for i in range(1):
-                _hist_sf_dict["%s_%d" % (disc, i)] = hist.Hist(
-                    "Counts", dataset_axis, flav_axis, syst_axis, axis
-                )
-        for deepcsv, axises in zip(bininfo.keys(), btagDeepaxes):
-            _hist_btagDeepdict["%s" % (deepcsv)] = hist.Hist(
-                "Counts", dataset_axis, flav_axis, axises
-            )
-
-        _hist_event_dict = {
-            "njet": hist.Hist("Counts", dataset_axis, njet_axis),
-            "pos_pt": hist.Hist("Counts", dataset_axis, hard_lpt_axis),
-            "pos_eta": hist.Hist("Counts", dataset_axis, hard_leta_axis),
-            "pos_phi": hist.Hist("Counts", dataset_axis, hard_lphi_axis),
-            "pos_pfRelIso04_all": hist.Hist("Counts", dataset_axis, hard_liso_axis),
-            "neg_pt": hist.Hist("Counts", dataset_axis, soft_lpt_axis),
-            "neg_eta": hist.Hist("Counts", dataset_axis, soft_leta_axis),
-            "neg_phi": hist.Hist("Counts", dataset_axis, soft_lphi_axis),
-            "neg_pfRelIso04_all": hist.Hist("Counts", dataset_axis, soft_liso_axis),
-            "zmass": hist.Hist("Counts", dataset_axis, zmass_axis),
-            "zpt": hist.Hist("Counts", dataset_axis, zpt_axis),
-            "zeta": hist.Hist("Counts", dataset_axis, zeta_axis),
-            "zphi": hist.Hist("Counts", dataset_axis, zphi_axis),
-            "drmumu": hist.Hist("Counts", dataset_axis, drmumu_axis),
-        }
-
-        self.sf_hists = list(_hist_sf_dict.keys())
-        self.event_hists = list(_hist_event_dict.keys())
-        self.btagDeephists = list(_hist_btagDeepdict.keys())
-        _hist_dict = {**_hist_sf_dict, **_hist_event_dict, **_hist_btagDeepdict}
-        self._accumulator = processor.dict_accumulator(_hist_dict)
-        self._accumulator["sumw"] = processor.defaultdict_accumulator(float)
-        ## Load corrections
-        (
-            self._deepcsvb_sf,
-            self._deepcsvc_sf,
-            self._deepjetb_sf,
-            self._deepjetc_sf,
-        ) = load_BTV(self._campaign, correction_config[self._campaign]["BTV"])
         self._pu = load_pu(self._campaign, correction_config[self._campaign]["PU"])
+        self.isJERC = isJERC
+        self.isCorr = isCorr
+        if isJERC:
+            self._jet_factory = load_jetfactory(
+                self._campaign, correction_config[self._campaign]["JME"]
+            )
+        _hist_event_dict = histogrammer("ctag_DY_sf")
+        self.make_output = lambda: {
+            "sumw": processor.defaultdict_accumulator(float),
+            **_hist_event_dict,
+        }
 
     @property
     def accumulator(self):
         return self._accumulator
 
     def process(self, events):
-        output = self.accumulator.identity()
+        output = self.make_output()
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
         ## Define the CvL, CvB
         if not hasattr(events, "btagDeepFlavCvL"):
-            events.Jet["btagDeepFlavCvL"] = np.minimum(
-                np.maximum(
+            events.Jet["btagDeepFlavCvL"] = np.maximum(
+                np.minimum(
                     np.where(
                         (
                             (
@@ -159,12 +83,12 @@ class NanoProcessor(processor.ProcessorABC):
                         (events.Jet.btagDeepFlavC / (1.0 - events.Jet.btagDeepFlavB)),
                         -1,
                     ),
-                    1,
+                    0.999999,
                 ),
                 -1,
             )
-            events.Jet["btagDeepFlavCvB"] = np.minimum(
-                np.maximum(
+            events.Jet["btagDeepFlavCvB"] = np.maximum(
+                np.minimum(
                     np.where(
                         (
                             (
@@ -180,23 +104,23 @@ class NanoProcessor(processor.ProcessorABC):
                         ),
                         -1,
                     ),
-                    1,
+                    0.999999,
                 ),
                 -1,
             )
-            events.Jet["btagDeepCvL"] = np.minimum(
-                np.maximum(
+            events.Jet["btagDeepCvL"] = np.maximum(
+                np.minimum(
                     np.where(
                         (events.Jet.btagDeepC > 0) & (events.Jet.pt > 15),
                         (events.Jet.btagDeepC / (1.0 - events.Jet.btagDeepB)),
                         -1,
                     ),
-                    1,
+                    0.999999,
                 ),
                 -1,
             )
-            events.Jet["btagDeepCvB"] = np.minimum(
-                np.maximum(
+            events.Jet["btagDeepCvB"] = np.maximum(
+                np.minimum(
                     np.where(
                         (events.Jet.btagDeepC > 0) & (events.Jet.pt > 15),
                         (
@@ -205,23 +129,32 @@ class NanoProcessor(processor.ProcessorABC):
                         ),
                         -1,
                     ),
-                    1,
+                    0.999999,
                 ),
                 -1,
             )
         if isRealData:
-            output["sumw"][dataset] += len(events)
+
+            output["sumw"] = len(events)
         else:
-            output["sumw"][dataset] += ak.sum(events.genWeight)
+            output["sumw"] = ak.sum(events.genWeight)
+            if self.isJERC:
+                events.Jet = self._jet_factory["mc"].build(
+                    add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
+                    lazy_cache=events.caches[0],
+                )
+
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
         weights = Weights(len(events), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events.genWeight)
-            weights.add(
-                "puweight", self._pu[f"{self._year}_pileupweight"](events.Pileup.nPU)
-            )
+            if self.isCorr:
+                weights.add(
+                    "puweight",
+                    self._pu[f"{self._year}_pileupweight"](events.Pileup.nPU),
+                )
         ##############
         # Trigger level
         mu_triggers = [
@@ -278,14 +211,6 @@ class NanoProcessor(processor.ProcessorABC):
             & (abs(events.Jet.eta) <= 2.5)
             & ((events.Jet.puId >= 7) & (events.Jet.pt < 50))
             & (events.Jet.jetId >= 3)
-            & (events.Jet.btagDeepB > 0.0)
-            & (events.Jet.btagDeepB < 1.0)
-            & (events.Jet.btagDeepC > 0.0)
-            & (events.Jet.btagDeepC < 1.0)
-            & (events.Jet.btagDeepFlavB > 0.0)
-            & (events.Jet.btagDeepFlavB < 1.0)
-            & (events.Jet.btagDeepFlavC > 0.0)
-            & (events.Jet.btagDeepFlavC < 1.0)
             & (ak.all(events.Jet.metric_table(pos_dilep[:, 0]) > 0.4, axis=2))
             & (ak.all(events.Jet.metric_table(neg_dilep[:, 0]) > 0.4, axis=2))
         ]
@@ -324,7 +249,7 @@ class NanoProcessor(processor.ProcessorABC):
         ]
         snegmu = snegmu[:, 0]
 
-        if not isRealData:
+        if not isRealData and self.isCorr:
             weights.add(
                 "lep1sf",
                 np.where(
@@ -374,20 +299,10 @@ class NanoProcessor(processor.ProcessorABC):
             & (abs(selev.Jet.eta) <= 2.5)
             & ((selev.Jet.puId >= 7) & (selev.Jet.pt < 50))
             & (selev.Jet.jetId >= 3)
-            & (selev.Jet.btagDeepB > 0.0)
-            & (selev.Jet.btagDeepB < 1.0)
-            & (selev.Jet.btagDeepC > 0.0)
-            & (selev.Jet.btagDeepC < 1.0)
-            & (selev.Jet.btagDeepFlavB > 0.0)
-            & (selev.Jet.btagDeepFlavB < 1.0)
-            & (selev.Jet.btagDeepFlavC > 0.0)
-            & (selev.Jet.btagDeepFlavC < 1.0)
             & (ak.all(selev.Jet.metric_table(sposmu) > 0.4, axis=2))
-            & (selev.Jet.btagDeepFlavC < 1.0)
             & (ak.all(selev.Jet.metric_table(snegmu) > 0.4, axis=2))
             & (selev.Jet.muEF < 0.8)
         ]
-
         njet = ak.count(sjets.pt, axis=1)
 
         def flatten(ar):  # flatten awkward into a 1d array to hist
@@ -497,78 +412,69 @@ class NanoProcessor(processor.ProcessorABC):
                 "btagDeepFlavCvL": jetsfs_c,
                 "btagDeepFlavCvB": jetsfs_c,
             }
+        sel_jet = sjets[:, 0]
         for histname, h in output.items():
-            if histname in self.btagDeephists:
-                fields = {
-                    l: ak.flatten(sjets[histname]) for l in h.fields if l in dir(sjets)
-                }
-                if isRealData:
-                    h.fill(dataset=dataset, flav=5, **fields)
-                else:
-                    h.fill(
-                        dataset=dataset,
-                        flav=ak.flatten(genflavor),
-                        **fields,
-                        weight=weights.weight()[event_level],
-                    )
-            elif "pos_" in histname:
-                fields = {l: sposmu[l] for l in h.fields if l in dir(sposmu)}
-                if isRealData:
-                    h.fill(dataset=dataset, **fields)
-                else:
-                    h.fill(
-                        dataset=dataset, **fields, weight=weights.weight()[event_level]
-                    )
-            elif "neg_" in snegmu:
-                fields = {l: snegmu[l] for l in h.fields if l in dir(snegmu)}
-                if isRealData:
-                    h.fill(dataset=dataset, **fields)
-                else:
-                    h.fill(
-                        dataset=dataset, **fields, weight=weights.weight()[event_level]
-                    )
-            elif ["zmass", "zpt", "zeta", "zphi"] == histname:
-                fields = {l: sz[l] for l in h.fields if l in dir(sz)}
-                if isRealData:
-                    h.fill(dataset=dataset, **fields)
-                else:
-                    h.fill(
-                        dataset=dataset, **fields, weight=weights.weight()[event_level]
-                    )
+            if "Deep" in histname and "btag" not in histname:
+                h.fill(
+                    flatten(genflavor),
+                    flatten(sjets[histname]),
+                    weight=flatten(
+                        ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[
+                            0
+                        ]
+                    ),
+                )
+            elif "posl_" in histname and histname.replace("posl_", "") in sposmu.fields:
+                h.fill(
+                    flatten(sposmu[histname.replace("posl_", "")]),
+                    weight=weights.weight()[event_level],
+                )
+            elif "negl_" in histname and histname.replace("negl_", "") in snegmu.fields:
+                h.fill(
+                    flatten(snegmu[histname.replace("negl_", "")]),
+                    weight=weights.weight()[event_level],
+                )
+
+            elif "jet_" in histname:
+                h.fill(
+                    genflavor[:, 0],
+                    sel_jet[histname.replace("jet_", "")],
+                    weight=weights.weight()[event_level],
+                )
             elif "btagDeep" in histname and "0" in histname:
-                sel_jet = sjets[:, 0]
-                fields = {
-                    l: np.where(sel_jet[l] < 0, -0.2, sel_jet[l])
-                    for l in h.fields
-                    if l in dir(sel_jet)
-                }
-                if isRealData:
-                    h.fill(dataset=dataset, flav=5, syst="noSF", **fields)
-                else:
-                    h.fill(
-                        dataset=dataset,
-                        flav=genflavor[:, 0],
-                        syst="noSF",
-                        **fields,
-                        weight=weights.weight()[event_level],
-                    )
+
+                h.fill(
+                    flav=genflavor[:, 0],
+                    syst="noSF",
+                    discr=np.where(
+                        sel_jet[histname.replace("_0", "")] < 0,
+                        -0.2,
+                        sel_jet[histname.replace("_0", "")],
+                    ),
+                    weight=weights.weight()[event_level],
+                )
+                if not isRealData and self.isCorr:
                     for syst in disc_list[histname.replace("_0", "")][0].keys():
                         h.fill(
-                            dataset=dataset,
                             flav=genflavor[:, 0],
                             syst=syst,
-                            **fields,
+                            discr=np.where(
+                                sel_jet[histname.replace("_0", "")] < 0,
+                                -0.2,
+                                sel_jet[histname.replace("_0", "")],
+                            ),
                             weight=weights.weight()[event_level]
                             * disc_list[histname.replace("_0", "")][0][syst],
                         )
-
-        if not isRealData:
-            output["drmumu"].fill(dataset=dataset, drmumu=snegmu.delta_r(sposmu))
-
-        else:
-            output["drmumu"].fill(dataset=dataset, drmumu=snegmu.delta_r(sposmu))
-
-        return output
+        output["njet"].fill(njet, weight=weights.weight()[event_level])
+        output["dr_mumu"].fill(
+            dr=snegmu.delta_r(sposmu), weight=weights.weight()[event_level]
+        )
+        output["z_pt"].fill(flatten(sz.pt), weight=weights.weight()[event_level])
+        output["z_eta"].fill(flatten(sz.eta), weight=weights.weight()[event_level])
+        output["z_phi"].fill(flatten(sz.phi), weight=weights.weight()[event_level])
+        output["z_mass"].fill(flatten(sz.mass), weight=weights.weight()[event_level])
+        return {dataset: output}
 
     def postprocess(self, accumulator):
         return accumulator
