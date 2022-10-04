@@ -4,7 +4,7 @@
 *.py~
 .ipynb_checkpoints/
 \#*
-*.cc
+
 plotting/plot/
 src/BTVNanoCommissioning/version.py
 src/BTVNanoCommissioning.egg-info/
