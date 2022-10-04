@@ -5,7 +5,7 @@ import collections
 from matplotlib.pyplot import jet
 
 import coffea
-from coffea import hist, processor
+from coffea import processor
 import awkward as ak
 from coffea.analysis_tools import Weights
 import gc

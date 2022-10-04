@@ -218,10 +218,14 @@ def eleSFs(ele, campaign, path):
     with contextlib.ExitStack() as stack:
         real_paths = [
             stack.enter_context(importlib.resources.path(_ele_path, f))
-            for f in path.values()
+            for f in path.values()  # if "ele" in path.keys()
         ]
         ext.add_weight_sets(
-            [f"{path} {file}" for path, file in zip(path.keys(), real_paths)]
+            [
+                f"{paths} {file}"
+                for paths, file in zip(path.keys(), real_paths)
+                if "ele" in paths
+            ]
         )
 
     ext.finalize()
@@ -238,15 +242,19 @@ def eleSFs(ele, campaign, path):
 
 
 def muSFs(mu, campaign, path):
-    _ele_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
+    _mu_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
     ext = extractor()
     with contextlib.ExitStack() as stack:
         real_paths = [
-            stack.enter_context(importlib.resources.path(_ele_path, f))
-            for f in path.values()
+            stack.enter_context(importlib.resources.path(_mu_path, f))
+            for f in path.values()  # if "mu" in path.keys()
         ]
         ext.add_weight_sets(
-            [f"{path} {file}" for path, file in zip(path.keys(), real_paths)]
+            [
+                f"{paths} {file}"
+                for paths, file in zip(path.keys(), real_paths)
+                if "mu" in paths
+            ]
         )
 
     ext.finalize()

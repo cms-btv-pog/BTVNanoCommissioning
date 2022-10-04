@@ -2,6 +2,9 @@
 # BTVNanoCommissioning
 [![Linting](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/python_linting.yml/badge.svg)](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/python_linting.yml)
 [![TTbar](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ttbar_workflow.yml/badge.svg)](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ttbar_workflow.yml)
+[![TTbar DL+SL](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ttbar_SL_DL_workflow.yml/badge.svg)](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ttbar_SL_DL_workflow.yml)
+[![ctag DY+jets Workflow](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ctag_DY_workflow.yml/badge.svg)](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ctag_DY_workflow.yml)
+[![ctag W+c Workflow](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ctag_Wc_workflow.yml/badge.svg)](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ctag_Wc_workflow.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD samples
@@ -16,7 +19,7 @@ Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD sa
 git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
 
 # activate enviroment once you have coffea framework 
-conda activate coffea
+conda activate btv_coffea
 ```
 ### Coffea installation with Miniconda
 For installing Miniconda, see also https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Local-or-remote
@@ -29,14 +32,14 @@ NOTE: always make sure that conda, python, and pip point to local Miniconda inst
 
 You can either use the default environment `base` or create a new one:
 ```
-# create new environment with python 3.7, e.g. environment of name `coffea`
-conda create --name btv_nano_commissioning python=3.7
-# activate environment `coffea`
-conda activate btv_nano_commissioning
+# create new environment with python 3.7, e.g. environment of name `btv_coffea`
+conda create --name btv_coffea python=3.7
+# activate environment `btv_coffea`
+conda activate btv_coffea
 ```
-You could simply create the environment through the existing `env.yml` under your conda environment
+You could simply create the environment through the existing `test_env.yml` under your conda environment
 ```
-conda env create -f env.yml -p ${conda_dir}/envs/coffea
+conda env create -f test_env.yml -p ${conda_dir}/envs/btv_coffea
 ```
 
 Or install manually for the required packages, coffea, xrootd, and more:
@@ -100,7 +103,7 @@ that more automatic in the end.
 
 To test a small set of files to see whether the workflows run smoothly, run:
 ```
-python runner.py --workflow ${workflow} --json metadata/test.json 
+python runner.py --workflow ${workflow} --json metadata/test_w_dj.json 
 ```
 
 ### b-SFs 
@@ -234,27 +237,39 @@ python -m utils.compile_jec UL17_106X data/JME/UL17_106X/jec_compiled.pkl.gz
 
 ## Plotting code
 
-- data/MC comparison code
-
-```python
-python -m plotting.plotdataMC --lumi ${lumi} --phase ctag_ttdilep_sf --output ctag_ttdilep_sf (--discr zmass --log True/False --data data_runD)
-# lumi in /pb
-# phase = workflow 
-# output coffea file output = hist_$output$.coffea 
-# discr = input variables, the defaults are the discriminators, can add multiple variables with space
-# log = logorithm on y-axis
-# data = data name
+Prodcuce data/MC comparisons
 ```
+python plotdataMC.py -i a.coffea,b.coffea --lumi 41900 -p dilep_sf -d zmass,z_pt
 
-- data/data, MC/MC comparison
+optional arguments:
+  --lumi LUMI           luminosity in /pb
+  -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
+                        which workflows
+  --log LOG             log on x axis
+  --norm NORM           Use for reshape SF, scale to same yield as no SFs case
+  -d DISCR_LIST, --discr_list DISCR_LIST
+                        discriminators
+  --SF                  make w/, w/o SF comparisons
+  --ext EXT             prefix output file
+  -i INPUT, --input INPUT
+                        input coffea files (str), splitted different files with ,
+```
+- data/data, MC/MC comparison from BTV
+```
+python comparison.py -i a.coffea,b.coffea -p dilep_sf -d zmass,z_pt
 
-```python
-python -m plotting.comparison --phase ctag_ttdilep_sf --output ctag_ttdilep_sf -ref 2017_runB --compared 2017_runC 2017_runD (--discr zmass --log True/False --sepflav True/False)
-# phase = workflow 
-# output coffea file output = hist_$output$.coffea 
-# ref = reference data/MC sample
-# comapred = 
-# discr = input variables, the defaults are the discriminators, can add multiple variables with space
-# log = logorithm on y-axis
-# sepflav = separate the jets into different flavor
+python -m plotting.comparison --phase ctag_ttdilep_sf --output ctag_ttdilep_sf -r 2017_runB -c 2017_runC,2017_runD -d zmass, z_pt (--sepflav True/False)
+optional arguments:
+  -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
+                        which phase space
+  -i INPUT, --input INPUT
+                        files set
+  -r REF, --ref REF     referance dataset
+  -c COMPARED, --compared COMPARED
+                        compared dataset
+  --sepflav SEPFLAV     seperate flavour
+  --log                 log on x axis
+  -d DISCR_LIST [DISCR_LIST ...], --discr_list DISCR_LIST [DISCR_LIST ...]
+                        discriminators
+  --ext EXT             prefix name
 ```
