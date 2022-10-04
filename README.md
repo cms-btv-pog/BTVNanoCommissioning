@@ -19,7 +19,7 @@ Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD sa
 git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
 
 # activate enviroment once you have coffea framework 
-conda activate coffea
+conda activate btv_coffea
 ```
 ### Coffea installation with Miniconda
 For installing Miniconda, see also https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Local-or-remote
@@ -103,7 +103,7 @@ that more automatic in the end.
 
 To test a small set of files to see whether the workflows run smoothly, run:
 ```
-python runner.py --workflow ${workflow} --json metadata/test.json 
+python runner.py --workflow ${workflow} --json metadata/test_w_dj.json 
 ```
 
 ### b-SFs 
