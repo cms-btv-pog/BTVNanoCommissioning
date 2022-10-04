@@ -1,4 +1,4 @@
-name: ttbar dilepton Workflow
+name: ttbar semileptonic & dileptonic Workflows
 
 on:
   push:
@@ -75,6 +75,18 @@ jobs:
     - name: Install Repo
       run: |
         pip install -e .
+        
+    - name:  btag semileptonic ttbar workflow
+      run: |
+        python runner.py --workflow ttsemilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+    
+    - name: ctag semileptonic muon ttbar workflows
+      run: |
+        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+    
+    - name: ctag semileptonic electron ttbar workflows
+      run: |
+        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
 
     - name: btag dileptonic ttbar workflow
       run: |
