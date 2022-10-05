@@ -218,7 +218,7 @@ def eleSFs(ele, campaign, path):
     with contextlib.ExitStack() as stack:
         real_paths = [
             stack.enter_context(importlib.resources.path(_ele_path, f))
-            for f in path.values()  # if "ele" in path.keys()
+            for f in path.values()
         ]
         ext.add_weight_sets(
             [
@@ -247,7 +247,7 @@ def muSFs(mu, campaign, path):
     with contextlib.ExitStack() as stack:
         real_paths = [
             stack.enter_context(importlib.resources.path(_mu_path, f))
-            for f in path.values()  # if "mu" in path.keys()
+            for f in path.values()
         ]
         ext.add_weight_sets(
             [
