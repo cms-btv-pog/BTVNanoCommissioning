@@ -493,9 +493,9 @@ class NanoProcessor(processor.ProcessorABC):
                 )
                 csvsfs_c[0]["SFdn"] = getSF(
                     smuon_jet.hadronFlavour,
-                    smuon_jet.btagDeepCvL,
-                    smuon_jet.btagDeepCvB,
-                    self._deepcsvc_sf,
+                    smuon_jet.btagDeepFlavCvL,
+                    smuon_jet.btagDeepFlavCvB,
+                    self._deepjetc_sf,
                     "TotalUncDown",
                 )
                 csvsfs_b[0]["SFup"] = self._deepcsvb_sf.eval(
@@ -745,7 +745,6 @@ class NanoProcessor(processor.ProcessorABC):
         output["z_eta"].fill(flatten(sz.eta), weight=weights.weight()[event_level])
         output["z_phi"].fill(flatten(sz.phi), weight=weights.weight()[event_level])
         output["z_mass"].fill(flatten(sz.mass), weight=weights.weight()[event_level])
-
         gc.collect()
 
         return {dataset: output}
