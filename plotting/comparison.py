@@ -67,16 +67,19 @@ mergemap = {}
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{args.phase}_{args.ext}_{time}/"):
     os.makedirs(f"plot/BTV/{args.phase}_{args.ext}_{time}/")
-for f in output.keys():
-    if "sumw" not in output[f].keys():
-
-        mergemap[args.ref] = [m for m in output[f].keys() if args.ref == m]
+if "sumw" in output.keys():
+    mergemap[args.ref] = [m for m in output.keys() if args.ref == m]
+    for c in args.compared.split(","):
+        mergemap[c] = [m for m in output.keys() if c == m]
+else:
+    reflist = []
+    comparelist = []
+    for f in output.keys():
+        reflist.extend([m for m in output[f].keys() if args.ref == m])
         for c in args.compared.split(","):
-            mergemap[c] = [m for m in output[f].keys() if c == m]
-    else:
-        mergemap[args.ref] = [m for m in output.keys() if args.ref == m]
-        for c in args.compared.split(","):
-            mergemap[c] = [m for m in output.keys() if c == m]
+            comparelist.extend([m for m in output[f].keys() if c == m])
+    mergemap[args.ref] = reflist
+    mergemap[c] = comparelist
 collated = collate(output, mergemap)
 ### style settings
 if "Run" in args.ref or "data" in args.ref or "Data" in args.ref:

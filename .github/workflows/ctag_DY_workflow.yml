@@ -76,12 +76,10 @@ jobs:
       run: |
         pip install -e .
 
-    
-    - name: ctag DY muon workflows
+    - name: ctag muon DY workflows
       run: |
-        python runner.py --workflow ctag_DY_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow ctag_DY_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC
     
-    - name: ctag DY electron workflows
-        python runner.py --workflow ectag_DY_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
-    
-    
+    - name: ctag electron DY workflows
+      run: |
+        python runner.py --workflow ectag_DY_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC

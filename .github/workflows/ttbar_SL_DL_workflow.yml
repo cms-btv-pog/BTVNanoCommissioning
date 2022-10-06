@@ -78,26 +78,26 @@ jobs:
         
     - name:  btag semileptonic ttbar workflow
       run: |
-        python runner.py --workflow ttsemilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow ttsemilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC
     
     - name: ctag semileptonic muon ttbar workflows
       run: |
-        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC
     
     - name: ctag semileptonic electron ttbar workflows
       run: |
-        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC
 
     - name: btag dileptonic ttbar workflow
       run: |
-        python runner.py --workflow ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC
     
     - name: ctag dileptonic muon ttbar workflows
       run: |
-        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC
     - name: ctag dileptonic electron ttbar workflows
       run: |
-        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC
     - name: ctag dileptonic emu ttbar workflows
       run: |
-        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC

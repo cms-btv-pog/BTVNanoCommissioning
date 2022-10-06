@@ -50,33 +50,40 @@ time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/"):
     os.makedirs(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/")
 if len(arg.output.split(",")) > 1:
-    output = {i: load(arg.output.split(",")[i]) for i in arg.output.split(",")}
+    output = {i.replace(".coffea", ""): load(i) for i in arg.output.split(",")}
+    for out in output.keys():
+        output[out] = scaleSumW(output[out], arg.lumi, getSumW(output[out]))
 else:
     output = load(arg.output)
-    # output = scaleSumW(output,arg.lumi,getSumW(output))
+    output = scaleSumW(output, arg.lumi, getSumW(output))
 mergemap = {}
-for f in output.keys():
+if "sumw" in output.keys():
+    mergemap["data"] = [
+        m for m in output.keys() if "Run" in m or "data" in m or "Data" in m
+    ]
+    mergemap["mc"] = [
+        m
+        for m in output.keys()
+        if "Run" not in m and "data" not in m and "Data" not in m
+    ]
+else:
+    datalist = []
+    mclist = []
+    for f in output.keys():
+        datalist.extend(
+            [m for m in output[f].keys() if "Run" in m or "data" in m or "Data" in m]
+        )
+        mclist.extend(
+            [
+                m
+                for m in output[f].keys()
+                if "Run" not in m and "data" not in m and "Data" not in m
+            ]
+        )
+    mergemap["mc"] = mclist
+    mergemap["data"] = datalist
 
-    if "sumw" not in output[f].keys():
-        mergemap["data"] = [
-            m for m in output[f].keys() if "Run" in m or "data" in m or "Data" in m
-        ]
-        mergemap["mc"] = [
-            m
-            for m in output[f].keys()
-            if "Run" not in m and "data" not in m and "Data" not in m
-        ]
-    else:
-        mergemap["data"] = [
-            m for m in output.keys() if "Run" in m or "data" in m or "Data" in m
-        ]
-        mergemap["mc"] = [
-            m
-            for m in output.keys()
-            if "Run" not in m and "data" not in m and "Data" not in m
-        ]
 collated = collate(output, mergemap)
-print(collated["data"]["sumw"], collated["mc"]["sumw"])
 if "Wc" in arg.phase:
     input_txt = "W+c"
 elif "DY" in arg.phase:
@@ -262,8 +269,7 @@ for discr in arg.discr_list.split(","):
             yerr=True,
             ax=ax,
         )
-        print(collated["mc"][discr][{"flav": sum}].values())
-        print(collated["data"][discr][{"flav": sum}].values())
+
         hep.histplot(
             collated["data"][discr][{"flav": sum}],
             histtype="errorbar",
@@ -305,7 +311,9 @@ for discr in arg.discr_list.split(","):
         rax.errorbar(
             x=collated["data"][discr].axes[0].centers,
             y=collated["data"][discr].values() / collated["mc"][discr].values(),
-            yerr=ratio_uncertainty(hdata.values(), collated["mc"][discr].values()),
+            yerr=ratio_uncertainty(
+                collated["data"][discr].values(), collated["mc"][discr].values()
+            ),
             color="k",
             linestyle="none",
             marker="o",
@@ -329,7 +337,7 @@ for discr in arg.discr_list.split(","):
     if arg.norm:
         scale = "_norm"
     name = "all"
-
+    # ax.set_ylim(0,500)
     # hep.mpl_magic(ax=ax)
     if arg.log:
         fig.savefig(

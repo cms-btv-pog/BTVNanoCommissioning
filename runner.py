@@ -76,6 +76,16 @@ def get_main_parser():
         default="Rereco17_94X",
         help="Dataset campaign, change the corresponding correction files",
     )
+    parser.add_argument(
+        "--isCorr",
+        action="store_true",
+        help="Run with SFs",
+    )
+    parser.add_argument(
+        "--isJERC",
+        action="store_true",
+        help="JER/JEC implemented to jet",
+    )
 
     # Scale out
     parser.add_argument(
@@ -233,7 +243,12 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # load workflow
-    processor_instance = workflows[args.workflow](args.year, args.campaign)
+    if "ttcom" == args.workflow or "validation" == args.workflow:
+        processor_instance = workflows[args.workflow](args.year, args.campaign)
+    else:
+        processor_instance = workflows[args.workflow](
+            args.year, args.campaign, args.isCorr, args.isJERC
+        )
 
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """

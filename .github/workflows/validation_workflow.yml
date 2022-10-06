@@ -1,4 +1,4 @@
-name: Baseline Workflow
+name: Validation Workflow
 
 on:
   push:

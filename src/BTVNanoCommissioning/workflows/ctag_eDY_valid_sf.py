@@ -316,105 +316,106 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
             genflavor = sjets.hadronFlavour + 1 * par_flav
-            jetsfs_c = collections.defaultdict(dict)
-            jetsfs_b = collections.defaultdict(dict)
-            csvsfs_c = collections.defaultdict(dict)
-            csvsfs_b = collections.defaultdict(dict)
+            if self.isCorr:
+                jetsfs_c = collections.defaultdict(dict)
+                jetsfs_b = collections.defaultdict(dict)
+                csvsfs_c = collections.defaultdict(dict)
+                csvsfs_b = collections.defaultdict(dict)
 
-            ## for each jet
-            jetsfs_c[0]["SF"] = getSF(
-                sjets[:, 0].hadronFlavour,
-                sjets[:, 0].btagDeepFlavCvL,
-                sjets[:, 0].btagDeepFlavCvB,
-                self._deepjetc_sf,
-            )
-            jetsfs_c[0]["SFup"] = getSF(
-                sjets[:, 0].hadronFlavour,
-                sjets[:, 0].btagDeepFlavCvL,
-                sjets[:, 0].btagDeepFlavCvB,
-                self._deepjetc_sf,
-                "TotalUncUp",
-            )
-            jetsfs_c[0]["SFdn"] = getSF(
-                sjets[:, 0].hadronFlavour,
-                sjets[:, 0].btagDeepFlavCvL,
-                sjets[:, 0].btagDeepFlavCvB,
-                self._deepjetc_sf,
-                "TotalUncDown",
-            )
-            jetsfs_b[0]["SF"] = self._deepjetb_sf.eval(
-                "central",
-                sjets[:, 0].hadronFlavour,
-                abs(sjets[:, 0].eta),
-                sjets[:, 0].pt,
-                discr=sjets[:, 0].btagDeepFlavB,
-            )
-            jetsfs_b[0]["SFup"] = self._deepjetb_sf.eval(
-                "up_jes",
-                sjets[:, 0].hadronFlavour,
-                abs(sjets[:, 0].eta),
-                sjets[:, 0].pt,
-                discr=sjets[:, 0].btagDeepFlavB,
-            )
-            jetsfs_b[0]["SFdn"] = self._deepjetb_sf.eval(
-                "down_jes",
-                sjets[:, 0].hadronFlavour,
-                abs(sjets[:, 0].eta),
-                sjets[:, 0].pt,
-                discr=sjets[:, 0].btagDeepFlavB,
-            )
-            csvsfs_c[0]["SF"] = getSF(
-                sjets[:, 0].hadronFlavour,
-                sjets[:, 0].btagDeepCvL,
-                sjets[:, 0].btagDeepCvB,
-                self._deepcsvc_sf,
-            )
-            csvsfs_c[0]["SFup"] = getSF(
-                sjets[:, 0].hadronFlavour,
-                sjets[:, 0].btagDeepCvL,
-                sjets[:, 0].btagDeepCvB,
-                self._deepcsvc_sf,
-                "TotalUncUp",
-            )
-            csvsfs_c[0]["SFdn"] = getSF(
-                sjets[:, 0].hadronFlavour,
-                sjets[:, 0].btagDeepCvL,
-                sjets[:, 0].btagDeepCvB,
-                self._deepcsvc_sf,
-                "TotalUncDown",
-            )
-            csvsfs_b[0]["SFup"] = self._deepcsvb_sf.eval(
-                "up_jes",
-                sjets[:, 0].hadronFlavour,
-                abs(sjets[:, 0].eta),
-                sjets[:, 0].pt,
-                discr=sjets[:, 0].btagDeepB,
-            )
-            csvsfs_b[0]["SF"] = self._deepcsvb_sf.eval(
-                "central",
-                sjets[:, 0].hadronFlavour,
-                abs(sjets[:, 0].eta),
-                sjets[:, 0].pt,
-                discr=sjets[:, 0].btagDeepB,
-            )
-            csvsfs_b[0]["SFdn"] = self._deepcsvb_sf.eval(
-                "down_jes",
-                sjets[:, 0].hadronFlavour,
-                abs(sjets[:, 0].eta),
-                sjets[:, 0].pt,
-                discr=sjets[:, 0].btagDeepB,
-            )
+                ## for each jet
+                jetsfs_c[0]["SF"] = getSF(
+                    sjets[:, 0].hadronFlavour,
+                    sjets[:, 0].btagDeepFlavCvL,
+                    sjets[:, 0].btagDeepFlavCvB,
+                    self._deepjetc_sf,
+                )
+                jetsfs_c[0]["SFup"] = getSF(
+                    sjets[:, 0].hadronFlavour,
+                    sjets[:, 0].btagDeepFlavCvL,
+                    sjets[:, 0].btagDeepFlavCvB,
+                    self._deepjetc_sf,
+                    "TotalUncUp",
+                )
+                jetsfs_c[0]["SFdn"] = getSF(
+                    sjets[:, 0].hadronFlavour,
+                    sjets[:, 0].btagDeepFlavCvL,
+                    sjets[:, 0].btagDeepFlavCvB,
+                    self._deepjetc_sf,
+                    "TotalUncDown",
+                )
+                jetsfs_b[0]["SF"] = self._deepjetb_sf.eval(
+                    "central",
+                    sjets[:, 0].hadronFlavour,
+                    abs(sjets[:, 0].eta),
+                    sjets[:, 0].pt,
+                    discr=sjets[:, 0].btagDeepFlavB,
+                )
+                jetsfs_b[0]["SFup"] = self._deepjetb_sf.eval(
+                    "up_jes",
+                    sjets[:, 0].hadronFlavour,
+                    abs(sjets[:, 0].eta),
+                    sjets[:, 0].pt,
+                    discr=sjets[:, 0].btagDeepFlavB,
+                )
+                jetsfs_b[0]["SFdn"] = self._deepjetb_sf.eval(
+                    "down_jes",
+                    sjets[:, 0].hadronFlavour,
+                    abs(sjets[:, 0].eta),
+                    sjets[:, 0].pt,
+                    discr=sjets[:, 0].btagDeepFlavB,
+                )
+                csvsfs_c[0]["SF"] = getSF(
+                    sjets[:, 0].hadronFlavour,
+                    sjets[:, 0].btagDeepCvL,
+                    sjets[:, 0].btagDeepCvB,
+                    self._deepcsvc_sf,
+                )
+                csvsfs_c[0]["SFup"] = getSF(
+                    sjets[:, 0].hadronFlavour,
+                    sjets[:, 0].btagDeepCvL,
+                    sjets[:, 0].btagDeepCvB,
+                    self._deepcsvc_sf,
+                    "TotalUncUp",
+                )
+                csvsfs_c[0]["SFdn"] = getSF(
+                    sjets[:, 0].hadronFlavour,
+                    sjets[:, 0].btagDeepCvL,
+                    sjets[:, 0].btagDeepCvB,
+                    self._deepcsvc_sf,
+                    "TotalUncDown",
+                )
+                csvsfs_b[0]["SFup"] = self._deepcsvb_sf.eval(
+                    "up_jes",
+                    sjets[:, 0].hadronFlavour,
+                    abs(sjets[:, 0].eta),
+                    sjets[:, 0].pt,
+                    discr=sjets[:, 0].btagDeepB,
+                )
+                csvsfs_b[0]["SF"] = self._deepcsvb_sf.eval(
+                    "central",
+                    sjets[:, 0].hadronFlavour,
+                    abs(sjets[:, 0].eta),
+                    sjets[:, 0].pt,
+                    discr=sjets[:, 0].btagDeepB,
+                )
+                csvsfs_b[0]["SFdn"] = self._deepcsvb_sf.eval(
+                    "down_jes",
+                    sjets[:, 0].hadronFlavour,
+                    abs(sjets[:, 0].eta),
+                    sjets[:, 0].pt,
+                    discr=sjets[:, 0].btagDeepB,
+                )
 
-            disc_list = {
-                "btagDeepB": csvsfs_b,
-                "btagDeepC": csvsfs_b,
-                "btagDeepFlavB": jetsfs_b,
-                "btagDeepFlavC": jetsfs_b,
-                "btagDeepCvL": csvsfs_c,
-                "btagDeepCvB": csvsfs_c,
-                "btagDeepFlavCvL": jetsfs_c,
-                "btagDeepFlavCvB": jetsfs_c,
-            }
+                disc_list = {
+                    "btagDeepB": csvsfs_b,
+                    "btagDeepC": csvsfs_b,
+                    "btagDeepFlavB": jetsfs_b,
+                    "btagDeepFlavC": jetsfs_b,
+                    "btagDeepCvL": csvsfs_c,
+                    "btagDeepCvB": csvsfs_c,
+                    "btagDeepFlavCvL": jetsfs_c,
+                    "btagDeepFlavCvB": jetsfs_c,
+                }
         sel_jet = sjets[:, 0]
         for histname, h in output.items():
             if "Deep" in histname and "btag" not in histname:
