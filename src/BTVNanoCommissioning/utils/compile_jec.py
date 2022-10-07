@@ -83,8 +83,8 @@ def jet_factories(campaign):
                     "src/BTVNanoCommissioning/data/JME/UL16_preAPV/Summer19UL16APV_RunEF_V7_DATA_L3Absolute_AK4PFchs.jec.txt",
                     "src/BTVNanoCommissioning/data/JME/UL16_preAPV/Summer20UL16APV_JRV3_DATA_SF_AK4PFchs.jersf.txt",
                     "src/BTVNanoCommissioning/data/JME/UL16_preAPV/Summer20UL16APV_JRV3_DATA_PtResolution_AK4PFchs.jr.txt",
-                    "src/BTVNanoCommissioning/data/JME/UL16/Summer19UL16APV_RunEF_V7_DATA_Uncertainty_AK4PFchs.junc.txt",
-                    "src/BTVNanoCommissioning/data/JME/UL16/Summer19UL16APV_RunEF_V7_DATA_UncertaintySources_AK4PFchs.junc.txt",
+                    "src/BTVNanoCommissioning/data/JME/UL16_preAPV/Summer19UL16APV_RunEF_V7_DATA_Uncertainty_AK4PFchs.junc.txt",
+                    "src/BTVNanoCommissioning/data/JME/UL16_preAPV/Summer19UL16APV_RunEF_V7_DATA_UncertaintySources_AK4PFchs.junc.txt",
                 ]
             ),
         },
@@ -108,8 +108,8 @@ def jet_factories(campaign):
                     "src/BTVNanoCommissioning/data/JME/UL16_postAPV/Summer19UL16_RunFGH_V7_DATA_L2L3Residual_AK4PFchs.jec.txt",
                     "src/BTVNanoCommissioning/data/JME/UL16_postAPV/Summer19UL16_RunFGH_V7_DATA_L2Relative_AK4PFchs.jec.txt",
                     "src/BTVNanoCommissioning/data/JME/UL16_postAPV/Summer19UL16_RunFGH_V7_DATA_L3Absolute_AK4PFchs.jec.txt",
-                    "src/BTVNanoCommissioning/data/JME/UL16/Summer19UL16_RunFGH_V7_DATA_Uncertainty_AK4PFchs.junc.txt",
-                    "src/BTVNanoCommissioning/data/JME/UL16/Summer19UL16_RunFGH_V7_DATA_UncertaintySources_AK4PFchs.junc.txt",
+                    "src/BTVNanoCommissioning/data/JME/UL16_postAPV/Summer19UL16_RunFGH_V7_DATA_Uncertainty_AK4PFchs.junc.txt",
+                    "src/BTVNanoCommissioning/data/JME/UL16_postAPV/Summer19UL16_RunFGH_V7_DATA_UncertaintySources_AK4PFchs.junc.txt",
                 ]
             ),
         },

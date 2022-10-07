@@ -13,7 +13,7 @@ from BTVNanoCommissioning.utils.correction import (
     add_jec_variables,
 )
 import gc
-from BTVNanoCommissioning.helpers.func import flatten
+from BTVNanoCommissioning.helpers.func import flatten, update
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
@@ -67,10 +67,11 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             output["sumw"] = ak.sum(events.genWeight)
             if self.isJERC:
-                events.Jet = self._jet_factory["mc"].build(
+                jets = self._jet_factory["mc"].build(
                     add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
                     lazy_cache=events.caches[0],
                 )
+                update(events, {"Jet": jets})
 
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
@@ -176,8 +177,8 @@ class NanoProcessor(processor.ProcessorABC):
         event_muon = ak.pad_none(events.Muon, 1, axis=1)
 
         req_muon = ak.count(event_muon.pt, axis=1) == 1
-        ## Jet cuts
 
+        ## Jet cuts
         event_jet = events.Jet[
             (events.Jet.pt > 25)
             & (abs(events.Jet.eta) <= 2.4)
@@ -186,14 +187,15 @@ class NanoProcessor(processor.ProcessorABC):
             & (ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))
         ]
 
-        req_jets = ak.num(event_jet) >= 4
-
+        req_jets = ak.num(event_jet.pt) >= 4
         req_MET = events.MET.pt > 50
 
-        event_level = req_trig & req_jets & req_muon & req_MET & req_lumi
+        event_level = ak.fill_none(
+            req_trig & req_jets & req_muon & req_MET & req_lumi, False
+        )
+
         # Selected
         selev = events[event_level]
-
         #########
 
         # Per muon

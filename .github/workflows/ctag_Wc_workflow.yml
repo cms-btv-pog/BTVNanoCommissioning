@@ -75,7 +75,11 @@ jobs:
     - name: Install Repo
       run: |
         pip install -e .
-
+    
+    - name: Compile JEC
+      run: |
+        python -m BTVNanoCommissioning.utils.compile_jec Rereco17_94X src/BTVNanoCommissioning/data/JME/Rereco17_94X/jec_compiled.pkl.gz
+        
     - name: ctag muon W+c workflows
       run: |
         python runner.py --workflow ctag_Wc_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC

@@ -13,3 +13,11 @@ def normalize(val, cut):
     else:
         ar = ak.to_numpy(ak.fill_none(val[cut], np.nan))
         return ar
+
+
+def update(events, collections):
+    """Return a shallow copy of events array with some collections swapped out"""
+    out = events
+    for name, value in collections.items():
+        out = ak.with_field(out, value, name)
+    return out

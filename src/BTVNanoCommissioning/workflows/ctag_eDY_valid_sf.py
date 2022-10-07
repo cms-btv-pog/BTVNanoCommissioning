@@ -2,8 +2,6 @@ import gzip
 import pickle, os, sys, mplhep as hep, numpy as np
 import collections
 
-from matplotlib.pyplot import jet
-
 
 from coffea import processor
 import awkward as ak
@@ -18,7 +16,7 @@ from BTVNanoCommissioning.utils.correction import (
     load_jetfactory,
     add_jec_variables,
 )
-from BTVNanoCommissioning.helpers.func import flatten
+from BTVNanoCommissioning.helpers.func import flatten, update
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
@@ -75,10 +73,11 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             output["sumw"] = ak.sum(events.genWeight)
             if self.isJERC:
-                events.Jet = self._jet_factory["mc"].build(
+                jets = self._jet_factory["mc"].build(
                     add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
                     lazy_cache=events.caches[0],
                 )
+                update(events, {"Jet": jets})
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
@@ -218,10 +217,11 @@ class NanoProcessor(processor.ProcessorABC):
         ]
 
         req_jets = ak.num(event_jet.puId) >= 1
-        event_jet = ak.pad_none(event_jet, 1, axis=1)
-        event_level = req_lumi & req_trig & req_dilep & req_dilepmass & req_jets
-        if len(event_level) > 0:
-            event_level = ak.fill_none(event_level, False)
+
+        event_level = ak.fill_none(
+            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets, False
+        )
+
         # Selected
         selev = events[event_level]
 
@@ -300,10 +300,8 @@ class NanoProcessor(processor.ProcessorABC):
             & (abs(selev.Jet.eta) <= 2.5)
             & ((selev.Jet.puId >= 7) & (selev.Jet.pt < 50))
             & (selev.Jet.jetId >= 3)
-            & (selev.Jet.btagDeepFlavC < 1.0)
             & (ak.all(selev.Jet.metric_table(sposmu) > 0.4, axis=2))
             & (ak.all(selev.Jet.metric_table(snegmu) > 0.4, axis=2))
-            & (selev.Jet.muEF < 0.8)
         ]
 
         njet = ak.count(sjets.pt, axis=1)

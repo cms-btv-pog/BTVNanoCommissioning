@@ -1,7 +1,6 @@
 import pickle, os, sys, mplhep as hep, numpy as np
 import collections
 
-from matplotlib.pyplot import jet
 
 import coffea
 
@@ -20,7 +19,7 @@ from BTVNanoCommissioning.utils.correction import (
     add_jec_variables,
 )
 from coffea.analysis_tools import Weights
-from BTVNanoCommissioning.helpers.func import flatten
+from BTVNanoCommissioning.helpers.func import flatten, update
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
@@ -71,10 +70,11 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             output["sumw"] = ak.sum(events.genWeight)
             if self.isJERC:
-                events.Jet = self._jet_factory["mc"].build(
+                jets = self._jet_factory["mc"].build(
                     add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
                     lazy_cache=events.caches[0],
                 )
+                update(events, {"Jet": jets})
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
@@ -169,7 +169,7 @@ class NanoProcessor(processor.ProcessorABC):
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
         events.Muon = events.Muon[
             (events.Muon.pt > 30)
-            & (abs(events.Muon.eta < 2.4))
+            & (abs(events.Muon.eta) < 2.4)
             & (events.Muon.tightId)
             & (events.Muon.pfRelIso04_all < 0.12)
         ]
@@ -204,8 +204,7 @@ class NanoProcessor(processor.ProcessorABC):
         event_level = (
             req_trig & req_lumi & req_muon & req_ele & req_jets & req_opposite_charge
         )
-        if len(event_level) > 0:
-            event_level = ak.fill_none(event_level, False)
+        event_level = ak.fill_none(event_level, False)
         # Selected
         selev = events[event_level]
 
@@ -217,7 +216,6 @@ class NanoProcessor(processor.ProcessorABC):
         mu_idiso = (selev.Muon.tightId > 0.5) & (selev.Muon.pfRelIso04_all < 0.12)
         mu_level = mu_eta & mu_pt & mu_idiso
         smu = selev.Muon[mu_level]
-        smu = ak.pad_none(smu, 1, axis=1)
 
         # Per Electron
         el_eta = abs(selev.Electron.eta) < 2.4
@@ -225,7 +223,6 @@ class NanoProcessor(processor.ProcessorABC):
         el_idiso = selev.Electron.cutBased > 3
         el_level = el_eta & el_pt & el_idiso
         sel = selev.Electron[el_level]
-        sel = ak.pad_none(sel, 1, axis=1)
 
         # Per jet : https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
         jet_eta = abs(selev.Jet.eta) <= 2.4
@@ -235,12 +232,9 @@ class NanoProcessor(processor.ProcessorABC):
         jet_dr = ak.all(selev.Jet.metric_table(smu) > 0.4, axis=2) & ak.all(
             selev.Jet.metric_table(sel) > 0.4, axis=2
         )
-        sel = sel[:, 0]
-        smu = smu[:, 0]
-        jet_level = jet_pu & jet_eta & jet_pt & jet_dr
-
+        jet_level = jet_eta & jet_pt & jet_pu & jet_dr
         sjets = selev.Jet[jet_level]
-        sel_jets = sjets
+
         sjets = sjets[:, :2]
         # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
         bjet_disc = selev.Jet.btagDeepB > 0.4941
@@ -463,7 +457,6 @@ class NanoProcessor(processor.ProcessorABC):
         output["njet"].fill(
             ak.count(sjets.pt, axis=1), weight=weights.weight()[event_level]
         )
-        print("end : ", psutil.Process(os.getpid()).memory_info().rss / 1024**2, "MB")
 
         return {dataset: output}
 

@@ -5,7 +5,7 @@ import collections
 import coffea
 from coffea import processor
 from coffea.analysis_tools import Weights
-from BTVNanoCommissioning.helpers.func import flatten
+from BTVNanoCommissioning.helpers.func import flatten, update
 
 from BTVNanoCommissioning.helpers.definitions import definitions
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config

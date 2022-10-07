@@ -75,6 +75,10 @@ jobs:
     - name: Install Repo
       run: |
         pip install -e .
+    
+    - name: Compile JEC
+      run: |
+        python -m BTVNanoCommissioning.utils.compile_jec Rereco17_94X src/BTVNanoCommissioning/data/JME/Rereco17_94X/jec_compiled.pkl.gz
         
     - name:  btag semileptonic ttbar workflow
       run: |

@@ -227,6 +227,8 @@ python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${
 
 ## Create compiled corretions file(`pkl.gz`)
 
+:exclamation: In case existing correction file doesn't work for you due to the incompatibility of `cloudpickle` in different python versions. Please recompile the file to get new pickle file.
+
 Compile correction pickle files for a specific JEC campaign by changing the dict of jet_factory, and define the MC campaign and the output file name by passing it as arguments to the python script:
 
 ```

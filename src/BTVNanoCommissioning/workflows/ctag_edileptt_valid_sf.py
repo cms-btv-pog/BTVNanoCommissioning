@@ -3,8 +3,6 @@ import pickle, os, sys, mplhep as hep, numpy as np
 import collections
 import re
 
-from matplotlib.pyplot import jet
-
 import coffea
 from coffea import processor
 import awkward as ak
@@ -20,7 +18,7 @@ from BTVNanoCommissioning.utils.correction import (
     add_jec_variables,
 )
 from BTVNanoCommissioning.helpers.definitions import definitions
-from BTVNanoCommissioning.helpers.func import flatten
+from BTVNanoCommissioning.helpers.func import flatten, update
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
@@ -76,10 +74,11 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             output["sumw"] = ak.sum(events.genWeight)
             if self.isJERC:
-                events.Jet = self._jet_factory["mc"].build(
+                jets = self._jet_factory["mc"].build(
                     add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
                     lazy_cache=events.caches[0],
                 )
+                update(events, {"Jet": jets})
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)

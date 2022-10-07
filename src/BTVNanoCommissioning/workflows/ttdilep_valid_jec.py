@@ -1,6 +1,6 @@
 import pickle, os, sys, mplhep as hep, numpy as np
 import collections
-from coffea import hist, processor
+from coffea import processor, hist
 import awkward as ak
 from coffea.analysis_tools import Weights
 import gc

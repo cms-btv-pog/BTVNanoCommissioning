@@ -3,7 +3,7 @@ from coffea import processor
 from coffea.analysis_tools import Weights
 import numpy as np
 import awkward as ak
-from BTVNanoCommissioning.helpers.func import flatten
+from BTVNanoCommissioning.helpers.func import flatten, update
 
 from BTVNanoCommissioning.utils.correction import lumiMasks
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
