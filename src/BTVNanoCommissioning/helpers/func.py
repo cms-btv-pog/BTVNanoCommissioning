@@ -21,3 +21,7 @@ def update(events, collections):
     for name, value in collections.items():
         out = ak.with_field(out, value, name)
     return out
+
+
+def num(ar):
+    return ak.num(ak.fill_none(ar[~ak.is_none(ar)], 0), axis=0)

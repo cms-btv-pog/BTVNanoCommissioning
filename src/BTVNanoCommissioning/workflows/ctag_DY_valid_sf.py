@@ -9,7 +9,7 @@ from coffea import processor
 import awkward as ak
 from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.utils.correction import (
-    lumiMasks,
+    load_lumi,
     eleSFs,
     muSFs,
     load_pu,
@@ -24,31 +24,29 @@ from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
 
 class NanoProcessor(processor.ProcessorABC):
-    # Define histograms
-
-    def num(ar):
-        return ak.num(ak.fill_none(ar[~ak.is_none(ar)], 0), axis=0)
-
     def __init__(self, year="2017", campaign="Rereco17_94X", isCorr=True, isJERC=False):
         self._year = year
         self._campaign = campaign
-        ## Load corrections
-        self._deepjetc_sf = load_BTV(
-            self._campaign, correction_config[self._campaign]["BTV"], "DeepJetC"
-        )
-        self._deepjetb_sf = load_BTV(
-            self._campaign, correction_config[self._campaign]["BTV"], "DeepJetB"
-        )
-        self._deepcsvc_sf = load_BTV(
-            self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVC"
-        )
-        self._deepcsvb_sf = load_BTV(
-            self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVB"
-        )
-
-        self._pu = load_pu(self._campaign, correction_config[self._campaign]["PU"])
         self.isJERC = isJERC
         self.isCorr = isCorr
+        self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
+
+        ## Load corrections
+        if isCorr:
+            self._deepjetc_sf = load_BTV(
+                self._campaign, correction_config[self._campaign]["BTV"], "DeepJetC"
+            )
+            self._deepjetb_sf = load_BTV(
+                self._campaign, correction_config[self._campaign]["BTV"], "DeepJetB"
+            )
+            self._deepcsvc_sf = load_BTV(
+                self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVC"
+            )
+            self._deepcsvb_sf = load_BTV(
+                self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVB"
+            )
+            self._pu = load_pu(self._campaign, correction_config[self._campaign]["PU"])
+
         if isJERC:
             self._jet_factory = load_jetfactory(
                 self._campaign, correction_config[self._campaign]["JME"]
@@ -67,8 +65,14 @@ class NanoProcessor(processor.ProcessorABC):
         output = self.make_output()
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
+
+        rho = (
+            events.fixedGridRhoFastjetAll
+            if hasattr(events, "fixedGridRhoFastjetAll")
+            else events.Rho.fixedGridRhoFastjetAll
+        )
         ## Define the CvL, CvB
-        if not hasattr(events, "btagDeepFlavCvL"):
+        if not hasattr(events.Jet, "btagDeepFlavCvL"):
             events.Jet["btagDeepFlavCvL"] = np.maximum(
                 np.minimum(
                     np.where(
@@ -134,20 +138,47 @@ class NanoProcessor(processor.ProcessorABC):
                 -1,
             )
         if isRealData:
-
             output["sumw"] = len(events)
+            if self.isJERC:
+                if "un" in dataset:
+                    jecname = (
+                        dataset[dataset.find("un") + 6]
+                        if dataset[dataset.find("un") + 2].isdigit()
+                        else dataset[dataset.find("un") + 2]
+                    )
+                elif "data" in dataset:
+                    jecname = dataset[dataset.find("data") + 4]
+                else:
+                    print("No valid jec name")
+                    raise NameError
+                if "UL16" in self._campaign:
+                    if "B" == jecname or "C" == jecname or "D" == jecname:
+                        jecname = "BCD"
+                    elif "E" == jecname or "F" == jecname:
+                        jecname = "EF"
+                    elif "F" == jecname or "G" == jecname or "H" == jecname:
+                        jecname = "FGH"
+                    else:
+                        raise NameError
+                elif self._campaign == "Rereco17_94X":
+                    jecname = ""
+                jets = self._jet_factory[f"data{jecname}"].build(
+                    add_jec_variables(events.Jet, rho),
+                    lazy_cache=events.caches[0],
+                )
+                update(events, {"Jet": jets})
         else:
             output["sumw"] = ak.sum(events.genWeight)
             if self.isJERC:
                 jets = self._jet_factory["mc"].build(
-                    add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
+                    add_jec_variables(events.Jet, rho),
                     lazy_cache=events.caches[0],
                 )
                 update(events, {"Jet": jets})
 
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
-            req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
+            req_lumi = self.lumiMask(events.run, events.luminosityBlock)
         weights = Weights(len(events), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events.genWeight)

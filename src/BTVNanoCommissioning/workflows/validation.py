@@ -9,7 +9,7 @@ from BTVNanoCommissioning.helpers.func import flatten, update
 
 from BTVNanoCommissioning.helpers.definitions import definitions
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
-from BTVNanoCommissioning.utils.correction import lumiMasks, load_pu
+from BTVNanoCommissioning.utils.correction import load_lumi, load_pu, load_lumi
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
 
@@ -23,6 +23,7 @@ class NanoProcessor(processor.ProcessorABC):
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,
         }
+        self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
         self._pu = load_pu(self._campaign, correction_config[self._campaign]["PU"])
 
     @property
@@ -41,11 +42,11 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
-            req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
+            req_lumi = self.lumiMask(events.run, events.luminosityBlock)
         weights = Weights(len(events), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events.genWeight)
-        if not hasattr(events, "btagDeepFlavCvL"):
+        if not hasattr(events.Jet, "btagDeepFlavCvL"):
             events.Jet["btagDeepFlavCvL"] = np.maximum(
                 np.minimum(
                     np.where(

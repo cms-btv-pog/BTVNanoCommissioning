@@ -6,7 +6,7 @@ from coffea.analysis_tools import Weights
 import gc
 
 from BTVNanoCommissioning.utils.correction import (
-    lumiMasks,
+    load_lumi,
     load_pu,
     load_BTV,
     load_jetfactory,
@@ -182,16 +182,21 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
 
+        rho = (
+            events.fixedGridRhoFastjetAll
+            if hasattr(events, "fixedGridRhoFastjetAll")
+            else events.Rho.fixedGridRhoFastjetAll
+        )
         if isRealData:
             output["sumw"][dataset] += 1.0
         else:
             output["sumw"][dataset] += ak.sum(events.genWeight)
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
-            req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
+            req_lumi = self.lumiMask(events.run, events.luminosityBlock)
         weights = Weights(len(events), storeIndividual=True)
         ## Define the CvL, CvB
-        if not hasattr(events, "btagDeepFlavCvL"):
+        if not hasattr(events.Jet, "btagDeepFlavCvL"):
             events.Jet["btagDeepFlavCvL"] = np.minimum(
                 np.maximum(
                     np.where(
@@ -300,12 +305,12 @@ class NanoProcessor(processor.ProcessorABC):
 
         if not isRealData:
             corrected_jets = self._jet_factory["mc"].build(
-                add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
+                add_jec_variables(events.Jet, rho),
                 lazy_cache=events.caches[0],
             )
         else:
             corrected_jets = self._jet_factory["data"].build(
-                add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
+                add_jec_variables(events.Jet, rho),
                 lazy_cache=events.caches[0],
             )
 

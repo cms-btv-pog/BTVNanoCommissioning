@@ -78,7 +78,7 @@ jobs:
     
     - name: Compile JEC
       run: |
-        python -m BTVNanoCommissioning.utils.compile_jec Rereco17_94X src/BTVNanoCommissioning/data/JME/Rereco17_94X/jec_compiled.pkl.gz
+        python -m BTVNanoCommissioning.utils.compile_jec Rereco17_94X jec_compiled
         
     - name: ctag muon DY workflows
       run: |

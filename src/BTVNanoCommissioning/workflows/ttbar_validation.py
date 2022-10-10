@@ -5,7 +5,7 @@ import numpy as np
 import awkward as ak
 from BTVNanoCommissioning.helpers.func import flatten, update
 
-from BTVNanoCommissioning.utils.correction import lumiMasks
+from BTVNanoCommissioning.utils.correction import load_lumi
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.helpers.definitions import definitions
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
@@ -17,7 +17,7 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self._year = year
-        self._campaign = campaign
+        self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
         _hist_event_dict = histogrammer("ttcom")
         self.make_output = lambda: {
             "sumw": processor.defaultdict_accumulator(float),
@@ -40,11 +40,11 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
-            req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
+            req_lumi = self.lumiMask(events.run, events.luminosityBlock)
         weights = Weights(len(events), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events.genWeight)
-        if not hasattr(events, "btagDeepFlavCvL"):
+        if not hasattr(events.Jet, "btagDeepFlavCvL"):
             events.Jet["btagDeepFlavCvL"] = np.maximum(
                 np.minimum(
                     np.where(

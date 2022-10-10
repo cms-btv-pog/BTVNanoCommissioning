@@ -10,7 +10,7 @@ import gc
 import os, psutil
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.utils.correction import (
-    lumiMasks,
+    load_lumi,
     eleSFs,
     muSFs,
     load_pu,
@@ -25,12 +25,13 @@ from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
 
 class NanoProcessor(processor.ProcessorABC):
-    # Define histograms
     def __init__(self, year="2017", campaign="Rereco17_94X", isCorr=True, isJERC=False):
         self._year = year
         self._campaign = campaign
         self.isCorr = isCorr
         self.isJERC = isJERC
+        self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
+
         ## Load corrections
         if isCorr:
             self._deepjetc_sf = load_BTV(
@@ -65,19 +66,53 @@ class NanoProcessor(processor.ProcessorABC):
         output = self.make_output()
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
+
+        rho = (
+            events.fixedGridRhoFastjetAll
+            if hasattr(events, "fixedGridRhoFastjetAll")
+            else events.Rho.fixedGridRhoFastjetAll
+        )
         if isRealData:
             output["sumw"] = len(events)
+            if self.isJERC:
+                if "un" in dataset:
+                    jecname = (
+                        dataset[dataset.find("un") + 6]
+                        if dataset[dataset.find("un") + 2].isdigit()
+                        else dataset[dataset.find("un") + 2]
+                    )
+                elif "data" in dataset:
+                    jecname = dataset[dataset.find("data") + 4]
+                else:
+                    print("No valid jec name")
+                    raise NameError
+                if "UL16" in self._campaign:
+                    if "B" == jecname or "C" == jecname or "D" == jecname:
+                        jecname = "BCD"
+                    elif "E" == jecname or "F" == jecname:
+                        jecname = "EF"
+                    elif "F" == jecname or "G" == jecname or "H" == jecname:
+                        jecname = "FGH"
+                    else:
+                        raise NameError
+                elif self._campaign == "Rereco17_94X":
+                    jecname = ""
+                jets = self._jet_factory[f"data{jecname}"].build(
+                    add_jec_variables(events.Jet, rho),
+                    lazy_cache=events.caches[0],
+                )
+                update(events, {"Jet": jets})
         else:
             output["sumw"] = ak.sum(events.genWeight)
             if self.isJERC:
                 jets = self._jet_factory["mc"].build(
-                    add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
+                    add_jec_variables(events.Jet, rho),
                     lazy_cache=events.caches[0],
                 )
                 update(events, {"Jet": jets})
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
-            req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
+            req_lumi = self.lumiMask(events.run, events.luminosityBlock)
         weights = Weights(len(events), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events.genWeight)
@@ -86,7 +121,7 @@ class NanoProcessor(processor.ProcessorABC):
                     "puweight",
                     self._pu[f"{self._year}_pileupweight"](events.Pileup.nPU),
                 )
-        if not hasattr(events, "btagDeepFlavCvL"):
+        if not hasattr(events.Jet, "btagDeepFlavCvL"):
             events.Jet["btagDeepFlavCvL"] = np.maximum(
                 np.minimum(
                     np.where(
@@ -195,7 +230,7 @@ class NanoProcessor(processor.ProcessorABC):
         event_jet = events.Jet[
             (events.Jet.pt > 25)
             & (abs(events.Jet.eta) <= 2.4)
-            # & (events.Jet.puId > 0) # commented out due to run3 condition
+            & (events.Jet.puId > 0)  # commented out due to run3 condition
             & (events.Jet.jetId > 5)
             & (ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))
             & (ak.all(events.Jet.metric_table(events.Electron) > 0.4, axis=2))

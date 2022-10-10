@@ -7,7 +7,7 @@ import awkward as ak
 from coffea.analysis_tools import Weights
 
 from BTVNanoCommissioning.utils.correction import (
-    lumiMasks,
+    load_lumi,
     muSFs,
     load_pu,
     load_BTV,
@@ -22,17 +22,13 @@ from BTVNanoCommissioning.utils.histogrammer import histogrammer
 
 
 class NanoProcessor(processor.ProcessorABC):
-    # Define histograms
-
-    def num(ar):
-        return ak.num(ak.fill_none(ar[~ak.is_none(ar)], 0), axis=0)
-
     def __init__(self, year="2017", campaign="Rereco17_94X", isCorr=True, isJERC=False):
         self._year = year
         self._campaign = campaign
-
         self.isCorr = isCorr
         self.isJERC = isJERC
+        self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
+
         ## Load corrections
         if isCorr:
             self._deepjetc_sf = load_BTV(
@@ -67,22 +63,56 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
 
+        rho = (
+            events.fixedGridRhoFastjetAll
+            if hasattr(events, "fixedGridRhoFastjetAll")
+            else events.Rho.fixedGridRhoFastjetAll
+        )
         if isRealData:
             output["sumw"] = len(events)
+            if self.isJERC:
+                if "un" in dataset:
+                    jecname = (
+                        dataset[dataset.find("un") + 6]
+                        if dataset[dataset.find("un") + 2].isdigit()
+                        else dataset[dataset.find("un") + 2]
+                    )
+                elif "data" in dataset:
+                    jecname = dataset[dataset.find("data") + 4]
+                else:
+                    print("No valid jec name")
+                    raise NameError
+                if "UL16" in self._campaign:
+                    if "B" == jecname or "C" == jecname or "D" == jecname:
+                        jecname = "BCD"
+                    elif "E" == jecname or "F" == jecname:
+                        jecname = "EF"
+                    elif "F" == jecname or "G" == jecname or "H" == jecname:
+                        jecname = "FGH"
+                    else:
+                        raise NameError
+                elif self._campaign == "Rereco17_94X":
+                    jecname = ""
+
+                jets = self._jet_factory[f"data{jecname}"].build(
+                    add_jec_variables(events.Jet, rho),
+                    lazy_cache=events.caches[0],
+                )
+                update(events, {"Jet": jets})
         else:
             output["sumw"] = ak.sum(events.genWeight)
             if self.isJERC:
                 jets = self._jet_factory["mc"].build(
-                    add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
+                    add_jec_variables(events.Jet, rho),
                     lazy_cache=events.caches[0],
                 )
                 update(events, {"Jet": jets})
 
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
-            req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
+            req_lumi = self.lumiMask(events.run, events.luminosityBlock)
         weights = Weights(len(events), storeIndividual=True)
-        if not hasattr(events, "btagDeepFlavCvL"):
+        if not hasattr(events.Jet, "btagDeepFlavCvL"):
             events.Jet["btagDeepFlavCvL"] = np.maximum(
                 np.minimum(
                     np.where(
@@ -203,7 +233,9 @@ class NanoProcessor(processor.ProcessorABC):
             (events.Jet.pt > 20)
             & (abs(events.Jet.eta) <= 2.5)
             & (events.Jet.jetId >= 5)
-            & ((events.Jet.pt > 50) | (events.Jet.puId >= 7))
+            & (
+                (events.Jet.pt > 50) | (events.Jet.puId >= 7)
+            )  # commented out due to run3 condition
         ]
         req_jets = ak.count(event_jet.pt, axis=1) >= 2
 
@@ -224,7 +256,6 @@ class NanoProcessor(processor.ProcessorABC):
         req_mujet = ak.count(mu_jet.pt, axis=1) >= 1
 
         # dilepton mass
-
         dilep_mass = iso_muon[:, 0] + iso_muon[:, 1]
         req_dilepmass = (dilep_mass.mass > 12.0) & (
             (dilep_mass.mass < 75) | (dilep_mass.mass > 105)
