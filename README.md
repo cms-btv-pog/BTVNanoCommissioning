@@ -52,6 +52,7 @@ conda install -c conda-forge dask-jobqueue
 conda install -c anaconda bokeh 
 conda install -c conda-forge 'fsspec>=0.3.3'
 conda install dask
+conda install parsl
 ```
 
 Once the environment is set up, compile the python package:
