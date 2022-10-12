@@ -82,8 +82,8 @@ jobs:
         
     - name: ctag muon DY workflows
       run: |
-        python runner.py --workflow ctag_DY_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC
+        python runner.py --workflow ctag_DY_sf --json metadata/test_w_dj_mumu.json  --limit 1 --executor iterative --isCorr --isJERC
     
     - name: ctag electron DY workflows
       run: |
-        python runner.py --workflow ectag_DY_sf --json metadata/test_w_dj.json  --limit 1 --executor iterative --isCorr --isJERC
+        python runner.py --workflow ectag_DY_sf --json metadata/test_w_dj_ee.json  --limit 1 --executor iterative --isCorr --isJERC

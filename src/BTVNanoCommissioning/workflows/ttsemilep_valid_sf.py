@@ -1,8 +1,9 @@
-import collections
-from coffea import hist, processor
-import numpy as np
-import awkward as ak
+import collections, gc
+import numpy as np, awkward as ak
+
+from coffea import processor
 from coffea.analysis_tools import Weights
+
 from BTVNanoCommissioning.utils.correction import (
     load_lumi,
     eleSFs,
@@ -10,13 +11,13 @@ from BTVNanoCommissioning.utils.correction import (
     load_pu,
     load_BTV,
     load_jetfactory,
-    add_jec_variables,
 )
-import gc
 from BTVNanoCommissioning.helpers.func import flatten, update
+from BTVNanoCommissioning.helpers.update_branch import missing_branch, add_jec
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.selection import jet_id, btag_mu_idiso, ele_mvatightid
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -57,226 +58,94 @@ class NanoProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
-
         output = self.make_output()
-
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-
-        rho = (
-            events.fixedGridRhoFastjetAll
-            if hasattr(events, "fixedGridRhoFastjetAll")
-            else events.Rho.fixedGridRhoFastjetAll
-        )
+        events = missing_branch(events)
+        weights = Weights(len(events), storeIndividual=True)
+        if self.isJERC:
+            add_jec(events, self._campaign, self._jet_factory)
         if isRealData:
             output["sumw"] = len(events)
-            if self.isJERC:
-                if "un" in dataset:
-                    jecname = (
-                        dataset[dataset.find("un") + 6]
-                        if dataset[dataset.find("un") + 2].isdigit()
-                        else dataset[dataset.find("un") + 2]
-                    )
-                elif "data" in dataset:
-                    jecname = dataset[dataset.find("data") + 4]
-                else:
-                    print("No valid jec name")
-                    raise NameError
-                if "UL16" in self._campaign:
-                    if "B" == jecname or "C" == jecname or "D" == jecname:
-                        jecname = "BCD"
-                    elif "E" == jecname or "F" == jecname:
-                        jecname = "EF"
-                    elif "F" == jecname or "G" == jecname or "H" == jecname:
-                        jecname = "FGH"
-                    else:
-                        raise NameError
-                elif self._campaign == "Rereco17_94X":
-                    jecname = ""
-                jets = self._jet_factory[f"data{jecname}"].build(
-                    add_jec_variables(events.Jet, rho),
-                    lazy_cache=events.caches[0],
-                )
-                update(events, {"Jet": jets})
         else:
             output["sumw"] = ak.sum(events.genWeight)
-            if self.isJERC:
-                jets = self._jet_factory["mc"].build(
-                    add_jec_variables(events.Jet, rho),
-                    lazy_cache=events.caches[0],
-                )
-                update(events, {"Jet": jets})
-
+        ####################
+        #    Selections    #
+        ####################
+        ## Lumimask
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
-        weights = Weights(len(events), storeIndividual=True)
-        if not hasattr(events.Jet, "btagDeepFlavCvL"):
-            events.Jet["btagDeepFlavCvL"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (
-                            (
-                                events.Jet.btagDeepFlavC
-                                / (1.0 - events.Jet.btagDeepFlavB)
-                            )
-                            > 0
-                        )
-                        & (events.Jet.pt > 15),
-                        (events.Jet.btagDeepFlavC / (1.0 - events.Jet.btagDeepFlavB)),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-            events.Jet["btagDeepFlavCvB"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (
-                            (
-                                events.Jet.btagDeepFlavC
-                                / (events.Jet.btagDeepFlavC + events.Jet.btagDeepFlavB)
-                            )
-                            > 0
-                        )
-                        & (events.Jet.pt > 15),
-                        (
-                            events.Jet.btagDeepFlavC
-                            / (events.Jet.btagDeepFlavC + events.Jet.btagDeepFlavB)
-                        ),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-            events.Jet["btagDeepCvL"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (events.Jet.btagDeepC > 0) & (events.Jet.pt > 15),
-                        (events.Jet.btagDeepC / (1.0 - events.Jet.btagDeepB)),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-            events.Jet["btagDeepCvB"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (events.Jet.btagDeepC > 0) & (events.Jet.pt > 15),
-                        (
-                            events.Jet.btagDeepC
-                            / (events.Jet.btagDeepC + events.Jet.btagDeepB)
-                        ),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-        if hasattr(events, "METFixEE2017"):
-            events.MET = events.METFixEE2017
-        if not isRealData:
-            weights.add("genweight", events.genWeight)
-            if self.isCorr:
-                weights.add(
-                    "puweight",
-                    self._pu[f"{self._year}_pileupweight"](events.Pileup.nPU),
-                )
-        ##############
-        # Trigger level
-        triggers = [
-            "HLT_IsoMu24",
-        ]
 
-        trig_arrs = [events.HLT[_trig.strip("HLT_")] for _trig in triggers]
+        ## HLT
+        triggers = [
+            "IsoMu24",
+        ]
+        checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
+        if ak.all(checkHLT == False):
+            raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
+        elif ak.any(checkHLT == False):
+            print(np.array(triggers)[~checkHLT], " not exist in", dataset)
+        trig_arrs = [
+            events.HLT[_trig] for _trig in triggers if hasattr(events.HLT, _trig)
+        ]
         req_trig = np.zeros(len(events), dtype="bool")
         for t in trig_arrs:
             req_trig = req_trig | t
 
-        ############
-        # Event level
-
         ## Muon cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
         events.Muon = events.Muon[
-            (events.Muon.pt > 30)
-            & (abs(events.Muon.eta) < 2.4)
-            & (events.Muon.tightId > 0.5)
-            & (events.Muon.pfRelIso04_all < 0.12)
+            (events.Muon.pt > 30) & btag_mu_idiso(events, self._campaign)
         ]
-
         event_muon = ak.pad_none(events.Muon, 1, axis=1)
-
         req_muon = ak.count(event_muon.pt, axis=1) == 1
 
         ## Jet cuts
         event_jet = events.Jet[
-            (events.Jet.pt > 25)
-            & (abs(events.Jet.eta) <= 2.4)
-            & (events.Jet.puId > 0)
-            & (events.Jet.jetId > 0)
+            jet_id(events, self._campaign)
             & (ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))
         ]
-
         req_jets = ak.num(event_jet.pt) >= 4
+
+        ## other cuts
         req_MET = events.MET.pt > 50
 
         event_level = ak.fill_none(
             req_trig & req_jets & req_muon & req_MET & req_lumi, False
         )
 
-        # Selected
-        selev = events[event_level]
-        #########
-
-        # Per muon
-        mu_eta = abs(selev.Muon.eta) < 2.4
-        mu_pt = selev.Muon.pt > 30
-        mu_idiso = (selev.Muon.tightId > 0.5) & (selev.Muon.pfRelIso04_all < 0.12)
-        mu_level = mu_eta & mu_pt & mu_idiso
-
-        smu = selev.Muon[mu_level]
-        # Per jet : https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
-        jet_eta = abs(selev.Jet.eta) <= 2.4
-        jet_pt = selev.Jet.pt > 25
-        jet_pu = (selev.Jet.puId > 0) & (selev.Jet.jetId > 0)
-        jet_dr = ak.all(selev.Jet.metric_table(smu) > 0.4, axis=2)
-
-        jet_level = jet_pu & jet_eta & jet_pt & jet_dr
-
-        # b-tag twiki : https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
-        bjet_disc = selev.Jet.btagDeepB > 0.4941  # L=0.0494, M=0.2770, T=0.7264
-        bjet_level = jet_level & bjet_disc
-
-        sjets = selev.Jet[jet_level]
+        ####################
+        # Selected objects #
+        ####################
+        smu = event_muon[event_level]
+        sjets = event_jet[event_level]
         sel_jets = sjets
         sjets = sjets[:, :4]
-        sbjets = selev.Jet[bjet_level]
+
+        ####################
+        # Weight & Geninfo #
+        ####################
+        if not isRealData:
+            weights.add("genweight", events.genWeight)
         if not isRealData and self.isCorr:
+            weights.add(
+                "puweight",
+                self._pu[f"{self._year}_pileupweight"](events.Pileup.nPU),
+            )
             weights.add(
                 "lep1sf",
                 np.where(
                     event_level,
                     muSFs(
-                        ak.firsts(
-                            events.Muon[
-                                (events.Muon.pt > 30)
-                                & (abs(events.Muon.eta) < 2.4)
-                                & (events.Muon.tightId > 0.5)
-                                & (events.Muon.pfRelIso04_all < 0.12)
-                            ]
-                        ),
+                        ak.firsts(event_muon),
                         self._campaign,
                         correction_config[self._campaign]["LSF"],
                     ),
                     1.0,
                 ),
             )
-        if not isRealData:
-            stbjets = sbjets[sbjets.hadronFlavour == 5]
+
         if isRealData:
             genflavor = ak.zeros_like(sjets.pt)
         else:
@@ -382,6 +251,10 @@ class NanoProcessor(processor.ProcessorABC):
                     "btagDeepFlavCvL": jetsfs_c,
                     "btagDeepFlavCvB": jetsfs_c,
                 }
+
+        ####################
+        #  Fill histogram  #
+        ####################
         for histname, h in output.items():
             if "Deep" in histname and "btag" not in histname:
                 h.fill(
@@ -428,10 +301,10 @@ class NanoProcessor(processor.ProcessorABC):
                     weight=weights.weight()[event_level],
                 )
             elif (
-                "MET_" in histname and histname.replace("MET_", "") in selev.MET.fields
+                "MET_" in histname and histname.replace("MET_", "") in events.MET.fields
             ):
                 h.fill(
-                    flatten(selev.MET[histname.replace("MET_", "")]),
+                    flatten(events[event_level].MET[histname.replace("MET_", "")]),
                     weight=weights.weight()[event_level],
                 )
             elif "jet" in histname and "dr" not in histname and "njet" != histname:

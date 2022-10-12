@@ -225,6 +225,7 @@ Use the `fetch.py` in `filefetcher`, the `$input_DAS_list` is the info extract f
 ```
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
 ```
+For the data sample please use the naming scheme  `$dataset_$Run_$campaign`, e.g. `SingleMuon_Run2017B-31Mar2018-v1_PFNanov2`
 
 ## Create compiled corretions file(`pkl.gz`)
 
@@ -233,7 +234,7 @@ python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${
 Compile correction pickle files for a specific JEC campaign by changing the dict of jet_factory, and define the MC campaign and the output file name by passing it as arguments to the python script:
 
 ```
-python -m utils.compile_jec UL17_106X data/JME/UL17_106X/jec_compiled.pkl.gz
+python -m utils.compile_jec UL17_106X jec_compiled
 ```
 
 

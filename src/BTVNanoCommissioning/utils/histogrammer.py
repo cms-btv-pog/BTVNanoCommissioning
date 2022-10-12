@@ -184,9 +184,9 @@ def histogrammer(workflow):
     ### discriminators
     disc_list = [
         "btagDeepB",
-        # "btagDeepC", #not exist for run3
+        "btagDeepC",
         "btagDeepFlavB",
-        # "btagDeepFlavC",#not exist for run3
+        "btagDeepFlavC",
         "btagDeepCvL",
         "btagDeepCvB",
         "btagDeepFlavCvL",
