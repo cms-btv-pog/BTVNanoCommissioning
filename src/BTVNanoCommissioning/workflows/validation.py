@@ -1,16 +1,16 @@
-import gzip
-import pickle, os, sys, mplhep as hep, numpy as np, awkward as ak
+import collections, numpy as np, awkward as ak
 import collections
 
-import coffea
 from coffea import processor
 from coffea.analysis_tools import Weights
-from BTVNanoCommissioning.helpers.func import flatten
 
+from BTVNanoCommissioning.helpers.func import flatten, update
 from BTVNanoCommissioning.helpers.definitions import definitions
+from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
-from BTVNanoCommissioning.utils.correction import lumiMasks, load_pu
+from BTVNanoCommissioning.utils.correction import load_lumi, load_pu, load_lumi
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_mvatightid
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -23,7 +23,7 @@ class NanoProcessor(processor.ProcessorABC):
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,
         }
-        self._pu = load_pu(self._campaign, correction_config[self._campaign]["PU"])
+        self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
 
     @property
     def accumulator(self):
@@ -33,120 +33,59 @@ class NanoProcessor(processor.ProcessorABC):
         output = self.make_output()
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-
+        events = missing_branch(events)
         if isRealData:
             output["sumw"] = len(events)
         else:
             output["sumw"] = ak.sum(events.genWeight)
 
+        ####################
+        #    Selections    #
+        ####################
+        ## Lumimask
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
-            req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
+            req_lumi = self.lumiMask(events.run, events.luminosityBlock)
         weights = Weights(len(events), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events.genWeight)
-        if not hasattr(events, "btagDeepFlavCvL"):
-            events.Jet["btagDeepFlavCvL"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (
-                            (
-                                events.Jet.btagDeepFlavC
-                                / (1.0 - events.Jet.btagDeepFlavB)
-                            )
-                            > 0
-                        )
-                        & (events.Jet.pt > 15),
-                        (events.Jet.btagDeepFlavC / (1.0 - events.Jet.btagDeepFlavB)),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-            events.Jet["btagDeepFlavCvB"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (
-                            (
-                                events.Jet.btagDeepFlavC
-                                / (events.Jet.btagDeepFlavC + events.Jet.btagDeepFlavB)
-                            )
-                            > 0
-                        )
-                        & (events.Jet.pt > 15),
-                        (
-                            events.Jet.btagDeepFlavC
-                            / (events.Jet.btagDeepFlavC + events.Jet.btagDeepFlavB)
-                        ),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-            events.Jet["btagDeepCvL"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (events.Jet.btagDeepC > 0) & (events.Jet.pt > 15),
-                        (events.Jet.btagDeepC / (1.0 - events.Jet.btagDeepB)),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-            events.Jet["btagDeepCvB"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (events.Jet.btagDeepC > 0) & (events.Jet.pt > 15),
-                        (
-                            events.Jet.btagDeepC
-                            / (events.Jet.btagDeepC + events.Jet.btagDeepB)
-                        ),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-        ##############
-        # Trigger level
-        triggers = [
-            "HLT_IsoMu24",
-        ]
 
-        trig_arrs = [events.HLT[_trig.strip("HLT_")] for _trig in triggers]
+        ## HLT
+        triggers = [
+            "IsoMu24",
+        ]
+        checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
+        if ak.all(checkHLT == False):
+            raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
+        elif ak.any(checkHLT == False):
+            print(np.array(triggers)[~checkHLT], " not exist in", dataset)
+        trig_arrs = [
+            events.HLT[_trig] for _trig in triggers if hasattr(events.HLT, _trig)
+        ]
         req_trig = np.zeros(len(events), dtype="bool")
         for t in trig_arrs:
             req_trig = req_trig | t
 
-        ############
-        # Event level
+        ## Jet cuts
         event_jet = events.Jet[
-            (events.Jet.pt > 25)
-            & (abs(events.Jet.eta) <= 2.4)
-            & (events.Jet.puId > 0)
-            & (events.Jet.jetId > 5)
+            jet_id(events, self._campaign)
             & (ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))
             & (ak.all(events.Jet.metric_table(events.Electron) > 0.4, axis=2))
         ]
-        req_jets = ak.num(event_jet.puId) >= 2
+        req_jets = ak.num(event_jet.pt) >= 2
         event_level = req_jets
-        if len(event_level) > 0:
-            event_level = ak.fill_none(event_level, False)
-        # Selected
-        selev = events[event_level]
-        #########
-        # Per jet : https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
-        jet_eta = abs(selev.Jet.eta) <= 2.4
-        jet_pt = selev.Jet.pt > 25
-        jet_pu = (selev.Jet.puId > 0) & (selev.Jet.jetId > 5)
-        jet_level = jet_pu & jet_eta & jet_pt
-        sjets = selev.Jet[jet_level]
-        sel_jets = sjets
+
+        event_level = ak.fill_none(event_level, False)
+
+        ####################
+        # Selected objects #
+        ####################
+        sjets = event_jet[event_level]
         sjets = sjets[:, :2]
 
+        ####################
+        # Weight & Geninfo #
+        ####################
         if isRealData:
             genflavor = ak.zeros_like(sjets.pt)
         else:
@@ -155,7 +94,9 @@ class NanoProcessor(processor.ProcessorABC):
             genweiev = ak.flatten(
                 ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[0]
             )
-
+        ####################
+        #  Fill histogram  #
+        ####################
         for histname, h in output.items():
             if "Deep" in histname and "btag" not in histname:
                 h.fill(

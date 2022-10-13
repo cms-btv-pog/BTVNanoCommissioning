@@ -1,14 +1,15 @@
-import coffea
+import numpy as np, awkward as ak
+
 from coffea import processor
 from coffea.analysis_tools import Weights
-import numpy as np
-import awkward as ak
-from BTVNanoCommissioning.helpers.func import flatten
 
-from BTVNanoCommissioning.utils.correction import lumiMasks
+from BTVNanoCommissioning.helpers.func import flatten, update
+from BTVNanoCommissioning.utils.correction import load_lumi
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.helpers.definitions import definitions
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.selection import jet_id
+from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -17,7 +18,7 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self._year = year
-        self._campaign = campaign
+        self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
         _hist_event_dict = histogrammer("ttcom")
         self.make_output = lambda: {
             "sumw": processor.defaultdict_accumulator(float),
@@ -31,98 +32,40 @@ class NanoProcessor(processor.ProcessorABC):
     def process(self, events):
         output = self.make_output()
         isRealData = not hasattr(events, "genWeight")
-
         dataset = events.metadata["dataset"]
+        events = missing_branch(events)
         if isRealData:
             output["sumw"] = len(events)
         else:
             output["sumw"] = ak.sum(events.genWeight)
 
+        ####################
+        #    Selections    #
+        ####################
+        ## Lumimask
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
-            req_lumi = lumiMasks[self._year](events.run, events.luminosityBlock)
+            req_lumi = self.lumiMask(events.run, events.luminosityBlock)
         weights = Weights(len(events), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events.genWeight)
-        if not hasattr(events, "btagDeepFlavCvL"):
-            events.Jet["btagDeepFlavCvL"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (
-                            (
-                                events.Jet.btagDeepFlavC
-                                / (1.0 - events.Jet.btagDeepFlavB)
-                            )
-                            > 0
-                        )
-                        & (events.Jet.pt > 15),
-                        (events.Jet.btagDeepFlavC / (1.0 - events.Jet.btagDeepFlavB)),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-            events.Jet["btagDeepFlavCvB"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (
-                            (
-                                events.Jet.btagDeepFlavC
-                                / (events.Jet.btagDeepFlavC + events.Jet.btagDeepFlavB)
-                            )
-                            > 0
-                        )
-                        & (events.Jet.pt > 15),
-                        (
-                            events.Jet.btagDeepFlavC
-                            / (events.Jet.btagDeepFlavC + events.Jet.btagDeepFlavB)
-                        ),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-            events.Jet["btagDeepCvL"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (events.Jet.btagDeepC > 0) & (events.Jet.pt > 15),
-                        (events.Jet.btagDeepC / (1.0 - events.Jet.btagDeepB)),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-            events.Jet["btagDeepCvB"] = np.maximum(
-                np.minimum(
-                    np.where(
-                        (events.Jet.btagDeepC > 0) & (events.Jet.pt > 15),
-                        (
-                            events.Jet.btagDeepC
-                            / (events.Jet.btagDeepC + events.Jet.btagDeepB)
-                        ),
-                        -1,
-                    ),
-                    0.999999,
-                ),
-                -1,
-            )
-        ##############
-        # Trigger level
-        triggers = [
-            "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-            "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-        ]
 
-        trig_arrs = [events.HLT[_trig.strip("HLT_")] for _trig in triggers]
+        ## HLT
+        triggers = [
+            "Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+            "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
+        ]
+        checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
+        if ak.all(checkHLT == False):
+            raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
+        elif ak.any(checkHLT == False):
+            print(np.array(triggers)[~checkHLT], " not exist in", dataset)
+        trig_arrs = [
+            events.HLT[_trig] for _trig in triggers if hasattr(events.HLT, _trig)
+        ]
         req_trig = np.zeros(len(events), dtype="bool")
         for t in trig_arrs:
             req_trig = req_trig | t
-
-        ############
-        # Event level
 
         ## Muon cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
@@ -139,14 +82,10 @@ class NanoProcessor(processor.ProcessorABC):
         events.Electron = ak.pad_none(events.Electron, 1)
 
         ## Jet cuts
-        events.Jet = events.Jet[
-            (abs(events.Jet.eta) <= 2.4)
-            & (events.Jet.pt > 25)
-            & (((events.Jet.puId > 6) & (events.Jet.pt < 50)) | (events.Jet.pt > 50))
-            & (events.Jet.jetId >= 2)
-        ]
+        events.Jet = events.Jet[jet_id(events, self._campaign)]
         req_jets = ak.count(events.Jet.pt, axis=1) >= 2
 
+        ## Other cuts
         req_opposite_charge = (
             events.Electron[:, 0].charge * events.Muon[:, 0].charge
         ) == -1
@@ -154,33 +93,19 @@ class NanoProcessor(processor.ProcessorABC):
             req_trig & req_jets & req_ele & req_muon & req_opposite_charge, False
         )
 
-        selev = events[event_level]
-
-        #########
-        # Per electron
-        el_eta = abs(selev.Electron.eta) <= 2.4
-        el_pt = selev.Electron.pt > 30
-        el_level = el_eta & el_pt
-
-        # Per muon
-        mu_eta = abs(selev.Muon.eta) <= 2.4
-        mu_pt = selev.Muon.pt > 30
-        mu_level = mu_eta & mu_pt
-
-        # Per jet
-        jet_eta = abs(selev.Jet.eta) <= 2.4
-        jet_pt = selev.Jet.pt > 25
-        jet_pu = ((selev.Jet.puId > 6) & (selev.Jet.pt < 50)) | (selev.Jet.pt > 50)
-        jet_id = selev.Jet.jetId >= 2
-        jet_level = jet_pu & jet_eta & jet_pt & jet_id
-
-        sele = selev.Electron[el_level]
+        ####################
+        # Selected objects #
+        ####################
+        sele = events.Electron[event_level]
         sele = sele[:, 0]
-        smu = selev.Muon[mu_level]
+        smu = events.Muon[event_level]
         smu = smu[:, 0]
-        sjets = selev.Jet[jet_level]
+        sjets = events.Jet[event_level]
         sjets = sjets[:, :2]
 
+        ####################
+        # Weight & Geninfo #
+        ####################
         if isRealData:
             genflavor = ak.zeros_like(sjets.pt)
         else:
@@ -189,7 +114,9 @@ class NanoProcessor(processor.ProcessorABC):
             genweiev = ak.flatten(
                 ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[0]
             )
-        # Fill histograms dynamically
+        ####################
+        #  Fill histogram  #
+        ####################
         for histname, h in output.items():
             if "Deep" in histname and "btag" not in histname:
                 h.fill(

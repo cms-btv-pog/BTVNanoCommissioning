@@ -52,6 +52,7 @@ conda install -c conda-forge dask-jobqueue
 conda install -c anaconda bokeh 
 conda install -c conda-forge 'fsspec>=0.3.3'
 conda install dask
+conda install parsl
 ```
 
 Once the environment is set up, compile the python package:
@@ -224,13 +225,16 @@ Use the `fetch.py` in `filefetcher`, the `$input_DAS_list` is the info extract f
 ```
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
 ```
+For the data sample please use the naming scheme  `$dataset_$Run_$campaign`, e.g. `SingleMuon_Run2017B-31Mar2018-v1_PFNanov2`
 
 ## Create compiled corretions file(`pkl.gz`)
+
+:exclamation: In case existing correction file doesn't work for you due to the incompatibility of `cloudpickle` in different python versions. Please recompile the file to get new pickle file.
 
 Compile correction pickle files for a specific JEC campaign by changing the dict of jet_factory, and define the MC campaign and the output file name by passing it as arguments to the python script:
 
 ```
-python -m utils.compile_jec UL17_106X data/JME/UL17_106X/jec_compiled.pkl.gz
+python -m utils.compile_jec UL17_106X jec_compiled
 ```
 
 

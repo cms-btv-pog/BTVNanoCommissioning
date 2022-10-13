@@ -1,5 +1,6 @@
 correction_config = {
     "Rereco17_94X": {
+        "lumiMask": "Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt",
         "PU": "94XPUwei_corrections.pkl.gz",
         "JME": "jec_compiled.pkl.gz",
         "BTV": {
@@ -16,5 +17,9 @@ correction_config = {
             "mu_ID_low NUM_TightID_DEN_genTracks_pt_abseta": "RunBCDEF_MuIDSF_lowpT.histo.root",
             "mu_Iso NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta": "RunBCDEF_MuISOSF.histo.root",
         },
-    }
+    },
+    "Winter22Run3": {
+        "lumiMask": "Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt",
+        "JME": "jec_compiled.pkl.gz",
+    },
 }

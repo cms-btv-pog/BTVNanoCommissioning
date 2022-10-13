@@ -78,4 +78,4 @@ jobs:
 
     - name: Run workflow
       run: |
-        python runner.py --workflow validation --json metadata/test_w_dj.json  --limit 1 --executor iterative
+        python runner.py --workflow validation --json metadata/test_w_dj_mumu.json  --limit 1 --executor iterative

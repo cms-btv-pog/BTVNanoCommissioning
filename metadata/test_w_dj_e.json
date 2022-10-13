@@ -1,0 +1,6 @@
+{
+    "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8":["root://eoscms.cern.ch//eos/cms/store/group/phys_btag/nano-commissioning/UL17_TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8_skimmed.root"],
+    "SingleElectron_Run2017B-106X_PFNanov1":["root://eoscms.cern.ch//eos/cms/store/group/phys_btag/nano-commissioning/RunB_UL17_SingleElectron.root"],
+    "DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8":["root://eoscms.cern.ch//eos/cms/store/group/phys_btag/nano-commissioning/UL17_DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8_skimmed.root"],
+    "QCD_Pt_1400to1800_TuneCP5_13TeV_pythia8":["root://eoscms.cern.ch//eos/cms/store/group/phys_btag/nano-commissioning/UL17_QCD_Pt_1400to1800_TuneCP5_13TeV_pythia8_skimmed.root"]
+}

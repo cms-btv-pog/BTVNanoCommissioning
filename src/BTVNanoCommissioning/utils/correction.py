@@ -16,37 +16,13 @@ from coffea.btag_tools import BTagScaleFactor
 from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
 from coffea.lookup_tools import extractor
 
-# FIXME make jsons campaing configurable
-lumiMasks = {}
-_lumi_path = "BTVNanoCommissioning.data.lumiMasks"
-with importlib.resources.path(
-    _lumi_path, "Cert_271036-284044_13TeV_23Sep2016ReReco_Collisions16_JSON.txt"
-) as filename:
-    lumiMasks["2016"] = LumiMask(filename)
-with importlib.resources.path(
-    _lumi_path, "Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt"
-) as filename:
-    lumiMasks["2017"] = LumiMask(filename)
-with importlib.resources.path(
-    _lumi_path,
-    "Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt",
-) as filename:
-    lumiMasks["2018"] = LumiMask(filename)
-with importlib.resources.path(
-    _lumi_path,
-    "Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt",
-) as filename:
-    lumiMasks["UL16"] = LumiMask(filename)
-with importlib.resources.path(
-    _lumi_path,
-    "Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt",
-) as filename:
-    lumiMasks["UL17"] = LumiMask(filename)
-with importlib.resources.path(
-    _lumi_path,
-    "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt",
-) as filename:
-    lumiMasks["UL18"] = LumiMask(filename)
+
+def load_lumi(path):
+    _lumi_path = "BTVNanoCommissioning.data.lumiMasks"
+    with importlib.resources.path(_lumi_path, path) as filename:
+        return LumiMask(filename)
+
+
 ## MET filters
 met_filters = {
     "UL16": {
@@ -199,18 +175,6 @@ def load_BTV(campaign, path, tagger):
     return deepsf
 
 
-### Lepton SFs
-
-# with contextlib.ExitStack() as stack:
-#     # this would work even in zipballs but since extractor keys on file extension and
-#     # importlib make a random tempfile, it won't work. coffea needs to enable specifying the type manually
-#     # for now we run this whole module as $ python -m boostedhiggs.build_jec boostedhiggs/data/jec_compiled.pkl.gz
-#     # so the compiled value can be loaded using the importlib tool in corrections.py
-#     _ele_path = "BTVNanoCommissioning.data.LSF.Rereco17_94X"
-#     real_paths = [stack.enter_context(importlib.resources.path(_ele_path, f)) for f in ele_sf_mapping.values()]
-#     ext.add_weight_sets([f"{path} {file}" for path, file in zip(ele_sf_mapping.keys(), real_paths)])
-#     ext.finalize()
-# evaluator = ext.make_evaluator()
 ### Lepton SFs
 def eleSFs(ele, campaign, path):
     _ele_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
