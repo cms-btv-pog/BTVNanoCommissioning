@@ -13,3 +13,4 @@ dependencies:
   - psutil
   - dask
   - parsl
+  - arrow

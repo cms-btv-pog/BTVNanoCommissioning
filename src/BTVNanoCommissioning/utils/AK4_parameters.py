@@ -19,7 +19,7 @@ correction_config = {
         },
     },
     "Winter22Run3": {
-        "lumiMask": "Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt",
+        "lumiMask": "Cert_Collisions2022_355100_357900_Golden.json",
         "JME": "jec_compiled.pkl.gz",
     },
 }

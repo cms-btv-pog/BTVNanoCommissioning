@@ -11,7 +11,7 @@ plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.utils.xs_scaler import getSumW, collate, scaleSumW
 
 markers = [".", "o", "^", "s", "+", "x", "D", "*"]
-parser = argparse.ArgumentParser(description="hist plotter for commissioning")
+parser = argparse.ArgumentParser(description="make comparison for different campaigns")
 parser.add_argument(
     "-p",
     "--phase",
@@ -27,42 +27,40 @@ parser.add_argument(
     dest="phase",
     help="which phase space",
 )
-
-parser.add_argument("--ext", type=str, default="data", help="addional name")
-parser.add_argument("-o", "--output", required=True, type=str, help="files set")
+parser.add_argument(
+    "-i",
+    "--input",
+    required=True,
+    type=str,
+    help="input coffea files (str), splitted different files with ,",
+)
 parser.add_argument("-r", "--ref", required=True, help="referance dataset")
 parser.add_argument(
     "-c",
     "--compared",
     required=True,
     type=str,
-    help="compared dataset",
+    help="compared datasets, splitted by ,",
 )
-parser.add_argument("--sepflav", default=False, type=bool, help="seperate flavour")
-parser.add_argument("--log", action="store_true", help="log on x axis")
 parser.add_argument(
-    "-d",
-    "--discr_list",
-    nargs="+",
-    default=[
-        "btagDeepCvL",
-        "btagDeepCvB",
-        "btagDeepFlavCvL",
-        "btagDeepFlavCvB",
-        "btagDeepB_b",
-        "btagDeepFlavB",
-    ],
-    help="discriminators",
+    "--sepflav", default=False, type=bool, help="seperate flavour(b/c/light)"
 )
-parser.add_argument("--ext", type=str, default="data", help="addional name")
+parser.add_argument("--log", action="store_true", help="log on y axis")
+parser.add_argument(
+    "-v",
+    "--variable",
+    type=str,
+    help="variables to plot, splitted by ,",
+)
+parser.add_argument("--ext", type=str, default="data", help="prefix name")
 
 
 args = parser.parse_args()
 output = {}
-if len(args.output.split(",")) > 1:
-    output = {i: load({args.output.split(",")[i]}) for i in args.output.split(",")}
+if len(args.input.split(",")) > 1:
+    output = {i: load({args.input.split(",")[i]}) for i in args.input.split(",")}
 else:
-    output = load(args.output)
+    output = load(args.input)
 mergemap = {}
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{args.phase}_{args.ext}_{time}/"):
@@ -101,7 +99,7 @@ else:
     nj = 1
 
 
-for discr in args.discr_list:
+for discr in args.variable:
     if args.sepflav:  # split into 3 panels for different flavor
         fig, (ax, rax, rax2, rax3) = plt.subplots(
             4,
