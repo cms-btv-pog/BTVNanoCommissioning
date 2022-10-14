@@ -248,15 +248,16 @@ python plotdataMC.py -i a.coffea,b.coffea --lumi 41900 -p dilep_sf -d zmass,z_pt
 optional arguments:
   --lumi LUMI           luminosity in /pb
   -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
-                        which workflows
+                        which phase space
   --log LOG             log on x axis
   --norm NORM           Use for reshape SF, scale to same yield as no SFs case
-  -d DISCR_LIST, --discr_list DISCR_LIST
-                        discriminators
+  -v VARIABLE, --variable VARIABLE
+                        variables to plot, splitted by ,
   --SF                  make w/, w/o SF comparisons
-  --ext EXT             prefix output file
+  --ext EXT             prefix name
   -i INPUT, --input INPUT
-                        input coffea files (str), splitted different files with ,
+                        input coffea files (str), splitted different files
+                        with ,
 ```
 - data/data, MC/MC comparison from BTV
 ```
@@ -267,13 +268,14 @@ optional arguments:
   -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
                         which phase space
   -i INPUT, --input INPUT
-                        files set
+                        input coffea files (str), splitted different files
+                        with ,
   -r REF, --ref REF     referance dataset
   -c COMPARED, --compared COMPARED
-                        compared dataset
-  --sepflav SEPFLAV     seperate flavour
-  --log                 log on x axis
-  -d DISCR_LIST [DISCR_LIST ...], --discr_list DISCR_LIST [DISCR_LIST ...]
-                        discriminators
+                        compared datasets, splitted by ,
+  --sepflav SEPFLAV     seperate flavour(b/c/light)
+  --log                 log on y axis
+  -v VARIABLE, --variable VARIABLE
+                        variables to plot, splitted by ,
   --ext EXT             prefix name
 ```

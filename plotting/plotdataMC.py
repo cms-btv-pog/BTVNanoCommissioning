@@ -13,7 +13,6 @@ from BTVNanoCommissioning.utils.xs_scaler import getSumW, collate, scaleSumW
 
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
-
 parser.add_argument(
     "-p",
     "--phase",
@@ -29,7 +28,7 @@ parser.add_argument(
     dest="phase",
     help="which phase space",
 )
-parser.add_argument("--log", type=bool, help="log on x axis")
+parser.add_argument("--log", type=bool, help="log on y axis")
 parser.add_argument(
     "--norm",
     default=False,
@@ -37,49 +36,43 @@ parser.add_argument(
     help="Use for reshape SF, scale to same yield as no SFs case",
 )
 parser.add_argument(
-    "-d",
-    "--discr_list",
+    "-v",
+    "--variable",
     type=str,
-    help="discriminators",
+    help="variables to plot, splitted by ,",
 )
-parser.add_argument("--SF", action="store_true", default=False, help="SF comparisons")
-parser.add_argument("--ext", type=str, default="data", help="addional name")
-parser.add_argument("-o", "--output", type=str, default="", help="input coffea files")
+parser.add_argument(
+    "--SF", action="store_true", default=False, help="make w/, w/o SF comparisons"
+)
+parser.add_argument("--ext", type=str, default="data", help="prefix name")
+parser.add_argument(
+    "-i",
+    "--input",
+    type=str,
+    default="",
+    help="input coffea files (str), splitted different files with ,",
+)
 arg = parser.parse_args()
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/"):
     os.makedirs(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/")
-if len(arg.output.split(",")) > 1:
-    output = {i.replace(".coffea", ""): load(i) for i in arg.output.split(",")}
+if len(arg.input.split(",")) > 1:
+    output = {i.replace(".coffea", ""): load(i) for i in arg.input.split(",")}
     for out in output.keys():
         output[out] = scaleSumW(output[out], arg.lumi, getSumW(output[out]))
 else:
-    output = load(arg.output)
+    output = load(arg.input)
     output = scaleSumW(output, arg.lumi, getSumW(output))
 mergemap = {}
 if "sumw" in output.keys():
-    mergemap["data"] = [
-        m for m in output.keys() if "Run" in m or "data" in m or "Data" in m
-    ]
-    mergemap["mc"] = [
-        m
-        for m in output.keys()
-        if "Run" not in m and "data" not in m and "Data" not in m
-    ]
+    mergemap["data"] = [m for m in output.keys() if "Run" in m]
+    mergemap["mc"] = [m for m in output.keys() if "Run" not in m]
 else:
     datalist = []
     mclist = []
     for f in output.keys():
-        datalist.extend(
-            [m for m in output[f].keys() if "Run" in m or "data" in m or "Data" in m]
-        )
-        mclist.extend(
-            [
-                m
-                for m in output[f].keys()
-                if "Run" not in m and "data" not in m and "Data" not in m
-            ]
-        )
+        datalist.extend([m for m in output[f].keys() if "Run" in m])
+        mclist.extend([m for m in output[f].keys() if "Run" not in m])
     mergemap["mc"] = mclist
     mergemap["data"] = datalist
 
@@ -95,14 +88,14 @@ elif "dilep" in arg.phase:
     input_txt = "dileptonic ttbar"
     nj = 2
 if (
-    "njet" in arg.discr_list.split(",")
-    or "nbjet" in arg.discr_list.split(",")
-    or "mu" in arg.discr_list.split(",")
+    "njet" in arg.variable.split(",")
+    or "nbjet" in arg.variable.split(",")
+    or "mu" in arg.variable.split(",")
 ):
     nj = 1
 
 
-for discr in arg.discr_list.split(","):
+for discr in arg.variable.split(","):
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
