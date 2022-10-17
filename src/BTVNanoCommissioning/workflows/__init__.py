@@ -7,12 +7,6 @@ from BTVNanoCommissioning.workflows.validation import (
 from BTVNanoCommissioning.workflows.ttbar_validation import (
     NanoProcessor as TTbarValidProcessor,
 )
-from BTVNanoCommissioning.workflows.ttsemilep_valid_jec import (
-    NanoProcessor as TTsemilepValidJECProcessor,
-)
-from BTVNanoCommissioning.workflows.ttdilep_valid_jec import (
-    NanoProcessor as TTdilepValidJECProcessor,
-)
 from BTVNanoCommissioning.workflows.ttsemilep_valid_sf import (
     NanoProcessor as TTsemilepValidSFProcessor,
 )
@@ -45,9 +39,6 @@ from BTVNanoCommissioning.workflows.ctag_edileptt_valid_sf import (
 from BTVNanoCommissioning.workflows.ctag_ettsemilep_valid_sf import (
     NanoProcessor as CTAGETTSemilepValidSFProcessor,
 )
-from BTVNanoCommissioning.workflows.ctag_valid_jec import (
-    NanoProcessor as CTAGValidJECProcessor,
-)
 from BTVNanoCommissioning.workflows.ctag_semileptt_valid_sf import (
     NanoProcessor as CTAGSemilepttValidSFProcessor,
 )
@@ -75,11 +66,4 @@ workflows["ectag_Wc_sf"] = CTAGeWcValidSFProcessor
 workflows["ctag_DY_sf"] = CTAGDYValidSFProcessor
 workflows["ectag_DY_sf"] = CTAGeDYValidSFProcessor
 
-# JECs
-workflows["ctag_jec"] = CTAGValidJECProcessor
-workflows["dilep_jec"] = TTdilepValidJECProcessor
-workflows["semilep_jec"] = TTsemilepValidJECProcessor
-
-
 __all__ = ["workflows"]
-# __all__ = ["workflows", "taggers", "DYStudiesProcessor"]

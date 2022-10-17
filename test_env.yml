@@ -10,4 +10,7 @@ dependencies:
   - xrootd
   - openssl
   - fsspec[version='>=0.3.3']
-
+  - psutil
+  - dask
+  - parsl
+  - arrow
