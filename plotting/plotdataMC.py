@@ -329,8 +329,7 @@ for discr in arg.variable.split(","):
     if arg.norm:
         scale = "_norm"
     name = "all"
-    # ax.set_ylim(0,500)
-    # hep.mpl_magic(ax=ax)
+    hep.mpl_magic(ax=ax)
     if arg.log:
         ax.set_yscale("log")
         fig.savefig(

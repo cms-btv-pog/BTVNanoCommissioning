@@ -229,7 +229,7 @@ python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${
 ```
 For the data sample please use the naming scheme  `$dataset_$Run_$campaign`, e.g. `SingleMuon_Run2017B-31Mar2018-v1_PFNanov2`
 
-Do not make the file list greater than 4k files to avoid scaleout issues in various site
+:exclamation: Do not make the file list greater than 4k files to avoid scaleout issues in various site
 
 ## Create compiled corretions file(`pkl.gz`)
 
@@ -247,13 +247,13 @@ python -m utils.compile_jec UL17_106X jec_compiled
 
 Prodcuce data/MC comparisons
 ```
-python plotdataMC.py -i a.coffea,b.coffea --lumi 41900 -p dilep_sf -d zmass,z_pt
+python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v zmass,z_pt
 
 optional arguments:
   --lumi LUMI           luminosity in /pb
   -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
                         which phase space
-  --log LOG             log on x axis
+  --log LOG             log on y axis
   --norm NORM           Use for reshape SF, scale to same yield as no SFs case
   -v VARIABLE, --variable VARIABLE
                         variables to plot, splitted by ,
@@ -265,7 +265,7 @@ optional arguments:
 ```
 - data/data, MC/MC comparison from BTV
 ```
-python comparison.py -i a.coffea,b.coffea -p dilep_sf -d zmass,z_pt
+python comparison.py -i a.coffea,b.coffea -p dilep_sf -v zmass,z_pt
 
 python -m plotting.comparison --phase ctag_ttdilep_sf --output ctag_ttdilep_sf -r 2017_runB -c 2017_runC,2017_runD -d zmass, z_pt (--sepflav True/False)
 optional arguments:
