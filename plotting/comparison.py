@@ -58,14 +58,14 @@ parser.add_argument("--ext", type=str, default="data", help="prefix name")
 args = parser.parse_args()
 output = {}
 if len(args.input.split(",")) > 1:
-    output = {i: load({args.input.split(",")[i]}) for i in args.input.split(",")}
+    output = {i: load(i) for i in args.input.split(",")}
 else:
     output = load(args.input)
 mergemap = {}
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{args.phase}_{args.ext}_{time}/"):
     os.makedirs(f"plot/BTV/{args.phase}_{args.ext}_{time}/")
-if "sumw" in output.keys():
+if not any(".coffea" in o for o in output.keys()):
     mergemap[args.ref] = [m for m in output.keys() if args.ref == m]
     for c in args.compared.split(","):
         mergemap[c] = [m for m in output.keys() if c == m]
@@ -80,7 +80,7 @@ else:
     mergemap[c] = comparelist
 collated = collate(output, mergemap)
 ### style settings
-if "Run" in args.ref or "data" in args.ref or "Data" in args.ref:
+if "Run" in args.ref:
     hist_type = "errorbar"
 else:
     hist_type = "step"
@@ -97,9 +97,8 @@ else:
     elif "DY" in args.phase:
         input_txt = "DY+jets"
     nj = 1
-
-
-for discr in args.variable:
+print(mergemap)
+for discr in args.variable.split(","):
     if args.sepflav:  # split into 3 panels for different flavor
         fig, (ax, rax, rax2, rax3) = plt.subplots(
             4,
@@ -256,6 +255,8 @@ for discr in args.variable:
         )
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
+        if args.log:
+            ax.set_yscale("log")
         fig.savefig(
             f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discrs}.png"
         )
@@ -325,6 +326,8 @@ for discr in args.variable:
         )
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
+        if args.log:
+            ax.set_yscale("log")
         fig.savefig(
             f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_lin_inclusive{discr}.pdf"
         )
