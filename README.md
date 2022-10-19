@@ -196,6 +196,8 @@ one with `8786` being open. Other than that, no additional configurations should
 python runner.py --wf ttcom --executor dask/lxplus
 ```
 
+jobs automatically splitted to 100 files per jobs to avoid job failure due to crowded cluster on lxplus with the naming scheme `hist_$workflow_$json_$index.coffea`, combined in plotting scripts
+
 ### Coffea-casa (Nebraska AF)
 Coffea-casa is a JupyterHub based analysis-facility hosted at Nebraska. For more information and setup instuctions see
 https://coffea-casa.readthedocs.io/en/latest/cc_user.html
@@ -226,6 +228,8 @@ Use the `fetch.py` in `filefetcher`, the `$input_DAS_list` is the info extract f
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
 ```
 For the data sample please use the naming scheme  `$dataset_$Run_$campaign`, e.g. `SingleMuon_Run2017B-31Mar2018-v1_PFNanov2`
+
+Do not make the file list greater than 4k files to avoid scaleout issues in various site
 
 ## Create compiled corretions file(`pkl.gz`)
 

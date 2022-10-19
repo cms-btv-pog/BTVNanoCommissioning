@@ -57,14 +57,14 @@ time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/"):
     os.makedirs(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/")
 if len(arg.input.split(",")) > 1:
-    output = {i.replace(".coffea", ""): load(i) for i in arg.input.split(",")}
+    output = {i: load(i) for i in arg.input.split(",")}
     for out in output.keys():
         output[out] = scaleSumW(output[out], arg.lumi, getSumW(output[out]))
 else:
     output = load(arg.input)
     output = scaleSumW(output, arg.lumi, getSumW(output))
 mergemap = {}
-if "sumw" in output.keys():
+if not any(".coffea" in o for o in output.keys()):
     mergemap["data"] = [m for m in output.keys() if "Run" in m]
     mergemap["mc"] = [m for m in output.keys() if "Run" not in m]
 else:
@@ -75,7 +75,6 @@ else:
         mclist.extend([m for m in output[f].keys() if "Run" not in m])
     mergemap["mc"] = mclist
     mergemap["data"] = datalist
-
 collated = collate(output, mergemap)
 if "Wc" in arg.phase:
     input_txt = "W+c"
@@ -333,6 +332,7 @@ for discr in arg.variable.split(","):
     # ax.set_ylim(0,500)
     # hep.mpl_magic(ax=ax)
     if arg.log:
+        ax.set_yscale("log")
         fig.savefig(
             f"plot/BTV/{arg.phase}_{arg.ext}_{time}/{arg.phase}_unc_{discr}_inclusive{scale}_{arg.ext}_{name}.pdf"
         )
