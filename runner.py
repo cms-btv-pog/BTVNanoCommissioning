@@ -48,7 +48,7 @@ def get_main_parser():
     parser = argparse.ArgumentParser(
         description="Run analysis on baconbits files using processor coffea files"
     )
-    # Inputs
+    ## Inputs
     parser.add_argument(
         "--wf",
         "--workflow",
@@ -70,6 +70,7 @@ def get_main_parser():
         default="dummy_samples.json",
         help="JSON file containing dataset and file locations (default: %(default)s)",
     )
+    ## Configuations
     parser.add_argument("--year", default="2017", help="Year")
     parser.add_argument(
         "--campaign",
@@ -130,10 +131,37 @@ def get_main_parser():
         "concurrent threads is ``workers x scaleout`` (default: %(default)s)",
     )
     parser.add_argument(
+        "--memory",
+        type=str,
+        default="4GB",
+        help="Memory used in jobs default ``(default: %(default)s)",
+    )
+    parser.add_argument(
+        "--disk",
+        type=str,
+        default="4GB",
+        help="Disk used in jobs default ``(default: %(default)s)",
+    )
+    parser.add_argument(
         "--voms",
         default=None,
         type=str,
         help="Path to voms proxy, made accessible to worker nodes. By default a copy will be made to $HOME.",
+    )
+
+    parser.add_argument(
+        "--chunk",
+        type=int,
+        default=75000,
+        metavar="N",
+        help="Number of events per process chunk",
+    )
+    parser.add_argument(
+        "--retries",
+        type=int,
+        default=10,
+        metavar="N",
+        help="Number of retries for coffea processor",
     )
     # Debugging
     parser.add_argument(
@@ -153,20 +181,6 @@ def get_main_parser():
         help="Limit to the first N files of each dataset in sample JSON",
     )
     parser.add_argument(
-        "--chunk",
-        type=int,
-        default=50000000,
-        metavar="N",
-        help="Number of events per process chunk",
-    )
-    parser.add_argument(
-        "--retries",
-        type=int,
-        default=3,
-        metavar="N",
-        help="Number of retries for coffea processor",
-    )
-    parser.add_argument(
         "--max",
         type=int,
         default=None,
@@ -179,12 +193,14 @@ def get_main_parser():
 if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
+    print("Running with the following options:")
+    print(args)
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
         args.output = f'hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
 
-        # load dataset
+    # load dataset
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
     for key in sample_dict.keys():
@@ -195,6 +211,11 @@ if __name__ == "__main__":
                 path.replace("xrootd-cms.infn.it/", "xcache")
                 for path in sample_dict[key]
             ]
+    # check file dict size - avoid large memory consumption for local machine
+    filesize = np.sum(np.array([len(sample_dict[key]) for key in sample_dict.keys()]))
+    splitjobs = False
+    if filesize > 1000:
+        splitjobs = True
 
     # For debugging
     if args.only is not None:
@@ -303,10 +324,12 @@ if __name__ == "__main__":
                 "skipbadfiles": args.skipbadfiles,
                 "schema": processor.NanoAODSchema,
                 "workers": args.workers,
+                "xrootdtimeout": 120,
             },
             chunksize=args.chunk,
             maxchunks=args.max,
         )
+        save(output, args.output)
     elif "parsl" in args.executor:
         import parsl
         from parsl.providers import LocalProvider, CondorProvider, SlurmProvider
@@ -326,6 +349,7 @@ if __name__ == "__main__":
                         provider=SlurmProvider(
                             channel=LocalChannel(script_dir="logs_parsl"),
                             launcher=SrunLauncher(),
+                            mem_per_node=args.memory,
                             max_blocks=(args.scaleout) + 10,
                             init_blocks=args.scaleout,
                             partition="all",
@@ -336,24 +360,43 @@ if __name__ == "__main__":
                 ],
                 retries=args.retries,
             )
-        elif "condor" in args.executor:
-            htex_config = Config(
-                executors=[
-                    HighThroughputExecutor(
-                        label="coffea_parsl_condor",
-                        address=address_by_query(),
-                        max_workers=1,
-                        provider=CondorProvider(
-                            nodes_per_block=1,
-                            init_blocks=args.workers,
-                            max_blocks=(args.workers) + 1,
-                            worker_init="\n".join(env_extra + condor_extra),
-                            walltime="00:20:00",
+            if splitjobs:
+                htex_config = Config(
+                    executors=[
+                        HighThroughputExecutor(
+                            label="run",
+                            address=address_by_hostname(),
+                            prefetch_capacity=0,
+                            provider=SlurmProvider(
+                                channel=LocalChannel(script_dir="logs_parsl"),
+                                launcher=SrunLauncher(),
+                                mem_per_node=args.memory,
+                                max_blocks=(args.scaleout) + 10,
+                                init_blocks=args.scaleout,
+                                partition="all",
+                                worker_init="\n".join(env_extra),
+                                walltime="00:120:00",
+                            ),
                         ),
-                    )
-                ],
-                retries=args.retries,
-            )
+                        HighThroughputExecutor(
+                            label="merge",
+                            address=address_by_hostname(),
+                            prefetch_capacity=0,
+                            provider=SlurmProvider(
+                                channel=LocalChannel(script_dir="logs_parsl"),
+                                launcher=SrunLauncher(),
+                                mem_per_node=args.memory,
+                                max_blocks=(args.scaleout) + 10,
+                                init_blocks=args.scaleout,
+                                partition="all",
+                                worker_init="\n".join(env_extra),
+                                walltime="00:30:00",
+                            ),
+                        ),
+                    ],
+                    retries=args.retries,
+                    retry_handler=retry_handler,
+                )
         elif "condor" in args.executor:
             if "naf_lite" in args.executor:
                 htex_config = Config(
@@ -368,7 +411,7 @@ if __name__ == "__main__":
                                 cores_per_slot=args.workers,
                                 mem_per_slot=2,  # lite job / opportunistic can only use this much
                                 init_blocks=args.scaleout,
-                                max_blocks=(args.scaleout) + 2,
+                                max_blocks=args.scaleout + 5,
                                 worker_init="\n".join(env_extra + condor_extra),
                                 walltime="03:00:00",  # lite / short queue requirement
                             ),
@@ -377,6 +420,44 @@ if __name__ == "__main__":
                     retries=args.retries,
                     retry_handler=retry_handler,
                 )
+                if splitjobs:
+                    htex_config = Config(
+                        executors=[
+                            HighThroughputExecutor(
+                                label="run",
+                                address=address_by_query(),
+                                max_workers=1,
+                                worker_debug=True,
+                                provider=CondorProvider(
+                                    nodes_per_block=1,
+                                    cores_per_slot=args.workers,
+                                    mem_per_slot=2,  # lite job / opportunistic can only use this much
+                                    init_blocks=args.scaleout,
+                                    max_blocks=args.scaleout + 5,
+                                    worker_init="\n".join(env_extra + condor_extra),
+                                    walltime="03:00:00",  # lite / short queue requirement
+                                ),
+                            ),
+                            HighThroughputExecutor(
+                                label="merge",
+                                address=address_by_query(),
+                                max_workers=1,
+                                worker_debug=True,
+                                provider=CondorProvider(
+                                    nodes_per_block=1,
+                                    cores_per_slot=args.workers,
+                                    mem_per_slot=2,  # lite job / opportunistic can only use this much
+                                    init_blocks=args.scaleout,
+                                    max_blocks=args.scaleout + 5,
+                                    worker_init="\n".join(env_extra + condor_extra),
+                                    walltime="00:30:00",  # lite / short queue requirement
+                                ),
+                            ),
+                        ],
+                        retries=args.retries,
+                        retry_handler=retry_handler,
+                    )
+
             else:
                 htex_config = Config(
                     executors=[
@@ -387,34 +468,91 @@ if __name__ == "__main__":
                             provider=CondorProvider(
                                 nodes_per_block=1,
                                 cores_per_slot=args.workers,
+                                mem_per_slot=args.memory,
                                 init_blocks=args.scaleout,
-                                max_blocks=(args.scaleout) + 2,
+                                max_blocks=(args.scaleout) + 10,
                                 worker_init="\n".join(env_extra + condor_extra),
-                                walltime="00:20:00",
+                                walltime="03:00:00",
                             ),
                         )
                     ],
                     retries=args.retries,
                 )
+                if splitjobs:
+                    htex_config = Config(
+                        executors=[
+                            HighThroughputExecutor(
+                                label="run",
+                                address=address_by_query(),
+                                max_workers=1,
+                                provider=CondorProvider(
+                                    nodes_per_block=1,
+                                    cores_per_slot=args.workers,
+                                    mem_per_slot=args.memory,
+                                    init_blocks=args.scaleout,
+                                    max_blocks=(args.scaleout) + 10,
+                                    worker_init="\n".join(env_extra + condor_extra),
+                                    walltime="03:00:00",
+                                ),
+                            ),
+                            HighThroughputExecutor(
+                                label="merge",
+                                address=address_by_query(),
+                                max_workers=1,
+                                provider=CondorProvider(
+                                    nodes_per_block=1,
+                                    cores_per_slot=args.workers,
+                                    mem_per_slot=args.memory,
+                                    init_blocks=args.scaleout,
+                                    max_blocks=(args.scaleout) + 10,
+                                    worker_init="\n".join(env_extra + condor_extra),
+                                    walltime="03:00:00",
+                                ),
+                            ),
+                        ],
+                        retries=args.retries,
+                        retry_handler=retry_handler,
+                    )
+
         else:
             raise NotImplementedError
 
         dfk = parsl.load(htex_config)
-
-        output = processor.run_uproot_job(
-            sample_dict,
-            treename="Events",
-            processor_instance=processor_instance,
-            executor=processor.parsl_executor,
-            executor_args={
-                "skipbadfiles": args.skipbadfiles,
-                "schema": processor.NanoAODSchema,
-                "config": None,
-            },
-            chunksize=args.chunk,
-            maxchunks=args.max,
-        )
-
+        if not splitjobs:
+            output = processor.run_uproot_job(
+                sample_dict,
+                treename="Events",
+                processor_instance=processor_instance,
+                executor=processor.parsl_executor,
+                executor_args={
+                    "skipbadfiles": args.skipbadfiles,
+                    "schema": processor.NanoAODSchema,
+                    "config": None,
+                },
+                chunksize=args.chunk,
+                maxchunks=args.max,
+            )
+        else:
+            output = processor.run_uproot_job(
+                sample_dict,
+                treename="Events",
+                processor_instance=processor_instance,
+                executor=processor.parsl_executor,
+                executor_args={
+                    "skipbadfiles": args.skipbadfiles,
+                    "schema": processor.NanoAODSchema,
+                    "merging": True,
+                    "merges_executors": ["merge"],
+                    "jobs_executors": ["run"],
+                    "config": None,
+                },
+                chunksize=args.chunk,
+                maxchunks=args.max,
+            )
+        print(output)
+        save(output, args.output)
+        print(output)
+        print(f"Saving output to {args.output}")
     elif "dask" in args.executor:
         from dask_jobqueue import SLURMCluster, HTCondorCluster
         from distributed import Client
@@ -443,10 +581,10 @@ if __name__ == "__main__":
                 cores=1,
                 memory="2GB",  # hardcoded
                 disk="1GB",
-                death_timeout="60",
+                death_timeout="300",
                 nanny=False,
                 scheduler_options={"port": n_port, "host": socket.gethostname()},
-                job_extra={
+                job_extra_directives={
                     "log": "dask_job_output.log",
                     "output": "dask_job_output.out",
                     "error": "dask_job_output.err",
@@ -454,15 +592,17 @@ if __name__ == "__main__":
                     "when_to_transfer_output": "ON_EXIT",
                     "+JobFlavour": '"workday"',
                 },
+                worker_extra_args=["--worker-port 10000:10100"],
                 extra=["--worker-port {}".format(n_port)],
                 env_extra=env_extra,
             )
+            print("setting here is correct")
         elif "slurm" in args.executor:
             cluster = SLURMCluster(
                 queue="all",
                 cores=args.workers,
-                processes=args.workers,
-                memory="200 GB",
+                processes=args.scaleout,
+                memory=args.memory,
                 retries=args.retries,
                 walltime="00:30:00",
                 env_extra=env_extra,
@@ -470,8 +610,8 @@ if __name__ == "__main__":
         elif "condor" in args.executor:
             cluster = HTCondorCluster(
                 cores=args.workers,
-                memory="4GB",
-                disk="4GB",
+                memory=args.memory,
+                disk=args.disk,
                 env_extra=env_extra,
             )
 
@@ -487,22 +627,47 @@ if __name__ == "__main__":
             print("Waiting for at least one worker...")
             client.wait_for_workers(1)
         with performance_report(filename="dask-report.html"):
-            output = processor.run_uproot_job(
-                sample_dict,
-                treename="Events",
-                processor_instance=processor_instance,
-                executor=processor.dask_executor,
-                executor_args={
-                    "client": client,
-                    "skipbadfiles": args.skipbadfiles,
-                    "schema": processor.NanoAODSchema,
-                    "retries": args.retries,
-                },
-                chunksize=args.chunk,
-                maxchunks=args.max,
-            )
-
-    save(output, args.output)
+            if args.executor != "dask/lxplus":
+                output = processor.run_uproot_job(
+                    sample_dict,
+                    treename="Events",
+                    processor_instance=processor_instance,
+                    executor=processor.dask_executor,
+                    executor_args={
+                        "client": client,
+                        "skipbadfiles": args.skipbadfiles,
+                        "schema": processor.NanoAODSchema,
+                        "retries": args.retries,
+                    },
+                    chunksize=args.chunk,
+                    maxchunks=args.max,
+                )
+                save(output, args.output)
+            else:
+                index = 0
+                for sample in sample_dict.keys():
+                    mins = 0
+                    while mins < len(sample_dict[sample]):
+                        splitted = {}
+                        maxs = mins + 100
+                        splitted[sample] = sample_dict[sample][mins:maxs]
+                        mins = maxs
+                        index = index + 1
+                        output = processor.run_uproot_job(
+                            splitted,
+                            treename="Events",
+                            processor_instance=processor_instance,
+                            executor=processor.dask_executor,
+                            executor_args={
+                                "client": client,
+                                "skipbadfiles": args.skipbadfiles,
+                                "schema": processor.NanoAODSchema,
+                                "retries": args.retries,
+                            },
+                            chunksize=args.chunk,
+                            maxchunks=args.max,
+                        )
+                        save(output, args.output.replace(".coffea", f"_{index}.coffea"))
 
     print(output)
     print(f"Saving output to {args.output}")
