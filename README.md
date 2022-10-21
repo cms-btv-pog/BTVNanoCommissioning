@@ -227,7 +227,18 @@ Use the `fetch.py` in `filefetcher`, the `$input_DAS_list` is the info extract f
 ```
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
 ```
-For the data sample please use the naming scheme  `$dataset_$Run_$campaign`, e.g. `SingleMuon_Run2017B-31Mar2018-v1_PFNanov2`
+For the data sample please use the naming scheme,
+```
+$dataset_$Run_$PFNanoag 
+#i.e.
+SingleMuon_Run2022C-PromptReco-v1_BTV_Run3_2022_Comm_v1
+```
+and MC, the dataset name is used to find the xsection, please be consistent with name in DAS
+```
+$dataset_$PFNanotag
+#i.e.
+WW_TuneCP5_13p6TeV-pythia8_BTV_Run3_2022_Comm_v1 
+```
 
 :exclamation: Do not make the file list greater than 4k files to avoid scaleout issues in various site
 
@@ -238,7 +249,7 @@ For the data sample please use the naming scheme  `$dataset_$Run_$campaign`, e.g
 Compile correction pickle files for a specific JEC campaign by changing the dict of jet_factory, and define the MC campaign and the output file name by passing it as arguments to the python script:
 
 ```
-python -m utils.compile_jec UL17_106X jec_compiled
+python -m BTVNanoCommissioning.utils.compile_jec ${campaign} jec_compiled
 ```
 
 

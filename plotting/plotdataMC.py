@@ -65,14 +65,14 @@ else:
     output = scaleSumW(output, arg.lumi, getSumW(output))
 mergemap = {}
 if not any(".coffea" in o for o in output.keys()):
-    mergemap["data"] = [m for m in output.keys() if "Run" in m]
-    mergemap["mc"] = [m for m in output.keys() if "Run" not in m]
+    mergemap["data"] = [m for m in output.keys() if m.count("Run")>1]
+    mergemap["mc"] = [m for m in output.keys() if m.count("Run")==1]
 else:
     datalist = []
     mclist = []
     for f in output.keys():
-        datalist.extend([m for m in output[f].keys() if "Run" in m])
-        mclist.extend([m for m in output[f].keys() if "Run" not in m])
+        datalist.extend([m for m in output[f].keys() if m.count("Run")>1])
+        mclist.extend([m for m in output[f].keys() if m.count("Run")==1])
     mergemap["mc"] = mclist
     mergemap["data"] = datalist
 collated = collate(output, mergemap)
@@ -318,7 +318,7 @@ for discr in arg.variable.split(","):
     rax.set_xlabel(discr)
     ax.legend()
     rax.set_ylim(0.5, 1.5)
-
+    ax.set_ylim(0.5, 200)
     at = AnchoredText(
         input_txt + "\n",
         loc=2,
