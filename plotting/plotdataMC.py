@@ -140,7 +140,9 @@ for discr in arg.variable.split(","):
         2, 1, figsize=(10, 10), gridspec_kw={"height_ratios": (3, 1)}, sharex=True
     )
     fig.subplots_adjust(hspace=0.05)
-    hep.cms.label("Preliminary", data=True, lumi=arg.lumi / 1000.0, com=arg.com, loc=0, ax=ax)
+    hep.cms.label(
+        "Preliminary", data=True, lumi=arg.lumi / 1000.0, com=arg.com, loc=0, ax=ax
+    )
 
     if (
         "flav" in collated["mc"][discr].axes.name

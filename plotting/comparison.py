@@ -54,8 +54,18 @@ parser.add_argument(
 )
 parser.add_argument("--ext", type=str, default="data", help="prefix name")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
-parser.add_argument("--shortref",default="", type=str, help="short name for reference dataset for legend")
-parser.add_argument("--shortcomp",default="", type=str, help="short names for compared datasets for legend, split by ','")
+parser.add_argument(
+    "--shortref",
+    default="",
+    type=str,
+    help="short name for reference dataset for legend",
+)
+parser.add_argument(
+    "--shortcomp",
+    default="",
+    type=str,
+    help="short names for compared datasets for legend, split by ','",
+)
 
 args = parser.parse_args()
 output = {}
@@ -106,10 +116,10 @@ else:
     nj = 1
 print(mergemap)
 
-if args.shortref=="":
+if args.shortref == "":
     args.shortref = args.ref
 
-if args.shortcomp=="":
+if args.shortcomp == "":
     args.shortcomp = args.compared
 
 for discr in args.variable.split(","):
@@ -166,9 +176,9 @@ for discr in args.variable.split(","):
             histtype=hist_type,
             ax=ax,
         )
-        
+
         index = 0
-        for c,s in zip(args.compared.split(","),args.shortcomp.split(',')):
+        for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
             hep.histplot(
                 collated[c][discr][laxis] + collated[c][discr][puaxis],
                 label=s + "-l",
@@ -306,7 +316,7 @@ for discr in args.variable.split(","):
             yerr=True,
             ax=ax,
         )
-        for c,s in zip(args.compared.split(","),args.shortcomp.split(",")):
+        for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
             hep.histplot(
                 collated[c][discr][allaxis],
                 label=s,
