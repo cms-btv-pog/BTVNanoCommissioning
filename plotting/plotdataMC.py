@@ -1,5 +1,5 @@
 import numpy as np
-import argparse, sys, os, arrow
+import argparse, sys, os, arrow, glob
 from coffea.util import load
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
@@ -13,6 +13,7 @@ from BTVNanoCommissioning.utils.xs_scaler import getSumW, collate, scaleSumW
 
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
+parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
     "-p",
     "--phase",
@@ -50,7 +51,7 @@ parser.add_argument(
     "--input",
     type=str,
     default="",
-    help="input coffea files (str), splitted different files with ,",
+    help="input coffea files (str), splitted different files with ','. Wildcard option * available as well.",
 )
 arg = parser.parse_args()
 time = arrow.now().format("YY_MM_DD")
@@ -58,6 +59,11 @@ if not os.path.isdir(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/"):
     os.makedirs(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/")
 if len(arg.input.split(",")) > 1:
     output = {i: load(i) for i in arg.input.split(",")}
+    for out in output.keys():
+        output[out] = scaleSumW(output[out], arg.lumi, getSumW(output[out]))
+elif "*" in arg.input:
+    files = glob.glob(arg.input)
+    output = {i: load(i) for i in files}
     for out in output.keys():
         output[out] = scaleSumW(output[out], arg.lumi, getSumW(output[out]))
 else:
@@ -134,7 +140,9 @@ for discr in arg.variable.split(","):
         2, 1, figsize=(10, 10), gridspec_kw={"height_ratios": (3, 1)}, sharex=True
     )
     fig.subplots_adjust(hspace=0.05)
-    hep.cms.label("Preliminary", data=True, lumi=arg.lumi / 1000.0, loc=0, ax=ax)
+    hep.cms.label(
+        "Preliminary", data=True, lumi=arg.lumi / 1000.0, com=arg.com, loc=0, ax=ax
+    )
 
     if (
         "flav" in collated["mc"][discr].axes.name

@@ -256,12 +256,16 @@ python -m BTVNanoCommissioning.utils.compile_jec ${campaign} jec_compiled
 
 ## Plotting code
 
-Prodcuce data/MC comparisons
+- data/MC comparisons
+:exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
 ```
 python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v zmass,z_pt
+python plotdataMC.py -i "test*.coffea" --lumi 41500 -p dilep_sf -v zmass,z_pt
 
-optional arguments:
+options:
+  -h, --help            show this help message and exit
   --lumi LUMI           luminosity in /pb
+  --com COM             sqrt(s) in TeV
   -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
                         which phase space
   --log LOG             log on y axis
@@ -271,20 +275,20 @@ optional arguments:
   --SF                  make w/, w/o SF comparisons
   --ext EXT             prefix name
   -i INPUT, --input INPUT
-                        input coffea files (str), splitted different files
-                        with ,
+                        input coffea files (str), splitted different files with ','. Wildcard option * available as well.
 ```
-- data/data, MC/MC comparison from BTV
+- data/data, MC/MC comparisons
 ```
-python comparison.py -i a.coffea,b.coffea -p dilep_sf -v zmass,z_pt
+:exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
+python comparison.py -i a.coffea,b.coffea -p ttsemilep_sf -r SingleMuon_Run2017B-106X_PFNanov1 -c DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8 -v DeepJet_Cpfcan_BtagPf_trackJetDistVal_0 --shortref Run2017B --shortcomp DYJets (--sepflav True/False)
+python comparison.py -i "test*.coffea" -p ttsemilep_sf -r SingleMuon_Run2017B-106X_PFNanov1 -c DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8 -v DeepJet_Cpfcan_BtagPf_trackJetDistVal_0 --shortref Run2017B --shortcomp DYJets (--sepflav True/False)
 
-python -m plotting.comparison --phase ctag_ttdilep_sf --output ctag_ttdilep_sf -r 2017_runB -c 2017_runC,2017_runD -d zmass, z_pt (--sepflav True/False)
-optional arguments:
+options:
+  -h, --help            show this help message and exit
   -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
                         which phase space
   -i INPUT, --input INPUT
-                        input coffea files (str), splitted different files
-                        with ,
+                        input coffea files (str), splitted different files with ','. Wildcard option * available as well.
   -r REF, --ref REF     referance dataset
   -c COMPARED, --compared COMPARED
                         compared datasets, splitted by ,
@@ -293,4 +297,8 @@ optional arguments:
   -v VARIABLE, --variable VARIABLE
                         variables to plot, splitted by ,
   --ext EXT             prefix name
+  --com COM             sqrt(s) in TeV
+  --shortref SHORTREF   short name for reference dataset for legend
+  --shortcomp SHORTCOMP
+                        short names for compared datasets for legend, split by ','
 ```
