@@ -63,7 +63,7 @@ jobs:
         printf $GRID_USERKEY | base64 -d > $HOME/.globus/userkey.pem
         printf $GRID_USERCERT | base64 -d > $HOME/.globus/usercert.pem
         # DEBUG: dump decoded cert, cert is public, but don't dump key!
-        base64 -i $HOME/.globus/usercert.pem
+        # base64 -i $HOME/.globus/usercert.pem
         chmod 400 $HOME/.globus/userkey.pem
         openssl rand -out $HOME/.rnd  -hex 256
         printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms:/cms/dcms --vomses ${X509_VOMSES} --debug --pwstdin
