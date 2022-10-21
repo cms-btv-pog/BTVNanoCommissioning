@@ -95,7 +95,7 @@ else:
     mergemap[c] = comparelist
 collated = collate(output, mergemap)
 ### style settings
-if args.ref.count("Run")>1 :
+if args.ref.count("Run") > 1:
     hist_type = "errorbar"
     label = "Preliminary"
 else:

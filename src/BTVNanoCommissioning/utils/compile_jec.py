@@ -298,7 +298,7 @@ def jet_factories(campaign):
                     "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunC_V1_DATA_L2L3Residual_AK4PFPuppi.jec.txt",
                 ]
             ),
-             "dataD": jet_factory_factory(
+            "dataD": jet_factory_factory(
                 files=[
                     "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunD_V2_DATA_L1FastJet_AK4PFPuppi.jec.txt",
                     "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunD_V2_DATA_L2Relative_AK4PFPuppi.jec.txt",

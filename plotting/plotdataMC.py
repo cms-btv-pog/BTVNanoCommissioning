@@ -71,14 +71,14 @@ else:
     output = scaleSumW(output, arg.lumi, getSumW(output))
 mergemap = {}
 if not any(".coffea" in o for o in output.keys()):
-    mergemap["data"] = [m for m in output.keys() if m.count("Run")>1]
-    mergemap["mc"] = [m for m in output.keys() if m.count("Run")==1]
+    mergemap["data"] = [m for m in output.keys() if m.count("Run") > 1]
+    mergemap["mc"] = [m for m in output.keys() if m.count("Run") == 1]
 else:
     datalist = []
     mclist = []
     for f in output.keys():
-        datalist.extend([m for m in output[f].keys() if m.count("Run")>1])
-        mclist.extend([m for m in output[f].keys() if m.count("Run")==1])
+        datalist.extend([m for m in output[f].keys() if m.count("Run") > 1])
+        mclist.extend([m for m in output[f].keys() if m.count("Run") == 1])
     mergemap["mc"] = mclist
     mergemap["data"] = datalist
 collated = collate(output, mergemap)
