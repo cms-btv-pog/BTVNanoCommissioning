@@ -14,4 +14,4 @@ dependencies:
   - dask
   - parsl
   - arrow
-  - dask_jobqueue
+  - dask-jobqueue
