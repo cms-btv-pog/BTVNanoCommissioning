@@ -1,5 +1,5 @@
 import numpy as np
-import argparse, sys, os, arrow
+import argparse, sys, os, arrow, glob
 from coffea.util import load
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
@@ -32,7 +32,7 @@ parser.add_argument(
     "--input",
     required=True,
     type=str,
-    help="input coffea files (str), splitted different files with ,",
+    help="input coffea files (str), splitted different files with ','. Wildcard option * available as well.",
 )
 parser.add_argument("-r", "--ref", required=True, help="referance dataset")
 parser.add_argument(
@@ -53,12 +53,17 @@ parser.add_argument(
     help="variables to plot, splitted by ,",
 )
 parser.add_argument("--ext", type=str, default="data", help="prefix name")
-
+parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
+parser.add_argument("--shortref",default="", type=str, help="short name for reference dataset for legend")
+parser.add_argument("--shortcomp",default="", type=str, help="short names for compared datasets for legend, split by ','")
 
 args = parser.parse_args()
 output = {}
 if len(args.input.split(",")) > 1:
     output = {i: load(i) for i in args.input.split(",")}
+elif "*" in args.input:
+    files = glob.glob(args.input)
+    output = {i: load(i) for i in files}
 else:
     output = load(args.input)
 mergemap = {}
@@ -82,8 +87,10 @@ collated = collate(output, mergemap)
 ### style settings
 if "Run" in args.ref:
     hist_type = "errorbar"
+    label = "Preliminary"
 else:
     hist_type = "step"
+    label = "Simulation Preliminary"
 
 if "ttdilep" in args.phase:
     input_txt = "dilepton ttbar"
@@ -98,6 +105,13 @@ else:
         input_txt = "DY+jets"
     nj = 1
 print(mergemap)
+
+if args.shortref=="":
+    args.shortref = args.ref
+
+if args.shortcomp=="":
+    args.shortcomp = args.compared
+
 for discr in args.variable.split(","):
     if args.sepflav:  # split into 3 panels for different flavor
         fig, (ax, rax, rax2, rax3) = plt.subplots(
@@ -111,7 +125,8 @@ for discr in args.variable.split(","):
         ax.set_xlabel(None)
         ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
         hep.cms.label(
-            "Preliminary",
+            label,
+            com=args.com,
             data=True,
             loc=0,
             ax=ax,
@@ -129,7 +144,7 @@ for discr in args.variable.split(","):
 
         hep.histplot(
             collated[args.ref][discr][laxis] + collated[args.ref][discr][puaxis],
-            label=args.ref + "-l",
+            label=args.shortref + "-l",
             color="b",
             histtype=hist_type,
             yerr=True,
@@ -137,7 +152,7 @@ for discr in args.variable.split(","):
         )
         hep.histplot(
             collated[args.ref][discr][caxis],
-            label=args.ref + "-c",
+            label=args.shortref + "-c",
             color="g",
             histtype=hist_type,
             yerr=True,
@@ -145,47 +160,48 @@ for discr in args.variable.split(","):
         )
         hep.histplot(
             collated[args.ref][discr][baxis],
-            label=args.ref + "-b",
+            label=args.shortref + "-b",
             yerr=True,
             color="r",
             histtype=hist_type,
             ax=ax,
         )
-
-        for c in args.compared.split(","):
-
+        
+        index = 0
+        for c,s in zip(args.compared.split(","),args.shortcomp.split(',')):
             hep.histplot(
                 collated[c][discr][laxis] + collated[c][discr][puaxis],
-                label=c + "-l",
+                label=s + "-l",
                 color="b",
-                marker=markers[c + 1],
+                marker=markers[index + 1],
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
             )
             hep.histplot(
                 collated[c][discr][caxis],
-                label=c + "-c",
+                label=s + "-c",
                 color="g",
-                marker=markers[c + 1],
+                marker=markers[index + 1],
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
             )
             hep.histplot(
                 collated[c][discr][baxis],
-                label=c + "-b",
+                label=s + "-b",
                 yerr=True,
                 color="r",
-                marker=markers[c + 1],
+                marker=markers[index + 1],
                 histtype="errorbar",
                 ax=ax,
             )
+        index += 1
         ax.legend(
             ncol=3,
             loc="upper right",
         )
-
+        index = 0
         for c in args.compared.split(","):
 
             rax.errorbar(
@@ -208,7 +224,7 @@ for discr in args.variable.split(","):
                 ),
                 color="b",
                 linestyle="none",
-                marker=markers[c + 1],
+                marker=markers[index + 1],
             )
             rax2.errorbar(
                 x=collated[c][discr][caxis].axes[0].centers,
@@ -220,7 +236,7 @@ for discr in args.variable.split(","):
                 ),
                 color="g",
                 linestyle="none",
-                marker=markers[c + 1],
+                marker=markers[index + 1],
             )
             rax3.errorbar(
                 x=collated[c][discr][baxis].axes[0].centers,
@@ -232,7 +248,7 @@ for discr in args.variable.split(","):
                 ),
                 color="r",
                 linestyle="none",
-                marker=markers[c + 1],
+                marker=markers[index + 1],
             )
 
         discrs = discr
@@ -270,7 +286,8 @@ for discr in args.variable.split(","):
         )
         fig.subplots_adjust(hspace=0.07)
         hep.cms.label(
-            "Preliminary",
+            label,
+            com=args.com,
             data=True,
             loc=0,
             ax=ax,
@@ -284,15 +301,15 @@ for discr in args.variable.split(","):
             allaxis["syst"] = sum
         hep.histplot(
             collated[args.ref][discr][allaxis],
-            label=args.ref,
+            label=args.shortref,
             histtype=hist_type,
             yerr=True,
             ax=ax,
         )
-        for c in args.compared.split(","):
+        for c,s in zip(args.compared.split(","),args.shortcomp.split(",")):
             hep.histplot(
                 collated[c][discr][allaxis],
-                label=c,
+                label=s,
                 histtype=hist_type,
                 yerr=True,
                 ax=ax,
