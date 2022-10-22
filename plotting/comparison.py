@@ -52,7 +52,7 @@ parser.add_argument(
     type=str,
     help="variables to plot, splitted by ,",
 )
-parser.add_argument("--ext", type=str, default="data", help="prefix name")
+parser.add_argument("--ext", type=str, default="data", help="prefix name/btv name tag")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
     "--shortref",
@@ -95,7 +95,7 @@ else:
     mergemap[c] = comparelist
 collated = collate(output, mergemap)
 ### style settings
-if args.ref.count("Run") > 1:
+if "Run" in args.ref:
     hist_type = "errorbar"
     label = "Preliminary"
 else:
@@ -273,8 +273,7 @@ for discr in args.variable.split(","):
         rax3.set_xlabel(discr)
         ax.legend()
         at = AnchoredText(
-            "",
-            # + "inclusive pT, $\eta$"
+            args.ext,
             loc=2,
             prop=dict(size=15),
             frameon=False,
@@ -347,7 +346,7 @@ for discr in args.variable.split(","):
         rax.set_ylim(0.0, 2.0)
 
         at = AnchoredText(
-            "",
+            args.ext,
             loc=2,
             frameon=False,
         )

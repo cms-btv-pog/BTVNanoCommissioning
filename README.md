@@ -104,10 +104,68 @@ that more automatic in the end.
 
 To test a small set of files to see whether the workflows run smoothly, run:
 ```
-python runner.py --workflow ${workflow} --json metadata/test_w_dj.json 
+python runner.py --workflow ${workflow} --json metadata/test_w_dj.json --campaign Rereco17_94X --year 2017
 ```
 
-### b-SFs 
+More options for `runner.py` 
+<details><summary>more options</summary>
+<p>
+
+```
+--wf {validation,ttcom,ttdilep_sf,ttsemilep_sf,emctag_ttdilep_sf,ctag_ttdilep_sf,ectag_ttdilep_sf,ctag_ttsemilep_sf,ectag_ttsemilep_sf,ctag_Wc_sf,ectag_Wc_sf,ctag_DY_sf,ectag_DY_sf}, --workflow {validation,ttcom,ttdilep_sf,ttsemilep_sf,emctag_ttdilep_sf,ctag_ttdilep_sf,ectag_ttdilep_sf,ctag_ttsemilep_sf,ectag_ttsemilep_sf,ctag_Wc_sf,ectag_Wc_sf,ctag_DY_sf,ectag_DY_sf}
+                        Which processor to run
+  -o OUTPUT, --output OUTPUT
+                        Output histogram filename (default: hists.coffea)
+  --samples SAMPLEJSON, --json SAMPLEJSON
+                        JSON file containing dataset and file locations
+                        (default: dummy_samples.json)
+  --year YEAR           Year
+  --campaign CAMPAIGN   Dataset campaign, change the corresponding correction
+                        files
+  --isCorr              Run with SFs
+  --isJERC              JER/JEC implemented to jet
+  --executor {iterative,futures,parsl/slurm,parsl/condor,parsl/condor/naf_lite,dask/condor,dask/slurm,dask/lpc,dask/lxplus,dask/casa}
+                        The type of executor to use (default: futures). 
+  -j WORKERS, --workers WORKERS
+                        Number of workers (cores/threads) to use for multi- worker executors (e.g. futures or condor) (default:
+                        12)
+  -s SCALEOUT, --scaleout SCALEOUT
+                        Number of nodes to scale out to if using slurm/condor.
+                        Total number of concurrent threads is ``workers x
+                        scaleout`` (default: 6)
+  --memory MEMORY       Memory used in jobs  ``(default: 4GB)
+  --disk DISK           Disk used in jobs  ``(default: 4GB)
+  --voms VOMS           Path to voms proxy, made accessible to worker nodes.
+                        By default a copy will be made to $HOME.
+  --chunk N             Number of events per process chunk
+  --retries N           Number of retries for coffea processor
+  --validate            Do not process, just check all files are accessible
+  --skipbadfiles        Skip bad files.
+  --only ONLY           Only process specific dataset or file
+  --limit N             Limit to the first N files of each dataset in sample
+                        JSON
+  --max N               Max number of chunks to run in total
+```
+</p>
+</details>
+
+Roadmap for running the tool
+
+1. Is the `.json` files ready? If not create it through [Make the json files](#make-the-json-files) section with naming scheme
+
+2. If you want JERC and SFs implemented, edit the correction config under `BTVNanoCommissioning/src/utils/AK4_parameters.py`, add a new `dict` contains correction files in dedicated campaign.
+
+3. If the JERC file missing `jec_compiled.pkl.gz` in the `data/JME/${campaign}` directory, create it through [Create compiled JERC file](#create-compiled-jerc-filepklgz)
+
+4. Run the workflows with dedicated input and campaign name. example commands for run3 could be found [here](#commands-for-different-phase-space)
+
+5. Once you get `.coffea` file, you can make plots via the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add to `src/BTVNanoCommissioning/helpers/xsection.py`
+
+### commands for different phase space
+
+After small test, you can run the whole campaign according the phase space.
+
+#### b-SFs 
 
 <details><summary>details</summary>
 <p>
@@ -115,51 +173,51 @@ python runner.py --workflow ${workflow} --json metadata/test_w_dj.json
 - Dileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow (e)ttdilep_sf --json metadata/94X_doublemu_PFNano.json
+ python runner.py --workflow ttdilep_sf --json metadata/data_Winter22_emu(mumu)_BTV_Run3_2022_Comm_v1.json  --campaign Winter22Run3 --year 2022  (-j 4 --executor ${scaleout_site} -s 500) 
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow (e)ttsemilep_sf --json metadata/94X_singlemu_PFNano.json
+python runner.py --workflow ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022  (-j 4 --executor ${scaleout_site} -s 500)
 ```
 
 </p>
 </details>
 
-### c-SFs
+#### c-SFs
 <details><summary>details</summary>
 <p>
 
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow (e)ctag_ttdilep_sf --json metadata/94X_doublemu_PFNano.json
+python runner.py --workflow (e/em)ctag_ttdilep_sf --json metadata/data_Winter22_emu(mumu)_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 (-j 4 --executor ${scaleout_site} -s 500)
 ```
 
 
 - Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow (e)ctag_ttsemilep_sf --json metadata/94X_singlemu_PFNano.json
+python runner.py --workflow (e)ctag_ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 (-j 4 --executor ${scaleout_site} -s 500)
 ```
 
 - W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
 
 ```
-python runner.py --workflow (e)ctag_Wc_sf --json metadata/94X_singlemu_PFNano.json
+python runner.py --workflow (e)ctag_Wc_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 (-j 4 --executor ${scaleout_site} -s 500)
 ```
 
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
 
 ```
-python runner.py --workflow (e)ctag_DY_sf --json ctag_DY_mu_PFNano.json
+python runner.py --workflow (e)ctag_DY_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 (-j 4 --executor ${scaleout_site} -s 500)
 ```
 
 </p>
 </details>
 
-### Validation - check different campaigns
+#### Validation - check different campaigns
 
 <details><summary>details</summary>
 <p>
@@ -167,7 +225,7 @@ python runner.py --workflow (e)ctag_DY_sf --json ctag_DY_mu_PFNano.json
 Only basic jet selections(PUID, ID, pT, $\eta$) applied. Put the json files with different campaigns
 
 ```
-python runner.py --workflow valid --json {}
+python runner.py --workflow valid --json metadata/$json file
 ```
 
 </p>
@@ -227,29 +285,36 @@ Use the `fetch.py` in `filefetcher`, the `$input_DAS_list` is the info extract f
 ```
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
 ```
+the `output_json_name` must contains the BTV name tag (e.g. `BTV_Run3_2022_Comm_v1`)
+
+You might need to rename the json key name with following name scheme:
+
 For the data sample please use the naming scheme,
 ```
-$dataset_$Run_$PFNanoag 
+$dataset_$Run
 #i.e.
-SingleMuon_Run2022C-PromptReco-v1_BTV_Run3_2022_Comm_v1
+SingleMuon_Run2022C-PromptReco-v1
 ```
 and MC, the dataset name is used to find the xsection, please be consistent with name in DAS
 ```
-$dataset_$PFNanotag
+$dataset
 #i.e.
-WW_TuneCP5_13p6TeV-pythia8_BTV_Run3_2022_Comm_v1 
+WW_TuneCP5_13p6TeV-pythia8
 ```
 
 :exclamation: Do not make the file list greater than 4k files to avoid scaleout issues in various site
 
-## Create compiled corretions file(`pkl.gz`)
+## Create compiled JERC file(`pkl.gz`)
 
 :exclamation: In case existing correction file doesn't work for you due to the incompatibility of `cloudpickle` in different python versions. Please recompile the file to get new pickle file.
+
+Under `compile_jec.py` you need to create dedicated jet factory files with different campaigns. Following the name scheme with `mc` for MC and `data${run}` for data.
 
 Compile correction pickle files for a specific JEC campaign by changing the dict of jet_factory, and define the MC campaign and the output file name by passing it as arguments to the python script:
 
 ```
 python -m BTVNanoCommissioning.utils.compile_jec ${campaign} jec_compiled
+e.g. python -m BTVNanoCommissioning.utils.compile_jec Winter22Run3 jec_compiled
 ```
 
 
@@ -259,7 +324,7 @@ python -m BTVNanoCommissioning.utils.compile_jec ${campaign} jec_compiled
 - data/MC comparisons
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
 ```
-python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v zmass,z_pt
+python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt
 python plotdataMC.py -i "test*.coffea" --lumi 41500 -p dilep_sf -v zmass,z_pt
 
 options:

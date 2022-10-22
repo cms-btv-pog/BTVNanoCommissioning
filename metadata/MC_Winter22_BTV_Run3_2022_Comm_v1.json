@@ -1,5 +1,5 @@
 {
-    "TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8_BTV_Run3_2022_Comm_v1": [
+    "TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8": [
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_120453/0000/nano_mcRun3_122X_45.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_120453/0000/nano_mcRun3_122X_1-3.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_120453/0000/nano_mcRun3_122X_44.root",
@@ -69,7 +69,7 @@
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_120453/0000/nano_mcRun3_122X_1-2.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_120453/0000/nano_mcRun3_122X_1-1.root"
     ],
-    "TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8_BTV_Run3_2022_Comm_v1": [
+    "TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8": [
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131253/0000/nano_mcRun3_122X_200.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131253/0000/nano_mcRun3_122X_270.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131253/0000/nano_mcRun3_122X_2.root",
@@ -505,7 +505,7 @@
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131253/0000/nano_mcRun3_122X_1-60.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131253/0000/nano_mcRun3_122X_1-26.root"
     ],
-    "TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8_BTV_Run3_2022_Comm_v1": [
+    "TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8": [
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131301/0000/nano_mcRun3_122X_2-1.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131301/0000/nano_mcRun3_122X_2-2.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131301/0000/nano_mcRun3_122X_3.root",
@@ -674,7 +674,7 @@
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131301/0000/nano_mcRun3_122X_97.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131301/0000/nano_mcRun3_122X_95.root"
     ],
-    "TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8_BTV_Run3_2022_Comm_v1": [
+    "TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8": [
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_150251/0000/nano_mcRun3_122X_1-2.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_150251/0000/nano_mcRun3_122X_11.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_150251/0000/nano_mcRun3_122X_13.root",
@@ -715,7 +715,7 @@
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_150251/0000/nano_mcRun3_122X_26.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_150251/0000/nano_mcRun3_122X_12.root"
     ],
-    "TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8_BTV_Run3_2022_Comm_v1": [
+    "TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8": [
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_145952/0000/nano_mcRun3_122X_1-1.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_145952/0000/nano_mcRun3_122X_18.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_145952/0000/nano_mcRun3_122X_30.root",
@@ -773,7 +773,7 @@
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_145952/0000/nano_mcRun3_122X_8.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_145952/0000/nano_mcRun3_122X_37.root"
     ],
-    "TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8_BTV_Run3_2022_Comm_v1": [
+    "TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8": [
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_150309/0000/nano_mcRun3_122X_45.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_150309/0000/nano_mcRun3_122X_48.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_150309/0000/nano_mcRun3_122X_20.root",
@@ -833,7 +833,7 @@
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_150309/0000/nano_mcRun3_122X_12.root",
         "root://xrootd-cms.infn.it///store/user/mullerd/BTV_Run3_2022_Comm_v1/TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_150309/0000/nano_mcRun3_122X_8.root"
     ],
-    "WW_TuneCP5_13p6TeV-pythia8_BTV_Run3_2022_Comm_v1": [
+    "WW_TuneCP5_13p6TeV-pythia8": [
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/WW_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_125231/0000/nano_mcRun3_122X_103.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/WW_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_125231/0000/nano_mcRun3_122X_46.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/WW_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_125231/0000/nano_mcRun3_122X_102.root",
@@ -976,7 +976,7 @@
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/WW_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_125231/0000/nano_mcRun3_122X_137.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/WW_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_125231/0000/nano_mcRun3_122X_96.root"
     ],
-    "WZ_TuneCP5_13p6TeV-pythia8_BTV_Run3_2022_Comm_v1": [
+    "WZ_TuneCP5_13p6TeV-pythia8": [
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/WZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131234/0000/nano_mcRun3_122X_14.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/WZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131234/0000/nano_mcRun3_122X_44.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/WZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131234/0000/nano_mcRun3_122X_43.root",
@@ -1058,7 +1058,7 @@
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/WZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131234/0000/nano_mcRun3_122X_1-3.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/WZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131234/0000/nano_mcRun3_122X_1-7.root"
     ],
-    "ZZ_TuneCP5_13p6TeV-pythia8_BTV_Run3_2022_Comm_v1": [
+    "ZZ_TuneCP5_13p6TeV-pythia8": [
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/ZZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131243/0000/nano_mcRun3_122X_15.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/ZZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131243/0000/nano_mcRun3_122X_16.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/ZZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131243/0000/nano_mcRun3_122X_6.root",
@@ -1105,7 +1105,7 @@
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/ZZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131243/0000/nano_mcRun3_122X_43.root",
         "root://xrootd-cms.infn.it///store/user/milee/PFNano/ZZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221014_131243/0000/nano_mcRun3_122X_1.root"
     ],
-    "DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8_BTV_Run3_2022_Comm_v1": [
+    "DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8": [
         "root://xrootd-cms.infn.it///store/user/hhsia/PFNano/DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221020_123737/0000/nano_mcRun3_122X_33.root",
         "root://xrootd-cms.infn.it///store/user/hhsia/PFNano/DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221020_123737/0000/nano_mcRun3_122X_76.root",
         "root://xrootd-cms.infn.it///store/user/hhsia/PFNano/DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221020_123737/0000/nano_mcRun3_122X_43.root",
@@ -1205,7 +1205,7 @@
         "root://xrootd-cms.infn.it///store/user/hhsia/PFNano/DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221020_123737/0000/nano_mcRun3_122X_8.root",
         "root://xrootd-cms.infn.it///store/user/hhsia/PFNano/DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221020_123737/0000/nano_mcRun3_122X_1.root"
     ],
-    "DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8_BTV_Run3_2022_Comm_v1": [
+    "DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8": [
         "root://xrootd-cms.infn.it///store/user/hhsia/PFNano/DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9_ext2-v2_BTV_Run3_2022_Comm_v1/221020_123802/0000/nano_mcRun3_122X_30.root",
         "root://xrootd-cms.infn.it///store/user/hhsia/PFNano/DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9_ext2-v2_BTV_Run3_2022_Comm_v1/221020_123802/0000/nano_mcRun3_122X_98.root",
         "root://xrootd-cms.infn.it///store/user/hhsia/PFNano/DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9_ext2-v2_BTV_Run3_2022_Comm_v1/221020_123802/0000/nano_mcRun3_122X_60.root",
@@ -1358,7 +1358,7 @@
         "root://xrootd-cms.infn.it///store/user/hhsia/PFNano/DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9_ext1-v1_BTV_Run3_2022_Comm_v1/221020_123750/0000/nano_mcRun3_122X_7.root",
         "root://xrootd-cms.infn.it///store/user/hhsia/PFNano/DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9_ext1-v1_BTV_Run3_2022_Comm_v1/221020_123750/0000/nano_mcRun3_122X_1-8.root"
     ],
-    "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8_BTV_Run3_2022_Comm_v1": [
+    "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8": [
         "root://xrootd-cms.infn.it///store/user/azaza/BTV_Run3_2022_Comm_v1/WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221019_144719/0000/nano_mcRun3_122X_9.root",
         "root://xrootd-cms.infn.it///store/user/azaza/BTV_Run3_2022_Comm_v1/WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221019_144719/0000/nano_mcRun3_122X_45.root",
         "root://xrootd-cms.infn.it///store/user/azaza/BTV_Run3_2022_Comm_v1/WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22MiniAOD-122X_mcRun3_2021_realistic_v9-v2_BTV_Run3_2022_Comm_v1/221019_144719/0000/nano_mcRun3_122X_98.root",
