@@ -29,7 +29,7 @@ parser.add_argument(
     dest="phase",
     help="which phase space",
 )
-parser.add_argument("--log", type=bool, help="log on y axis")
+parser.add_argument("--log", action="store_true", help="log on y axis")
 parser.add_argument(
     "--norm",
     default=False,
@@ -99,11 +99,19 @@ if (
 ):
     nj = 1
 
+if arg.variable == "all":
+    var_set = collated["mc"].keys()
+else:
+    var_set = arg.variable.split(",")
 
-for discr in arg.variable.split(","):
+for discr in var_set:
+    print(discr)
+    if "sumw" == discr:
+        continue
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
+        and arg.SF
     ):
         scale_sf = np.sum(
             collated["mc"][discr][{"syst": "SF", "flav": sum}].values()
@@ -113,6 +121,7 @@ for discr in arg.variable.split(","):
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
+        and arg.SF
     ):
         print("============> fraction of each flavor in MC")
         print(
@@ -147,6 +156,7 @@ for discr in arg.variable.split(","):
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
+        and arg.SF
     ):
 
         err_up = (
@@ -259,7 +269,37 @@ for discr in arg.variable.split(","):
             np.ones(stat_denom_unc[0]) + np.r_[err_up, err_up[-1]],
             {"facecolor": "tab:brown", "linewidth": 0},
         )
+    elif "syst" in collated["mc"][discr].axes.name and not arg.SF:
+        hep.histplot(
+            [collated["mc"][discr][{"flav": i, "syst": "noSF"}] for i in range(4)],
+            stack=True,
+            histtype="fill",
+            label=["udsg", "pileup", "c", "b"],
+            yerr=True,
+            ax=ax,
+        )
 
+        hep.histplot(
+            collated["data"][discr][{"flav": sum, "syst": "noSF"}],
+            histtype="errorbar",
+            color="black",
+            label="Data",
+            yerr=True,
+            ax=ax,
+        )
+        rax.errorbar(
+            x=collated["mc"][discr][{"flav": sum, "syst": "noSF"}].axes[0].centers,
+            y=collated["data"][discr][{"flav": sum, "syst": "noSF"}].values()
+            / collated["mc"][discr][{"flav": sum, "syst": "noSF"}].values(),
+            yerr=ratio_uncertainty(
+                collated["data"][discr][{"flav": sum, "syst": "noSF"}].values(),
+                collated["mc"][discr][{"flav": sum, "syst": "noSF"}].values(),
+            ),
+            color="k",
+            linestyle="none",
+            marker="o",
+            elinewidth=1,
+        )
     elif "flav" in collated["mc"][discr].axes.name:
         hep.histplot(
             [collated["mc"][discr][{"flav": i}] for i in range(4)],
@@ -320,10 +360,10 @@ for discr in arg.variable.split(","):
             elinewidth=1,
         )
     ax.set_xlabel(None)
-    ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
     ax.set_ylabel("Events")
     rax.set_ylabel("Data/MC")
     rax.set_xlabel(discr)
+    rax.axhline(y=1.0, linestyle="dashed", color="gray")
     ax.legend()
     rax.set_ylim(0.5, 1.5)
     at = AnchoredText(
@@ -342,7 +382,13 @@ for discr in arg.variable.split(","):
         fig.savefig(
             f"plot/BTV/{arg.phase}_{arg.ext}_{time}/{arg.phase}_unc_{discr}_inclusive{scale}_{arg.ext}_{name}.pdf"
         )
+        fig.savefig(
+            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/{arg.phase}_unc_{discr}_inclusive{scale}_{arg.ext}_{name}.png"
+        )
     else:
         fig.savefig(
             f"plot/BTV/{arg.phase}_{arg.ext}_{time}/{arg.phase}_unc_lin_{discr}_inclusive{scale}_{arg.ext}_{name}.pdf"
+        )
+        fig.savefig(
+            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/{arg.phase}_unc_lin_{discr}_inclusive{scale}_{arg.ext}_{name}.png"
         )
