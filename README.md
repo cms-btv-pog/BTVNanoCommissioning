@@ -126,7 +126,7 @@ More options for `runner.py`
 
 3. If the JERC file `jec_compiled.pkl.gz` is missing in the `data/JME/${campaign}` directory, create it through [Create compiled JERC file](#create-compiled-jerc-filepklgz)
 
-4. Run the workflow with dedicated input and campaign name. example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz)
+4. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz)
 
 5. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add to `src/BTVNanoCommissioning/helpers/xsection.py`
 
@@ -275,18 +275,18 @@ WW_TuneCP5_13p6TeV-pythia8
 
 ## Correction files configurations
 
-All the `lumiMask`, correction files (SFs, pileup weight), and JEC, JEC files are under  `BTVNanoCommissioning/src/data/` following the substrucute `${type}/${campaign}/${files}`(except `lumiMasks` and `Prescales`)
+All the `lumiMask`, correction files (SFs, pileup weight), and JEC, JER files are under  `BTVNanoCommissioning/src/data/` following the substructure `${type}/${campaign}/${files}`(except `lumiMasks` and `Prescales`)
 
 | Type        | File type |  Comments|
-| :---:   | :---: | :---: | :---: |
+| :---:   | :---: | :---: | 
 | `lumiMasks` |`.json` | Masked good lumi-section used for physics analysis|
 | `Prescales` | `.txt` | HLT paths for prescaled triggers|
 | `PU`  | `.pkl.gz` or `.histo.root` | Pileup reweight files, matched MC to data| 
-| `LSF` | `.histo.root` | Lepton ID/Iso/Reco SFs|
+| `LSF` | `.histo.root` | Lepton ID/Iso/Reco/Trigger SFs|
 | `BTV` | `.csv` or `.root` | b-tagger, c-tagger SFs|
 | `JME` | `.txt` | JER, JEC files|
 
-Create an `dict` entry under `correction_config` with dedicated campaigns in `BTVNanoCommissioning/src/utils/AK4_parameters.py`.
+Create a `dict` entry under `correction_config` with dedicated campaigns in `BTVNanoCommissioning/src/utils/AK4_parameters.py`.
 
 Take `Rereco17_94X` as an example.
 
@@ -340,7 +340,8 @@ e.g. python -m BTVNanoCommissioning.utils.compile_jec Winter22Run3 jec_compiled
 - data/MC comparisons
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
 
-You can specify `-v all` to plot all the variables in the `coffea` file
+You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v *DeepJet*` for the input variables containing `DeepJet`)
+
 ```
 python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt
 python plotdataMC.py -i "test*.coffea" --lumi 41500 -p dilep_sf -v z_mass,z_pt
@@ -354,7 +355,7 @@ options:
   --log LOG             log on y axis
   --norm NORM           Use for reshape SF, scale to same yield as no SFs case
   -v VARIABLE, --variable VARIABLE
-                        variables to plot, splitted by ,. Wildcard option * available as well. Specifying all would run through all the variables.
+                        variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.
   --SF                  make w/, w/o SF comparisons
   --ext EXT             prefix name
   -i INPUT, --input INPUT
@@ -362,7 +363,7 @@ options:
 ```
 - data/data, MC/MC comparisons
 
-You can specify `-v all` to plot all the variables in the `coffea` file
+You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v *DeepJet*` for the input variables containing `DeepJet`)
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
 
 ```
@@ -381,7 +382,7 @@ options:
   --sepflav SEPFLAV     seperate flavour(b/c/light)
   --log                 log on y axis
   -v VARIABLE, --variable VARIABLE
-                        variables to plot, splitted by ,. Wildcard option * available as well. Specifying all would run through all the variables.
+                        variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.
   --ext EXT             prefix name
   --com COM             sqrt(s) in TeV
   --shortref SHORTREF   short name for reference dataset for legend
