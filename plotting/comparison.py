@@ -53,7 +53,7 @@ parser.add_argument(
     "-v",
     "--variable",
     type=str,
-    help="variables to plot, splitted by ,",
+    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying all would run through all the variables.",
 )
 parser.add_argument("--ext", type=str, default="data", help="prefix name/btv name tag")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
@@ -127,6 +127,12 @@ if args.shortcomp == "":
 
 if args.variable == "all":
     var_set = collated[args.ref].keys()
+elif "*" in args.variable:
+    var_set = [
+        var
+        for var in collated[args.ref].keys()
+        if args.variable.replace("*", "") in var
+    ]
 else:
     var_set = args.variable.split(",")
 for discr in var_set:
