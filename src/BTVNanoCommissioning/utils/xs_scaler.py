@@ -11,7 +11,7 @@ def scale_xs(hist, lumi, events):
         xs_dict[obj["process_name"]] = float(obj["cross_section"])
     scales = {}
     for key in events:
-        if type(key) != str or "Data" in key or "Run" in key or "data" in key:
+        if type(key) != str or "Run" in key:
             continue
         scales[key] = xs_dict[key] * lumi / events[key]
     hist.scale(scales, axis="dataset")

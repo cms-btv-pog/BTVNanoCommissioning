@@ -29,7 +29,14 @@ parser.add_argument(
     dest="phase",
     help="which phase space",
 )
-parser.add_argument("--log", type=bool, help="log on y axis")
+parser.add_argument(
+    "-i",
+    "--input",
+    type=str,
+    default="",
+    help="input coffea files (str), splitted different files with ','. Wildcard option * available as well.",
+)
+parser.add_argument("--log", action="store_true", help="log on y axis")
 parser.add_argument(
     "--norm",
     default=False,
@@ -40,19 +47,12 @@ parser.add_argument(
     "-v",
     "--variable",
     type=str,
-    help="variables to plot, splitted by ,",
+    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying all would run through all the variables.",
 )
 parser.add_argument(
     "--SF", action="store_true", default=False, help="make w/, w/o SF comparisons"
 )
 parser.add_argument("--ext", type=str, default="data", help="prefix name")
-parser.add_argument(
-    "-i",
-    "--input",
-    type=str,
-    default="",
-    help="input coffea files (str), splitted different files with ','. Wildcard option * available as well.",
-)
 arg = parser.parse_args()
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/"):
@@ -99,11 +99,22 @@ if (
 ):
     nj = 1
 
+if arg.variable == "all":
+    var_set = collated["mc"].keys()
+elif "*" in arg.variable:
+    var_set = [
+        var for var in collated["mc"].keys() if arg.variable.replace("*", "") in var
+    ]
+else:
+    var_set = arg.variable.split(",")
 
-for discr in arg.variable.split(","):
+for discr in var_set:
+    if "sumw" == discr:
+        continue
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
+        and arg.SF
     ):
         scale_sf = np.sum(
             collated["mc"][discr][{"syst": "SF", "flav": sum}].values()
@@ -113,6 +124,7 @@ for discr in arg.variable.split(","):
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
+        and arg.SF
     ):
         print("============> fraction of each flavor in MC")
         print(
@@ -147,6 +159,7 @@ for discr in arg.variable.split(","):
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
+        and arg.SF
     ):
 
         err_up = (
@@ -259,7 +272,37 @@ for discr in arg.variable.split(","):
             np.ones(stat_denom_unc[0]) + np.r_[err_up, err_up[-1]],
             {"facecolor": "tab:brown", "linewidth": 0},
         )
+    elif "syst" in collated["mc"][discr].axes.name and not arg.SF:
+        hep.histplot(
+            [collated["mc"][discr][{"flav": i, "syst": "noSF"}] for i in range(4)],
+            stack=True,
+            histtype="fill",
+            label=["udsg", "pileup", "c", "b"],
+            yerr=True,
+            ax=ax,
+        )
 
+        hep.histplot(
+            collated["data"][discr][{"flav": sum, "syst": "noSF"}],
+            histtype="errorbar",
+            color="black",
+            label="Data",
+            yerr=True,
+            ax=ax,
+        )
+        rax.errorbar(
+            x=collated["mc"][discr][{"flav": sum, "syst": "noSF"}].axes[0].centers,
+            y=collated["data"][discr][{"flav": sum, "syst": "noSF"}].values()
+            / collated["mc"][discr][{"flav": sum, "syst": "noSF"}].values(),
+            yerr=ratio_uncertainty(
+                collated["data"][discr][{"flav": sum, "syst": "noSF"}].values(),
+                collated["mc"][discr][{"flav": sum, "syst": "noSF"}].values(),
+            ),
+            color="k",
+            linestyle="none",
+            marker="o",
+            elinewidth=1,
+        )
     elif "flav" in collated["mc"][discr].axes.name:
         hep.histplot(
             [collated["mc"][discr][{"flav": i}] for i in range(4)],
@@ -292,7 +335,7 @@ for discr in arg.variable.split(","):
             elinewidth=1,
         )
 
-    elif "mu" not in discr and "njet" != discr:
+    else:
         hep.histplot(
             collated["mc"][discr],
             stack=True,
@@ -320,15 +363,15 @@ for discr in arg.variable.split(","):
             elinewidth=1,
         )
     ax.set_xlabel(None)
-    ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
     ax.set_ylabel("Events")
     rax.set_ylabel("Data/MC")
     rax.set_xlabel(discr)
+    rax.axhline(y=1.0, linestyle="dashed", color="gray")
     ax.legend()
     rax.set_ylim(0.5, 1.5)
-
+    ax.set_ylim(bottom=0.0)
     at = AnchoredText(
-        input_txt + "\n",
+        input_txt + "\n" + arg.ext,
         loc=2,
         frameon=False,
     )
@@ -340,10 +383,19 @@ for discr in arg.variable.split(","):
     hep.mpl_magic(ax=ax)
     if arg.log:
         ax.set_yscale("log")
+        name = "log"
+        ax.set_ylim(bottom=10)
+        hep.mpl_magic(ax=ax)
         fig.savefig(
-            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/{arg.phase}_unc_{discr}_inclusive{scale}_{arg.ext}_{name}.pdf"
+            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"
+        )
+        fig.savefig(
+            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png"
         )
     else:
         fig.savefig(
-            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/{arg.phase}_unc_lin_{discr}_inclusive{scale}_{arg.ext}_{name}.pdf"
+            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"
+        )
+        fig.savefig(
+            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png"
         )

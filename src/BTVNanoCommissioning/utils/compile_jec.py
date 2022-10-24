@@ -282,20 +282,28 @@ def jet_factories(campaign):
                 files=[
                     "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V1_MC_PtResolution_AK4PFPuppi.jr.txt",
                     "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V1_MC_SF_AK4PFPuppi.jersf.txt",
-                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V1_MC_L1FastJet_AK4PFPuppi.jec.txt",
-                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V1_MC_L2Relative_AK4PFPuppi.jec.txt",
-                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V1_MC_L2Residual_AK4PFPuppi.jec.txt",
-                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V1_MC_L3Absolute_AK4PFPuppi.jec.txt",
-                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V1_MC_UncertaintySources_AK4PFPuppi.junc.txt",
-                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V1_MC_Uncertainty_AK4PFPuppi.junc.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V2_MC_L1FastJet_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V2_MC_L2Relative_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V2_MC_L2Residual_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V2_MC_L3Absolute_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V2_MC_UncertaintySources_AK4PFPuppi.junc.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_V2_MC_Uncertainty_AK4PFPuppi.junc.txt",
                 ]
             ),
             "dataC": jet_factory_factory(
                 files=[
-                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunC_V1_DATA_L1FastJet_AK4PFPuppi.jec.txt",
-                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunC_V1_DATA_L2Relative_AK4PFPuppi.jec.txt",
-                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunC_V1_DATA_L3Absolute_AK4PFPuppi.jec.txt",
-                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunC_V1_DATA_L2L3Residual_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunC_V2_DATA_L1FastJet_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunC_V2_DATA_L2Relative_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunC_V2_DATA_L3Absolute_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunC_V2_DATA_L2L3Residual_AK4PFPuppi.jec.txt",
+                ]
+            ),
+            "dataD": jet_factory_factory(
+                files=[
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunD_V2_DATA_L1FastJet_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunD_V2_DATA_L2Relative_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunD_V2_DATA_L3Absolute_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunD_V2_DATA_L2L3Residual_AK4PFPuppi.jec.txt",
                 ]
             ),
         },

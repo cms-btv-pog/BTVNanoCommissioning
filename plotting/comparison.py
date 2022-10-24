@@ -47,12 +47,15 @@ parser.add_argument(
 )
 parser.add_argument("--log", action="store_true", help="log on y axis")
 parser.add_argument(
+    "--norm", action="store_true", help="compare shape (density=True)", default=False
+)
+parser.add_argument(
     "-v",
     "--variable",
     type=str,
-    help="variables to plot, splitted by ,",
+    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying all would run through all the variables.",
 )
-parser.add_argument("--ext", type=str, default="data", help="prefix name")
+parser.add_argument("--ext", type=str, default="data", help="prefix name/btv name tag")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
     "--shortref",
@@ -122,7 +125,32 @@ if args.shortref == "":
 if args.shortcomp == "":
     args.shortcomp = args.compared
 
-for discr in args.variable.split(","):
+if args.variable == "all":
+    var_set = collated[args.ref].keys()
+elif "*" in args.variable:
+    var_set = [
+        var
+        for var in collated[args.ref].keys()
+        if args.variable.replace("*", "") in var
+    ]
+else:
+    var_set = args.variable.split(",")
+for discr in var_set:
+    allaxis = {}
+    if "flav" in collated[args.ref][discr].axes.name:
+        allaxis["flav"] = sum
+    if "syst" in collated[args.ref][discr].axes.name:
+        allaxis["syst"] = sum
+    if args.norm:
+        for c in args.compared.split(","):
+            collated[c][discr] = collated[c][discr] * float(
+                np.sum(collated[args.ref][discr][allaxis].values())
+                / np.sum(collated[c][discr][allaxis].values())
+            )
+            print(
+                np.sum(collated[args.ref][discr][allaxis].values()),
+                np.sum(collated[c][discr][allaxis].values()),
+            )
     if args.sepflav:  # split into 3 panels for different flavor
         fig, (ax, rax, rax2, rax3) = plt.subplots(
             4,
@@ -273,14 +301,15 @@ for discr in args.variable.split(","):
         rax3.set_xlabel(discr)
         ax.legend()
         at = AnchoredText(
-            "",
-            # + "inclusive pT, $\eta$"
+            input_txt + "\n" + args.ext,
             loc=2,
-            prop=dict(size=15),
             frameon=False,
         )
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
+        rax.axhline(y=1.0, linestyle="dashed", color="gray")
+        rax2.axhline(y=1.0, linestyle="dashed", color="gray")
+        rax3.axhline(y=1.0, linestyle="dashed", color="gray")
         if args.log:
             ax.set_yscale("log")
         fig.savefig(
@@ -304,11 +333,6 @@ for discr in args.variable.split(","):
         )
         ax.set_xlabel(None)
         ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
-        allaxis = {}
-        if "flav" in collated[args.ref][discr].axes.name:
-            allaxis["flav"] = sum
-        if "syst" in collated[args.ref][discr].axes.name:
-            allaxis["syst"] = sum
         hep.histplot(
             collated[args.ref][discr][allaxis],
             label=args.shortref,
@@ -324,8 +348,7 @@ for discr in args.variable.split(","):
                 yerr=True,
                 ax=ax,
             )
-
-        for c in args.compared.split(","):
+        for i, c in enumerate(args.compared.split(",")):
             rax.errorbar(
                 x=collated[c][discr][allaxis].axes[0].centers,
                 y=collated[c][discr][allaxis].values()
@@ -334,12 +357,13 @@ for discr in args.variable.split(","):
                     collated[c][discr][allaxis].values(),
                     collated[args.ref][discr][allaxis].values(),
                 ),
-                color="k",
-                linestyle="none",
                 marker="o",
+                linestyle="none",
+                color=ax.get_lines()[i + 1].get_color(),
                 elinewidth=1,
             )
         rax.set_xlabel(discr)
+        rax.axhline(y=1.0, linestyle="dashed", color="gray")
         ax.set_xlabel(None)
         ax.set_ylabel("Events")
         rax.set_ylabel("Other/Ref")
@@ -347,7 +371,7 @@ for discr in args.variable.split(","):
         rax.set_ylim(0.0, 2.0)
 
         at = AnchoredText(
-            "",
+            input_txt + "\n" + args.ext,
             loc=2,
             frameon=False,
         )
