@@ -340,7 +340,7 @@ e.g. python -m BTVNanoCommissioning.utils.compile_jec Winter22Run3 jec_compiled
 - data/MC comparisons
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
 
-You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v *DeepJet*` for the input variables containing `DeepJet`)
+You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 
 ```
 python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt
@@ -363,7 +363,7 @@ options:
 ```
 - data/data, MC/MC comparisons
 
-You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v *DeepJet*` for the input variables containing `DeepJet`)
+You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
 
 ```
