@@ -108,6 +108,9 @@ More options for `runner.py`
                         By default a copy will be made to $HOME.
   --chunk N             Number of events per process chunk
   --retries N           Number of retries for coffea processor
+ --index INDEX         (Specific for dask/lxplus file splitting, default:0,0) 
+                        Format: $dictindex,$fileindex. $dictindex refers to the index of the file list split to 50 files per dask-worker.
+                        The job will start submission from the corresponding indices
   --validate            Do not process, just check all files are accessible
   --skipbadfiles        Skip bad files.
   --only ONLY           Only process specific dataset or file
@@ -142,13 +145,13 @@ After a small test, you can run the full campaign for a dedicated phase space, s
 - Dileptonic ttbar phase space : check performance for btag SFs, emu channel
 
 ```
- python runner.py --workflow ttdilep_sf --json metadata/data_Winter22_emu_BTV_Run3_2022_Comm_v1.json  --campaign Winter22Run3 --year 2022  (--executor ${scaleout_site}) 
+ python runner.py --workflow ttdilep_sf --json metadata/data_Winter22_emu_BTV_Run3_2022_Comm_v1.json  --campaign Winter22Run3 --year 2022 --isJERC --isCorr  (--executor ${scaleout_site}) 
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022  (--executor ${scaleout_site})
+python runner.py --workflow ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 --isJERC --isCorr  (--executor ${scaleout_site})
 ```
 
 </p>
@@ -161,26 +164,26 @@ python runner.py --workflow ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Ru
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 (--executor ${scaleout_site})
+python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 --isJERC --isCorr (--executor ${scaleout_site})
 ```
 
 
 - Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 (--executor ${scaleout_site})
+python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 --isJERC --isCorr (--executor ${scaleout_site})
 ```
 
 - W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
 
 ```
-python runner.py --workflow ctag_Wc_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 (--executor ${scaleout_site})
+python runner.py --workflow ctag_Wc_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 --isJERC --isCorr (--executor ${scaleout_site})
 ```
 
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_DY_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 (--executor ${scaleout_site})
+python runner.py --workflow ctag_DY_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 --isJERC --isCorr (--executor ${scaleout_site})
 ```
 
 </p>
@@ -223,7 +226,12 @@ one with `8786` being open. Other than that, no additional configurations should
 python runner.py --wf ttcom --executor dask/lxplus
 ```
 
-jobs automatically splitted to 100 files per jobs to avoid job failure due to crowded cluster on lxplus with the naming scheme `hist_$workflow_$json_$index.coffea`, combined in plotting scripts
+jobs automatically split to 50 files per jobs to avoid job failure due to crowded cluster on lxplus with the naming scheme `hist_$workflow_$json_$dictindex_$fileindex.coffea`. The `.coffea` files can be then combined at plotting level
+
+
+:exclamation: The optimal scaleout options on lxplus are `-s 50 --chunk 50000`
+
+To deal with unstable condor cluster and dask worker on lxplus, you can resubmit failure jobs via `--index $dictindex,$fileindex` option. `$dictindex` refers to the index in the `.json dict`, `$fileindex` refers to the index of the file list split to 50 files per dask-worker. The total number of files of each dict can be computed by `math.ceil(len($filelist)/50)` The job will start from the corresponding indices.
 
 ### Coffea-casa (Nebraska AF)
 Coffea-casa is a JupyterHub based analysis-facility hosted at Nebraska. For more information and setup instuctions see
@@ -360,6 +368,8 @@ options:
   --ext EXT             prefix name
   -i INPUT, --input INPUT
                         input coffea files (str), splitted different files with ','. Wildcard option * available as well.
+   --autorebin AUTOREBIN
+                        Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
 ```
 - data/data, MC/MC comparisons
 
@@ -388,6 +398,8 @@ options:
   --shortref SHORTREF   short name for reference dataset for legend
   --shortcomp SHORTCOMP
                         short names for compared datasets for legend, split by ','
+   --autorebin AUTOREBIN
+                        Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
 ```
 
 

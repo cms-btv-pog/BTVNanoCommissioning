@@ -163,6 +163,13 @@ def get_main_parser():
         metavar="N",
         help="Number of retries for coffea processor",
     )
+    parser.add_argument(
+        "--index",
+        type=str,
+        default="0,0",
+        help="(Specific for dask/lxplus file splitting, ``default: %(default)s)\n   Format: $dictindex,$fileindex. $dictindex refers to the index, splitted $dictindex and $fileindex with ','"
+        "$dictindex refers the index in the json dict, $fileindex refers to the index of the file list split to 50 files per dask-worker. The job will start submission from the corresponding indices",
+    )
     # Debugging
     parser.add_argument(
         "--validate",
@@ -214,7 +221,7 @@ if __name__ == "__main__":
     # check file dict size - avoid large memory consumption for local machine
     filesize = np.sum(np.array([len(sample_dict[key]) for key in sample_dict.keys()]))
     splitjobs = False
-    if filesize > 1000:
+    if filesize > 200:
         splitjobs = True
 
     # For debugging
@@ -644,15 +651,20 @@ if __name__ == "__main__":
                 )
                 save(output, args.output)
             else:
-                index = 0
-                for sample in sample_dict.keys():
-                    mins = 0
+                findex = int(args.index.split(",")[1])
+                for sindex, sample in enumerate(sample_dict.keys()):
+                    if sindex < int(index.split(",")[0]):
+                        continue
+                    if int(args.index.split(",")[1]) == findex:
+                        mins = findex * 50
+                    else:
+                        mins = 0
                     while mins < len(sample_dict[sample]):
                         splitted = {}
-                        maxs = mins + 100
+                        maxs = mins + 50
                         splitted[sample] = sample_dict[sample][mins:maxs]
                         mins = maxs
-                        index = index + 1
+                        findex = findex + 1
                         output = processor.run_uproot_job(
                             splitted,
                             treename="Events",
@@ -667,7 +679,12 @@ if __name__ == "__main__":
                             chunksize=args.chunk,
                             maxchunks=args.max,
                         )
-                        save(output, args.output.replace(".coffea", f"_{index}.coffea"))
+                        save(
+                            output,
+                            args.output.replace(
+                                ".coffea", f"_{sindex}_{findex}.coffea"
+                            ),
+                        )
 
     print(output)
     print(f"Saving output to {args.output}")

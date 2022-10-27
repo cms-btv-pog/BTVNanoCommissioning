@@ -30,19 +30,23 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
         ## Load corrections
         if isCorr:
-            self._deepjetc_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepJetC"
-            )
-            self._deepjetb_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepJetB"
-            )
-            self._deepcsvc_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVC"
-            )
-            self._deepcsvb_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVB"
-            )
-            self._pu = load_pu(self._campaign, correction_config[self._campaign]["PU"])
+            if "BTV" in correction_config[self._campaign].keys():
+                self._deepjetc_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepJetC"
+                )
+                self._deepjetb_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepJetB"
+                )
+                self._deepcsvc_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVC"
+                )
+                self._deepcsvb_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVB"
+                )
+            if "PU" in correction_config[self._campaign].keys():
+                self._pu = load_pu(
+                    self._campaign, correction_config[self._campaign]["PU"]
+                )
         if isJERC:
             self._jet_factory = load_jetfactory(
                 self._campaign, correction_config[self._campaign]["JME"]
@@ -129,22 +133,28 @@ class NanoProcessor(processor.ProcessorABC):
         if not isRealData:
             weights.add("genweight", events.genWeight)
         if not isRealData and self.isCorr:
-            weights.add(
-                "puweight",
-                self._pu[f"{self._year}_pileupweight"](events.Pileup.nPU),
-            )
-            weights.add(
-                "lep1sf",
-                np.where(
-                    event_level,
-                    muSFs(
-                        ak.firsts(event_muon),
-                        self._campaign,
-                        correction_config[self._campaign]["LSF"],
+            if "PU" in correction_config[self._campaign].keys():
+                if self._campaign == "Rereco17_94X":
+                    puname = f"{self._year}_pileupweight"
+                else:
+                    puname = "PU"
+                weights.add(
+                    "puweight",
+                    self._pu[puname](events.Pileup.nPU),
+                )
+            if "LSF" in correction_config[self._campaign].keys():
+                weights.add(
+                    "lep1sf",
+                    np.where(
+                        event_level,
+                        muSFs(
+                            ak.firsts(event_muon),
+                            self._campaign,
+                            correction_config[self._campaign]["LSF"],
+                        ),
+                        1.0,
                     ),
-                    1.0,
-                ),
-            )
+                )
 
         if isRealData:
             genflavor = ak.zeros_like(sjets.pt)
@@ -156,7 +166,7 @@ class NanoProcessor(processor.ProcessorABC):
             csvsfs_c = collections.defaultdict(dict)
             csvsfs_b = collections.defaultdict(dict)
 
-            if self.isCorr:
+            if self.isCorr and "BTV" in correction_config[self._campaign].keys():
                 for i in range(4):
                     jetsfs_c[i]["SF"] = getSF(
                         sjets[:, i].hadronFlavour,
@@ -280,7 +290,11 @@ class NanoProcessor(processor.ProcessorABC):
                             ),
                             weight=weights.weight()[event_level],
                         )
-                        if not isRealData and self.isCorr:
+                        if (
+                            not isRealData
+                            and self.isCorr
+                            and "BTV" in correction_config[self._campaign].keys()
+                        ):
                             for syst in disc_list[histname.replace(f"_{i}", "")][
                                 i
                             ].keys():

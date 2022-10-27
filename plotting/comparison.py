@@ -53,7 +53,7 @@ parser.add_argument(
     "-v",
     "--variable",
     type=str,
-    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying all would run through all the variables.",
+    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
 parser.add_argument("--ext", type=str, default="data", help="prefix name/btv name tag")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
@@ -69,7 +69,12 @@ parser.add_argument(
     type=str,
     help="short names for compared datasets for legend, split by ','",
 )
-
+parser.add_argument(
+    "--autorebin",
+    type=int,
+    default=1,
+    help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
+)
 args = parser.parse_args()
 output = {}
 if len(args.input.split(",")) > 1:
@@ -117,7 +122,6 @@ else:
     elif "DY" in args.phase:
         input_txt = "DY+jets"
     nj = 1
-print(mergemap)
 
 if args.shortref == "":
     args.shortref = args.ref
@@ -136,21 +140,24 @@ elif "*" in args.variable:
 else:
     var_set = args.variable.split(",")
 for discr in var_set:
+
     allaxis = {}
     if "flav" in collated[args.ref][discr].axes.name:
         allaxis["flav"] = sum
     if "syst" in collated[args.ref][discr].axes.name:
         allaxis["syst"] = sum
+
+    if args.autorebin != 1:
+        rebin_factor = args.autorebin
+        allaxis[collated[args.ref][discr].axes[-1].name] = hist.rebin(rebin_factor)
+
     if args.norm:
         for c in args.compared.split(","):
             collated[c][discr] = collated[c][discr] * float(
                 np.sum(collated[args.ref][discr][allaxis].values())
                 / np.sum(collated[c][discr][allaxis].values())
             )
-            print(
-                np.sum(collated[args.ref][discr][allaxis].values()),
-                np.sum(collated[c][discr][allaxis].values()),
-            )
+
     if args.sepflav:  # split into 3 panels for different flavor
         fig, (ax, rax, rax2, rax3) = plt.subplots(
             4,
@@ -161,7 +168,7 @@ for discr in var_set:
         )
         fig.subplots_adjust(hspace=0.07)
         ax.set_xlabel(None)
-        ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
+        # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
         hep.cms.label(
             label,
             com=args.com,
@@ -300,8 +307,11 @@ for discr in var_set:
         rax3.set_ylim(0.5, 1.5)
         rax3.set_xlabel(discr)
         ax.legend()
+        text = args.ext
+        if args.norm:
+            text = args.ext + "\n Normalized to Ref."
         at = AnchoredText(
-            input_txt + "\n" + args.ext,
+            input_txt + "\n" + text,
             loc=2,
             frameon=False,
         )
@@ -321,7 +331,7 @@ for discr in var_set:
 
     else:
         fig, ((ax), (rax)) = plt.subplots(
-            2, 1, figsize=(8, 8), gridspec_kw={"height_ratios": (3, 1)}, sharex=True
+            2, 1, figsize=(12, 12), gridspec_kw={"height_ratios": (3, 1)}, sharex=True
         )
         fig.subplots_adjust(hspace=0.07)
         hep.cms.label(
@@ -332,10 +342,10 @@ for discr in var_set:
             ax=ax,
         )
         ax.set_xlabel(None)
-        ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
+        # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
         hep.histplot(
             collated[args.ref][discr][allaxis],
-            label=args.shortref,
+            label=args.shortref + " (Ref)",
             histtype=hist_type,
             yerr=True,
             ax=ax,
@@ -377,11 +387,16 @@ for discr in var_set:
         )
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
+        ax.set_ylim(bottom=0)
+        logext = ""
         if args.log:
             ax.set_yscale("log")
+            logext = "_log"
+            ax.set_ylim(bottom=0.1)
+            hep.mpl_magic(ax=ax)
         fig.savefig(
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_lin_inclusive{discr}.pdf"
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}.pdf"
         )
         fig.savefig(
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_lin_inclusive{discr}.png"
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}.png"
         )

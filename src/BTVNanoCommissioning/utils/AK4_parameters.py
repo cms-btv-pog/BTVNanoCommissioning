@@ -18,8 +18,24 @@ correction_config = {
             "mu_Iso NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta": "RunBCDEF_MuISOSF.histo.root",
         },
     },
+    "UL17": {
+        "lumiMask": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.txt",
+        "PU": "puweight_UL17.histo.root",
+        "JME": "mc_compile_jec.pkl.gz",
+        "BTV": {
+            "DeepJetC": "DeepJet_ctagSF_Summer20UL17_interp.root",
+        },
+        "LSF": {
+            "ele_Rereco_above20 EGamma_SF2D": "egammaEffi_ptAbove20.txt_EGM2D_UL2017.histo.root",
+            "ele_Rereco_below20 EGamma_SF2D": "egammaEffi_ptBelow20.txt_EGM2D_UL2017.histo.root",
+            "ele_ID EGamma_SF2D": "egammaEffi.txt_EGM2D_MVA90iso_UL17.histo.root",
+            "mu_ID NUM_TightID_DEN_TrackerMuons_abseta_pt": "Efficiencies_muon_generalTracks_Z_Run2017_UL_ID.histo.root",
+            "mu_Iso NUM_TightRelIso_DEN_TightIDandIPCut_abseta_pt": "Efficiencies_muon_generalTracks_Z_Run2017_UL_ISO.histo.root",
+        },
+    },
     "Winter22Run3": {
         "lumiMask": "Cert_Collisions2022_355100_357900_Golden.json",
+        "PU": "puweight_Winter22Run3.histo.root",
         "JME": "jec_compiled.pkl.gz",
     },
 }

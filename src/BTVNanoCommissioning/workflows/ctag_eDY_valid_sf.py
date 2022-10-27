@@ -28,19 +28,23 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
         ## Load corrections
         if isCorr:
-            self._deepjetc_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepJetC"
-            )
-            self._deepjetb_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepJetB"
-            )
-            self._deepcsvc_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVC"
-            )
-            self._deepcsvb_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVB"
-            )
-            self._pu = load_pu(self._campaign, correction_config[self._campaign]["PU"])
+            if "BTV" in correction_config[self._campaign].keys():
+                self._deepjetc_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepJetC"
+                )
+                self._deepjetb_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepJetB"
+                )
+                self._deepcsvc_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVC"
+                )
+                self._deepcsvb_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVB"
+                )
+            if "PU" in correction_config[self._campaign].keys():
+                self._pu = load_pu(
+                    self._campaign, correction_config[self._campaign]["PU"]
+                )
 
         if isJERC:
             self._jet_factory = load_jetfactory(
@@ -149,40 +153,46 @@ class NanoProcessor(processor.ProcessorABC):
         if not isRealData:
             weights.add("genweight", events.genWeight)
         if not isRealData and self.isCorr:
-            weights.add(
-                "puweight",
-                self._pu[f"{self._year}_pileupweight"](events.Pileup.nPU),
-            )
-            weights.add(
-                "lep1sf",
-                np.where(
-                    event_level,
-                    eleSFs(
-                        ak.firsts(pos_dilep),
-                        self._campaign,
-                        correction_config[self._campaign]["LSF"],
+            if "PU" in correction_config[self._campaign].keys():
+                if self._campaign == "Rereco17_94X":
+                    puname = f"{self._year}_pileupweight"
+                else:
+                    puname = "PU"
+                weights.add(
+                    "puweight",
+                    self._pu[puname](events.Pileup.nPU),
+                )
+            if "LSF" in correction_config[self._campaign].keys():
+                weights.add(
+                    "lep1sf",
+                    np.where(
+                        event_level,
+                        eleSFs(
+                            ak.firsts(pos_dilep),
+                            self._campaign,
+                            correction_config[self._campaign]["LSF"],
+                        ),
+                        1.0,
                     ),
-                    1.0,
-                ),
-            )
-            weights.add(
-                "lep2sf",
-                np.where(
-                    event_level,
-                    eleSFs(
-                        ak.firsts(neg_dilep),
-                        self._campaign,
-                        correction_config[self._campaign]["LSF"],
+                )
+                weights.add(
+                    "lep2sf",
+                    np.where(
+                        event_level,
+                        eleSFs(
+                            ak.firsts(neg_dilep),
+                            self._campaign,
+                            correction_config[self._campaign]["LSF"],
+                        ),
+                        1.0,
                     ),
-                    1.0,
-                ),
-            )
+                )
         if isRealData:
             genflavor = ak.zeros_like(sjets.pt)
         else:
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
             genflavor = sjets.hadronFlavour + 1 * par_flav
-            if self.isCorr:
+            if self.isCorr and "BTV" in correction_config[self._campaign].keys():
                 jetsfs_c = collections.defaultdict(dict)
                 jetsfs_b = collections.defaultdict(dict)
                 csvsfs_c = collections.defaultdict(dict)
@@ -324,7 +334,11 @@ class NanoProcessor(processor.ProcessorABC):
                     ),
                     weight=weights.weight()[event_level],
                 )
-                if not isRealData and self.isCorr:
+                if (
+                    not isRealData
+                    and self.isCorr
+                    and "BTV" in correction_config[self._campaign].keys()
+                ):
                     for syst in disc_list[histname.replace("_0", "")][0].keys():
                         h.fill(
                             flav=genflavor[:, 0],
