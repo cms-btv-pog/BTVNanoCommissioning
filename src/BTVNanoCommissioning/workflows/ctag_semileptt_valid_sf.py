@@ -34,20 +34,23 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
         ## Load corrections
         if isCorr:
-            self._deepjetc_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepJetC"
-            )
-            self._deepjetb_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepJetB"
-            )
-            self._deepcsvc_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVC"
-            )
-            self._deepcsvb_sf = load_BTV(
-                self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVB"
-            )
-
-            self._pu = load_pu(self._campaign, correction_config[self._campaign]["PU"])
+            if "BTV" in correction_config[self._campaign].keys():
+                self._deepjetc_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepJetC"
+                )
+                self._deepjetb_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepJetB"
+                )
+                self._deepcsvc_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVC"
+                )
+                self._deepcsvb_sf = load_BTV(
+                    self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVB"
+                )
+            if "PU" in correction_config[self._campaign].keys():
+                self._pu = load_pu(
+                    self._campaign, correction_config[self._campaign]["PU"]
+                )
         if isJERC:
             self._jet_factory = load_jetfactory(
                 self._campaign, correction_config[self._campaign]["JME"]
@@ -213,10 +216,15 @@ class NanoProcessor(processor.ProcessorABC):
         if not isRealData:
             weights.add("genweight", events.genWeight)
         if not isRealData and self.isCorr:
-            weights.add(
-                "puweight",
-                self._pu[f"{self._year}_pileupweight"](events.Pileup.nPU),
-            )
+            if "PU" in correction_config[self._campaign].keys():
+                if self._campaign == "Rereco17_94X":
+                    puname = f"{self._year}_pileupweight"
+                else:
+                    puname = "PU"
+                weights.add(
+                    "puweight",
+                    self._pu[puname](events.Pileup.nPU),
+                )
             weights.add(
                 "lep1sf",
                 np.where(

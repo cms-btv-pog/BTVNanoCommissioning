@@ -47,12 +47,18 @@ parser.add_argument(
     "-v",
     "--variable",
     type=str,
-    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying all would run through all the variables.",
+    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
 parser.add_argument(
     "--SF", action="store_true", default=False, help="make w/, w/o SF comparisons"
 )
 parser.add_argument("--ext", type=str, default="data", help="prefix name")
+parser.add_argument(
+    "--autorebin",
+    type=int,
+    default=1,
+    help="Rebin the plotting variables by merging N bins in case the current binning is too small for you ",
+)
 arg = parser.parse_args()
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/"):
@@ -111,6 +117,24 @@ else:
 for discr in var_set:
     if "sumw" == discr:
         continue
+    if arg.autorebin != 1:
+        rebin_factor = arg.autorebin
+        if len(collated["data"][discr].axes.name) == 3:
+            collated["data"][discr] = collated["data"][discr][
+                :, :, hist.rebin(rebin_factor)
+            ]
+            collated["mc"][discr] = collated["mc"][discr][
+                :, :, hist.rebin(rebin_factor)
+            ]
+        elif len(collated["data"][discr].axes.name) == 2:
+            collated["data"][discr] = collated["data"][discr][
+                :, hist.rebin(rebin_factor)
+            ]
+            collated["mc"][discr] = collated["mc"][discr][:, hist.rebin(rebin_factor)]
+        else:
+            collated["data"][discr] = collated["data"][discr][hist.rebin(rebin_factor)]
+            collated["mc"][discr] = collated["mc"][discr][hist.rebin(rebin_factor)]
+
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
@@ -254,24 +278,6 @@ for discr in var_set:
             marker="o",
             elinewidth=1,
         )
-        stat_denom_unc = ratio_uncertainty(
-            hdata.values(),
-            collated["mc"][discr][{"syst": "noSF", "flav": sum}].values(),
-        )
-        ax.fill_between(
-            hdata.axes.edges,
-            np.ones(stat_denom_unc[0])
-            - np.r_[stat_denom_unc[0], stat_denom_unc[0, -1]],
-            np.ones(stat_denom_unc[0])
-            + np.r_[stat_denom_unc[1], stat_denom_unc[1, -1]],
-            {"facecolor": "tab:gray", "linewidth": 0},
-        )
-        ax.fill_between(
-            hdata.axes.edges,
-            np.ones(stat_denom_unc[0]) - np.r_[err_dn, err_dn[-1]],
-            np.ones(stat_denom_unc[0]) + np.r_[err_up, err_up[-1]],
-            {"facecolor": "tab:brown", "linewidth": 0},
-        )
     elif "syst" in collated["mc"][discr].axes.name and not arg.SF:
         hep.histplot(
             [collated["mc"][discr][{"flav": i, "syst": "noSF"}] for i in range(4)],
@@ -281,7 +287,15 @@ for discr in var_set:
             yerr=True,
             ax=ax,
         )
-
+        hep.histplot(
+            collated["mc"][discr][{"flav": sum, "syst": "noSF"}],
+            histtype="errorbar",
+            label=["Stat. Unc"],
+            yerr=True,
+            color="gray",
+            markersize=0.0,
+            ax=ax,
+        )
         hep.histplot(
             collated["data"][discr][{"flav": sum, "syst": "noSF"}],
             histtype="errorbar",
@@ -312,7 +326,15 @@ for discr in var_set:
             yerr=True,
             ax=ax,
         )
-
+        hep.histplot(
+            collated["mc"][discr][{"flav": sum}],
+            histtype="errorbar",
+            label=["Stat. Unc."],
+            yerr=True,
+            color="gray",
+            markersize=0.0,
+            ax=ax,
+        )
         hep.histplot(
             collated["data"][discr][{"flav": sum}],
             histtype="errorbar",
@@ -341,6 +363,15 @@ for discr in var_set:
             stack=True,
             label=["MC"],
             yerr=True,
+            ax=ax,
+        )
+        hep.histplot(
+            collated["mc"][discr],
+            histtype="errorbar",
+            label=["Stat. Unc."],
+            yerr=True,
+            color="gray",
+            markersize=0.0,
             ax=ax,
         )
         hep.histplot(
@@ -384,7 +415,7 @@ for discr in var_set:
     if arg.log:
         ax.set_yscale("log")
         name = "log"
-        ax.set_ylim(bottom=10)
+        ax.set_ylim(bottom=1)
         hep.mpl_magic(ax=ax)
         fig.savefig(
             f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"
