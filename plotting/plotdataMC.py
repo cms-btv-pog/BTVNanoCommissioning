@@ -57,7 +57,7 @@ parser.add_argument(
     "--autorebin",
     type=int,
     default=1,
-    help="Rebin the plotting variables by merging N bins in case the current binning is too small for you ",
+    help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
 )
 arg = parser.parse_args()
 time = arrow.now().format("YY_MM_DD")
@@ -278,6 +278,25 @@ for discr in var_set:
             marker="o",
             elinewidth=1,
         )
+        ### FIXME: errorband calculation
+        # stat_denom_unc = ratio_uncertainty(
+        #     hdata.values(),
+        #     collated["mc"][discr][{"syst": "noSF", "flav": sum}].values(),
+        # )
+        # ax.fill_between(
+        #     hdata.axes.edges,
+        #     np.ones(stat_denom_unc[0])
+        #     - np.r_[stat_denom_unc[0], stat_denom_unc[0, -1]],
+        #     np.ones(stat_denom_unc[0])
+        #     + np.r_[stat_denom_unc[1], stat_denom_unc[1, -1]],
+        #     {"facecolor": "tab:gray", "linewidth": 0},
+        # )
+        # ax.fill_between(
+        #     hdata.axes.edges,
+        #     np.ones(stat_denom_unc[0]) - np.r_[err_dn, err_dn[-1]],
+        #     np.ones(stat_denom_unc[0]) + np.r_[err_up, err_up[-1]],
+        #     {"facecolor": "tab:brown", "linewidth": 0},
+        # )
     elif "syst" in collated["mc"][discr].axes.name and not arg.SF:
         hep.histplot(
             [collated["mc"][discr][{"flav": i, "syst": "noSF"}] for i in range(4)],
@@ -415,7 +434,7 @@ for discr in var_set:
     if arg.log:
         ax.set_yscale("log")
         name = "log"
-        ax.set_ylim(bottom=1)
+        ax.set_ylim(bottom=0.1)
         hep.mpl_magic(ax=ax)
         fig.savefig(
             f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"

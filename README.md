@@ -108,11 +108,9 @@ More options for `runner.py`
                         By default a copy will be made to $HOME.
   --chunk N             Number of events per process chunk
   --retries N           Number of retries for coffea processor
- --index INDEX         (Specific for dask/lxplus file splitting) ``(default:
-                        0,0) $dictindex,$fileindex$dictindex refers the index
-                        in the json dict, $fileindex refers to the index of
-                        the file list splitted to 50 files per dask-worker.
-                        The job will submit from the corresponding index
+ --index INDEX         (Specific for dask/lxplus file splitting, default:0,0) 
+                        Format: $dictindex,$fileindex. $dictindex refers to the index of the file list split to 50 files per dask-worker.
+                        The job will start submission from the corresponding indices
   --validate            Do not process, just check all files are accessible
   --skipbadfiles        Skip bad files.
   --only ONLY           Only process specific dataset or file
@@ -228,9 +226,12 @@ one with `8786` being open. Other than that, no additional configurations should
 python runner.py --wf ttcom --executor dask/lxplus
 ```
 
-jobs automatically splitted to 50 files per jobs to avoid job failure due to crowded cluster on lxplus with the naming scheme `hist_$workflow_$json_$dictindex_$fileindex.coffea`, combined in plotting scripts.
+jobs automatically split to 50 files per jobs to avoid job failure due to crowded cluster on lxplus with the naming scheme `hist_$workflow_$json_$dictindex_$fileindex.coffea`. The `.coffea` files can be then combined at plotting level
 
-To deal unstable condor cluster and dask worker on lxplus, you can resubmit failure jobs via `--index $dictindex,$fileindex` option. `$dictindex` refers the index in the `.json dict`, `$fileindex` refers to the index of the file list splitted to 50 files per dask-worker. The total numbers of files of each dict could be computed by `math.ceil(len($filelist)/50)` The job will start from the corresponding index. 
+
+:exclamation: The optimal scaleout options on lxplus are `-s 50 --chunk 50000`
+
+To deal with unstable condor cluster and dask worker on lxplus, you can resubmit failure jobs via `--index $dictindex,$fileindex` option. `$dictindex` refers to the index in the `.json dict`, `$fileindex` refers to the index of the file list split to 50 files per dask-worker. The total number of files of each dict can be computed by `math.ceil(len($filelist)/50)` The job will start from the corresponding indices.
 
 ### Coffea-casa (Nebraska AF)
 Coffea-casa is a JupyterHub based analysis-facility hosted at Nebraska. For more information and setup instuctions see
@@ -368,7 +369,7 @@ options:
   -i INPUT, --input INPUT
                         input coffea files (str), splitted different files with ','. Wildcard option * available as well.
    --autorebin AUTOREBIN
-                        Rebin the plotting variables by merging N bins in case the current binning is too small for you 
+                        Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
 ```
 - data/data, MC/MC comparisons
 
@@ -398,7 +399,7 @@ options:
   --shortcomp SHORTCOMP
                         short names for compared datasets for legend, split by ','
    --autorebin AUTOREBIN
-                        Rebin the plotting variables by merging N bins in case the current binning is too small for you 
+                        Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
 ```
 
 

@@ -73,7 +73,7 @@ parser.add_argument(
     "--autorebin",
     type=int,
     default=1,
-    help="Rebin the plotting variables by merging N bins in case the current binning is too small for you ",
+    help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
 )
 args = parser.parse_args()
 output = {}
@@ -387,6 +387,7 @@ for discr in var_set:
         )
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
+        ax.set_ylim(bottom=0)
         logext = ""
         if args.log:
             ax.set_yscale("log")

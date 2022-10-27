@@ -225,34 +225,36 @@ class NanoProcessor(processor.ProcessorABC):
                     "puweight",
                     self._pu[puname](events.Pileup.nPU),
                 )
-            weights.add(
-                "lep1sf",
-                np.where(
-                    event_level,
-                    muSFs(
-                        ak.firsts(
-                            events.Muon[
-                                (events.Muon.pt > 30) & mu_idiso(events, self._campaign)
-                            ]
+            if "LSF" in correction_config[self._campaign].keys():
+                weights.add(
+                    "lep1sf",
+                    np.where(
+                        event_level,
+                        muSFs(
+                            ak.firsts(
+                                events.Muon[
+                                    (events.Muon.pt > 30)
+                                    & mu_idiso(events, self._campaign)
+                                ]
+                            ),
+                            self._campaign,
+                            correction_config[self._campaign]["LSF"],
                         ),
-                        self._campaign,
-                        correction_config[self._campaign]["LSF"],
+                        1.0,
                     ),
-                    1.0,
-                ),
-            )
-            weights.add(
-                "lep2sf",
-                np.where(
-                    event_level,
-                    muSFs(
-                        ak.firsts(events.Muon[softmu_mask(events, self._campaign)]),
-                        self._campaign,
-                        correction_config[self._campaign]["LSF"],
+                )
+                weights.add(
+                    "lep2sf",
+                    np.where(
+                        event_level,
+                        muSFs(
+                            ak.firsts(events.Muon[softmu_mask(events, self._campaign)]),
+                            self._campaign,
+                            correction_config[self._campaign]["LSF"],
+                        ),
+                        1.0,
                     ),
-                    1.0,
-                ),
-            )
+                )
 
         if isRealData:
             genflavor = ak.zeros_like(sjets.pt)
@@ -268,7 +270,7 @@ class NanoProcessor(processor.ProcessorABC):
             jetsfs_b = collections.defaultdict(dict)
             csvsfs_c = collections.defaultdict(dict)
             csvsfs_b = collections.defaultdict(dict)
-            if self.isCorr:
+            if self.isCorr and "BTV" in correction_config[self._campaign].keys():
                 jetsfs_c[0]["SF"] = getSF(
                     smuon_jet.hadronFlavour,
                     smuon_jet.btagDeepFlavCvL,
@@ -425,7 +427,11 @@ class NanoProcessor(processor.ProcessorABC):
                     ),
                     weight=weights.weight()[event_level],
                 )
-                if not isRealData and self.isCorr:
+                if (
+                    not isRealData
+                    and self.isCorr
+                    and "BTV" in correction_config[self._campaign].keys()
+                ):
                     for syst in disc_list[histname.replace("_0", "")][0].keys():
                         h.fill(
                             flav=smflav,
@@ -452,7 +458,11 @@ class NanoProcessor(processor.ProcessorABC):
                     ),
                     weight=weights.weight()[event_level],
                 )
-                if not isRealData and self.isCorr:
+                if (
+                    not isRealData
+                    and self.isCorr
+                    and "BTV" in correction_config[self._campaign].keys()
+                ):
                     for syst in disc_list[histname.replace("_1", "")][1].keys():
                         h.fill(
                             flav=genflavor[:, 1],

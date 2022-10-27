@@ -167,8 +167,8 @@ def get_main_parser():
         "--index",
         type=str,
         default="0,0",
-        help="(Specific for dask/lxplus file splitting)\n ``(default: %(default)s) $dictindex,$fileindex, splitted $dictindex and $fileindex with ','"
-        "$dictindex refers the index in the json dict, $fileindex refers to the index of the file list splitted to 50 files per dask-worker. The job will submit from the corresponding index",
+        help="(Specific for dask/lxplus file splitting, ``default: %(default)s)\n   Format: $dictindex,$fileindex. $dictindex refers to the index, splitted $dictindex and $fileindex with ','"
+        "$dictindex refers the index in the json dict, $fileindex refers to the index of the file list split to 50 files per dask-worker. The job will start submission from the corresponding indices",
     )
     # Debugging
     parser.add_argument(
@@ -653,7 +653,6 @@ if __name__ == "__main__":
             else:
                 findex = int(args.index.split(",")[1])
                 for sindex, sample in enumerate(sample_dict.keys()):
-
                     if sindex < int(index.split(",")[0]):
                         continue
                     if int(args.index.split(",")[1]) == findex:

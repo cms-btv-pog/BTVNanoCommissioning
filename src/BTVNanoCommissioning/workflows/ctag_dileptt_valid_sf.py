@@ -210,7 +210,7 @@ class NanoProcessor(processor.ProcessorABC):
             genflavor = sjets.hadronFlavour + 1 * par_flav
             smpu = (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
             smflav = 1 * smpu + smuon_jet.hadronFlavour
-            if self.isCorr:
+            if self.isCorr and "BTV" in correction_config[self._campaign].keys():
                 jetsfs_c = collections.defaultdict(dict)
                 jetsfs_b = collections.defaultdict(dict)
                 csvsfs_c = collections.defaultdict(dict)
