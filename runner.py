@@ -653,7 +653,7 @@ if __name__ == "__main__":
             else:
                 findex = int(args.index.split(",")[1])
                 for sindex, sample in enumerate(sample_dict.keys()):
-                    if sindex < int(index.split(",")[0]):
+                    if sindex < int(args.index.split(",")[0]):
                         continue
                     if int(args.index.split(",")[1]) == findex:
                         mins = findex * 50

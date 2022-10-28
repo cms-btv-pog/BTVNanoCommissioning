@@ -94,13 +94,15 @@ if not any(".coffea" in o for o in output.keys()):
         mergemap[c] = [m for m in output.keys() if c == m]
 else:
     reflist = []
-    comparelist = []
     for f in output.keys():
         reflist.extend([m for m in output[f].keys() if args.ref == m])
-        for c in args.compared.split(","):
-            comparelist.extend([m for m in output[f].keys() if c == m])
     mergemap[args.ref] = reflist
-    mergemap[c] = comparelist
+    
+    for c in args.compared.split(","):   
+        comparelist = []     
+        for f in output.keys():
+            comparelist.extend([m for m in output[f].keys() if c == m])
+        mergemap[c] = comparelist
 collated = collate(output, mergemap)
 ### style settings
 if "Run" in args.ref:
