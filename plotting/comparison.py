@@ -97,9 +97,9 @@ else:
     for f in output.keys():
         reflist.extend([m for m in output[f].keys() if args.ref == m])
     mergemap[args.ref] = reflist
-    
-    for c in args.compared.split(","):   
-        comparelist = []     
+
+    for c in args.compared.split(","):
+        comparelist = []
         for f in output.keys():
             comparelist.extend([m for m in output[f].keys() if c == m])
         mergemap[c] = comparelist
