@@ -157,7 +157,7 @@ class NanoProcessor(processor.ProcessorABC):
                     puname = "PU"
                 weights.add(
                     "puweight",
-                    self._pu[puname](events.Pileup.nPU),
+                    self._pu[puname](events.Pileup.nTrueInt),
                 )
             if "LSF" in correction_config[self._campaign].keys():
                 weights.add(

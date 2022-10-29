@@ -6049,7 +6049,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [7.0, 51.0],
+            "manual_ranges": [0, 100.0],
             "inputVar_units": "",
         },
         "DeepJet_nsv": {

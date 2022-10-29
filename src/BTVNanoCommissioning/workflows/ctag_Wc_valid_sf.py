@@ -220,7 +220,7 @@ class NanoProcessor(processor.ProcessorABC):
                     puname = "PU"
                 weights.add(
                     "puweight",
-                    self._pu[puname](events.Pileup.nPU),
+                    self._pu[puname](events.Pileup.nTrueInt),
                 )
             if "LSF" in correction_config[self._campaign].keys():
                 weights.add(
@@ -471,6 +471,9 @@ class NanoProcessor(processor.ProcessorABC):
                             * osss,
                         )
         output["njet"].fill(njet, weight=weights.weight()[event_level] * osss)
+        output["nPU"].fill(
+            events[event_level].Pileup.nPU, weight=weights.weight()[event_level] * osss
+        )
         output["hl_ptratio"].fill(
             flav=genflavor[:, 0],
             ratio=shmu.pt / sjets[:, 0].pt,
