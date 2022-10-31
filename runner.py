@@ -659,6 +659,7 @@ if __name__ == "__main__":
                         mins = findex * 50
                     else:
                         mins = 0
+                        findex = 0
                     while mins < len(sample_dict[sample]):
                         splitted = {}
                         maxs = mins + 50
