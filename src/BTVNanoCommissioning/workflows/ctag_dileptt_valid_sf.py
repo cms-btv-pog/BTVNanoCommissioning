@@ -8,7 +8,7 @@ from BTVNanoCommissioning.utils.correction import (
     muSFs,
     load_pu,
     load_BTV,
-    load_jetfactory,
+    load_jmefactory,
 )
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.helpers.func import flatten, update
@@ -51,7 +51,7 @@ class NanoProcessor(processor.ProcessorABC):
                     self._campaign, correction_config[self._campaign]["PU"]
                 )
         if isJERC:
-            self._jet_factory = load_jetfactory(
+            self._jet_factory = load_jmefactory(
                 self._campaign, correction_config[self._campaign]["JME"]
             )
         _hist_event_dict = histogrammer("ctag_ttdilep_sf")
@@ -174,7 +174,7 @@ class NanoProcessor(processor.ProcessorABC):
                     puname = "PU"
                 weights.add(
                     "puweight",
-                    self._pu[puname](events.Pileup.nPU),
+                    self._pu[puname](events.Pileup.nTrueInt),
                 )
             if "LSF" in correction_config[self._campaign].keys():
                 weights.add(

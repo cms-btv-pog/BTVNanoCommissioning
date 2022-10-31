@@ -94,13 +94,15 @@ if not any(".coffea" in o for o in output.keys()):
         mergemap[c] = [m for m in output.keys() if c == m]
 else:
     reflist = []
-    comparelist = []
     for f in output.keys():
         reflist.extend([m for m in output[f].keys() if args.ref == m])
-        for c in args.compared.split(","):
-            comparelist.extend([m for m in output[f].keys() if c == m])
     mergemap[args.ref] = reflist
-    mergemap[c] = comparelist
+
+    for c in args.compared.split(","):
+        comparelist = []
+        for f in output.keys():
+            comparelist.extend([m for m in output[f].keys() if c == m])
+        mergemap[c] = comparelist
 collated = collate(output, mergemap)
 ### style settings
 if "Run" in args.ref:
@@ -166,7 +168,7 @@ for discr in var_set:
             gridspec_kw={"height_ratios": (3, 1, 1, 1)},
             sharex=True,
         )
-        fig.subplots_adjust(hspace=0.07)
+        fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
         ax.set_xlabel(None)
         # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
         hep.cms.label(
@@ -244,7 +246,7 @@ for discr in var_set:
         index += 1
         ax.legend(
             ncol=3,
-            loc="upper right",
+            loc=1,
         )
         index = 0
         for c in args.compared.split(","):
@@ -333,7 +335,7 @@ for discr in var_set:
         fig, ((ax), (rax)) = plt.subplots(
             2, 1, figsize=(12, 12), gridspec_kw={"height_ratios": (3, 1)}, sharex=True
         )
-        fig.subplots_adjust(hspace=0.07)
+        fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
         hep.cms.label(
             label,
             com=args.com,
@@ -377,7 +379,7 @@ for discr in var_set:
         ax.set_xlabel(None)
         ax.set_ylabel("Events")
         rax.set_ylabel("Other/Ref")
-        ax.legend()
+        ax.legend(loc=1)
         rax.set_ylim(0.0, 2.0)
 
         at = AnchoredText(

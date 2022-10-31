@@ -175,7 +175,7 @@ for discr in var_set:
     fig, ((ax), (rax)) = plt.subplots(
         2, 1, figsize=(10, 10), gridspec_kw={"height_ratios": (3, 1)}, sharex=True
     )
-    fig.subplots_adjust(hspace=0.05)
+    fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
     hep.cms.label(
         "Preliminary", data=True, lumi=arg.lumi / 1000.0, com=arg.com, loc=0, ax=ax
     )

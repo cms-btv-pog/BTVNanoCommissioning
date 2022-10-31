@@ -117,8 +117,6 @@ def load_jmefactory(campaign, path):
     with importlib.resources.path(_jet_path, path) as filename:
         with gzip.open(filename) as fin:
             jmestuff = cloudpickle.load(fin)
-
-        # jet_factory = jmestuff["jet_factory"]
     return jmestuff
 
 

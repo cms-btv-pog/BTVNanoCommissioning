@@ -96,8 +96,10 @@ def missing_branch(events):
     return events
 
 
-def add_jec(events, campaign, jet_factory):
+def add_jec(events, campaign, jmestuff):
     dataset = events.metadata["dataset"]
+    jet_factory = jmestuff["jet_factory"]
+    met_factory = jmestuff["met_factory"]
     isRealData = not hasattr(events, "genWeight")
     if isRealData:
         if "un" in dataset:
@@ -125,5 +127,6 @@ def add_jec(events, campaign, jet_factory):
             add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
             lazy_cache=events.caches[0],
         )
-    update(events, {"Jet": jets})
+    met = met_factory.build(events.MET, jets, {})
+    update(events, {"Jet": jets, "MET": met})
     return events

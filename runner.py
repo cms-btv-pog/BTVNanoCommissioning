@@ -159,7 +159,7 @@ def get_main_parser():
     parser.add_argument(
         "--retries",
         type=int,
-        default=10,
+        default=25,
         metavar="N",
         help="Number of retries for coffea processor",
     )
@@ -653,12 +653,13 @@ if __name__ == "__main__":
             else:
                 findex = int(args.index.split(",")[1])
                 for sindex, sample in enumerate(sample_dict.keys()):
-                    if sindex < int(index.split(",")[0]):
+                    if sindex < int(args.index.split(",")[0]):
                         continue
                     if int(args.index.split(",")[1]) == findex:
                         mins = findex * 50
                     else:
                         mins = 0
+                        findex = 0
                     while mins < len(sample_dict[sample]):
                         splitted = {}
                         maxs = mins + 50
