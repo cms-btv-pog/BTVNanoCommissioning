@@ -583,7 +583,7 @@ if __name__ == "__main__":
                     "Port '8786' is not occupied on this node. Try another one."
                 )
             import socket
-
+            daskjobnm = "dask_job_output"+os.uname()[1].split("lxplus")[-1].split(".cern")[0]
             cluster = HTCondorCluster(
                 cores=1,
                 memory="2GB",  # hardcoded
@@ -592,9 +592,9 @@ if __name__ == "__main__":
                 nanny=False,
                 scheduler_options={"port": n_port, "host": socket.gethostname()},
                 job_extra_directives={
-                    "log": "dask_job_output.log",
-                    "output": "dask_job_output.out",
-                    "error": "dask_job_output.err",
+                    "log": daskjobnm+".log",
+                    "output": daskjobnm+".out",
+                    "error": daskjobnm+".err",
                     "should_transfer_files": "Yes",
                     "when_to_transfer_output": "ON_EXIT",
                     "+JobFlavour": '"workday"',
