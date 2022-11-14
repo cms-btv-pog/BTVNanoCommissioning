@@ -132,6 +132,19 @@ class NanoProcessor(processor.ProcessorABC):
         ]
         req_jets = ak.num(event_jet.pt) >= 1
 
+        ## store jet index for PFCands, create mask on the jet index
+        jetindx = ak.mask(
+            ak.local_index(events.Jet.pt),
+            (
+                jet_id(events, self._campaign)
+                & (ak.all(events.Jet.metric_table(pos_dilep[:, 0]) > 0.4, axis=2))
+                & (ak.all(events.Jet.metric_table(neg_dilep[:, 0]) > 0.4, axis=2))
+            )
+            == 1,
+        )
+        jetindx = ak.pad_none(jetindx, 1)
+        jetindx = jetindx[:, 0]
+
         event_level = ak.fill_none(
             req_lumi & req_trig & req_dilep & req_dilepmass & req_jets, False
         )
@@ -146,6 +159,15 @@ class NanoProcessor(processor.ProcessorABC):
         sz = sposmu + snegmu
         sjets = event_jet[event_level]
         njet = ak.count(sjets.pt, axis=1)
+        # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
+        if self._campaign == "Winter22Run3":
+            spfcands = events[event_level].PFCands[
+                events[event_level]
+                .JetPFCands[
+                    events[event_level].JetPFCands.jetIdx == jetindx[event_level]
+                ]
+                .pFCandsIdx
+            ]
         sel_jet = sjets[:, 0]
         ####################
         # Weight & Geninfo #
@@ -304,6 +326,16 @@ class NanoProcessor(processor.ProcessorABC):
                         ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[
                             0
                         ]
+                    ),
+                )
+            elif "PFCands" in histname and self._campaign == "Winter22Run3":
+                h.fill(
+                    flatten(ak.broadcast_arrays(genflavor[:, 0], spfcands["pt"])[0]),
+                    flatten(spfcands[histname.replace("PFCands_", "")]),
+                    weight=flatten(
+                        ak.broadcast_arrays(
+                            weights.weight()[event_level], spfcands["pt"]
+                        )[0]
                     ),
                 )
             elif "posl_" in histname and histname.replace("posl_", "") in sposmu.fields:

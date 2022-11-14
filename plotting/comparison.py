@@ -175,6 +175,7 @@ for index, discr in enumerate(var_set):
     else:
         xlabel = axes_name(discr)
 
+    text = args.ext
     if args.norm:
         text = args.ext + "\n Normalized to Ref."
         for c in args.compared.split(","):
@@ -306,7 +307,6 @@ for index, discr in enumerate(var_set):
 
         rax3.set_xlabel(xlabel)
         ax.legend()
-        text = args.ext
 
         at = AnchoredText(
             input_txt + "\n" + "BTV Commissioning" + "\n" + text,

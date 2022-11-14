@@ -85,18 +85,25 @@ def histogrammer(workflow):
         for i in ["hl", "sl", "soft_l"]:
             if i == "soft_l":
                 _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
-                    softliso_axis, Hist.storage.Weight()
+                    flav_axis, softliso_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                    flav_axis, dxy_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{i}_dz"] = Hist.Hist(
+                    flav_axis, dz_axis, Hist.storage.Weight()
                 )
             else:
                 _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
                     iso_axis, Hist.storage.Weight()
                 )
+                _hist_dict[f"{i}_dxy"] = Hist.Hist(dxy_axis, Hist.storage.Weight())
+                _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
             # lepton / jet pT ratio
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 flav_axis, ptratio_axis, Hist.storage.Weight()
             )
-            _hist_dict[f"{i}_dxy"] = Hist.Hist(dxy_axis, Hist.storage.Weight())
-            _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
+
     elif "ctag_ttsemilep_sf" in workflow:
         obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
         _hist_dict["z_mass"] = Hist.Hist(
@@ -122,15 +129,22 @@ def histogrammer(workflow):
                 _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
                     flav_axis, softliso_axis, Hist.storage.Weight()
                 )
+                _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                    flav_axis, dxy_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{i}_dz"] = Hist.Hist(
+                    flav_axis, dz_axis, Hist.storage.Weight()
+                )
             else:
                 _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
                     iso_axis, Hist.storage.Weight()
                 )
+                _hist_dict[f"{i}_dxy"] = Hist.Hist(dxy_axis, Hist.storage.Weight())
+                _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 flav_axis, ptratio_axis, Hist.storage.Weight()
             )
-            _hist_dict[f"{i}_dxy"] = Hist.Hist(dxy_axis, Hist.storage.Weight())
-            _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
+
     elif "Wc_sf" in workflow:
         obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
         _hist_dict["SV_charge"] = Hist.Hist(
@@ -220,11 +234,11 @@ def histogrammer(workflow):
                 )
             else:
                 _hist_dict[f"{obj}_pt"] = Hist.Hist(pt_axis, Hist.storage.Weight())
+                _hist_dict[f"{obj}_phi"] = Hist.Hist(phi_axis, Hist.storage.Weight())
                 if obj != "MET":
-                    _hist_dict[f"{obj}_phi"] = Hist.Hist(
-                        phi_axis, Hist.storage.Weight()
+                    _hist_dict[f"{obj}_eta"] = Hist.Hist(
+                        eta_axis, Hist.storage.Weight()
                     )
-                _hist_dict[f"{obj}_eta"] = Hist.Hist(eta_axis, Hist.storage.Weight())
     else:
         _hist_dict["njet"] = Hist.Hist(osss_axis, n_axis, Hist.storage.Weight())
         for obj in obj_list:

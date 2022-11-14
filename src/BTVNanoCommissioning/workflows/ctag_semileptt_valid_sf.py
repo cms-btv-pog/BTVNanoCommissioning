@@ -133,6 +133,20 @@ class NanoProcessor(processor.ProcessorABC):
         req_mujet = ak.num(mu_jet.pt, axis=1) >= 1
         mu_jet = ak.pad_none(mu_jet, 1, axis=1)
 
+        ## store jet index for PFCands, create mask on the jet index
+        jetindx = ak.mask(
+            ak.local_index(events.Jet.pt),
+            (
+                jet_id(events, self._campaign)
+                & (ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2))
+                & (ak.all(events.Jet.metric_table(soft_muon) <= 0.4, axis=2))
+                & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
+            )
+            == 1,
+        )
+        jetindx = ak.pad_none(jetindx, 1)
+        jetindx = jetindx[:, 0]
+
         ## Other cuts
         req_pTratio = (soft_muon[:, 0].pt / mu_jet[:, 0].pt) < 0.4
 
@@ -209,6 +223,15 @@ class NanoProcessor(processor.ProcessorABC):
         sw = shmu + smet
         osss = shmu.charge * ssmu.charge * -1
         njet = ak.count(sjets.pt, axis=1)
+        # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
+        if self._campaign == "Winter22Run3":
+            spfcands = events[event_level].PFCands[
+                events[event_level]
+                .JetPFCands[
+                    events[event_level].JetPFCands.jetIdx == jetindx[event_level]
+                ]
+                .pFCandsIdx
+            ]
 
         ####################
         # Weight & Geninfo #
@@ -378,6 +401,16 @@ class NanoProcessor(processor.ProcessorABC):
                         ]
                     ),
                 )
+            elif "PFCands" in histname and self._campaign == "Winter22Run3":
+                h.fill(
+                    flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
+                    flatten(spfcands[histname.replace("PFCands_", "")]),
+                    weight=flatten(
+                        ak.broadcast_arrays(
+                            weights.weight()[event_level], spfcands["pt"]
+                        )[0]
+                    ),
+                )
             elif "jet_" in histname and "mu" not in histname:
                 h.fill(
                     flatten(genflavor),
@@ -397,6 +430,7 @@ class NanoProcessor(processor.ProcessorABC):
                 "soft_l" in histname and histname.replace("soft_l_", "") in ssmu.fields
             ):
                 h.fill(
+                    smflav,
                     flatten(ssmu[histname.replace("soft_l_", "")]),
                     weight=weights.weight()[event_level],
                 )
