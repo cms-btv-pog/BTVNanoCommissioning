@@ -221,7 +221,7 @@ def histogrammer(workflow):
                     )
                 else:
                     _hist_dict[f"{obj}_pt"] = Hist.Hist(
-                        flav_axis, pt_axis, Hist.storage.Weight()
+                        flav_axis, jpt_axis, Hist.storage.Weight()
                     )
                 _hist_dict[f"{obj}_eta"] = Hist.Hist(
                     flav_axis, eta_axis, Hist.storage.Weight()
@@ -248,7 +248,7 @@ def histogrammer(workflow):
                         flav_axis, osss_axis, softlpt_axis, Hist.storage.Weight()
                     )
                 _hist_dict[f"{obj}_pt"] = Hist.Hist(
-                    flav_axis, osss_axis, pt_axis, Hist.storage.Weight()
+                    flav_axis, osss_axis, jpt_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{obj}_eta"] = Hist.Hist(
                     flav_axis, osss_axis, eta_axis, Hist.storage.Weight()

@@ -237,13 +237,13 @@ for index, discr in enumerate(var_set):
             ax=ax,
         )
 
-        index = 0
+        mindex = 0
         for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
             hep.histplot(
                 collated[c][discr][laxis] + collated[c][discr][puaxis],
                 label=s + "-l",
                 color="b",
-                marker=markers[index + 1],
+                marker=markers[mindex + 1],
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
@@ -252,7 +252,7 @@ for index, discr in enumerate(var_set):
                 collated[c][discr][caxis],
                 label=s + "-c",
                 color="g",
-                marker=markers[index + 1],
+                marker=markers[mindex + 1],
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
@@ -262,16 +262,15 @@ for index, discr in enumerate(var_set):
                 label=s + "-b",
                 yerr=True,
                 color="r",
-                marker=markers[index + 1],
+                marker=markers[mindex + 1],
                 histtype="errorbar",
                 ax=ax,
             )
-        index += 1
+            mindex += 1
         ax.legend(
             ncol=3,
             loc=1,
         )
-        index = 0
         # comparison splitted by flavor
         for c in args.compared.split(","):
             rax = plotratio(

@@ -6077,7 +6077,7 @@ def definitions():
             "inputVar_units": None,
         },
         "PFCands_numberOfPixelHits": {
-            "displayname": "Number of hist in the Pixel",
+            "displayname": "Number of pixel hits",
             "ylabel_text": "Jets",
             "format_unit": "2f",
             "format_unit_digits": 2,
@@ -6086,7 +6086,7 @@ def definitions():
             "inputVar_units": None,
         },
         "PFCands_lostInnerHits": {
-            "displayname": "Number of SV in the jet",
+            "displayname": "Lost inner pixel hits",
             "ylabel_text": "Jets",
             "format_unit": "2f",
             "format_unit_digits": 2,

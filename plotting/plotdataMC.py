@@ -10,7 +10,7 @@ import hist
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.utils.xs_scaler import getSumW, collate, scaleSumW
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
-from BTVNanoCommissioning.utils.plot_utils import plotratio, SFerror
+from BTVNanoCommissioning.utils.plot_utils import plotratio, SFerror, errband_opts
 
 bininfo = definitions()
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")

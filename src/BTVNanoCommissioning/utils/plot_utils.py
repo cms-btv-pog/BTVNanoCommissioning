@@ -4,11 +4,18 @@ from hist import intervals
 import scipy.stats
 import warnings
 
+errband_opts = {
+    "hatch": "////",
+    "facecolor": "none",
+    "lw": 0,
+    "color": "k",
+    "alpha": 0.4,
+}
+
 ### copy functions coffea.hist.plotratio https://github.com/CoffeaTeam/coffea/blob/master/coffea/hist/plot.py to boost-hist
 ################
 ## ratio plot ##
 ################
-
 
 _coverage1sd = scipy.stats.norm.cdf(1) - scipy.stats.norm.cdf(-1)
 

@@ -84,7 +84,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
             == 1,
         )
-        jetindx = ak.pad_none(jetindx, 1)
+        jetindx = ak.pad_none(jetindx, 2)
         jetindx = jetindx[:, :2]
 
         event_level = ak.fill_none(req_jets, False)

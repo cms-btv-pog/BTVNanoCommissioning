@@ -139,6 +139,8 @@ class NanoProcessor(processor.ProcessorABC):
             (
                 jet_id(events, self._campaign)
                 & (ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2))
+                & ((events.Jet.muEF + events.Jet.neEmEF) < 0.7)
+                & (ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2))
                 & (ak.all(events.Jet.metric_table(soft_muon) <= 0.4, axis=2))
                 & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
             )
