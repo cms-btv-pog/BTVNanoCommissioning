@@ -556,7 +556,6 @@ if __name__ == "__main__":
                 chunksize=args.chunk,
                 maxchunks=args.max,
             )
-        print(output)
         save(output, args.output)
         print(output)
         print(f"Saving output to {args.output}")
