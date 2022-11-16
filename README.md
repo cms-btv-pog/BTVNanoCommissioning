@@ -370,6 +370,7 @@ options:
                         input coffea files (str), splitted different files with ','. Wildcard option * available as well.
    --autorebin AUTOREBIN
                         Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
+   --xlabel XLABEL      rename the label for x-axis
 ```
 - data/data, MC/MC comparisons
 
@@ -400,6 +401,7 @@ options:
                         short names for compared datasets for legend, split by ','
    --autorebin AUTOREBIN
                         Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
+   --xlabel XLABEL      rename the label for x-axis
 ```
 
 
