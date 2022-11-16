@@ -77,15 +77,9 @@ def get_main_parser():
         default="Rereco17_94X",
         help="Dataset campaign, change the corresponding correction files",
     )
+    parser.add_argument("--isCorr", action="store_true", help="Run with SFs")
     parser.add_argument(
-        "--isCorr",
-        action="store_true",
-        help="Run with SFs",
-    )
-    parser.add_argument(
-        "--isJERC",
-        action="store_true",
-        help="JER/JEC implemented to jet",
+        "--isJERC", action="store_true", help="JER/JEC implemented to jet"
     )
 
     # Scale out
@@ -556,7 +550,6 @@ if __name__ == "__main__":
                 chunksize=args.chunk,
                 maxchunks=args.max,
             )
-        print(output)
         save(output, args.output)
         print(output)
         print(f"Saving output to {args.output}")
@@ -566,15 +559,11 @@ if __name__ == "__main__":
         from dask.distributed import performance_report
 
         if "lpc" in args.executor:
-            env_extra = [
-                f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
-            ]
+            env_extra = [f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}"]
             from lpcjobqueue import LPCCondorCluster
 
             cluster = LPCCondorCluster(
-                transfer_input_files="/srv/src/",
-                ship_env=True,
-                env_extra=env_extra,
+                transfer_input_files="/srv/src/", ship_env=True, env_extra=env_extra
             )
         elif "lxplus" in args.executor:
             n_port = 8786

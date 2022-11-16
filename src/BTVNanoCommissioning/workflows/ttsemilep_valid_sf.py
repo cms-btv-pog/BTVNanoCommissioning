@@ -82,9 +82,7 @@ class NanoProcessor(processor.ProcessorABC):
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
 
         ## HLT
-        triggers = [
-            "IsoMu24",
-        ]
+        triggers = ["IsoMu24"]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -112,6 +110,18 @@ class NanoProcessor(processor.ProcessorABC):
         ]
         req_jets = ak.num(event_jet.pt) >= 4
 
+        ## store jet index for PFCands, create mask on the jet index
+        jetindx = ak.mask(
+            ak.local_index(events.Jet.pt),
+            (
+                jet_id(events, self._campaign)
+                & (ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))
+            )
+            == 1,
+        )
+        jetindx = ak.pad_none(jetindx, 4)
+        jetindx = jetindx[:, :4]
+
         ## other cuts
         req_MET = events.MET.pt > 50
 
@@ -126,6 +136,22 @@ class NanoProcessor(processor.ProcessorABC):
         sjets = event_jet[event_level]
         sel_jets = sjets
         sjets = sjets[:, :4]
+        # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
+        if self._campaign != "Rereco17_94X":
+            jetindexall = collections.defaultdict(dict)
+            spfcands = collections.defaultdict(dict)
+            for i in range(4):
+                jetindexall[i] = jetindx[:, i]
+                spfcands[i] = events[event_level].PFCands[
+                    events[event_level]
+                    .JetPFCands[
+                        events[event_level].JetPFCands.jetIdx
+                        == jetindexall[i][event_level]
+                    ]
+                    .pFCandsIdx
+                ]
+
+            # spfcands[1] = events[event_level].PFCands[events[event_level].JetPFCands[events[event_level].JetPFCands.jetIdx==jetindx0[event_level]].pFCandsIdx]
 
         ####################
         # Weight & Geninfo #
@@ -138,10 +164,7 @@ class NanoProcessor(processor.ProcessorABC):
                     puname = f"{self._year}_pileupweight"
                 else:
                     puname = "PU"
-                weights.add(
-                    "puweight",
-                    self._pu[puname](events.Pileup.nTrueInt),
-                )
+                weights.add("puweight", self._pu[puname](events.Pileup.nTrueInt))
             if "LSF" in correction_config[self._campaign].keys():
                 weights.add(
                     "lep1sf",
@@ -276,6 +299,19 @@ class NanoProcessor(processor.ProcessorABC):
                         ]
                     ),
                 )
+            elif "PFCands" in histname and self._campaign != "Rereco17_94X":
+                for i in range(4):
+                    h.fill(
+                        flatten(
+                            ak.broadcast_arrays(genflavor[:, i], spfcands[i]["pt"])[0]
+                        ),
+                        flatten(spfcands[i][histname.replace("PFCands_", "")]),
+                        weight=flatten(
+                            ak.broadcast_arrays(
+                                weights.weight()[event_level], spfcands[i]["pt"]
+                            )[0]
+                        ),
+                    )
             elif "btagDeep" in histname:
                 for i in range(4):
                     sel_jet = sjets[:, i]

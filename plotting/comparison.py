@@ -1,16 +1,17 @@
 import numpy as np
-import argparse, sys, os, arrow, glob
+import argparse, os, arrow, glob
 from coffea.util import load
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
-from hist.intervals import ratio_uncertainty
+from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
+from BTVNanoCommissioning.utils.plot_utils import plotratio, markers
 
 plt.style.use(hep.style.ROOT)
-from BTVNanoCommissioning.utils.xs_scaler import getSumW, collate, scaleSumW
+from BTVNanoCommissioning.utils.xs_scaler import collate
 
-markers = [".", "o", "^", "s", "+", "x", "D", "*"]
+bininfo = definitions()
 parser = argparse.ArgumentParser(description="make comparison for different campaigns")
 parser.add_argument(
     "-p",
@@ -36,11 +37,7 @@ parser.add_argument(
 )
 parser.add_argument("-r", "--ref", required=True, help="referance dataset")
 parser.add_argument(
-    "-c",
-    "--compared",
-    required=True,
-    type=str,
-    help="compared datasets, splitted by ,",
+    "-c", "--compared", required=True, type=str, help="compared datasets, splitted by ,"
 )
 parser.add_argument(
     "--sepflav", default=False, type=bool, help="seperate flavour(b/c/light)"
@@ -74,6 +71,11 @@ parser.add_argument(
     type=int,
     default=1,
     help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
+)
+parser.add_argument(
+    "--xlabel",
+    type=str,
+    help="rename the label of variables to plot, splitted by ,.  Wildcard option * NOT available here",
 )
 args = parser.parse_args()
 output = {}
@@ -141,7 +143,7 @@ elif "*" in args.variable:
     ]
 else:
     var_set = args.variable.split(",")
-for discr in var_set:
+for index, discr in enumerate(var_set):
 
     allaxis = {}
     if "flav" in collated[args.ref][discr].axes.name:
@@ -152,8 +154,25 @@ for discr in var_set:
     if args.autorebin != 1:
         rebin_factor = args.autorebin
         allaxis[collated[args.ref][discr].axes[-1].name] = hist.rebin(rebin_factor)
+    # xlabel = if  arg.xlabel is not None else collated["data"][discr].axes[-1].label # Use label from stored hists
+    ## FIXME: Set temporary fix for the x-axis
+    if args.xlabel is not None:
+        args.xlabel.split(",")[index]
+    elif "DeepJet" in discr or "DeepCSV" in discr:
+        xlabel = (
+            bininfo[discr]["displayname"]
+            + " ["
+            + bininfo[discr]["inputVar_units"]
+            + "]"
+            if bininfo[discr]["inputVar_units"] is not None
+            else bininfo[discr]["displayname"]
+        )
+    else:
+        xlabel = axes_name(discr)
 
+    text = args.ext
     if args.norm:
+        text = args.ext + "\n Normalized to Ref."
         for c in args.compared.split(","):
             collated[c][discr] = collated[c][discr] * float(
                 np.sum(collated[args.ref][discr][allaxis].values())
@@ -170,14 +189,7 @@ for discr in var_set:
         )
         fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
         ax.set_xlabel(None)
-        # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
-        hep.cms.label(
-            label,
-            com=args.com,
-            data=True,
-            loc=0,
-            ax=ax,
-        )
+        hep.cms.label(label, com=args.com, data=True, loc=0, ax=ax)
         laxis = {"flav": 0}
         puaxis = {"flav": 1}
         caxis = {"flav": 2}
@@ -214,13 +226,14 @@ for discr in var_set:
             ax=ax,
         )
 
-        index = 0
+        mindex = 0
+        ax.legend(ncol=3, loc=1)
         for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
             hep.histplot(
                 collated[c][discr][laxis] + collated[c][discr][puaxis],
                 label=s + "-l",
                 color="b",
-                marker=markers[index + 1],
+                marker=markers[mindex + 1],
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
@@ -229,7 +242,7 @@ for discr in var_set:
                 collated[c][discr][caxis],
                 label=s + "-c",
                 color="g",
-                marker=markers[index + 1],
+                marker=markers[mindex + 1],
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
@@ -239,89 +252,51 @@ for discr in var_set:
                 label=s + "-b",
                 yerr=True,
                 color="r",
-                marker=markers[index + 1],
+                marker=markers[mindex + 1],
                 histtype="errorbar",
                 ax=ax,
             )
-        index += 1
-        ax.legend(
-            ncol=3,
-            loc=1,
-        )
-        index = 0
-        for c in args.compared.split(","):
-
-            rax.errorbar(
-                x=collated[c][discr][laxis].axes[0].centers,
-                y=(
-                    collated[c][discr][laxis].values()
-                    + collated[c][discr][puaxis].values()
-                )
-                / (
-                    collated[args.ref][discr][laxis].values()
-                    + collated[args.ref][discr][puaxis].values()
-                ),
-                yerr=ratio_uncertainty(
-                    (
-                        collated[c][discr][laxis].values()
-                        + collated[c][discr][puaxis].values()
-                    ),
-                    collated[args.ref][discr][laxis].values()
-                    + collated[args.ref][discr][puaxis].values(),
-                ),
-                color="b",
-                linestyle="none",
-                marker=markers[index + 1],
+            # comparison splitted by flavor
+            rax = plotratio(
+                collated[c][discr][laxis] + collated[c][discr][puaxis],
+                collated[args.ref][discr][laxis] + collated[args.ref][discr][puaxis],
+                ax=rax,
+                denom_fill_opts=None,
+                error_opts={"color": "b", "marker": markers[mindex + 1]},
             )
-            rax2.errorbar(
-                x=collated[c][discr][caxis].axes[0].centers,
-                y=collated[c][discr][caxis].values()
-                / collated[args.ref][discr][caxis].values(),
-                yerr=ratio_uncertainty(
-                    collated[c][discr][caxis].values(),
-                    collated[args.ref][discr][caxis].values(),
-                ),
-                color="g",
-                linestyle="none",
-                marker=markers[index + 1],
+            rax2 = plotratio(
+                collated[c][discr][caxis],
+                collated[args.ref][discr][caxis],
+                ax=rax2,
+                denom_fill_opts=None,
+                error_opts={"color": "g", "marker": markers[mindex + 1]},
             )
-            rax3.errorbar(
-                x=collated[c][discr][baxis].axes[0].centers,
-                y=collated[c][discr][baxis].values()
-                / collated[args.ref][discr][baxis].values(),
-                yerr=ratio_uncertainty(
-                    collated[c][discr][baxis].values(),
-                    collated[args.ref][discr][baxis].values(),
-                ),
-                color="r",
-                linestyle="none",
-                marker=markers[index + 1],
+            rax3 = plotratio(
+                collated[c][discr][baxis],
+                collated[args.ref][discr][baxis],
+                ax=rax3,
+                denom_fill_opts=None,
+                error_opts={"color": "r", "marker": markers[mindex + 1]},
             )
+            mindex += 1
 
         discrs = discr
         ax.set_xlabel("A.U.")
-        rax3.set_xlabel(discrs)
         rax.set_ylabel("udsg-jets")
         rax2.set_ylabel("c-jets")
         rax3.set_ylabel("b-jets")
         rax.set_ylim(0.5, 1.5)
         rax2.set_ylim(0.5, 1.5)
         rax3.set_ylim(0.5, 1.5)
-        rax3.set_xlabel(discr)
+
+        rax3.set_xlabel(xlabel)
         ax.legend()
-        text = args.ext
-        if args.norm:
-            text = args.ext + "\n Normalized to Ref."
+
         at = AnchoredText(
-            input_txt + "\n" + text,
-            loc=2,
-            frameon=False,
+            input_txt + "\n" + "BTV Commissioning" + "\n" + text, loc=2, frameon=False
         )
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
-        rax.axhline(y=1.0, linestyle="dashed", color="gray")
-        rax2.axhline(y=1.0, linestyle="dashed", color="gray")
-        rax3.axhline(y=1.0, linestyle="dashed", color="gray")
         if args.log:
             ax.set_yscale("log")
         fig.savefig(
@@ -336,15 +311,8 @@ for discr in var_set:
             2, 1, figsize=(12, 12), gridspec_kw={"height_ratios": (3, 1)}, sharex=True
         )
         fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
-        hep.cms.label(
-            label,
-            com=args.com,
-            data=True,
-            loc=0,
-            ax=ax,
-        )
+        hep.cms.label(label, com=args.com, data=True, loc=0, ax=ax)
         ax.set_xlabel(None)
-        # ax.set_xticklabels(ax.get_xticklabels(), fontsize=0)
         hep.histplot(
             collated[args.ref][discr][allaxis],
             label=args.shortref + " (Ref)",
@@ -361,21 +329,13 @@ for discr in var_set:
                 ax=ax,
             )
         for i, c in enumerate(args.compared.split(",")):
-            rax.errorbar(
-                x=collated[c][discr][allaxis].axes[0].centers,
-                y=collated[c][discr][allaxis].values()
-                / collated[args.ref][discr][allaxis].values(),
-                yerr=ratio_uncertainty(
-                    collated[c][discr][allaxis].values(),
-                    collated[args.ref][discr][allaxis].values(),
-                ),
-                marker="o",
-                linestyle="none",
-                color=ax.get_lines()[i + 1].get_color(),
-                elinewidth=1,
-            )
-        rax.set_xlabel(discr)
-        rax.axhline(y=1.0, linestyle="dashed", color="gray")
+            plotratio(
+                collated[c][discr][allaxis],
+                collated[args.ref][discr][allaxis],
+                ax=rax,
+                denom_fill_opts=None,
+            )  ## No error band used
+        rax.set_xlabel(xlabel)
         ax.set_xlabel(None)
         ax.set_ylabel("Events")
         rax.set_ylabel("Other/Ref")
@@ -383,9 +343,7 @@ for discr in var_set:
         rax.set_ylim(0.0, 2.0)
 
         at = AnchoredText(
-            input_txt + "\n" + args.ext,
-            loc=2,
-            frameon=False,
+            input_txt + "\n" + "BTV Commissioning" + "\n" + text, loc=2, frameon=False
         )
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)

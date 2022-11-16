@@ -87,9 +87,7 @@ class NanoProcessor(processor.ProcessorABC):
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
 
         ## HLT
-        triggers = [
-            "Ele32_WPTight_Gsf_L1DoubleEG",
-        ]
+        triggers = ["Ele32_WPTight_Gsf_L1DoubleEG"]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -114,6 +112,7 @@ class NanoProcessor(processor.ProcessorABC):
         event_jet = events.Jet[
             jet_id(events, self._campaign)
             & (ak.all(events.Jet.metric_table(iso_ele) > 0.5, axis=2))
+            & (events.Jet.DeepJet_nsv > 0)
         ]
         req_jets = (ak.num(event_jet.pt) >= 1) & (ak.num(event_jet.pt) <= 3)
 
@@ -129,6 +128,21 @@ class NanoProcessor(processor.ProcessorABC):
         ]
         req_mujet = ak.num(mu_jet.pt, axis=1) >= 1
         mu_jet = ak.pad_none(mu_jet, 1, axis=1)
+
+        ## store jet index for PFCands, create mask on the jet index
+        jetindx = ak.mask(
+            ak.local_index(events.Jet.pt),
+            (
+                jet_id(events, self._campaign)
+                & (ak.all(events.Jet.metric_table(iso_ele) > 0.5, axis=2))
+                & (events.Jet.DeepJet_nsv > 0)
+                & (ak.all(events.Jet.metric_table(soft_muon) <= 0.4, axis=2))
+                & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
+            )
+            == 1,
+        )
+        jetindx = ak.pad_none(jetindx, 1)
+        jetindx = jetindx[:, 0]
 
         # Other cuts
         req_pTratio = (soft_muon[:, 0].pt / mu_jet[:, 0].pt) < 0.6
@@ -200,6 +214,15 @@ class NanoProcessor(processor.ProcessorABC):
         sw = shmu + smet
         osss = shmu.charge * ssmu.charge * -1
         njet = ak.count(sjets.pt, axis=1)
+        # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
+        if self._campaign == "Winter22Run3":
+            spfcands = events[event_level].PFCands[
+                events[event_level]
+                .JetPFCands[
+                    events[event_level].JetPFCands.jetIdx == jetindx[event_level]
+                ]
+                .pFCandsIdx
+            ]
 
         ####################
         # Weight & Geninfo #
@@ -212,10 +235,7 @@ class NanoProcessor(processor.ProcessorABC):
                     puname = f"{self._year}_pileupweight"
                 else:
                     puname = "PU"
-                weights.add(
-                    "puweight",
-                    self._pu[puname](events.Pileup.nTrueInt),
-                )
+                weights.add("puweight", self._pu[puname](events.Pileup.nTrueInt))
             if "LSF" in correction_config[self._campaign].keys():
                 weights.add(
                     "lep1sf",
@@ -363,56 +383,75 @@ class NanoProcessor(processor.ProcessorABC):
             if "Deep" in histname and "btag" not in histname:
                 h.fill(
                     flatten(genflavor),
+                    flatten(ak.broadcast_arrays(osss, sjets["pt"])[0]),
                     flatten(sjets[histname]),
                     weight=flatten(
+                        ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[
+                            0
+                        ]
+                    ),
+                )
+            elif "PFCands" in histname and self._campaign != "Rereco17_94X":
+                h.fill(
+                    flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
+                    flatten(ak.broadcast_arrays(osss, spfcands["pt"])[0]),
+                    flatten(spfcands[histname.replace("PFCands_", "")]),
+                    weight=flatten(
                         ak.broadcast_arrays(
-                            weights.weight()[event_level] * osss, sjets["pt"]
+                            weights.weight()[event_level], spfcands["pt"]
                         )[0]
                     ),
                 )
             elif "jet_" in histname and "mu" not in histname:
                 h.fill(
                     flatten(genflavor),
+                    flatten(ak.broadcast_arrays(osss, sjets["pt"])[0]),
                     flatten(sjets[histname.replace("jet_", "")]),
                     weight=flatten(
-                        ak.broadcast_arrays(
-                            weights.weight()[event_level] * osss, sjets["pt"]
-                        )[0]
+                        ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[
+                            0
+                        ]
                     ),
                 )
             elif "hl_" in histname and histname.replace("hl_", "") in shmu.fields:
                 h.fill(
+                    osss,
                     flatten(shmu[histname.replace("hl_", "")]),
-                    weight=weights.weight()[event_level] * osss,
+                    weight=weights.weight()[event_level],
                 )
             elif (
                 "soft_l" in histname and histname.replace("soft_l_", "") in ssmu.fields
             ):
                 h.fill(
+                    smflav,
+                    osss,
                     flatten(ssmu[histname.replace("soft_l_", "")]),
-                    weight=weights.weight()[event_level] * osss,
+                    weight=weights.weight()[event_level],
                 )
             elif "MET" in histname:
                 h.fill(
+                    osss,
                     flatten(events[event_level].MET[histname.replace("MET_", "")]),
-                    weight=weights.weight()[event_level] * osss,
+                    weight=weights.weight()[event_level],
                 )
             elif "mujet_" in histname:
                 h.fill(
                     smflav,
+                    osss,
                     flatten(smuon_jet[histname.replace("mujet_", "")]),
-                    weight=weights.weight()[event_level] * osss,
+                    weight=weights.weight()[event_level],
                 )
             elif "btagDeep" in histname and "0" in histname:
                 h.fill(
                     flav=smflav,
+                    osss=osss,
                     syst="noSF",
                     discr=np.where(
                         smuon_jet[histname.replace("_0", "")] < 0,
                         -0.2,
                         smuon_jet[histname.replace("_0", "")],
                     ),
-                    weight=weights.weight()[event_level] * osss,
+                    weight=weights.weight()[event_level],
                 )
                 if (
                     not isRealData
@@ -422,6 +461,7 @@ class NanoProcessor(processor.ProcessorABC):
                     for syst in disc_list[histname.replace("_0", "")][0].keys():
                         h.fill(
                             flav=smflav,
+                            osss=osss,
                             syst=syst,
                             discr=np.where(
                                 smuon_jet[histname.replace("_0", "")] < 0,
@@ -429,8 +469,7 @@ class NanoProcessor(processor.ProcessorABC):
                                 smuon_jet[histname.replace("_0", "")],
                             ),
                             weight=weights.weight()[event_level]
-                            * disc_list[histname.replace("_0", "")][0][syst]
-                            * osss,
+                            * disc_list[histname.replace("_0", "")][0][syst],
                         )
             elif (
                 "btagDeep" in histname and "1" in histname and all(i > 1 for i in njet)
@@ -438,13 +477,14 @@ class NanoProcessor(processor.ProcessorABC):
                 sljets = sjets[:, 1]
                 h.fill(
                     flav=genflavor[:, 1],
+                    osss=osss,
                     syst="noSF",
                     discr=np.where(
                         sljets[histname.replace("_1", "")] < 0,
                         -0.2,
                         sljets[histname.replace("_1", "")],
                     ),
-                    weight=weights.weight()[event_level] * osss,
+                    weight=weights.weight()[event_level],
                 )
                 if (
                     not isRealData
@@ -454,6 +494,7 @@ class NanoProcessor(processor.ProcessorABC):
                     for syst in disc_list[histname.replace("_1", "")][1].keys():
                         h.fill(
                             flav=genflavor[:, 1],
+                            osss=osss,
                             syst=syst,
                             discr=np.where(
                                 sljets[histname.replace("_1", "")] < 0,
@@ -461,53 +502,56 @@ class NanoProcessor(processor.ProcessorABC):
                                 sljets[histname.replace("_1", "")],
                             ),
                             weight=weights.weight()[event_level]
-                            * disc_list[histname.replace("_1", "")][1][syst]
-                            * osss,
+                            * disc_list[histname.replace("_1", "")][1][syst],
                         )
-        output["njet"].fill(njet, weight=weights.weight()[event_level] * osss)
+        output["njet"].fill(osss, njet, weight=weights.weight()[event_level])
+
         output["hl_ptratio"].fill(
             flav=genflavor[:, 0],
+            osss=osss,
             ratio=shmu.pt / sjets[:, 0].pt,
-            weight=weights.weight()[event_level] * osss,
+            weight=weights.weight()[event_level],
         )
         output["soft_l_ptratio"].fill(
             flav=smflav,
+            osss=osss,
             ratio=ssmu.pt / smuon_jet.pt,
-            weight=weights.weight()[event_level] * osss,
+            weight=weights.weight()[event_level],
         )
         output["dr_lmujetsmu"].fill(
             flav=smflav,
+            osss=osss,
             dr=smuon_jet.delta_r(ssmu),
-            weight=weights.weight()[event_level] * osss,
+            weight=weights.weight()[event_level],
         )
         output["dr_lmujethmu"].fill(
             flav=smflav,
+            osss=osss,
             dr=smuon_jet.delta_r(shmu),
-            weight=weights.weight()[event_level] * osss,
+            weight=weights.weight()[event_level],
         )
         output["dr_lmusmu"].fill(
-            dr=shmu.delta_r(ssmu),
-            weight=weights.weight()[event_level] * osss,
+            osss=osss, dr=shmu.delta_r(ssmu), weight=weights.weight()[event_level]
         )
-        output["z_pt"].fill(flatten(sz.pt), weight=weights.weight()[event_level] * osss)
+        output["z_pt"].fill(osss, flatten(sz.pt), weight=weights.weight()[event_level])
         output["z_eta"].fill(
-            flatten(sz.eta), weight=weights.weight()[event_level] * osss
+            osss, flatten(sz.eta), weight=weights.weight()[event_level]
         )
         output["z_phi"].fill(
-            flatten(sz.phi), weight=weights.weight()[event_level] * osss
+            osss, flatten(sz.phi), weight=weights.weight()[event_level]
         )
         output["z_mass"].fill(
-            flatten(sz.mass), weight=weights.weight()[event_level] * osss
+            osss, flatten(sz.mass), weight=weights.weight()[event_level]
         )
-        output["w_pt"].fill(flatten(sw.pt), weight=weights.weight()[event_level] * osss)
+        output["w_pt"].fill(osss, flatten(sw.pt), weight=weights.weight()[event_level])
         output["w_eta"].fill(
-            flatten(sw.eta), weight=weights.weight()[event_level] * osss
+            osss, flatten(sw.eta), weight=weights.weight()[event_level]
         )
         output["w_phi"].fill(
-            flatten(sw.phi), weight=weights.weight()[event_level] * osss
+            osss, flatten(sw.phi), weight=weights.weight()[event_level]
         )
         output["w_mass"].fill(
-            flatten(sw.mass), weight=weights.weight()[event_level] * osss
+            osss, flatten(sw.mass), weight=weights.weight()[event_level]
         )
 
         return {dataset: output}

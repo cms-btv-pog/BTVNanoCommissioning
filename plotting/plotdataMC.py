@@ -1,16 +1,18 @@
 import numpy as np
-import argparse, sys, os, arrow, glob
+import argparse, os, arrow, glob
 from coffea.util import load
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 
 import mplhep as hep
 import hist
-from hist.intervals import ratio_uncertainty
 
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.utils.xs_scaler import getSumW, collate, scaleSumW
+from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
+from BTVNanoCommissioning.utils.plot_utils import plotratio, SFerror, errband_opts
 
+bininfo = definitions()
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
@@ -50,15 +52,22 @@ parser.add_argument(
     help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
 parser.add_argument(
+    "--xlabel",
+    type=str,
+    help="rename the label of variables to plot, splitted by ,.  Wildcard option * NOT available here",
+)
+
+parser.add_argument(
     "--SF", action="store_true", default=False, help="make w/, w/o SF comparisons"
 )
 parser.add_argument("--ext", type=str, default="data", help="prefix name")
 parser.add_argument(
     "--autorebin",
-    type=int,
-    default=1,
+    default=None,
     help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
 )
+
+
 arg = parser.parse_args()
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/"):
@@ -114,11 +123,23 @@ elif "*" in arg.variable:
 else:
     var_set = arg.variable.split(",")
 
-for discr in var_set:
+for index, discr in enumerate(var_set):
     if "sumw" == discr:
         continue
-    if arg.autorebin != 1:
+    if arg.autorebin is not None:
+        allaxis = {}
+        if "flav" in collated["mc"][discr].axes.name:
+            allaxis["flav"] = sum
+        if "syst" in collated["mc"][discr].axes.name:
+            allaxis["syst"] = sum
         rebin_factor = arg.autorebin
+        if len(collated["data"][discr].axes.name) == 4:
+            collated["data"][discr] = collated["data"][discr][
+                :, :, :, hist.rebin(rebin_factor)
+            ]
+            collated["mc"][discr] = collated["mc"][discr][
+                :, :, :, hist.rebin(rebin_factor)
+            ]
         if len(collated["data"][discr].axes.name) == 3:
             collated["data"][discr] = collated["data"][discr][
                 :, :, hist.rebin(rebin_factor)
@@ -186,47 +207,7 @@ for discr in var_set:
         and arg.SF
     ):
 
-        err_up = (
-            collated["mc"][discr][{"syst": "SFup", "flav": sum}].values()
-            - collated["mc"][discr][{"syst": "SF", "flav": sum}].values()
-        )
-        err_dn = (
-            collated["mc"][discr][{"syst": "SF", "flav": sum}].values()
-            - collated["mc"][discr][{"syst": "SFdn", "flav": sum}].values()
-        )
-        if "C" in discr:  ## scale uncertainties for charm tagger by 2
-            err_up = np.sqrt(
-                np.add(
-                    np.power(err_up, 2),
-                    np.power(
-                        2
-                        * (
-                            collated["mc"][discr][{"syst": "SFup", "flav": 4}].values()
-                            - collated["mc"][discr][{"syst": "SF", "flav": 4}].values()
-                        ),
-                        2,
-                    ),
-                )
-            )
-            err_dn = np.sqrt(
-                np.add(
-                    np.power(err_dn, 2),
-                    np.power(
-                        2
-                        * (
-                            collated["mc"][discr][{"syst": "SF", "flav": 4}].values()
-                            - collated["mc"][discr][
-                                {"syst": "SFdn", "flav": 4}
-                            ].values()
-                        ),
-                        2,
-                    ),
-                )
-            )
-
         hdata = collated["data"][discr][{"syst": "noSF", "flav": sum}]
-        ratio_up = ratio_uncertainty(err_up, hdata.values())
-        ratio_dn = ratio_uncertainty(err_dn, hdata.values())
 
         hep.histplot(
             [collated["mc"][discr][{"syst": "SF", "flav": i}] for i in range(4)],
@@ -245,58 +226,37 @@ for discr in var_set:
             ax=ax,
         )
         hep.histplot(
+            hdata, histtype="errorbar", color="black", label="Data", yerr=True, ax=ax
+        )
+        hmc = collated["mc"][discr][{"syst": "SF", "flav": sum}]
+        ax.stairs(
+            values=hmc.values() + np.sqrt(hmc.values()),
+            baseline=hmc.values() - np.sqrt(hmc.values()),
+            edges=hmc.axes[0].edges,
+            label="Stat. unc.",
+            **errband_opts,
+        )
+        SFerror = SFerror(collated, discr)
+        other = {"hatch": "\\\\", "lw": 0, "color": "r", "alpha": 0.4}
+        ax.stairs(
+            values=hmc.values() + SFerror[1],
+            baseline=hmc.values() + SFerror[0],
+            edges=hmc.axes[0].edges,
+            label="SF unc.",
+            **other,
+        )
+        plotratio(hdata, collated["mc"][discr][{"syst": "noSF", "flav": sum}], ax=rax)
+        plotratio(
             hdata,
-            histtype="errorbar",
-            color="black",
-            label="Data",
-            yerr=True,
-            ax=ax,
+            hmc,
+            ax=rax,
+            ext_denom_error=SFerror,
+            error_opts={"color": "r", "marker": "v"},
+            denom_fill_opts=other,
+            clear=False,
+            label="SF unc.",
         )
-        rax.errorbar(
-            x=hdata.axes[0].centers,
-            y=hdata.values()
-            / collated["mc"][discr][{"syst": "SF", "flav": sum}].values(),
-            yerr=ratio_uncertainty(
-                hdata.values(),
-                collated["mc"][discr][{"syst": "SF", "flav": sum}].values(),
-            ),
-            color="k",
-            linestyle="none",
-            marker="o",
-            elinewidth=1,
-        )
-        rax.errorbar(
-            x=hdata.axes[0].centers,
-            y=hdata.values()
-            / collated["mc"][discr][{"syst": "noSF", "flav": sum}].values(),
-            yerr=ratio_uncertainty(
-                hdata.values(),
-                collated["mc"][discr][{"syst": "noSF", "flav": sum}].values(),
-            ),
-            color="tab:brown",
-            linestyle="none",
-            marker="o",
-            elinewidth=1,
-        )
-        ### FIXME: errorband calculation
-        # stat_denom_unc = ratio_uncertainty(
-        #     hdata.values(),
-        #     collated["mc"][discr][{"syst": "noSF", "flav": sum}].values(),
-        # )
-        # ax.fill_between(
-        #     hdata.axes.edges,
-        #     np.ones(stat_denom_unc[0])
-        #     - np.r_[stat_denom_unc[0], stat_denom_unc[0, -1]],
-        #     np.ones(stat_denom_unc[0])
-        #     + np.r_[stat_denom_unc[1], stat_denom_unc[1, -1]],
-        #     {"facecolor": "tab:gray", "linewidth": 0},
-        # )
-        # ax.fill_between(
-        #     hdata.axes.edges,
-        #     np.ones(stat_denom_unc[0]) - np.r_[err_dn, err_dn[-1]],
-        #     np.ones(stat_denom_unc[0]) + np.r_[err_up, err_up[-1]],
-        #     {"facecolor": "tab:brown", "linewidth": 0},
-        # )
+
     elif "syst" in collated["mc"][discr].axes.name and not arg.SF:
         hep.histplot(
             [collated["mc"][discr][{"flav": i, "syst": "noSF"}] for i in range(4)],
@@ -307,15 +267,6 @@ for discr in var_set:
             ax=ax,
         )
         hep.histplot(
-            collated["mc"][discr][{"flav": sum, "syst": "noSF"}],
-            histtype="errorbar",
-            label=["Stat. Unc"],
-            yerr=True,
-            color="gray",
-            markersize=0.0,
-            ax=ax,
-        )
-        hep.histplot(
             collated["data"][discr][{"flav": sum, "syst": "noSF"}],
             histtype="errorbar",
             color="black",
@@ -323,19 +274,15 @@ for discr in var_set:
             yerr=True,
             ax=ax,
         )
-        rax.errorbar(
-            x=collated["mc"][discr][{"flav": sum, "syst": "noSF"}].axes[0].centers,
-            y=collated["data"][discr][{"flav": sum, "syst": "noSF"}].values()
-            / collated["mc"][discr][{"flav": sum, "syst": "noSF"}].values(),
-            yerr=ratio_uncertainty(
-                collated["data"][discr][{"flav": sum, "syst": "noSF"}].values(),
-                collated["mc"][discr][{"flav": sum, "syst": "noSF"}].values(),
-            ),
-            color="k",
-            linestyle="none",
-            marker="o",
-            elinewidth=1,
+        hmc = collated["mc"][discr][{"flav": sum, "syst": "noSF"}]
+        ax.stairs(
+            values=hmc.values() + np.sqrt(hmc.values()),
+            baseline=hmc.values() - np.sqrt(hmc.values()),
+            edges=hmc.axes[0].edges,
+            label="Stat. unc.",
+            **errband_opts,
         )
+        plotratio(collated["data"][discr][{"flav": sum, "syst": "noSF"}], hmc, ax=rax)
     elif "flav" in collated["mc"][discr].axes.name:
         hep.histplot(
             [collated["mc"][discr][{"flav": i}] for i in range(4)],
@@ -346,15 +293,6 @@ for discr in var_set:
             ax=ax,
         )
         hep.histplot(
-            collated["mc"][discr][{"flav": sum}],
-            histtype="errorbar",
-            label=["Stat. Unc."],
-            yerr=True,
-            color="gray",
-            markersize=0.0,
-            ax=ax,
-        )
-        hep.histplot(
             collated["data"][discr][{"flav": sum}],
             histtype="errorbar",
             color="black",
@@ -362,35 +300,22 @@ for discr in var_set:
             yerr=True,
             ax=ax,
         )
-        rax.errorbar(
-            x=collated["mc"][discr][{"flav": sum}].axes[0].centers,
-            y=collated["data"][discr][{"flav": sum}].values()
-            / collated["mc"][discr][{"flav": sum}].values(),
-            yerr=ratio_uncertainty(
-                collated["data"][discr][{"flav": sum}].values(),
-                collated["mc"][discr][{"flav": sum}].values(),
-            ),
-            color="k",
-            linestyle="none",
-            marker="o",
-            elinewidth=1,
+        hmc = collated["mc"][discr][{"flav": sum}]
+        ax.stairs(
+            values=hmc.values() + np.sqrt(hmc.values()),
+            baseline=hmc.values() - np.sqrt(hmc.values()),
+            edges=hmc.axes[0].edges,
+            label="Stat. unc.",
+            **errband_opts,
         )
-
+        rax = plotratio(collated["data"][discr][{"flav": sum}], hmc, ax=rax)
     else:
         hep.histplot(
             collated["mc"][discr],
-            stack=True,
+            color="tab:orange",
+            histtype="fill",
             label=["MC"],
             yerr=True,
-            ax=ax,
-        )
-        hep.histplot(
-            collated["mc"][discr],
-            histtype="errorbar",
-            label=["Stat. Unc."],
-            yerr=True,
-            color="gray",
-            markersize=0.0,
             ax=ax,
         )
         hep.histplot(
@@ -401,29 +326,43 @@ for discr in var_set:
             yerr=True,
             ax=ax,
         )
-        rax.errorbar(
-            x=collated["data"][discr].axes[0].centers,
-            y=collated["data"][discr].values() / collated["mc"][discr].values(),
-            yerr=ratio_uncertainty(
-                collated["data"][discr].values(), collated["mc"][discr].values()
-            ),
-            color="k",
-            linestyle="none",
-            marker="o",
-            elinewidth=1,
+        hmc = collated["mc"][discr]
+        ax.stairs(
+            values=hmc.values() + np.sqrt(hmc.values()),
+            baseline=hmc.values() - np.sqrt(hmc.values()),
+            edges=hmc.axes[0].edges,
+            label="Stat. unc.",
+            **errband_opts,
         )
+        plotratio(collated["data"][discr], hmc, ax=rax)
+
     ax.set_xlabel(None)
     ax.set_ylabel("Events")
     rax.set_ylabel("Data/MC")
-    rax.set_xlabel(discr)
-    rax.axhline(y=1.0, linestyle="dashed", color="gray")
+    ax.ticklabel_format(style="sci", scilimits=(-3, 3))
+    # xlabel = if  arg.xlabel is not None else collated["data"][discr].axes[-1].label # Use label from stored hists
+    ## FIXME: Set temporary fix for the x-axis
+    if arg.xlabel is not None:
+        arg.xlabel.split(",")[index]
+    elif "DeepJet" in discr or "DeepCSV" in discr:
+        xlabel = (
+            bininfo[discr]["displayname"]
+            + " ["
+            + bininfo[discr]["inputVar_units"]
+            + "]"
+            if (bininfo[discr]["inputVar_units"] is not None)
+            and (bininfo[discr]["inputVar_units"] == "")
+            else bininfo[discr]["displayname"]
+        )
+    else:
+        xlabel = axes_name(discr)
+
+    rax.set_xlabel(xlabel)
     ax.legend()
-    rax.set_ylim(0.5, 1.5)
+    rax.set_ylim(0, 2.0)
     ax.set_ylim(bottom=0.0)
     at = AnchoredText(
-        input_txt + "\n" + arg.ext,
-        loc=2,
-        frameon=False,
+        input_txt + "\n" + "BTV Commissioning" + "\n" + arg.ext, loc=2, frameon=False
     )
     ax.add_artist(at)
     scale = ""

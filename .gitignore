@@ -5,6 +5,7 @@
 .ipynb_checkpoints/
 \#*
 
+runinfo/
 plot/
 plotting/plot/
 src/BTVNanoCommissioning/version.py

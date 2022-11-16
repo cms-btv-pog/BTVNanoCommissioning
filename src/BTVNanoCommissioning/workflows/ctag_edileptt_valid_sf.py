@@ -122,6 +122,19 @@ class NanoProcessor(processor.ProcessorABC):
         ]
         req_mujet = ak.count(mu_jet.pt, axis=1) >= 1
 
+        ## store jet index for PFCands, create mask on the jet index
+        jetindx = ak.mask(
+            ak.local_index(events.Jet.pt),
+            (
+                jet_id(events, self._campaign)
+                & (ak.all(events.Jet.metric_table(soft_muon) <= 0.4, axis=2))
+                & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
+            )
+            == 1,
+        )
+        jetindx = ak.pad_none(jetindx, 1)
+        jetindx = jetindx[:, 0]
+
         # Other cuts
         dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
         req_dilepveto = ak.count(dilep_mu.pt, axis=1) == 0
@@ -159,6 +172,15 @@ class NanoProcessor(processor.ProcessorABC):
         smuon_jet = mu_jet[event_level]
         smuon_jet = smuon_jet[:, 0]
         njet = ak.count(sjets.pt, axis=1)
+        # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
+        if self._campaign != "Rereco17_94X":
+            spfcands = events[event_level].PFCands[
+                events[event_level]
+                .JetPFCands[
+                    events[event_level].JetPFCands.jetIdx == jetindx[event_level]
+                ]
+                .pFCandsIdx
+            ]
 
         ####################
         # Weight & Geninfo #
@@ -171,10 +193,7 @@ class NanoProcessor(processor.ProcessorABC):
                     puname = f"{self._year}_pileupweight"
                 else:
                     puname = "PU"
-                weights.add(
-                    "puweight",
-                    self._pu[puname](events.Pileup.nTrueInt),
-                )
+                weights.add("puweight", self._pu[puname](events.Pileup.nTrueInt))
             if "LSF" in correction_config[self._campaign].keys():
                 weights.add(
                     "lep1sf",
@@ -404,6 +423,16 @@ class NanoProcessor(processor.ProcessorABC):
                         ]
                     ),
                 )
+            elif "PFCands" in histname and self._campaign != "Rereco17_94X":
+                h.fill(
+                    flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
+                    flatten(spfcands[histname.replace("PFCands_", "")]),
+                    weight=flatten(
+                        ak.broadcast_arrays(
+                            weights.weight()[event_level], spfcands["pt"]
+                        )[0]
+                    ),
+                )
             elif "jet_" in histname and "mu" not in histname:
                 h.fill(
                     flatten(genflavor),
@@ -426,6 +455,7 @@ class NanoProcessor(processor.ProcessorABC):
                 )
             elif "soft_l" in histname and not "ptratio" in histname:
                 h.fill(
+                    smflav,
                     flatten(softmu0[histname.replace("soft_l_", "")]),
                     weight=weights.weight()[event_level],
                 )
@@ -531,8 +561,7 @@ class NanoProcessor(processor.ProcessorABC):
             weight=weights.weight()[event_level],
         )
         output["dr_lmusmu"].fill(
-            dr=isomu0.delta_r(softmu0),
-            weight=weights.weight()[event_level],
+            dr=isomu0.delta_r(softmu0), weight=weights.weight()[event_level]
         )
         output["z_pt"].fill(flatten(sz.pt), weight=weights.weight()[event_level])
         output["z_eta"].fill(flatten(sz.eta), weight=weights.weight()[event_level])
