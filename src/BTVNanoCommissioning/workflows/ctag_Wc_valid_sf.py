@@ -86,9 +86,7 @@ class NanoProcessor(processor.ProcessorABC):
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
 
         ## HLT
-        triggers = [
-            "IsoMu27",
-        ]
+        triggers = ["IsoMu27"]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -113,6 +111,7 @@ class NanoProcessor(processor.ProcessorABC):
             jet_id(events, self._campaign)
             & (ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2))
             & ((events.Jet.muEF + events.Jet.neEmEF) < 0.7)
+            & (events.Jet.DeepJet_nsv > 0)
         ]
         req_jets = (ak.num(event_jet.pt) >= 1) & (ak.num(event_jet.pt) <= 3)
 
@@ -136,6 +135,7 @@ class NanoProcessor(processor.ProcessorABC):
                 jet_id(events, self._campaign)
                 & (ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2))
                 & ((events.Jet.muEF + events.Jet.neEmEF) < 0.7)
+                & (events.Jet.DeepJet_nsv > 0)
                 & (ak.all(events.Jet.metric_table(soft_muon) <= 0.4, axis=2))
                 & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
             )
@@ -222,7 +222,7 @@ class NanoProcessor(processor.ProcessorABC):
         osss = shmu.charge * ssmu.charge * -1
         njet = ak.count(sjets.pt, axis=1)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
-        if self._campaign == "Winter22Run3":
+        if self._campaign != "Rereco17_94X":
             spfcands = events[event_level].PFCands[
                 events[event_level]
                 .JetPFCands[
@@ -242,10 +242,7 @@ class NanoProcessor(processor.ProcessorABC):
                     puname = f"{self._year}_pileupweight"
                 else:
                     puname = "PU"
-                weights.add(
-                    "puweight",
-                    self._pu[puname](events.Pileup.nTrueInt),
-                )
+                weights.add("puweight", self._pu[puname](events.Pileup.nTrueInt))
             if "LSF" in correction_config[self._campaign].keys():
                 weights.add(
                     "lep1sf",
@@ -401,7 +398,7 @@ class NanoProcessor(processor.ProcessorABC):
                         ]
                     ),
                 )
-            elif "PFCands" in histname and self._campaign == "Winter22Run3":
+            elif "PFCands" in histname and self._campaign != "Rereco17_94X":
                 h.fill(
                     flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
                     flatten(ak.broadcast_arrays(osss, spfcands["pt"])[0]),

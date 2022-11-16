@@ -51,9 +51,7 @@ class NanoProcessor(processor.ProcessorABC):
             weights.add("genweight", events.genWeight)
 
         ## HLT
-        triggers = [
-            "IsoMu24",
-        ]
+        triggers = ["IsoMu24"]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -95,7 +93,7 @@ class NanoProcessor(processor.ProcessorABC):
         sjets = event_jet[event_level]
         sjets = sjets[:, :2]
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
-        if self._campaign == "Winter22Run3":
+        if self._campaign != "Rereco17_94X":
             jetindx0 = jetindx[:, 0]
             jetindx1 = jetindx[:, 1]
             spfcands = collections.defaultdict(dict)
@@ -139,7 +137,7 @@ class NanoProcessor(processor.ProcessorABC):
                         ]
                     ),
                 )
-            elif "PFCands" in histname and self._campaign == "Winter22Run3":
+            elif "PFCands" in histname and self._campaign != "Rereco17_94X":
                 for i in range(2):
                     h.fill(
                         flatten(

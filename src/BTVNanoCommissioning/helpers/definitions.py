@@ -6058,15 +6058,6 @@ def definitions():
             "manual_ranges": [0, 10],
             "inputVar_units": None,
         },
-        "DeepJet_nsv": {
-            "displayname": "Number of SV in the jet",
-            "ylabel_text": "Jets",
-            "format_unit": "2f",
-            "format_unit_digits": 2,
-            "bins": 10,
-            "manual_ranges": [0, 10],
-            "inputVar_units": None,
-        },
         "PFCands_numberOFHits": {
             "displayname": "Number of hits",
             "ylabel_text": "Jets",

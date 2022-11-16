@@ -89,10 +89,7 @@ class NanoProcessor(processor.ProcessorABC):
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
 
         ## HLT
-        triggers = [
-            "IsoMu24",
-            "IsoMu27",
-        ]
+        triggers = ["IsoMu24", "IsoMu27"]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -226,7 +223,7 @@ class NanoProcessor(processor.ProcessorABC):
         osss = shmu.charge * ssmu.charge * -1
         njet = ak.count(sjets.pt, axis=1)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
-        if self._campaign == "Winter22Run3":
+        if self._campaign != "Rereco17_94X":
             spfcands = events[event_level].PFCands[
                 events[event_level]
                 .JetPFCands[
@@ -246,10 +243,7 @@ class NanoProcessor(processor.ProcessorABC):
                     puname = f"{self._year}_pileupweight"
                 else:
                     puname = "PU"
-                weights.add(
-                    "puweight",
-                    self._pu[puname](events.Pileup.nTrueInt),
-                )
+                weights.add("puweight", self._pu[puname](events.Pileup.nTrueInt))
             if "LSF" in correction_config[self._campaign].keys():
                 weights.add(
                     "lep1sf",
@@ -403,7 +397,7 @@ class NanoProcessor(processor.ProcessorABC):
                         ]
                     ),
                 )
-            elif "PFCands" in histname and self._campaign == "Winter22Run3":
+            elif "PFCands" in histname and self._campaign != "Rereco17_94X":
                 h.fill(
                     flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
                     flatten(spfcands[histname.replace("PFCands_", "")]),
@@ -533,8 +527,7 @@ class NanoProcessor(processor.ProcessorABC):
             weight=weights.weight()[event_level],
         )
         output["dr_lmusmu"].fill(
-            dr=shmu.delta_r(ssmu),
-            weight=weights.weight()[event_level],
+            dr=shmu.delta_r(ssmu), weight=weights.weight()[event_level]
         )
         output["z_pt"].fill(flatten(sz.pt), weight=weights.weight()[event_level])
         output["z_eta"].fill(flatten(sz.eta), weight=weights.weight()[event_level])

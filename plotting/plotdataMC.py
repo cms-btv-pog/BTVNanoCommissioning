@@ -66,13 +66,7 @@ parser.add_argument(
     default=None,
     help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
 )
-errband_opts = {
-    "hatch": "////",
-    "facecolor": "none",
-    "lw": 0,
-    "color": "k",
-    "alpha": 0.4,
-}
+
 
 arg = parser.parse_args()
 time = arrow.now().format("YY_MM_DD")
@@ -138,7 +132,6 @@ for index, discr in enumerate(var_set):
             allaxis["flav"] = sum
         if "syst" in collated["mc"][discr].axes.name:
             allaxis["syst"] = sum
-
         rebin_factor = arg.autorebin
         if len(collated["data"][discr].axes.name) == 4:
             collated["data"][discr] = collated["data"][discr][
@@ -233,12 +226,7 @@ for index, discr in enumerate(var_set):
             ax=ax,
         )
         hep.histplot(
-            hdata,
-            histtype="errorbar",
-            color="black",
-            label="Data",
-            yerr=True,
-            ax=ax,
+            hdata, histtype="errorbar", color="black", label="Data", yerr=True, ax=ax
         )
         hmc = collated["mc"][discr][{"syst": "SF", "flav": sum}]
         ax.stairs(
@@ -374,9 +362,7 @@ for index, discr in enumerate(var_set):
     rax.set_ylim(0, 2.0)
     ax.set_ylim(bottom=0.0)
     at = AnchoredText(
-        input_txt + "\n" + "BTV Commissioning" + "\n" + arg.ext,
-        loc=2,
-        frameon=False,
+        input_txt + "\n" + "BTV Commissioning" + "\n" + arg.ext, loc=2, frameon=False
     )
     ax.add_artist(at)
     scale = ""

@@ -6,13 +6,12 @@ from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
-from BTVNanoCommissioning.utils.plot_utils import plotratio
+from BTVNanoCommissioning.utils.plot_utils import plotratio, markers
 
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.utils.xs_scaler import collate
 
 bininfo = definitions()
-markers = [".", "o", "^", "s", "+", "x", "D", "*"]
 parser = argparse.ArgumentParser(description="make comparison for different campaigns")
 parser.add_argument(
     "-p",
@@ -38,11 +37,7 @@ parser.add_argument(
 )
 parser.add_argument("-r", "--ref", required=True, help="referance dataset")
 parser.add_argument(
-    "-c",
-    "--compared",
-    required=True,
-    type=str,
-    help="compared datasets, splitted by ,",
+    "-c", "--compared", required=True, type=str, help="compared datasets, splitted by ,"
 )
 parser.add_argument(
     "--sepflav", default=False, type=bool, help="seperate flavour(b/c/light)"
@@ -194,13 +189,7 @@ for index, discr in enumerate(var_set):
         )
         fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
         ax.set_xlabel(None)
-        hep.cms.label(
-            label,
-            com=args.com,
-            data=True,
-            loc=0,
-            ax=ax,
-        )
+        hep.cms.label(label, com=args.com, data=True, loc=0, ax=ax)
         laxis = {"flav": 0}
         puaxis = {"flav": 1}
         caxis = {"flav": 2}
@@ -238,6 +227,7 @@ for index, discr in enumerate(var_set):
         )
 
         mindex = 0
+        ax.legend(ncol=3, loc=1)
         for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
             hep.histplot(
                 collated[c][discr][laxis] + collated[c][discr][puaxis],
@@ -266,34 +256,29 @@ for index, discr in enumerate(var_set):
                 histtype="errorbar",
                 ax=ax,
             )
-            mindex += 1
-        ax.legend(
-            ncol=3,
-            loc=1,
-        )
-        # comparison splitted by flavor
-        for c in args.compared.split(","):
+            # comparison splitted by flavor
             rax = plotratio(
                 collated[c][discr][laxis] + collated[c][discr][puaxis],
                 collated[args.ref][discr][laxis] + collated[args.ref][discr][puaxis],
                 ax=rax,
                 denom_fill_opts=None,
-                error_opts={"color": "b", "marker": markers[index + 1]},
+                error_opts={"color": "b", "marker": markers[mindex + 1]},
             )
             rax2 = plotratio(
                 collated[c][discr][caxis],
                 collated[args.ref][discr][caxis],
                 ax=rax2,
                 denom_fill_opts=None,
-                error_opts={"color": "g", "marker": markers[index + 1]},
+                error_opts={"color": "g", "marker": markers[mindex + 1]},
             )
             rax3 = plotratio(
                 collated[c][discr][baxis],
                 collated[args.ref][discr][baxis],
                 ax=rax3,
                 denom_fill_opts=None,
-                error_opts={"color": "r", "marker": markers[index + 1]},
+                error_opts={"color": "r", "marker": markers[mindex + 1]},
             )
+            mindex += 1
 
         discrs = discr
         ax.set_xlabel("A.U.")
@@ -308,9 +293,7 @@ for index, discr in enumerate(var_set):
         ax.legend()
 
         at = AnchoredText(
-            input_txt + "\n" + "BTV Commissioning" + "\n" + text,
-            loc=2,
-            frameon=False,
+            input_txt + "\n" + "BTV Commissioning" + "\n" + text, loc=2, frameon=False
         )
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
@@ -328,13 +311,7 @@ for index, discr in enumerate(var_set):
             2, 1, figsize=(12, 12), gridspec_kw={"height_ratios": (3, 1)}, sharex=True
         )
         fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
-        hep.cms.label(
-            label,
-            com=args.com,
-            data=True,
-            loc=0,
-            ax=ax,
-        )
+        hep.cms.label(label, com=args.com, data=True, loc=0, ax=ax)
         ax.set_xlabel(None)
         hep.histplot(
             collated[args.ref][discr][allaxis],
@@ -366,9 +343,7 @@ for index, discr in enumerate(var_set):
         rax.set_ylim(0.0, 2.0)
 
         at = AnchoredText(
-            input_txt + "\n" + "BTV Commissioning" + "\n" + text,
-            loc=2,
-            frameon=False,
+            input_txt + "\n" + "BTV Commissioning" + "\n" + text, loc=2, frameon=False
         )
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)

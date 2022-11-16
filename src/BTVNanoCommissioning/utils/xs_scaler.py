@@ -18,21 +18,6 @@ def scale_xs(hist, lumi, events):
     return hist
 
 
-def scale_xs_arr(events, lumi):
-    xs_dict = {}
-    for obj in xsection:
-        xs_dict[obj["process_name"]] = float(obj["cross_section"])
-    scales = {}
-    wei_array = {}
-    for key in events:
-        if type(key) != str or "Data" in key or "Run" in key or "data" in key:
-            continue
-        scales[key] = xs_dict[key] * lumi / events[key]
-
-        wei_array[key] = scales[key]
-    return wei_array
-
-
 def scaleSumW(accumulator, lumi, sumw, dyscale=1.0):
     scaled = {}
     xs_dict = {}
@@ -56,6 +41,7 @@ def scaleSumW(accumulator, lumi, sumw, dyscale=1.0):
     return scaled
 
 
+## Additional rescale for MC
 def additional_scale(accumulator, scale, target):
     scaled = {}
     for sample, accu in accumulator.items():
@@ -75,16 +61,30 @@ def additional_scale(accumulator, scale, target):
 def collate(output, mergemap):
     out = {}
     merged = {}
-    for files in output.keys():
-        if "sumw" not in output[files].keys():
-            for m in output[files].keys():
-                merged[m] = dict(output[files][m].items())
-        else:
 
-            merged[files] = dict(output[files].items())
+    duplicated_name = False
+    for val in mergemap.keys():
+        if len(mergemap[val]) != len(set(mergemap[val])):
+            duplicated_name = True
+
+    if duplicated_name:
+        for files in output.keys():
+            for m in output[files].keys():
+                merged[f"{m}_FNAME_{files[files.rfind('/')+1:]}"] = dict(
+                    output[files][m].items()
+                )
+    else:
+        for files in output.keys():
+            if "sumw" not in output[files].keys():
+                for m in output[files].keys():
+                    merged[m] = dict(output[files][m].items())
+            else:
+                merged[files] = dict(output[files].items())
     for group, names in mergemap.items():
         print(group, names)
-        out[group] = processor.accumulate([v for k, v in merged.items() if k in names])
+        out[group] = processor.accumulate(
+            [v for k, v in merged.items() if k.split("_FNAME_")[0] in names]
+        )
 
     return out
 

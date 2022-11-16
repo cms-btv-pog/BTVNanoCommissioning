@@ -89,9 +89,7 @@ class NanoProcessor(processor.ProcessorABC):
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
 
         ## HLT
-        triggers = [
-            "Ele32_WPTight_Gsf_L1DoubleEG",
-        ]
+        triggers = ["Ele32_WPTight_Gsf_L1DoubleEG"]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -227,10 +225,7 @@ class NanoProcessor(processor.ProcessorABC):
                     puname = f"{self._year}_pileupweight"
                 else:
                     puname = "PU"
-                weights.add(
-                    "puweight",
-                    self._pu[puname](events.Pileup.nPU),
-                )
+                weights.add("puweight", self._pu[puname](events.Pileup.nPU))
             if "LSF" in correction_config[self._campaign].keys():
                 weights.add(
                     "lep1sf",
@@ -506,8 +501,7 @@ class NanoProcessor(processor.ProcessorABC):
             weight=weights.weight()[event_level],
         )
         output["dr_lmusmu"].fill(
-            dr=shmu.delta_r(ssmu),
-            weight=weights.weight()[event_level],
+            dr=shmu.delta_r(ssmu), weight=weights.weight()[event_level]
         )
         output["z_pt"].fill(flatten(sz.pt), weight=weights.weight()[event_level])
         output["z_eta"].fill(flatten(sz.eta), weight=weights.weight()[event_level])

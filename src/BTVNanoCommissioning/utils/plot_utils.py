@@ -11,6 +11,7 @@ errband_opts = {
     "color": "k",
     "alpha": 0.4,
 }
+markers = [".", "o", "^", "s", "+", "x", "D", "*"]
 
 ### copy functions coffea.hist.plotratio https://github.com/CoffeaTeam/coffea/blob/master/coffea/hist/plot.py to boost-hist
 ################

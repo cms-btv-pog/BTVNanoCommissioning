@@ -173,7 +173,7 @@ class NanoProcessor(processor.ProcessorABC):
         smuon_jet = smuon_jet[:, 0]
         njet = ak.count(sjets.pt, axis=1)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
-        if self._campaign == "Winter22Run3":
+        if self._campaign != "Rereco17_94X":
             spfcands = events[event_level].PFCands[
                 events[event_level]
                 .JetPFCands[
@@ -193,10 +193,7 @@ class NanoProcessor(processor.ProcessorABC):
                     puname = f"{self._year}_pileupweight"
                 else:
                     puname = "PU"
-                weights.add(
-                    "puweight",
-                    self._pu[puname](events.Pileup.nTrueInt),
-                )
+                weights.add("puweight", self._pu[puname](events.Pileup.nTrueInt))
             if "LSF" in correction_config[self._campaign].keys():
                 weights.add(
                     "lep1sf",
@@ -426,7 +423,7 @@ class NanoProcessor(processor.ProcessorABC):
                         ]
                     ),
                 )
-            elif "PFCands" in histname and self._campaign == "Winter22Run3":
+            elif "PFCands" in histname and self._campaign != "Rereco17_94X":
                 h.fill(
                     flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
                     flatten(spfcands[histname.replace("PFCands_", "")]),
@@ -564,8 +561,7 @@ class NanoProcessor(processor.ProcessorABC):
             weight=weights.weight()[event_level],
         )
         output["dr_lmusmu"].fill(
-            dr=isomu0.delta_r(softmu0),
-            weight=weights.weight()[event_level],
+            dr=isomu0.delta_r(softmu0), weight=weights.weight()[event_level]
         )
         output["z_pt"].fill(flatten(sz.pt), weight=weights.weight()[event_level])
         output["z_eta"].fill(flatten(sz.eta), weight=weights.weight()[event_level])

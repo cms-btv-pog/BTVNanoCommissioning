@@ -32,7 +32,7 @@ def missing_branch(events):
                     (events.Jet.btagDeepFlavC / (1.0 - events.Jet.btagDeepFlavB)),
                     -1,
                 ),
-                0.999999,
+                0.999_999,
             ),
             -1,
         )
@@ -53,7 +53,7 @@ def missing_branch(events):
                     ),
                     -1,
                 ),
-                0.999999,
+                0.999_999,
             ),
             -1,
         )
@@ -64,7 +64,7 @@ def missing_branch(events):
                     (events.Jet.btagDeepC / (1.0 - events.Jet.btagDeepB)),
                     -1,
                 ),
-                0.999999,
+                0.999_999,
             ),
             -1,
         )
@@ -78,7 +78,7 @@ def missing_branch(events):
                     ),
                     -1,
                 ),
-                0.999999,
+                0.999_999,
             ),
             -1,
         )

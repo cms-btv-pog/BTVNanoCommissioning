@@ -22,9 +22,7 @@ correction_config = {
         "lumiMask": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.txt",
         "PU": "puweight_UL17.histo.root",
         "JME": "mc_compile_jec.pkl.gz",
-        "BTV": {
-            "DeepJetC": "DeepJet_ctagSF_Summer20UL17_interp.root",
-        },
+        "BTV": {"DeepJetC": "DeepJet_ctagSF_Summer20UL17_interp.root"},
         "LSF": {
             "ele_Rereco_above20 EGamma_SF2D": "egammaEffi_ptAbove20.txt_EGM2D_UL2017.histo.root",
             "ele_Rereco_below20 EGamma_SF2D": "egammaEffi_ptBelow20.txt_EGM2D_UL2017.histo.root",
