@@ -8,7 +8,7 @@ dependencies:
   - ca-policy-lcg
   - ca-certificates
   - xrootd
-  - openssl
+  - openssl[version='==1.1.1s']
   - fsspec[version='>=0.3.3']
   - psutil
   - dask
