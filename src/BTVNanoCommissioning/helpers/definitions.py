@@ -6202,6 +6202,7 @@ def axes_name(var_input):
         "sl_pt",
         "sl_ptratio",
         "soft_l_dxy",
+        "soft_l_mass",
         "soft_l_dz",
         "soft_l_eta",
         "soft_l_pfRelIso04_all",

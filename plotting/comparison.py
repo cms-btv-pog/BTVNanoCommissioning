@@ -6,7 +6,7 @@ from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
-from BTVNanoCommissioning.utils.plot_utils import plotratio, markers
+from BTVNanoCommissioning.utils.plot_utils import plotratio, markers, autoranger
 
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.utils.xs_scaler import collate
@@ -165,7 +165,7 @@ for index, discr in enumerate(var_set):
     ## FIXME: Set temporary fix for the x-axis
     if args.xlabel is not None:
         args.xlabel.split(",")[index]
-    elif "DeepJet" in discr or "DeepCSV" in discr:
+    elif "DeepJet" in discr or "DeepCSV" in discr or "PFCands" in discr:
         xlabel = (
             bininfo[discr]["displayname"]
             + " ["
@@ -347,6 +347,11 @@ for index, discr in enumerate(var_set):
                 error_opts={"color": ax.get_lines()[i + 1].get_color()},
                 clear=False,
             )  ## No error band used
+        alls = collated[args.ref][discr][allaxis]
+        for c in args.compared.split(","):
+            alls = collated[c][discr][allaxis] + alls
+        xmin, xmax = autoranger(alls)
+        rax.set_xlim(xmin, xmax)
         rax.set_xlabel(xlabel)
         ax.set_xlabel(None)
         ax.set_ylabel("Events")

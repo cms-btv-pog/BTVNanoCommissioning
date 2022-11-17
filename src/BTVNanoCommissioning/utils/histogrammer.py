@@ -14,13 +14,13 @@ def histogrammer(workflow):
     eta_axis = Hist.axis.Regular(25, -2.5, 2.5, name="eta", label=" $\eta$")
     phi_axis = Hist.axis.Regular(30, -3, 3, name="phi", label="$\phi$")
     mt_axis = Hist.axis.Regular(30, 0, 300, name="mt", label=" $m_{T}$ [GeV]")
-    iso_axis = Hist.axis.Regular(30, 0, 0.15, name="pfRelIso03_all", label="Rel. Iso")
+    iso_axis = Hist.axis.Regular(30, 0, 0.05, name="pfRelIso03_all", label="Rel. Iso")
     softliso_axis = Hist.axis.Regular(
-        20, 0.2, 4.2, name="pfRelIso03_all", label="Rel. Iso"
+        20, 0.2, 6.2, name="pfRelIso03_all", label="Rel. Iso"
     )
-    dr_axis = Hist.axis.Regular(20, 0, 4, name="dr", label="$\Delta$R")
+    dr_axis = Hist.axis.Regular(20, 0, 8, name="dr", label="$\Delta$R")
     dxy_axis = Hist.axis.Regular(40, -0.05, 0.05, name="dxy", label="d_{xy}")
-    dz_axis = Hist.axis.Regular(40, 0, 0.1, name="dz", label="d_{z}")
+    dz_axis = Hist.axis.Regular(40, 0, 0.01, name="dz", label="d_{z}")
     sip3d_axis = Hist.axis.Regular(20, 0, 0.2, name="sip3d", label="SIP 3D")
     ptratio_axis = Hist.axis.Regular(50, 0, 1, name="ratio", label="ratio")
     n_axis = Hist.axis.IntCategory([0, 1, 2, 3, 4, 5], name="n", label="N obj")

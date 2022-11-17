@@ -10,7 +10,12 @@ import hist
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.utils.xs_scaler import getSumW, collate, scaleSumW
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
-from BTVNanoCommissioning.utils.plot_utils import plotratio, SFerror, errband_opts
+from BTVNanoCommissioning.utils.plot_utils import (
+    plotratio,
+    SFerror,
+    errband_opts,
+    autoranger,
+)
 
 bininfo = definitions()
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
@@ -66,6 +71,7 @@ parser.add_argument(
     default=None,
     help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
 )
+
 parser.add_argument(
     "--splitOSSS",
     type=int,
@@ -372,7 +378,7 @@ for index, discr in enumerate(var_set):
     ## FIXME: Set temporary fix for the x-axis
     if arg.xlabel is not None:
         arg.xlabel.split(",")[index]
-    elif "DeepJet" in discr or "DeepCSV" in discr:
+    elif "DeepJet" in discr or "DeepCSV" in discr or "PFCands" in discr:
         xlabel = (
             bininfo[discr]["displayname"]
             + " ["
@@ -389,6 +395,11 @@ for index, discr in enumerate(var_set):
     ax.legend()
     rax.set_ylim(0, 2.0)
     ax.set_ylim(bottom=0.0)
+
+    xmin, xmax = autoranger(
+        collated["data"][discr][allaxis] + collated["mc"][discr][allaxis]
+    )
+    rax.set_xlim(xmin, xmax)
     at = AnchoredText(
         input_txt + "\n" + "BTV Commissioning" + "\n" + arg.ext, loc=2, frameon=False
     )
