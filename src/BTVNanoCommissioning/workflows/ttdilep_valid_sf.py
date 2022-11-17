@@ -378,7 +378,6 @@ class NanoProcessor(processor.ProcessorABC):
                                     * disc_list[histname.replace(f"_{i}", "")][i][syst],
                                 )
             elif "mu_" in histname and histname.replace("mu_", "") in smu.fields:
-
                 h.fill(
                     flatten(smu[histname.replace("mu_", "")]),
                     weight=weights.weight()[event_level],

@@ -372,6 +372,8 @@ options:
    --autorebin AUTOREBIN
                         Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
    --xlabel XLABEL      rename the label for x-axis
+   --splitOSSS SPLITOSSS 
+                        Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specify it, would be OS-SS as default
 ```
 - data/data, MC/MC comparisons
 

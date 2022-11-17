@@ -127,6 +127,11 @@ def add_jec(events, campaign, jmestuff):
             add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
             lazy_cache=events.caches[0],
         )
-    met = met_factory.build(events.MET, jets, {})
-    update(events, {"Jet": jets, "MET": met})
+
+    if "Run3" not in campaign:
+        met = met_factory.build(events.MET, jets, {})
+        update(events, {"Jet": jets, "MET": met})
+    else:
+        met = met_factory.build(events.PuppiMET, jets, {})
+        update(events, {"Jet": jets, "PuppiMET": met})
     return events

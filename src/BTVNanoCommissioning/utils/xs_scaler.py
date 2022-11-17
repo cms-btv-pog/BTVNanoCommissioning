@@ -42,16 +42,15 @@ def scaleSumW(accumulator, lumi, sumw, dyscale=1.0):
 
 
 ## Additional rescale for MC
-def additional_scale(accumulator, scale, target):
+def additional_scale(accumulator, scale, sample_to_scale):
     scaled = {}
     for sample, accu in accumulator.items():
         scaled[sample] = {}
         for key, h_obj in accu.items():
             if isinstance(h_obj, hist.Hist):
                 h = copy.deepcopy(h_obj)
-                if sample in target:
+                if sample in sample_to_scale:
                     h = h * scale
-
                 else:
                     h = h
                 scaled[sample][key] = h
@@ -61,15 +60,25 @@ def additional_scale(accumulator, scale, target):
 def collate(output, mergemap):
     out = {}
     merged = {}
-
+    counter = {}
     duplicated_name = False
     for val in mergemap.keys():
         if len(mergemap[val]) != len(set(mergemap[val])):
             duplicated_name = True
+            from collections import Counter
+
+            if "Run" not in str(mergemap[val]):
+                counter[val] = dict(Counter(mergemap[val]))
 
     if duplicated_name:
         for files in output.keys():
             for m in output[files].keys():
+                for c in counter.keys():
+                    # rescale MC
+                    if "Run" not in m and m in counter[c].keys():
+                        output[files] = additional_scale(
+                            output[files], 1.0 / counter[c][m], m
+                        )
                 merged[f"{m}_FNAME_{files[files.rfind('/')+1:]}"] = dict(
                     output[files][m].items()
                 )

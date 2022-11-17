@@ -52,7 +52,7 @@ parser.add_argument(
     type=str,
     help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
-parser.add_argument("--ext", type=str, default="data", help="prefix name/btv name tag")
+parser.add_argument("--ext", type=str, default="", help="prefix name/btv name tag")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
     "--shortref",
@@ -68,8 +68,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--autorebin",
-    type=int,
-    default=1,
+    default=None,
     help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
 )
 parser.add_argument(
@@ -150,9 +149,17 @@ for index, discr in enumerate(var_set):
         allaxis["flav"] = sum
     if "syst" in collated[args.ref][discr].axes.name:
         allaxis["syst"] = sum
-
-    if args.autorebin != 1:
-        rebin_factor = args.autorebin
+    if "osss" in collated[args.ref][discr].axes.name:  ## do dominal OS-SS
+        collated[args.ref][discr] = (
+            collated[args.ref][discr][{"osss": 0}]
+            + collated[args.ref][discr][{"osss": 1}] * -1
+        )
+        for c in args.compared.split(","):
+            collated[c][discr] = (
+                collated[c][discr][{"osss": 0}] + collated[c][discr][{"osss": 1}] * -1
+            )
+    if args.autorebin is not None:
+        rebin_factor = int(args.autorebin)
         allaxis[collated[args.ref][discr].axes[-1].name] = hist.rebin(rebin_factor)
     # xlabel = if  arg.xlabel is not None else collated["data"][discr].axes[-1].label # Use label from stored hists
     ## FIXME: Set temporary fix for the x-axis
@@ -263,6 +270,7 @@ for index, discr in enumerate(var_set):
                 ax=rax,
                 denom_fill_opts=None,
                 error_opts={"color": "b", "marker": markers[mindex + 1]},
+                clear=False,
             )
             rax2 = plotratio(
                 collated[c][discr][caxis],
@@ -270,6 +278,7 @@ for index, discr in enumerate(var_set):
                 ax=rax2,
                 denom_fill_opts=None,
                 error_opts={"color": "g", "marker": markers[mindex + 1]},
+                clear=False,
             )
             rax3 = plotratio(
                 collated[c][discr][baxis],
@@ -277,6 +286,7 @@ for index, discr in enumerate(var_set):
                 ax=rax3,
                 denom_fill_opts=None,
                 error_opts={"color": "r", "marker": markers[mindex + 1]},
+                clear=False,
             )
             mindex += 1
 
@@ -334,6 +344,8 @@ for index, discr in enumerate(var_set):
                 collated[args.ref][discr][allaxis],
                 ax=rax,
                 denom_fill_opts=None,
+                error_opts={"color": ax.get_lines()[i + 1].get_color()},
+                clear=False,
             )  ## No error band used
         rax.set_xlabel(xlabel)
         ax.set_xlabel(None)
