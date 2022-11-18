@@ -269,7 +269,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 32,
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepCSV_jetNTracksEtaRel": {
             "displayname": "Jet N Tracks $\\eta_{rel}$",
@@ -458,7 +458,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 32,
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepCSV_trackDeltaR_1": {
             "displayname": "Track $\\Delta R$ [1]",
@@ -476,7 +476,7 @@ def definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 32,
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepCSV_vertexCategory": {
             "displayname": "Vertex Category",
@@ -1772,7 +1772,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_1": {
             "displayname": "Cpf $p_{T,rel}$ [1]",
@@ -1781,7 +1781,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_10": {
             "displayname": "Cpf $p_{T,rel}$ [10]",
@@ -1790,7 +1790,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_11": {
             "displayname": "Cpf $p_{T,rel}$ [11]",
@@ -1799,7 +1799,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_12": {
             "displayname": "Cpf $p_{T,rel}$ [12]",
@@ -1808,7 +1808,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_13": {
             "displayname": "Cpf $p_{T,rel}$ [13]",
@@ -1817,7 +1817,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_14": {
             "displayname": "Cpf $p_{T,rel}$ [14]",
@@ -1826,7 +1826,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_15": {
             "displayname": "Cpf $p_{T,rel}$ [15]",
@@ -1835,7 +1835,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_16": {
             "displayname": "Cpf $p_{T,rel}$ [16]",
@@ -1844,7 +1844,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_17": {
             "displayname": "Cpf $p_{T,rel}$ [17]",
@@ -1853,7 +1853,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_18": {
             "displayname": "Cpf $p_{T,rel}$ [18]",
@@ -1862,7 +1862,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_19": {
             "displayname": "Cpf $p_{T,rel}$ [19]",
@@ -1871,7 +1871,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_2": {
             "displayname": "Cpf $p_{T,rel}$ [2]",
@@ -1880,7 +1880,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_20": {
             "displayname": "Cpf $p_{T,rel}$ [20]",
@@ -1889,7 +1889,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_21": {
             "displayname": "Cpf $p_{T,rel}$ [21]",
@@ -1898,7 +1898,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_22": {
             "displayname": "Cpf $p_{T,rel}$ [22]",
@@ -1907,7 +1907,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_23": {
             "displayname": "Cpf $p_{T,rel}$ [23]",
@@ -1916,7 +1916,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_24": {
             "displayname": "Cpf $p_{T,rel}$ [24]",
@@ -1925,7 +1925,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_3": {
             "displayname": "Cpf $p_{T,rel}$ [3]",
@@ -1934,7 +1934,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_4": {
             "displayname": "Cpf $p_{T,rel}$ [4]",
@@ -1943,7 +1943,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_5": {
             "displayname": "Cpf $p_{T,rel}$ [5]",
@@ -1952,7 +1952,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_6": {
             "displayname": "Cpf $p_{T,rel}$ [6]",
@@ -1961,7 +1961,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_7": {
             "displayname": "Cpf $p_{T,rel}$ [7]",
@@ -1970,7 +1970,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_8": {
             "displayname": "Cpf $p_{T,rel}$ [8]",
@@ -1979,7 +1979,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackPtRel_9": {
             "displayname": "Cpf $p_{T,rel}$ [9]",
@@ -1988,7 +1988,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 4.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_BtagPf_trackSip2dSig_0": {
             "displayname": "Cpf SIP 2D Sig [0]",
@@ -3572,7 +3572,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_1": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [1]",
@@ -3581,7 +3581,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_10": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [10]",
@@ -3590,7 +3590,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_11": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [11]",
@@ -3599,7 +3599,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_12": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [12]",
@@ -3608,7 +3608,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_13": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [13]",
@@ -3617,7 +3617,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_14": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [14]",
@@ -3626,7 +3626,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_15": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [15]",
@@ -3635,7 +3635,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_16": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [16]",
@@ -3644,7 +3644,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_17": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [17]",
@@ -3653,7 +3653,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_18": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [18]",
@@ -3662,7 +3662,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_19": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [19]",
@@ -3671,7 +3671,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_2": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [2]",
@@ -3680,7 +3680,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_20": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [20]",
@@ -3689,7 +3689,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_21": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [21]",
@@ -3698,7 +3698,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_22": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [22]",
@@ -3707,7 +3707,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_23": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [23]",
@@ -3716,7 +3716,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_24": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [24]",
@@ -3725,7 +3725,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_3": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [3]",
@@ -3734,7 +3734,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, -0.5],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_4": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [4]",
@@ -3743,7 +3743,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, -0.5],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_5": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [5]",
@@ -3752,7 +3752,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, -0.5],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_6": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [6]",
@@ -3761,7 +3761,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, -0.6],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_7": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [7]",
@@ -3770,7 +3770,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_8": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [8]",
@@ -3779,7 +3779,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_ptrel_9": {
             "displayname": "$p_T^{Cpf}/p_T^{Jet}$ [9]",
@@ -3788,7 +3788,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Cpfcan_puppiw_0": {
             "displayname": "Puppi weight Cpf [0]",
@@ -5147,7 +5147,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_1": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [1]",
@@ -5156,7 +5156,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_10": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [10]",
@@ -5165,7 +5165,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_11": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [11]",
@@ -5174,7 +5174,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_12": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [12]",
@@ -5183,7 +5183,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_13": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [13]",
@@ -5192,7 +5192,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_14": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [14]",
@@ -5201,7 +5201,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_15": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [15]",
@@ -5210,7 +5210,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_16": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [16]",
@@ -5219,7 +5219,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_17": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [17]",
@@ -5228,7 +5228,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_18": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [18]",
@@ -5237,7 +5237,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_19": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [19]",
@@ -5246,7 +5246,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_2": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [2]",
@@ -5255,7 +5255,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_20": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [20]",
@@ -5264,7 +5264,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_21": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [21]",
@@ -5273,7 +5273,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_22": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [22]",
@@ -5282,7 +5282,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_23": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [23]",
@@ -5291,7 +5291,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_24": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [24]",
@@ -5300,7 +5300,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_3": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [3]",
@@ -5309,7 +5309,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_4": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [4]",
@@ -5318,7 +5318,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_5": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [5]",
@@ -5327,7 +5327,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_6": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [6]",
@@ -5336,7 +5336,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_7": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [7]",
@@ -5345,7 +5345,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_8": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [8]",
@@ -5354,7 +5354,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_ptrel_9": {
             "displayname": "$p_T^{Npf}/p_T^{Jet}$ [9]",
@@ -5363,7 +5363,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [-1.0, 1.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_Npfcan_puppiw_0": {
             "displayname": "Puppi weight Npf [0]",
@@ -5705,7 +5705,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 400.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_sv_d3dsig_1": {
             "displayname": "3D IP Sig [1] SV",
@@ -5714,7 +5714,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 200.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_sv_d3dsig_2": {
             "displayname": "3D IP Sig [2] SV",
@@ -5723,7 +5723,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 200.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_sv_d3dsig_3": {
             "displayname": "3D IP Sig [3] SV",
@@ -5732,7 +5732,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 200.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_sv_deltaR_0": {
             "displayname": "$\\Delta$R(SV,Jet) [0] SV",
@@ -5813,7 +5813,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 400.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_sv_dxysig_1": {
             "displayname": "2D IP Sig[1] SV",
@@ -5822,7 +5822,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 200.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_sv_dxysig_2": {
             "displayname": "2D IP Sig[2] SV",
@@ -5831,7 +5831,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 200.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_sv_dxysig_3": {
             "displayname": "2D IP Sig[3] SV",
@@ -5840,7 +5840,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 200.0],
-            "inputVar_units": "",
+            "inputVar_units": None,
         },
         "DeepJet_sv_enratio_0": {
             "displayname": "$E_{SV}/E_{Jet}$ [0] SV",
@@ -6090,7 +6090,7 @@ def definitions():
     return definitions_dict
 
 
-def axes_name(var):
+def axes_name(var_input):
     discname = [
         "MET_phi",
         "MET_pt",
@@ -6202,6 +6202,7 @@ def axes_name(var):
         "sl_pt",
         "sl_ptratio",
         "soft_l_dxy",
+        "soft_l_mass",
         "soft_l_dz",
         "soft_l_eta",
         "soft_l_pfRelIso04_all",
@@ -6305,4 +6306,4 @@ def axes_name(var):
             if var == "soft_l_ptratio":
                 label = "$p_T^{soft-\\mu}/p_T^{Jet}$"
         output[var] = label
-    return output[var]
+    return output[var_input]

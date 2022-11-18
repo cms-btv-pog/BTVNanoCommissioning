@@ -6,7 +6,7 @@ from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
-from BTVNanoCommissioning.utils.plot_utils import plotratio, markers
+from BTVNanoCommissioning.utils.plot_utils import plotratio, markers, autoranger
 
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.utils.xs_scaler import collate
@@ -44,7 +44,10 @@ parser.add_argument(
 )
 parser.add_argument("--log", action="store_true", help="log on y axis")
 parser.add_argument(
-    "--norm", action="store_true", help="compare shape (density=True)", default=False
+    "--norm",
+    action="store_true",
+    help="compare shape, normalized yield to reference",
+    default=False,
 )
 parser.add_argument(
     "-v",
@@ -52,7 +55,7 @@ parser.add_argument(
     type=str,
     help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
-parser.add_argument("--ext", type=str, default="data", help="prefix name/btv name tag")
+parser.add_argument("--ext", type=str, default="", help="prefix name/btv name tag")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
     "--shortref",
@@ -68,8 +71,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--autorebin",
-    type=int,
-    default=1,
+    default=None,
     help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
 )
 parser.add_argument(
@@ -150,15 +152,23 @@ for index, discr in enumerate(var_set):
         allaxis["flav"] = sum
     if "syst" in collated[args.ref][discr].axes.name:
         allaxis["syst"] = sum
-
-    if args.autorebin != 1:
-        rebin_factor = args.autorebin
+    if "osss" in collated[args.ref][discr].axes.name:  ## do dominal OS-SS
+        collated[args.ref][discr] = (
+            collated[args.ref][discr][{"osss": 0}]
+            + collated[args.ref][discr][{"osss": 1}] * -1
+        )
+        for c in args.compared.split(","):
+            collated[c][discr] = (
+                collated[c][discr][{"osss": 0}] + collated[c][discr][{"osss": 1}] * -1
+            )
+    if args.autorebin is not None:
+        rebin_factor = int(args.autorebin)
         allaxis[collated[args.ref][discr].axes[-1].name] = hist.rebin(rebin_factor)
     # xlabel = if  arg.xlabel is not None else collated["data"][discr].axes[-1].label # Use label from stored hists
     ## FIXME: Set temporary fix for the x-axis
     if args.xlabel is not None:
         args.xlabel.split(",")[index]
-    elif "DeepJet" in discr or "DeepCSV" in discr:
+    elif "DeepJet" in discr or "DeepCSV" in discr or "PFCands" in discr:
         xlabel = (
             bininfo[discr]["displayname"]
             + " ["
@@ -263,6 +273,7 @@ for index, discr in enumerate(var_set):
                 ax=rax,
                 denom_fill_opts=None,
                 error_opts={"color": "b", "marker": markers[mindex + 1]},
+                clear=False,
             )
             rax2 = plotratio(
                 collated[c][discr][caxis],
@@ -270,6 +281,7 @@ for index, discr in enumerate(var_set):
                 ax=rax2,
                 denom_fill_opts=None,
                 error_opts={"color": "g", "marker": markers[mindex + 1]},
+                clear=False,
             )
             rax3 = plotratio(
                 collated[c][discr][baxis],
@@ -277,6 +289,7 @@ for index, discr in enumerate(var_set):
                 ax=rax3,
                 denom_fill_opts=None,
                 error_opts={"color": "r", "marker": markers[mindex + 1]},
+                clear=False,
             )
             mindex += 1
 
@@ -334,7 +347,14 @@ for index, discr in enumerate(var_set):
                 collated[args.ref][discr][allaxis],
                 ax=rax,
                 denom_fill_opts=None,
+                error_opts={"color": ax.get_lines()[i + 1].get_color()},
+                clear=False,
             )  ## No error band used
+        alls = collated[args.ref][discr][allaxis]
+        for c in args.compared.split(","):
+            alls = collated[c][discr][allaxis] + alls
+        xmin, xmax = autoranger(alls)
+        rax.set_xlim(xmin, xmax)
         rax.set_xlabel(xlabel)
         ax.set_xlabel(None)
         ax.set_ylabel("Events")
@@ -349,14 +369,17 @@ for index, discr in enumerate(var_set):
         hep.mpl_magic(ax=ax)
         ax.set_ylim(bottom=0)
         logext = ""
+        normtext = ""
+        if args.norm:
+            normtext = "_norm"
         if args.log:
             ax.set_yscale("log")
             logext = "_log"
             ax.set_ylim(bottom=0.1)
             hep.mpl_magic(ax=ax)
         fig.savefig(
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}.pdf"
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.pdf"
         )
         fig.savefig(
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}.png"
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png"
         )

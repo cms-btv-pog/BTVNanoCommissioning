@@ -10,7 +10,12 @@ import hist
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.utils.xs_scaler import getSumW, collate, scaleSumW
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
-from BTVNanoCommissioning.utils.plot_utils import plotratio, SFerror, errband_opts
+from BTVNanoCommissioning.utils.plot_utils import (
+    plotratio,
+    SFerror,
+    errband_opts,
+    autoranger,
+)
 
 bininfo = definitions()
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
@@ -60,11 +65,18 @@ parser.add_argument(
 parser.add_argument(
     "--SF", action="store_true", default=False, help="make w/, w/o SF comparisons"
 )
-parser.add_argument("--ext", type=str, default="data", help="prefix name")
+parser.add_argument("--ext", type=str, default="", help="prefix name")
 parser.add_argument(
     "--autorebin",
     default=None,
     help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
+)
+
+parser.add_argument(
+    "--splitOSSS",
+    type=int,
+    default=None,
+    help="Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used",
 )
 
 
@@ -126,44 +138,47 @@ else:
 for index, discr in enumerate(var_set):
     if "sumw" == discr:
         continue
+    allaxis = {}
+
+    if "Wc" in arg.phase:
+        if arg.splitOSSS is None:  # OS-SS
+            collated["mc"][discr] = (
+                collated["mc"][discr][{"osss": 0}]
+                + collated["mc"][discr][{"osss": 1}] * -1
+            )
+            collated["data"][discr] = (
+                collated["data"][discr][{"osss": 0}]
+                + collated["data"][discr][{"osss": 1}] * -1
+            )
+        elif arg.splitOSSS == 1:
+            allaxis["osss"] = 0  # opposite sign
+        elif arg.splitOSSS == -1:
+            allaxis["osss"] = 1  # same sign
+    if "flav" in collated["mc"][discr].axes.name:
+        allaxis["flav"] = sum
+        SF_axis = allaxis
+        noSF_axis = allaxis
+    if "syst" in collated["mc"][discr].axes.name:
+        allaxis["syst"] = sum
+        SF_axis = allaxis
+        noSF_axis = allaxis
+        SF_axis["syst"] = "SF"
+        noSF_axis["syst"] = "noSF"
+
     if arg.autorebin is not None:
-        allaxis = {}
-        if "flav" in collated["mc"][discr].axes.name:
-            allaxis["flav"] = sum
-        if "syst" in collated["mc"][discr].axes.name:
-            allaxis["syst"] = sum
-        rebin_factor = arg.autorebin
-        if len(collated["data"][discr].axes.name) == 4:
-            collated["data"][discr] = collated["data"][discr][
-                :, :, :, hist.rebin(rebin_factor)
-            ]
-            collated["mc"][discr] = collated["mc"][discr][
-                :, :, :, hist.rebin(rebin_factor)
-            ]
-        if len(collated["data"][discr].axes.name) == 3:
-            collated["data"][discr] = collated["data"][discr][
-                :, :, hist.rebin(rebin_factor)
-            ]
-            collated["mc"][discr] = collated["mc"][discr][
-                :, :, hist.rebin(rebin_factor)
-            ]
-        elif len(collated["data"][discr].axes.name) == 2:
-            collated["data"][discr] = collated["data"][discr][
-                :, hist.rebin(rebin_factor)
-            ]
-            collated["mc"][discr] = collated["mc"][discr][:, hist.rebin(rebin_factor)]
-        else:
-            collated["data"][discr] = collated["data"][discr][hist.rebin(rebin_factor)]
-            collated["mc"][discr] = collated["mc"][discr][hist.rebin(rebin_factor)]
+        rebin_factor = int(arg.autorebin)
+        allaxis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
+        noSF_axis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
+        SF_axis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
 
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
         and arg.SF
     ):
-        scale_sf = np.sum(
-            collated["mc"][discr][{"syst": "SF", "flav": sum}].values()
-        ) / np.sum(collated["mc"][discr][{"syst": "noSF", "flav": sum}].values())
+        scale_sf = np.sum(collated["mc"][discr][SF_axis].values()) / np.sum(
+            collated["mc"][discr][noSF_axis].values()
+        )
     else:
         scale_sf = 1.0
     if (
@@ -206,11 +221,15 @@ for index, discr in enumerate(var_set):
         and "syst" in collated["mc"][discr].axes.name
         and arg.SF
     ):
-
-        hdata = collated["data"][discr][{"syst": "noSF", "flav": sum}]
-
+        hdata = collated["data"][discr][noSF_axis]
+        splitflav_stack = []
+        splitflav_axis = SF_axis
+        for i in range(4):
+            splitflav_axis["flav"] = i
+            splitflav_stack += [[collated["mc"][discr][splitflav_axis]]]
+        SF_axis["flav"] = sum
         hep.histplot(
-            [collated["mc"][discr][{"syst": "SF", "flav": i}] for i in range(4)],
+            splitflav_stack,
             stack=True,
             label=["udsg", "pileup", "c", "b"],
             histtype="fill",
@@ -218,7 +237,7 @@ for index, discr in enumerate(var_set):
             ax=ax,
         )
         hep.histplot(
-            collated["mc"][discr][{"syst": "noSF", "flav": sum}],
+            collated["mc"][discr][noSF_axis],
             label=["w/o SF"],
             color="tab:gray",
             width=2,
@@ -228,7 +247,7 @@ for index, discr in enumerate(var_set):
         hep.histplot(
             hdata, histtype="errorbar", color="black", label="Data", yerr=True, ax=ax
         )
-        hmc = collated["mc"][discr][{"syst": "SF", "flav": sum}]
+        hmc = collated["mc"][discr][SF_axis]
         ax.stairs(
             values=hmc.values() + np.sqrt(hmc.values()),
             baseline=hmc.values() - np.sqrt(hmc.values()),
@@ -245,7 +264,7 @@ for index, discr in enumerate(var_set):
             label="SF unc.",
             **other,
         )
-        plotratio(hdata, collated["mc"][discr][{"syst": "noSF", "flav": sum}], ax=rax)
+        plotratio(hdata, collated["mc"][discr][noSF_axis], ax=rax)
         plotratio(
             hdata,
             hmc,
@@ -258,8 +277,15 @@ for index, discr in enumerate(var_set):
         )
 
     elif "syst" in collated["mc"][discr].axes.name and not arg.SF:
+        splitflav_stack = []
+        splitflav_axis = noSF_axis
+
+        for i in range(4):
+            splitflav_axis["flav"] = i
+            splitflav_stack += [collated["mc"][discr][splitflav_axis]]
+        noSF_axis["flav"] = sum
         hep.histplot(
-            [collated["mc"][discr][{"flav": i, "syst": "noSF"}] for i in range(4)],
+            splitflav_stack,
             stack=True,
             histtype="fill",
             label=["udsg", "pileup", "c", "b"],
@@ -267,14 +293,14 @@ for index, discr in enumerate(var_set):
             ax=ax,
         )
         hep.histplot(
-            collated["data"][discr][{"flav": sum, "syst": "noSF"}],
+            collated["data"][discr][noSF_axis],
             histtype="errorbar",
             color="black",
             label="Data",
             yerr=True,
             ax=ax,
         )
-        hmc = collated["mc"][discr][{"flav": sum, "syst": "noSF"}]
+        hmc = collated["mc"][discr][noSF_axis]
         ax.stairs(
             values=hmc.values() + np.sqrt(hmc.values()),
             baseline=hmc.values() - np.sqrt(hmc.values()),
@@ -282,10 +308,17 @@ for index, discr in enumerate(var_set):
             label="Stat. unc.",
             **errband_opts,
         )
-        plotratio(collated["data"][discr][{"flav": sum, "syst": "noSF"}], hmc, ax=rax)
+        plotratio(collated["data"][discr][noSF_axis], hmc, ax=rax)
     elif "flav" in collated["mc"][discr].axes.name:
+        splitflav_stack = []
+        splitflav_axis = allaxis
+        for i in range(4):
+            splitflav_axis["flav"] = i
+            splitflav_stack += [collated["mc"][discr][splitflav_axis]]
+
+        allaxis["flav"] = sum
         hep.histplot(
-            [collated["mc"][discr][{"flav": i}] for i in range(4)],
+            splitflav_stack,
             stack=True,
             histtype="fill",
             label=["udsg", "pileup", "c", "b"],
@@ -293,14 +326,15 @@ for index, discr in enumerate(var_set):
             ax=ax,
         )
         hep.histplot(
-            collated["data"][discr][{"flav": sum}],
+            collated["data"][discr][allaxis],
             histtype="errorbar",
             color="black",
             label="Data",
             yerr=True,
             ax=ax,
         )
-        hmc = collated["mc"][discr][{"flav": sum}]
+        hmc = collated["mc"][discr][allaxis]
+
         ax.stairs(
             values=hmc.values() + np.sqrt(hmc.values()),
             baseline=hmc.values() - np.sqrt(hmc.values()),
@@ -308,7 +342,7 @@ for index, discr in enumerate(var_set):
             label="Stat. unc.",
             **errband_opts,
         )
-        rax = plotratio(collated["data"][discr][{"flav": sum}], hmc, ax=rax)
+        rax = plotratio(collated["data"][discr][allaxis], hmc, ax=rax)
     else:
         hep.histplot(
             collated["mc"][discr],
@@ -344,7 +378,7 @@ for index, discr in enumerate(var_set):
     ## FIXME: Set temporary fix for the x-axis
     if arg.xlabel is not None:
         arg.xlabel.split(",")[index]
-    elif "DeepJet" in discr or "DeepCSV" in discr:
+    elif "DeepJet" in discr or "DeepCSV" in discr or "PFCands" in discr:
         xlabel = (
             bininfo[discr]["displayname"]
             + " ["
@@ -361,6 +395,11 @@ for index, discr in enumerate(var_set):
     ax.legend()
     rax.set_ylim(0, 2.0)
     ax.set_ylim(bottom=0.0)
+
+    xmin, xmax = autoranger(
+        collated["data"][discr][allaxis] + collated["mc"][discr][allaxis]
+    )
+    rax.set_xlim(xmin, xmax)
     at = AnchoredText(
         input_txt + "\n" + "BTV Commissioning" + "\n" + arg.ext, loc=2, frameon=False
     )

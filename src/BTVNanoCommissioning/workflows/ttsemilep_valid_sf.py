@@ -123,7 +123,27 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = jetindx[:, :4]
 
         ## other cuts
-        req_MET = events.MET.pt > 50
+        if "Run3" not in self._campaign:
+            MET = ak.zip(
+                {
+                    "pt": events.MET.pt,
+                    "eta": ak.zeros_like(events.MET.pt),
+                    "phi": events.MET.phi,
+                    "mass": ak.zeros_like(events.MET.pt),
+                },
+                with_name="PtEtaPhiMLorentzVector",
+            )
+        else:
+            MET = ak.zip(
+                {
+                    "pt": events.PuppiMET.pt,
+                    "eta": ak.zeros_like(events.PuppiMET.pt),
+                    "phi": events.PuppiMET.phi,
+                    "mass": ak.zeros_like(events.PuppiMET.pt),
+                },
+                with_name="PtEtaPhiMLorentzVector",
+            )
+        req_MET = MET.pt > 50
 
         event_level = ak.fill_none(
             req_trig & req_jets & req_muon & req_MET & req_lumi, False
@@ -136,6 +156,7 @@ class NanoProcessor(processor.ProcessorABC):
         sjets = event_jet[event_level]
         sel_jets = sjets
         sjets = sjets[:, :4]
+        smet = MET[event_level]
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if self._campaign != "Rereco17_94X":
             jetindexall = collections.defaultdict(dict)
@@ -350,13 +371,6 @@ class NanoProcessor(processor.ProcessorABC):
                     flatten(smu[histname.replace("mu_", "")]),
                     weight=weights.weight()[event_level],
                 )
-            elif (
-                "MET_" in histname and histname.replace("MET_", "") in events.MET.fields
-            ):
-                h.fill(
-                    flatten(events[event_level].MET[histname.replace("MET_", "")]),
-                    weight=weights.weight()[event_level],
-                )
             elif "jet" in histname and "dr" not in histname and "njet" != histname:
                 for i in range(4):
                     sel_jet = sjets[:, i]
@@ -376,6 +390,8 @@ class NanoProcessor(processor.ProcessorABC):
         output["njet"].fill(
             ak.count(sjets.pt, axis=1), weight=weights.weight()[event_level]
         )
+        output["MET_pt"].fill(flatten(smet.pt), weight=weights.weight()[event_level])
+        output["MET_phi"].fill(flatten(smet.phi), weight=weights.weight()[event_level])
         return {dataset: output}
 
     def postprocess(self, accumulator):

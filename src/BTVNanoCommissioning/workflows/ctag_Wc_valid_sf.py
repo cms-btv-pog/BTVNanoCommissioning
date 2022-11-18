@@ -171,15 +171,26 @@ class NanoProcessor(processor.ProcessorABC):
             (dilep_mass.mass < 80) | (dilep_mass.mass > 100)
         )
 
-        MET = ak.zip(
-            {
-                "pt": events.MET.pt,
-                "eta": ak.zeros_like(events.MET.pt),
-                "phi": events.MET.phi,
-                "mass": ak.zeros_like(events.MET.pt),
-            },
-            with_name="PtEtaPhiMLorentzVector",
-        )
+        if "Run3" not in self._campaign:
+            MET = ak.zip(
+                {
+                    "pt": events.MET.pt,
+                    "eta": ak.zeros_like(events.MET.pt),
+                    "phi": events.MET.phi,
+                    "mass": ak.zeros_like(events.MET.pt),
+                },
+                with_name="PtEtaPhiMLorentzVector",
+            )
+        else:
+            MET = ak.zip(
+                {
+                    "pt": events.PuppiMET.pt,
+                    "eta": ak.zeros_like(events.PuppiMET.pt),
+                    "phi": events.PuppiMET.phi,
+                    "mass": ak.zeros_like(events.PuppiMET.pt),
+                },
+                with_name="PtEtaPhiMLorentzVector",
+            )
         Wmass = MET + iso_muon
         req_Wmass = Wmass.mass > 55
 
@@ -205,15 +216,7 @@ class NanoProcessor(processor.ProcessorABC):
         shmu = iso_muon[event_level]
         sjets = event_jet[event_level]
         ssmu = soft_muon[event_level]
-        smet = ak.zip(
-            {
-                "pt": events[event_level].MET.pt,
-                "eta": ak.zeros_like(events[event_level].MET.pt),
-                "phi": events[event_level].MET.phi,
-                "mass": ak.zeros_like(events[event_level].MET.pt),
-            },
-            with_name="PtEtaPhiMLorentzVector",
-        )
+        smet = MET[event_level]
         smuon_jet = mu_jet[event_level]
         smuon_jet = smuon_jet[:, 0]
         ssmu = ssmu[:, 0]
@@ -435,12 +438,6 @@ class NanoProcessor(processor.ProcessorABC):
                     flatten(ssmu[histname.replace("soft_l_", "")]),
                     weight=weights.weight()[event_level],
                 )
-            elif "MET" in histname:
-                h.fill(
-                    osss,
-                    flatten(events[event_level].MET[histname.replace("MET_", "")]),
-                    weight=weights.weight()[event_level],
-                )
             elif "mujet_" in histname:
                 h.fill(
                     smflav,
@@ -560,7 +557,12 @@ class NanoProcessor(processor.ProcessorABC):
         output["w_mass"].fill(
             osss, flatten(sw.mass), weight=weights.weight()[event_level]
         )
-
+        output["MET_pt"].fill(
+            osss, flatten(smet.pt), weight=weights.weight()[event_level]
+        )
+        output["MET_phi"].fill(
+            osss, flatten(smet.phi), weight=weights.weight()[event_level]
+        )
         return {dataset: output}
 
     def postprocess(self, accumulator):

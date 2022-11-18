@@ -145,7 +145,27 @@ class NanoProcessor(processor.ProcessorABC):
             (dilep_mass.mass < 75) | (dilep_mass.mass > 105)
         )
 
-        req_MET = events.MET.pt > 40
+        if "Run3" not in self._campaign:
+            MET = ak.zip(
+                {
+                    "pt": events.MET.pt,
+                    "eta": ak.zeros_like(events.MET.pt),
+                    "phi": events.MET.phi,
+                    "mass": ak.zeros_like(events.MET.pt),
+                },
+                with_name="PtEtaPhiMLorentzVector",
+            )
+        else:
+            MET = ak.zip(
+                {
+                    "pt": events.PuppiMET.pt,
+                    "eta": ak.zeros_like(events.PuppiMET.pt),
+                    "phi": events.PuppiMET.phi,
+                    "mass": ak.zeros_like(events.PuppiMET.pt),
+                },
+                with_name="PtEtaPhiMLorentzVector",
+            )
+        req_MET = MET.pt > 40
 
         event_level = (
             req_trig
@@ -172,6 +192,7 @@ class NanoProcessor(processor.ProcessorABC):
         sjets = event_jet[event_level]
         smuon_jet = mu_jet[event_level]
         smuon_jet = smuon_jet[:, 0]
+        smet = MET[event_level]
         njet = ak.count(sjets.pt, axis=1)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if self._campaign != "Rereco17_94X":
@@ -460,11 +481,6 @@ class NanoProcessor(processor.ProcessorABC):
                     flatten(softmu0[histname.replace("soft_l_", "")]),
                     weight=weights.weight()[event_level],
                 )
-            elif "MET_" in histname:
-                h.fill(
-                    flatten(events[event_level].MET[histname.replace("MET_", "")]),
-                    weight=weights.weight()[event_level],
-                )
             elif "lmujet_" in histname:
                 h.fill(
                     smflav,
@@ -566,6 +582,8 @@ class NanoProcessor(processor.ProcessorABC):
         output["z_eta"].fill(flatten(sz.eta), weight=weights.weight()[event_level])
         output["z_phi"].fill(flatten(sz.phi), weight=weights.weight()[event_level])
         output["z_mass"].fill(flatten(sz.mass), weight=weights.weight()[event_level])
+        output["MET_pt"].fill(flatten(smet.pt), weight=weights.weight()[event_level])
+        output["MET_phi"].fill(flatten(smet.phi), weight=weights.weight()[event_level])
         return {dataset: output}
 
     def postprocess(self, accumulator):
