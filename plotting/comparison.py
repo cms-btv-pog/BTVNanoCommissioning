@@ -44,7 +44,10 @@ parser.add_argument(
 )
 parser.add_argument("--log", action="store_true", help="log on y axis")
 parser.add_argument(
-    "--norm", action="store_true", help="compare shape (density=True)", default=False
+    "--norm",
+    action="store_true",
+    help="compare shape, normalized yield to reference",
+    default=False,
 )
 parser.add_argument(
     "-v",
@@ -366,14 +369,17 @@ for index, discr in enumerate(var_set):
         hep.mpl_magic(ax=ax)
         ax.set_ylim(bottom=0)
         logext = ""
+        normtext = ""
+        if args.norm:
+            normtext = "_norm"
         if args.log:
             ax.set_yscale("log")
             logext = "_log"
             ax.set_ylim(bottom=0.1)
             hep.mpl_magic(ax=ax)
         fig.savefig(
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}.pdf"
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.pdf"
         )
         fig.savefig(
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}.png"
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png"
         )

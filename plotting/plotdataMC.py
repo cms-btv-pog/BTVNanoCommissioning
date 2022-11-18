@@ -76,7 +76,7 @@ parser.add_argument(
     "--splitOSSS",
     type=int,
     default=None,
-    help="Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specify it, would be OS-SS as default",
+    help="Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used",
 )
 
 
