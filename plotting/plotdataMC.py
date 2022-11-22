@@ -168,8 +168,9 @@ for index, discr in enumerate(var_set):
     if arg.autorebin is not None:
         rebin_factor = int(arg.autorebin)
         allaxis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
-        noSF_axis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
-        SF_axis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
+        if "flav" in collated["mc"][discr].axes.name:
+            noSF_axis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
+            SF_axis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
 
     if (
         "flav" in collated["mc"][discr].axes.name
@@ -345,7 +346,7 @@ for index, discr in enumerate(var_set):
         rax = plotratio(collated["data"][discr][allaxis], hmc, ax=rax)
     else:
         hep.histplot(
-            collated["mc"][discr],
+            collated["mc"][discr][allaxis],
             color="tab:orange",
             histtype="fill",
             label=["MC"],
@@ -353,14 +354,14 @@ for index, discr in enumerate(var_set):
             ax=ax,
         )
         hep.histplot(
-            collated["data"][discr],
+            collated["data"][discr][allaxis],
             histtype="errorbar",
             color="black",
             label="Data",
             yerr=True,
             ax=ax,
         )
-        hmc = collated["mc"][discr]
+        hmc = collated["mc"][discr][allaxis]
         ax.stairs(
             values=hmc.values() + np.sqrt(hmc.values()),
             baseline=hmc.values() - np.sqrt(hmc.values()),
@@ -368,7 +369,7 @@ for index, discr in enumerate(var_set):
             label="Stat. unc.",
             **errband_opts,
         )
-        plotratio(collated["data"][discr], hmc, ax=rax)
+        plotratio(collated["data"][discr][allaxis], hmc, ax=rax)
 
     ax.set_xlabel(None)
     ax.set_ylabel("Events")

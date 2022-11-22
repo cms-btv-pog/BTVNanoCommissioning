@@ -93,6 +93,18 @@ def missing_branch(events):
         )
     if hasattr(events, "METFixEE2017"):
         events.MET = events.METFixEE2017
+    if not hasattr(events.PuppiMET, "MetUnclustEnUpDeltaX"):
+        met = events.PuppiMET
+        met["MetUnclustEnUpDeltaX"] = met.ptUnclusteredUp * np.cos(met.phiUnclusteredUp)
+        met["MetUnclustEnUpDeltaY"] = met.ptUnclusteredUp * np.sin(met.phiUnclusteredUp)
+        events.PuppiMET = update(
+            events.PuppiMET,
+            {
+                "MetUnclustEnUpDeltaX": met.MetUnclustEnUpDeltaX,
+                "MetUnclustEnUpDeltaY": met.MetUnclustEnUpDeltaY,
+            },
+        )
+
     return events
 
 
