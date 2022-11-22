@@ -448,7 +448,7 @@ def definitions():
             "ylabel_text": "Jets",
             "format_unit": "2f",
             "format_unit_digits": 2,
-            "bins": 25,
+            "bins": 10,
             "inputVar_units": None,
         },
         "DeepCSV_trackPtRel_2": {
@@ -6259,7 +6259,7 @@ def axes_name(var_input):
             obj = "Z"
 
         if "pt" in var:
-            unit = "$ p_T$ [GeV]"
+            unit = " $p_T$ [GeV]"
         elif "mass" in var:
             unit = " mass [GeV]"
         elif "eta" in var:
@@ -6273,19 +6273,19 @@ def axes_name(var_input):
         elif "pfRelIso" in var:
             unit = " Rel. Iso"
         elif "btagDeepCvL" in var:
-            unit = "Jet DeepCSV CvL"
+            unit = "DeepCSV CvL"
         elif "btagDeepCvB" in var:
-            unit = "Jet DeepCSV CvB"
+            unit = "DeepCSV CvB"
         elif "btagDeepB" in var:
-            unit = "Jet DeepCSV Prob(b)"
+            unit = "DeepCSV Prob(b)"
         elif "btagDeepC" in var:
-            unit = "Jet DeepCSV Prob(c)"
+            unit = "DeepCSV Prob(c)"
         elif "btagDeepFlavCvL" in var:
-            unit = "Jet DeepJet CvL"
+            unit = "DeepJet CvL"
         elif "btagDeepFlavCvB" in var:
-            unit = "Jet DeepJet CvB"
+            unit = "DeepJet CvB"
         elif "btagDeepFlavB" in var:
-            unit = "Jet DeepJet Prob(b)"
+            unit = "DeepJet Prob(b)"
         elif "btagDeepFlavC" in var:
             unit = "Jet DeepJet Prob(c)"
 

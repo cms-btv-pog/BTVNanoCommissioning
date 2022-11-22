@@ -20,7 +20,8 @@ def histogrammer(workflow):
     )
     dr_axis = Hist.axis.Regular(20, 0, 8, name="dr", label="$\Delta$R")
     dxy_axis = Hist.axis.Regular(40, -0.05, 0.05, name="dxy", label="d_{xy}")
-    dz_axis = Hist.axis.Regular(40, 0, 0.01, name="dz", label="d_{z}")
+    dz_axis = Hist.axis.Regular(40, -0.01, 0.01, name="dz", label="d_{z}")
+    qcddxy_axis = Hist.axis.Regular(40, -0.002, 0.002, name="dxy", label="d_{xy}")
     sip3d_axis = Hist.axis.Regular(20, 0, 0.2, name="sip3d", label="SIP 3D")
     ptratio_axis = Hist.axis.Regular(50, 0, 1, name="ratio", label="ratio")
     n_axis = Hist.axis.IntCategory([0, 1, 2, 3, 4, 5], name="n", label="N obj")
@@ -97,7 +98,7 @@ def histogrammer(workflow):
                 _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
                     iso_axis, Hist.storage.Weight()
                 )
-                _hist_dict[f"{i}_dxy"] = Hist.Hist(dxy_axis, Hist.storage.Weight())
+                _hist_dict[f"{i}_dxy"] = Hist.Hist(qcddxy_axis, Hist.storage.Weight())
                 _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
             # lepton / jet pT ratio
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
@@ -188,7 +189,7 @@ def histogrammer(workflow):
                     osss_axis, iso_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dxy"] = Hist.Hist(
-                    osss_axis, dxy_axis, Hist.storage.Weight()
+                    osss_axis, qcddxy_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dz"] = Hist.Hist(
                     osss_axis, dz_axis, Hist.storage.Weight()
