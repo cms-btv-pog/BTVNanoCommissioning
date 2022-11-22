@@ -592,7 +592,6 @@ if __name__ == "__main__":
                     "when_to_transfer_output": "ON_EXIT",
                     "+JobFlavour": '"workday"',
                 },
-                worker_extra_args=["--worker-port 10000:10100"],
                 job_script_prologue=job_script_prologue,
             )
             print("setting here is correct")
