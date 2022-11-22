@@ -117,10 +117,10 @@ else:
     label = "Simulation Preliminary"
 
 if "ttdilep" in args.phase:
-    input_txt = r'dileptonic t$\bar{t}$'
+    input_txt = r"dileptonic t$\bar{t}$"
     nj = 2
 elif "ttsemilep" in args.phase:
-    input_txt = r't$\bar{t}$ $\mu$+jets' 
+    input_txt = r"t$\bar{t}$ $\mu$+jets"
     nj = 4
 else:
     if "Wc" in args.phase:
@@ -164,7 +164,11 @@ for index, discr in enumerate(var_set):
     if args.autorebin is not None:
         rebin_factor = int(args.autorebin)
         allaxis[collated[args.ref][discr].axes[-1].name] = hist.rebin(rebin_factor)
-    xlabel = args.xlabel if args.xlabel is not None else collated["data"][discr].axes[-1].label # Use label from stored hists
+    xlabel = (
+        args.xlabel
+        if args.xlabel is not None
+        else collated["data"][discr].axes[-1].label
+    )  # Use label from stored hists
     ## FIXME: Set temporary fix for the x-axis
     if args.xlabel is not None:
         args.xlabel.split(",")[index]

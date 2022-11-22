@@ -1,6 +1,7 @@
 ## code source: Master Thesis Annika Stein
 ## https://git.rwth-aachen.de/annika-stein/ai_safety_2021/-/blob/master/june_21/evaluate/definitions.py
 
+
 def definitions():
 
     jetINDEX = [0, 1, 28, 41, 48, 49, 56, 57, 58, 59, 63, 64, 65]
@@ -6296,22 +6297,22 @@ def axes_name(var_input):
             if "btagDeepFlav" not in var:
                 label = label.replace("Jet", "$1^{st}$-Jet")
             else:
-                label = label.replace("Jet", "$1^{st}$-Jet",1)
+                label = label.replace("Jet", "$1^{st}$-Jet", 1)
         elif var.endswith("1") or "jet1" in var:
             if "btagDeepFlav" not in var:
                 label = label.replace("Jet", "$2^{nd}$-Jet")
             else:
-                label = label.replace("Jet", "$2^{nd}$-Jet",1)
+                label = label.replace("Jet", "$2^{nd}$-Jet", 1)
         elif var.endswith("2") or "jet2" in var:
             if "btagDeepFlav" not in var:
                 label = label.replace("Jet", "$3^{rd}$-Jet")
             else:
-                label = label.replace("Jet", "$3^{rd}$-Jet",1)
+                label = label.replace("Jet", "$3^{rd}$-Jet", 1)
         elif var.endswith("3") or "jet3" in var:
             if "btagDeepFlav" not in var:
                 label = label.replace("Jet", "$4^{th}$-Jet")
             else:
-                label = label.replace("Jet", "$4^{th}$-Jet",1)
+                label = label.replace("Jet", "$4^{th}$-Jet", 1)
         if "ptratio" in var:
             if var == "hl_ptratio":
                 label = "$p_T^{\\ell_1}/p_T^{Jet}$"

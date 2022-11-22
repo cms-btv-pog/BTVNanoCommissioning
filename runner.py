@@ -414,7 +414,9 @@ if __name__ == "__main__":
                                 mem_per_slot=2,  # lite job / opportunistic can only use this much
                                 init_blocks=args.scaleout,
                                 max_blocks=args.scaleout + 5,
-                                worker_init="\n".join(job_script_prologue + condor_extra),
+                                worker_init="\n".join(
+                                    job_script_prologue + condor_extra
+                                ),
                                 walltime="03:00:00",  # lite / short queue requirement
                             ),
                         )
@@ -436,7 +438,9 @@ if __name__ == "__main__":
                                     mem_per_slot=2,  # lite job / opportunistic can only use this much
                                     init_blocks=args.scaleout,
                                     max_blocks=args.scaleout + 5,
-                                    worker_init="\n".join(job_script_prologue + condor_extra),
+                                    worker_init="\n".join(
+                                        job_script_prologue + condor_extra
+                                    ),
                                     walltime="03:00:00",  # lite / short queue requirement
                                 ),
                             ),
@@ -451,7 +455,9 @@ if __name__ == "__main__":
                                     mem_per_slot=2,  # lite job / opportunistic can only use this much
                                     init_blocks=args.scaleout,
                                     max_blocks=args.scaleout + 5,
-                                    worker_init="\n".join(job_script_prologue + condor_extra),
+                                    worker_init="\n".join(
+                                        job_script_prologue + condor_extra
+                                    ),
                                     walltime="00:30:00",  # lite / short queue requirement
                                 ),
                             ),
@@ -473,7 +479,9 @@ if __name__ == "__main__":
                                 mem_per_slot=args.memory,
                                 init_blocks=args.scaleout,
                                 max_blocks=(args.scaleout) + 10,
-                                worker_init="\n".join(job_script_prologue + condor_extra),
+                                worker_init="\n".join(
+                                    job_script_prologue + condor_extra
+                                ),
                                 walltime="03:00:00",
                             ),
                         )
@@ -493,7 +501,9 @@ if __name__ == "__main__":
                                     mem_per_slot=args.memory,
                                     init_blocks=args.scaleout,
                                     max_blocks=(args.scaleout) + 10,
-                                    worker_init="\n".join(job_script_prologue + condor_extra),
+                                    worker_init="\n".join(
+                                        job_script_prologue + condor_extra
+                                    ),
                                     walltime="03:00:00",
                                 ),
                             ),
@@ -507,7 +517,9 @@ if __name__ == "__main__":
                                     mem_per_slot=args.memory,
                                     init_blocks=args.scaleout,
                                     max_blocks=(args.scaleout) + 10,
-                                    worker_init="\n".join(job_script_prologue + condor_extra),
+                                    worker_init="\n".join(
+                                        job_script_prologue + condor_extra
+                                    ),
                                     walltime="03:00:00",
                                 ),
                             ),
@@ -564,7 +576,9 @@ if __name__ == "__main__":
             from lpcjobqueue import LPCCondorCluster
 
             cluster = LPCCondorCluster(
-                transfer_input_files="/srv/src/", ship_env=True, job_script_prologue=job_script_prologue
+                transfer_input_files="/srv/src/",
+                ship_env=True,
+                job_script_prologue=job_script_prologue,
             )
         elif "lxplus" in args.executor:
             n_port = 8786
