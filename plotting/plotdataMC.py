@@ -114,10 +114,10 @@ if "Wc" in arg.phase:
 elif "DY" in arg.phase:
     input_txt = "DY+jets"
 elif "semilep" in arg.phase:
-    input_txt = "semileptonic ttbar"
+    input_txt = r't$\bar{t}$ $\mu$+jets'
     nj = 4
 elif "dilep" in arg.phase:
-    input_txt = "dileptonic ttbar"
+    input_txt = r'dileptonic t$\bar{t}$'
     nj = 2
 if (
     "njet" in arg.variable.split(",")
@@ -375,7 +375,8 @@ for index, discr in enumerate(var_set):
     ax.set_ylabel("Events")
     rax.set_ylabel("Data/MC")
     ax.ticklabel_format(style="sci", scilimits=(-3, 3))
-    # xlabel = if  arg.xlabel is not None else collated["data"][discr].axes[-1].label # Use label from stored hists
+    ax.get_yaxis().get_offset_text().set_position((-0.065,1.05))
+    xlabel = arg.xlabel if  arg.xlabel is not None else collated["data"][discr].axes[-1].label # Use label from stored hists
     ## FIXME: Set temporary fix for the x-axis
     if arg.xlabel is not None:
         arg.xlabel.split(",")[index]

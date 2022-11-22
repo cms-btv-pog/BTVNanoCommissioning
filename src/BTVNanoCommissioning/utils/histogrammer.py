@@ -24,7 +24,7 @@ def histogrammer(workflow):
     qcddxy_axis = Hist.axis.Regular(40, -0.002, 0.002, name="dxy", label="d_{xy}")
     sip3d_axis = Hist.axis.Regular(20, 0, 0.2, name="sip3d", label="SIP 3D")
     ptratio_axis = Hist.axis.Regular(50, 0, 1, name="ratio", label="ratio")
-    n_axis = Hist.axis.IntCategory([0, 1, 2, 3, 4, 5], name="n", label="N obj")
+    n_axis = Hist.axis.IntCategory([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], name="n", label="N obj")
     osss_axis = Hist.axis.IntCategory([1, -1], name="osss", label="OS(+)/SS(-)")
     ### Workflow specific
     if "validation" == workflow:
