@@ -6101,6 +6101,14 @@ def axes_name(var_input):
         "btagDeepB_1",
         "btagDeepB_2",
         "btagDeepB_3",
+        "btagDeepB_b_0",
+        "btagDeepB_b_1",
+        "btagDeepB_b_2",
+        "btagDeepB_b_3",
+        "btagDeepB_bb_0",
+        "btagDeepB_bb_1",
+        "btagDeepB_bb_2",
+        "btagDeepB_bb_3",
         "btagDeepC_0",
         "btagDeepC_1",
         "btagDeepC_2",
@@ -6117,6 +6125,18 @@ def axes_name(var_input):
         "btagDeepFlavB_1",
         "btagDeepFlavB_2",
         "btagDeepFlavB_3",
+        "btagDeepFlavB_b_0",
+        "btagDeepFlavB_b_1",
+        "btagDeepFlavB_b_2",
+        "btagDeepFlavB_b_3",
+        "btagDeepFlavB_bb_0",
+        "btagDeepFlavB_bb_1",
+        "btagDeepFlavB_bb_2",
+        "btagDeepFlavB_bb_3",
+        "btagDeepFlavB_lepb_0",
+        "btagDeepFlavB_lepb_1",
+        "btagDeepFlavB_lepb_2",
+        "btagDeepFlavB_lepb_3",
         "btagDeepFlavC_0",
         "btagDeepFlavC_1",
         "btagDeepFlavC_2",
@@ -6280,17 +6300,29 @@ def axes_name(var_input):
         elif "btagDeepCvB" in var:
             unit = "Jet DeepCSV CvB"
         elif "btagDeepB" in var:
-            unit = "Jet DeepCSV Prob (b)"
+            if "_b_" in var:
+                unit = "Jet DeepCSV P(b)"
+            elif "_bb" in var:
+                unit = "Jet DeepCSV P(bb)"
+            else:
+                unit = "Jet DeepCSV b discriminator"
         elif "btagDeepC" in var:
-            unit = "Jet DeepCSV Prob (c)"
+            unit = "Jet DeepCSV CvsAll"
         elif "btagDeepFlavCvL" in var:
             unit = "Jet DeepJet CvL"
         elif "btagDeepFlavCvB" in var:
             unit = "Jet DeepJet CvB"
         elif "btagDeepFlavB" in var:
-            unit = "Jet DeepJet Prob (b)"
+            if "_b_" in var:
+                unit = "Jet DeepJet P(b)"
+            elif "_bb" in var:
+                unit = "Jet DeepJet P(bb)"
+            elif "_lepb" in var:
+                unit = "Jet DeepJet P(lepb)"
+            else:
+                unit = "Jet DeepJet b discriminator"
         elif "btagDeepFlavC" in var:
-            unit = "Jet DeepJet Prob (c)"
+            unit = "Jet DeepJet CvsAll"
 
         label = obj + unit
         if var.endswith("0") or "jet0" in var:

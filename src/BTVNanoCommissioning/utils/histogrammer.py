@@ -307,6 +307,11 @@ def histogrammer(workflow):
         "btagDeepCvB",
         "btagDeepFlavCvL",
         "btagDeepFlavCvB",
+        "btagDeepB_b",
+        "btagDeepB_bb",
+        "btagDeepFlavB_b",
+        "btagDeepFlavB_bb",
+        "btagDeepFlavB_lepb",
     ]
     for disc in disc_list:
         njet = 1
