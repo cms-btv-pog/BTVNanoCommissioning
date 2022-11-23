@@ -117,10 +117,16 @@ else:
     label = "Simulation Preliminary"
 
 if "ttdilep" in args.phase:
-    input_txt = r"dileptonic t$\bar{t}$"
+    if "ctag" in args.phase:
+        input_txt = r"ctag t$\bar{t}$ e$\mu$"
+    else:
+        input_txt = r"t$\bar{t}$ e$\mu$"
     nj = 2
 elif "ttsemilep" in args.phase:
-    input_txt = r"t$\bar{t}$ $\mu$+jets"
+    if "ctag" in args.phase:
+        input_txt = r"ctag t$\bar{t}$ $\mu$+jets"
+    else:
+        input_txt = r"t$\bar{t}$ $\mu$+jets"
     nj = 4
 else:
     if "Wc" in args.phase:
@@ -164,6 +170,7 @@ for index, discr in enumerate(var_set):
     if args.autorebin is not None:
         rebin_factor = int(args.autorebin)
         allaxis[collated[args.ref][discr].axes[-1].name] = hist.rebin(rebin_factor)
+    # FIXME: add wildcard option for xlabel
     xlabel = (
         args.xlabel
         if args.xlabel is not None
