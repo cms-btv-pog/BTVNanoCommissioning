@@ -297,7 +297,7 @@ if __name__ == "__main__":
             _x509_path = os.environ["HOME"] + f'/.{_x509_localpath.split("/")[-1]}'
             os.system(f"cp {_x509_localpath} {_x509_path}")
 
-        env_extra = [
+        job_script_prologue = [
             "export XRD_RUNFORKHANDLER=1",
             f"export X509_USER_PROXY={_x509_path}",
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
@@ -354,7 +354,7 @@ if __name__ == "__main__":
                             max_blocks=(args.scaleout) + 10,
                             init_blocks=args.scaleout,
                             partition="all",
-                            worker_init="\n".join(env_extra),
+                            worker_init="\n".join(job_script_prologue),
                             walltime="00:120:00",
                         ),
                     )
@@ -375,7 +375,7 @@ if __name__ == "__main__":
                                 max_blocks=(args.scaleout) + 10,
                                 init_blocks=args.scaleout,
                                 partition="all",
-                                worker_init="\n".join(env_extra),
+                                worker_init="\n".join(job_script_prologue),
                                 walltime="00:120:00",
                             ),
                         ),
@@ -390,7 +390,7 @@ if __name__ == "__main__":
                                 max_blocks=(args.scaleout) + 10,
                                 init_blocks=args.scaleout,
                                 partition="all",
-                                worker_init="\n".join(env_extra),
+                                worker_init="\n".join(job_script_prologue),
                                 walltime="00:30:00",
                             ),
                         ),
@@ -400,6 +400,7 @@ if __name__ == "__main__":
                 )
         elif "condor" in args.executor:
             if "naf_lite" in args.executor:
+                ## code source: https://github.com/cms-rwth/CoffeaRunner/commit/d5ef86f76723e75b67bb212c3644c4012cae05be (Annika Stein)
                 htex_config = Config(
                     executors=[
                         HighThroughputExecutor(
@@ -413,7 +414,9 @@ if __name__ == "__main__":
                                 mem_per_slot=2,  # lite job / opportunistic can only use this much
                                 init_blocks=args.scaleout,
                                 max_blocks=args.scaleout + 5,
-                                worker_init="\n".join(env_extra + condor_extra),
+                                worker_init="\n".join(
+                                    job_script_prologue + condor_extra
+                                ),
                                 walltime="03:00:00",  # lite / short queue requirement
                             ),
                         )
@@ -435,7 +438,9 @@ if __name__ == "__main__":
                                     mem_per_slot=2,  # lite job / opportunistic can only use this much
                                     init_blocks=args.scaleout,
                                     max_blocks=args.scaleout + 5,
-                                    worker_init="\n".join(env_extra + condor_extra),
+                                    worker_init="\n".join(
+                                        job_script_prologue + condor_extra
+                                    ),
                                     walltime="03:00:00",  # lite / short queue requirement
                                 ),
                             ),
@@ -450,7 +455,9 @@ if __name__ == "__main__":
                                     mem_per_slot=2,  # lite job / opportunistic can only use this much
                                     init_blocks=args.scaleout,
                                     max_blocks=args.scaleout + 5,
-                                    worker_init="\n".join(env_extra + condor_extra),
+                                    worker_init="\n".join(
+                                        job_script_prologue + condor_extra
+                                    ),
                                     walltime="00:30:00",  # lite / short queue requirement
                                 ),
                             ),
@@ -472,7 +479,9 @@ if __name__ == "__main__":
                                 mem_per_slot=args.memory,
                                 init_blocks=args.scaleout,
                                 max_blocks=(args.scaleout) + 10,
-                                worker_init="\n".join(env_extra + condor_extra),
+                                worker_init="\n".join(
+                                    job_script_prologue + condor_extra
+                                ),
                                 walltime="03:00:00",
                             ),
                         )
@@ -492,7 +501,9 @@ if __name__ == "__main__":
                                     mem_per_slot=args.memory,
                                     init_blocks=args.scaleout,
                                     max_blocks=(args.scaleout) + 10,
-                                    worker_init="\n".join(env_extra + condor_extra),
+                                    worker_init="\n".join(
+                                        job_script_prologue + condor_extra
+                                    ),
                                     walltime="03:00:00",
                                 ),
                             ),
@@ -506,7 +517,9 @@ if __name__ == "__main__":
                                     mem_per_slot=args.memory,
                                     init_blocks=args.scaleout,
                                     max_blocks=(args.scaleout) + 10,
-                                    worker_init="\n".join(env_extra + condor_extra),
+                                    worker_init="\n".join(
+                                        job_script_prologue + condor_extra
+                                    ),
                                     walltime="03:00:00",
                                 ),
                             ),
@@ -559,11 +572,13 @@ if __name__ == "__main__":
         from dask.distributed import performance_report
 
         if "lpc" in args.executor:
-            env_extra = [f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}"]
+            job_script_prologue = [f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}"]
             from lpcjobqueue import LPCCondorCluster
 
             cluster = LPCCondorCluster(
-                transfer_input_files="/srv/src/", ship_env=True, env_extra=env_extra
+                transfer_input_files="/srv/src/",
+                ship_env=True,
+                job_script_prologue=job_script_prologue,
             )
         elif "lxplus" in args.executor:
             n_port = 8786
@@ -591,9 +606,7 @@ if __name__ == "__main__":
                     "when_to_transfer_output": "ON_EXIT",
                     "+JobFlavour": '"workday"',
                 },
-                worker_extra_args=["--worker-port 10000:10100"],
-                extra=["--worker-port {}".format(n_port)],
-                env_extra=env_extra,
+                job_script_prologue=job_script_prologue,
             )
             print("setting here is correct")
         elif "slurm" in args.executor:
@@ -604,14 +617,14 @@ if __name__ == "__main__":
                 memory=args.memory,
                 retries=args.retries,
                 walltime="00:30:00",
-                env_extra=env_extra,
+                job_script_prologue=job_script_prologue,
             )
         elif "condor" in args.executor:
             cluster = HTCondorCluster(
                 cores=args.workers,
                 memory=args.memory,
                 disk=args.disk,
-                env_extra=env_extra,
+                job_script_prologue=job_script_prologue,
             )
 
         if args.executor == "dask/casa":

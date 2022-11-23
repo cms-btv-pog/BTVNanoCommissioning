@@ -360,6 +360,9 @@ class NanoProcessor(processor.ProcessorABC):
                             not isRealData
                             and self.isCorr
                             and "BTV" in correction_config[self._campaign].keys()
+                            and "_b" not in histname
+                            and "_bb" not in histname
+                            and "_lepb" not in histname
                         ):
                             for syst in disc_list[histname.replace(f"_{i}", "")][
                                 i

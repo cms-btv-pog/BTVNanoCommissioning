@@ -109,7 +109,7 @@ class NanoProcessor(processor.ProcessorABC):
             (ak.num(pos_dilep.pt) >= 1)
             & (ak.num(neg_dilep.pt) >= 1)
             & (ak.num(dilep_mu.charge) >= 2)
-            & (ak.num(dilep_ele.charge) < 2)
+            & (ak.num(dilep_ele.charge) == 0)
         )
         pos_dilep = ak.pad_none(pos_dilep, 1, axis=1)
         neg_dilep = ak.pad_none(neg_dilep, 1, axis=1)
@@ -364,6 +364,9 @@ class NanoProcessor(processor.ProcessorABC):
                     not isRealData
                     and self.isCorr
                     and "BTV" in correction_config[self._campaign].keys()
+                    and "_b" not in histname
+                    and "_bb" not in histname
+                    and "_lepb" not in histname
                 ):
                     for syst in disc_list[histname.replace("_0", "")][0].keys():
                         h.fill(

@@ -32,8 +32,8 @@ NOTE: always make sure that conda, python, and pip point to local Miniconda inst
 
 You can either use the default environment `base` or create a new one:
 ```
-# create new environment with python 3.7, e.g. environment of name `btv_coffea`
-conda create --name btv_coffea python=3.7
+# create new environment with python 3.8 or higher (up to 3.10), e.g. environment of name `btv_coffea`
+conda create --name btv_coffea python=3.8
 # activate environment `btv_coffea`
 conda activate btv_coffea
 ```

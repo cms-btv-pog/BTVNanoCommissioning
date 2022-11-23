@@ -117,10 +117,16 @@ else:
     label = "Simulation Preliminary"
 
 if "ttdilep" in args.phase:
-    input_txt = "dilepton ttbar"
+    if "ctag" in args.phase:
+        input_txt = r"ctag t$\bar{t}$ e$\mu$"
+    else:
+        input_txt = r"t$\bar{t}$ e$\mu$"
     nj = 2
 elif "ttsemilep" in args.phase:
-    input_txt = "semileptonic ttbar"
+    if "ctag" in args.phase:
+        input_txt = r"ctag t$\bar{t}$ $\mu$+jets"
+    else:
+        input_txt = r"t$\bar{t}$ $\mu$+jets"
     nj = 4
 else:
     if "Wc" in args.phase:
@@ -164,7 +170,12 @@ for index, discr in enumerate(var_set):
     if args.autorebin is not None:
         rebin_factor = int(args.autorebin)
         allaxis[collated[args.ref][discr].axes[-1].name] = hist.rebin(rebin_factor)
-    # xlabel = if  arg.xlabel is not None else collated["data"][discr].axes[-1].label # Use label from stored hists
+    # FIXME: add wildcard option for xlabel
+    xlabel = (
+        args.xlabel
+        if args.xlabel is not None
+        else collated["data"][discr].axes[-1].label
+    )  # Use label from stored hists
     ## FIXME: Set temporary fix for the x-axis
     if args.xlabel is not None:
         args.xlabel.split(",")[index]
@@ -182,7 +193,7 @@ for index, discr in enumerate(var_set):
 
     text = args.ext
     if args.norm:
-        text = args.ext + "\n Normalized to Ref."
+        text = args.ext + "\nNormalized to Ref."
         for c in args.compared.split(","):
             collated[c][discr] = collated[c][discr] * float(
                 np.sum(collated[args.ref][discr][allaxis].values())
@@ -377,6 +388,10 @@ for index, discr in enumerate(var_set):
             logext = "_log"
             ax.set_ylim(bottom=0.1)
             hep.mpl_magic(ax=ax)
+        print(
+            "creating:",
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png",
+        )
         fig.savefig(
             f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.pdf"
         )

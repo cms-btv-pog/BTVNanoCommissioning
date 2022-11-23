@@ -1,4 +1,7 @@
-## displayname took from Annika
+## code source: Master Thesis Annika Stein
+## https://git.rwth-aachen.de/annika-stein/ai_safety_2021/-/blob/master/june_21/evaluate/definitions.py
+
+
 def definitions():
 
     jetINDEX = [0, 1, 28, 41, 48, 49, 56, 57, 58, 59, 63, 64, 65]
@@ -5885,7 +5888,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 20.0],
-            "inputVar_units": None,
+            "inputVar_units": "$GeV$",
         },
         "DeepJet_sv_mass_1": {
             "displayname": "$m_{SV}$ [1] SV",
@@ -5894,7 +5897,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 20.0],
-            "inputVar_units": None,
+            "inputVar_units": "$GeV$",
         },
         "DeepJet_sv_mass_2": {
             "displayname": "$m_{SV}$ [2] SV",
@@ -5903,7 +5906,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 20.0],
-            "inputVar_units": None,
+            "inputVar_units": "$GeV$",
         },
         "DeepJet_sv_mass_3": {
             "displayname": "$m_{SV}$ [3] SV",
@@ -5912,7 +5915,7 @@ def definitions():
             "format_unit_digits": 2,
             "bins": 100,
             "manual_ranges": [0.0, 20.0],
-            "inputVar_units": None,
+            "inputVar_units": "$GeV$",
         },
         "DeepJet_sv_normchi2_0": {
             "displayname": "$\\chi^2$/dof [0] SV",
@@ -6098,6 +6101,14 @@ def axes_name(var_input):
         "btagDeepB_1",
         "btagDeepB_2",
         "btagDeepB_3",
+        "btagDeepB_b_0",
+        "btagDeepB_b_1",
+        "btagDeepB_b_2",
+        "btagDeepB_b_3",
+        "btagDeepB_bb_0",
+        "btagDeepB_bb_1",
+        "btagDeepB_bb_2",
+        "btagDeepB_bb_3",
         "btagDeepC_0",
         "btagDeepC_1",
         "btagDeepC_2",
@@ -6114,6 +6125,18 @@ def axes_name(var_input):
         "btagDeepFlavB_1",
         "btagDeepFlavB_2",
         "btagDeepFlavB_3",
+        "btagDeepFlavB_b_0",
+        "btagDeepFlavB_b_1",
+        "btagDeepFlavB_b_2",
+        "btagDeepFlavB_b_3",
+        "btagDeepFlavB_bb_0",
+        "btagDeepFlavB_bb_1",
+        "btagDeepFlavB_bb_2",
+        "btagDeepFlavB_bb_3",
+        "btagDeepFlavB_lepb_0",
+        "btagDeepFlavB_lepb_1",
+        "btagDeepFlavB_lepb_2",
+        "btagDeepFlavB_lepb_3",
         "btagDeepFlavC_0",
         "btagDeepFlavC_1",
         "btagDeepFlavC_2",
@@ -6259,7 +6282,7 @@ def axes_name(var_input):
             obj = "Z"
 
         if "pt" in var:
-            unit = "$ p_T$ [GeV]"
+            unit = " $p_T$ [GeV]"
         elif "mass" in var:
             unit = " mass [GeV]"
         elif "eta" in var:
@@ -6277,27 +6300,51 @@ def axes_name(var_input):
         elif "btagDeepCvB" in var:
             unit = "Jet DeepCSV CvB"
         elif "btagDeepB" in var:
-            unit = "Jet DeepCSV Prob(b)"
+            if "_b_" in var:
+                unit = "Jet DeepCSV P(b)"
+            elif "_bb" in var:
+                unit = "Jet DeepCSV P(bb)"
+            else:
+                unit = "Jet DeepCSV b discriminator"
         elif "btagDeepC" in var:
-            unit = "Jet DeepCSV Prob(c)"
+            unit = "Jet DeepCSV CvsAll"
         elif "btagDeepFlavCvL" in var:
             unit = "Jet DeepJet CvL"
         elif "btagDeepFlavCvB" in var:
             unit = "Jet DeepJet CvB"
         elif "btagDeepFlavB" in var:
-            unit = "Jet DeepJet Prob(b)"
+            if "_b_" in var:
+                unit = "Jet DeepJet P(b)"
+            elif "_bb" in var:
+                unit = "Jet DeepJet P(bb)"
+            elif "_lepb" in var:
+                unit = "Jet DeepJet P(lepb)"
+            else:
+                unit = "Jet DeepJet b discriminator"
         elif "btagDeepFlavC" in var:
-            unit = "Jet DeepJet Prob(c)"
+            unit = "Jet DeepJet CvsAll"
 
         label = obj + unit
         if var.endswith("0") or "jet0" in var:
-            label = label.replace("Jet", "$1^{st}$-Jet")
+            if "btagDeepFlav" not in var:
+                label = label.replace("Jet", "$1^{st}$-Jet")
+            else:
+                label = label.replace("Jet", "$1^{st}$-Jet", 1)
         elif var.endswith("1") or "jet1" in var:
-            label = label.replace("Jet", "$2^{nd}$-Jet")
+            if "btagDeepFlav" not in var:
+                label = label.replace("Jet", "$2^{nd}$-Jet")
+            else:
+                label = label.replace("Jet", "$2^{nd}$-Jet", 1)
         elif var.endswith("2") or "jet2" in var:
-            label = label.replace("Jet", "$3^{rd}$-Jet")
+            if "btagDeepFlav" not in var:
+                label = label.replace("Jet", "$3^{rd}$-Jet")
+            else:
+                label = label.replace("Jet", "$3^{rd}$-Jet", 1)
         elif var.endswith("3") or "jet3" in var:
-            label = label.replace("Jet", "$4^{th}$-Jet")
+            if "btagDeepFlav" not in var:
+                label = label.replace("Jet", "$4^{th}$-Jet")
+            else:
+                label = label.replace("Jet", "$4^{th}$-Jet", 1)
         if "ptratio" in var:
             if var == "hl_ptratio":
                 label = "$p_T^{\\ell_1}/p_T^{Jet}$"

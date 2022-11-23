@@ -1144,6 +1144,13 @@ xsection = [
         "comment": "from TOP-22-012",
     },
     {
+        "process_name": "TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8",
+        "cross_section": "145.0",
+        "DAS": "/TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8/Run3Winter22NanoAOD-122X_mcRun3_2021_realistic_v9-v1/NANOAODSIM",
+        "energy": "13.6",
+        "comment": "from TOP-22-012",
+    },
+    {
         "process_name": "TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8",
         "cross_section": "24.2",
         "DAS": "/TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8/Run3Winter22NanoAOD-122X_mcRun3_2021_realistic_v9-v1/NANOAODSIM",

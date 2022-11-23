@@ -339,14 +339,10 @@ def autoranger(hist):
     val, axis = hist.values(), hist.axes[-1].edges
     for i in range(len(val)):
         if val[i] != 0:
-            mins = i - 1
+            mins = i
             break
     for i in reversed(range(len(val))):
         if val[i] != 0:
             maxs = i + 1
             break
-    if mins == -1:
-        mins = 0
-    if maxs == len(val):
-        maxs = maxs - 1
     return axis[mins], axis[maxs]
