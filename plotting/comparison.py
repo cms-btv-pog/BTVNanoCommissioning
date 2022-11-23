@@ -390,7 +390,7 @@ for index, discr in enumerate(var_set):
             hep.mpl_magic(ax=ax)
         print(
             "creating:",
-            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png",
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png",
         )
         fig.savefig(
             f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.pdf"
