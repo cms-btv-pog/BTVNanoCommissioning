@@ -421,6 +421,10 @@ for index, discr in enumerate(var_set):
     name = "all"
     hep.mpl_magic(ax=ax)
     if arg.log:
+        print(
+            "creating:",
+            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png",
+        )
         ax.set_yscale("log")
         name = "log"
         ax.set_ylim(bottom=0.1)
@@ -432,6 +436,10 @@ for index, discr in enumerate(var_set):
             f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png"
         )
     else:
+        print(
+            "creating:",
+            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png",
+        )
         fig.savefig(
             f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"
         )
