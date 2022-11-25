@@ -165,7 +165,7 @@ class NanoProcessor(processor.ProcessorABC):
             spfcands[1] = events[event_level].PFCands[
                 events[event_level]
                 .JetPFCands[
-                    events[event_level].JetPFCands.jetIdx == jetindx0[event_level]
+                    events[event_level].JetPFCands.jetIdx == jetindx1[event_level]
                 ]
                 .pFCandsIdx
             ]
