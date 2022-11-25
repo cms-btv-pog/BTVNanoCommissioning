@@ -171,11 +171,11 @@ for index, discr in enumerate(var_set):
         rebin_factor = int(args.autorebin)
         allaxis[collated[args.ref][discr].axes[-1].name] = hist.rebin(rebin_factor)
     # FIXME: add wildcard option for xlabel
-    xlabel = (
-        args.xlabel
-        if args.xlabel is not None
-        else collated["data"][discr].axes[-1].label
-    )  # Use label from stored hists
+   # xlabel = (
+   #     args.xlabel
+   #     if args.xlabel is not None
+   #     else collated["data"][discr].axes[-1].label
+   # )  # Use label from stored hists
     ## FIXME: Set temporary fix for the x-axis
     if args.xlabel is not None:
         args.xlabel.split(",")[index]
