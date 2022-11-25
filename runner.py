@@ -581,6 +581,7 @@ if __name__ == "__main__":
                 job_script_prologue=job_script_prologue,
             )
         elif "lxplus" in args.executor:
+            #details: https://batchdocs.web.cern.ch/specialpayload/dask.html
             n_port = 8786
             if not check_port(8786):
                 raise RuntimeError(
@@ -606,6 +607,7 @@ if __name__ == "__main__":
                     "when_to_transfer_output": "ON_EXIT",
                     "+JobFlavour": '"workday"',
                 },
+                worker_extra_args=["--worker-port 10000:10100"],
                 job_script_prologue=job_script_prologue,
             )
             print("setting here is correct")
