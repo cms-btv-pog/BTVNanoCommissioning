@@ -295,7 +295,6 @@ def plotratio(
 
 ## Calculate SF error
 def SFerror(collated, discr):
-
     err_up = (
         collated["mc"][discr][{"syst": "SFup", "flav": sum}].values()
         - collated["mc"][discr][{"syst": "SF", "flav": sum}].values()

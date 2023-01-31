@@ -64,7 +64,6 @@ def load_SF(campaign):
                     _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
                     for tagger in correction_config[campaign]["BTV"]:
                         if tagger == "DeepCSVB" or tagger == "DeepJetB":
-
                             with importlib.resources.path(
                                 _btag_path, correction_config[campaign]["BTV"][tagger]
                             ) as filename:
@@ -74,7 +73,6 @@ def load_SF(campaign):
                                     methods="iterativefit,iterativefit,iterativefit",
                                 )
                         elif tagger == "DeepCSVC" or tagger == "DeepJetC":
-
                             correction_map["ctag"][tagger] = (
                                 "BTVNanoCommissioning/data/BTV/"
                                 + campaign
@@ -232,6 +230,7 @@ met_filters = {
     },
 }
 
+
 ##JEC
 def load_jetfactory(campaign, path):
     _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
@@ -278,7 +277,6 @@ def load_metfactory(campaign, path):
 def load_pu(campaign, path):
     _pu_path = f"BTVNanoCommissioning.data.PU.{campaign}"
     with importlib.resources.path(_pu_path, path) as filename:
-
         if str(filename).endswith(".pkl.gz"):
             with gzip.open(filename) as fin:
                 compiled = cloudpickle.load(fin)
@@ -375,7 +373,6 @@ def eleSFs(ele, correct_map):
     for sf in correct_map["EGM_cfg"].keys():
         sf_type = sf[: sf.find(" ")]
         if "correctionlib" in str(type(correct_map["EGM"])):
-
             if "Reco" in sf:
                 weight = weight * correct_map["EGM"][
                     list(correct_map["EGM"].keys())[0]

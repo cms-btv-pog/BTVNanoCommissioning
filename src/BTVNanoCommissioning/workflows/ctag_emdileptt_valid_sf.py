@@ -369,7 +369,6 @@ class NanoProcessor(processor.ProcessorABC):
                 "Deep" in histname
                 and "btag" not in histname
                 and histname in events.Jet.fields
-                and histname in events.Jet.fields
             ):
                 h.fill(
                     flatten(genflavor),
@@ -378,7 +377,11 @@ class NanoProcessor(processor.ProcessorABC):
                         ak.broadcast_arrays(weights.weight(), sjets["pt"])[0]
                     ),
                 )
-            elif "PFCands" in histname and "PFCands" in events.fields:
+            elif (
+                "PFCands" in events.fields
+                and "PFCands" in histname
+                and histname.split("_")[1] in events.PFCands.fields
+            ):
                 h.fill(
                     flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
                     flatten(spfcands[histname.replace("PFCands_", "")]),
@@ -395,7 +398,6 @@ class NanoProcessor(processor.ProcessorABC):
                     ),
                 )
             elif "hl_" in histname and histname.replace("hl_", "") in isomu0.fields:
-
                 h.fill(
                     flatten(isomu0[histname.replace("hl_", "")]),
                     weight=weights.weight(),

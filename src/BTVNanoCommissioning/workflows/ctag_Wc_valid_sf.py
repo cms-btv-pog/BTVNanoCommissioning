@@ -321,7 +321,11 @@ class NanoProcessor(processor.ProcessorABC):
         #  Fill histogram  #
         ####################
         for histname, h in output.items():
-            if "Deep" in histname and "btag" not in histname:
+            if (
+                "Deep" in histname
+                and "btag" not in histname
+                and histname in events.Jet.fields
+            ):
                 h.fill(
                     flatten(genflavor),
                     flatten(ak.broadcast_arrays(osss, sjets["pt"])[0]),
@@ -330,7 +334,11 @@ class NanoProcessor(processor.ProcessorABC):
                         ak.broadcast_arrays(weights.weight(), sjets["pt"])[0]
                     ),
                 )
-            elif "PFCands" in events.fields and "PFCands" in histname:
+            elif (
+                "PFCands" in events.fields
+                and "PFCands" in histname
+                and histname.split("_")[1] in events.PFCands.fields
+            ):
                 h.fill(
                     flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
                     flatten(ak.broadcast_arrays(osss, spfcands["pt"])[0]),

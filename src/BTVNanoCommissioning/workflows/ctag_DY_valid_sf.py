@@ -252,7 +252,11 @@ class NanoProcessor(processor.ProcessorABC):
                         ak.broadcast_arrays(weights.weight(), sjets["pt"])[0]
                     ),
                 )
-            elif "PFCands" in histname and "PFCands" in events.fields:
+            elif (
+                "PFCands" in events.fields
+                and "PFCands" in histname
+                and histname.split("_")[1] in events.PFCands.fields
+            ):
                 h.fill(
                     flatten(ak.broadcast_arrays(genflavor[:, 0], spfcands["pt"])[0]),
                     flatten(spfcands[histname.replace("PFCands_", "")]),
@@ -282,7 +286,6 @@ class NanoProcessor(processor.ProcessorABC):
                 and "0" in histname
                 and histname in events.Jet.fields
             ):
-
                 h.fill(
                     flav=genflavor[:, 0],
                     syst="noSF",

@@ -209,6 +209,14 @@ class NanoProcessor(processor.ProcessorABC):
         sz = shmu + ssmu
         sw = shmu + smet
         njet = ak.count(sjets.pt, axis=1)
+        if "PFCands" in events.fields:
+            spfcands = events[event_level].PFCands[
+                events[event_level]
+                .JetPFCands[
+                    events[event_level].JetPFCands.jetIdx == jetindx[event_level]
+                ]
+                .pFCandsIdx
+            ]
 
         ####################
         # Weight & Geninfo #
@@ -336,6 +344,18 @@ class NanoProcessor(processor.ProcessorABC):
                     smflav,
                     flatten(smuon_jet[histname.replace("mujet_", "")]),
                     weight=weights.weight(),
+                )
+            elif (
+                "PFCands" in events.fields
+                and "PFCands" in histname
+                and histname.split("_")[1] in events.PFCands.fields
+            ):
+                h.fill(
+                    flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
+                    flatten(spfcands[histname.replace("PFCands_", "")]),
+                    weight=flatten(
+                        ak.broadcast_arrays(weights.weight(), spfcands["pt"])[0]
+                    ),
                 )
             elif (
                 "btagDeep" in histname

@@ -257,7 +257,11 @@ class NanoProcessor(processor.ProcessorABC):
                         ak.broadcast_arrays(weights.weight(), sjets["pt"])[0]
                     ),
                 )
-            elif "PFCands" in histname and "PFCands" in events.fields:
+            elif (
+                "PFCands" in histname
+                and "PFCands" in events.fields
+                and histname.split("_")[1] in events.PFCands.fields
+            ):
                 for i in range(4):
                     h.fill(
                         flatten(
