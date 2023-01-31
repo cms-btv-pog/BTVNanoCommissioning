@@ -250,9 +250,10 @@ def histogrammer(workflow):
                     _hist_dict["soft_l_pt"] = Hist.Hist(
                         flav_axis, osss_axis, softlpt_axis, Hist.storage.Weight()
                     )
-                _hist_dict[f"{obj}_pt"] = Hist.Hist(
-                    flav_axis, osss_axis, jpt_axis, Hist.storage.Weight()
-                )
+                else:
+                    _hist_dict[f"{obj}_pt"] = Hist.Hist(
+                        flav_axis, osss_axis, jpt_axis, Hist.storage.Weight()
+                    )
                 _hist_dict[f"{obj}_eta"] = Hist.Hist(
                     flav_axis, osss_axis, eta_axis, Hist.storage.Weight()
                 )

@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python
+  - python[version='<3.11']
   - voms
   - ca-policy-lcg
   - ca-certificates

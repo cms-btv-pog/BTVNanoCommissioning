@@ -75,9 +75,18 @@ def get_main_parser():
     parser.add_argument(
         "--campaign",
         default="Rereco17_94X",
+        choices=[
+            "Rereco17_94X",
+            "Winter22Run3",
+            "2018_UL",
+            "2017_UL",
+            "2016preVFP_UL",
+            "2016postVFP_UL",
+        ],
         help="Dataset campaign, change the corresponding correction files",
     )
     parser.add_argument("--isCorr", action="store_true", help="Run with SFs")
+    parser.add_argument("--isSyst", action="store_true", help="Run with systematics")
     parser.add_argument(
         "--isJERC", action="store_true", help="JER/JEC implemented to jet"
     )
@@ -269,7 +278,7 @@ if __name__ == "__main__":
         processor_instance = workflows[args.workflow](args.year, args.campaign)
     else:
         processor_instance = workflows[args.workflow](
-            args.year, args.campaign, args.isCorr, args.isJERC
+            args.year, args.campaign, args.isCorr, args.isJERC, args.isSyst
         )
 
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
@@ -564,7 +573,6 @@ if __name__ == "__main__":
                 maxchunks=args.max,
             )
         save(output, args.output)
-        print(output)
         print(f"Saving output to {args.output}")
     elif "dask" in args.executor:
         from dask_jobqueue import SLURMCluster, HTCondorCluster

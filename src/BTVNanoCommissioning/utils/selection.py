@@ -2,12 +2,19 @@ import awkward as ak
 
 ## Jet pu ID not exist in Winter22Run3 sample
 def jet_id(events, campaign):
-    if campaign != "Winter22Run3":
+    if campaign == "Rereco17_94X":
         jetmask = (
             (events.Jet.pt > 20)
             & (abs(events.Jet.eta) <= 2.5)
             & (events.Jet.jetId >= 5)
             & ((events.Jet.pt > 50) | (events.Jet.puId >= 7))
+        )
+    elif campaign != "Winter22Run3":
+        jetmask = (
+            (events.Jet.pt > 20)
+            & (abs(events.Jet.eta) <= 2.5)
+            & (events.Jet.jetId >= 2)
+            & ((events.Jet.pt > 50) | (events.Jet.puId >= 4))
         )
     else:
         jetmask = (

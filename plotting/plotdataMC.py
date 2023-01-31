@@ -132,6 +132,13 @@ if (
 ):
     nj = 1
 
+if arg.splitOSSS == 1:
+    input_txt = input_txt + " OS"
+elif arg.splitOSSS == -1:
+    input_txt = input_txt + " SS"
+else:
+    input_txt = input_txt + " OS-SS"
+
 if arg.variable == "all":
     var_set = collated["mc"].keys()
 elif "*" in arg.variable:
@@ -309,13 +316,13 @@ for index, discr in enumerate(var_set):
         )
         hmc = collated["mc"][discr][noSF_axis]
         ax.stairs(
-            values=hmc.values() + np.sqrt(hmc.values()),
-            baseline=hmc.values() - np.sqrt(hmc.values()),
+            values=hmc.values() + np.sqrt(hmc.variance()),
+            baseline=hmc.values() - np.sqrt(hmc.variance()),
             edges=hmc.axes[0].edges,
             label="Stat. unc.",
             **errband_opts,
         )
-        plotratio(collated["data"][discr][noSF_axis], hmc, ax=rax)
+        rax = plotratio(collated["data"][discr][noSF_axis], hmc, ax=rax)
     elif "flav" in collated["mc"][discr].axes.name:
         splitflav_stack = []
         splitflav_axis = allaxis
@@ -369,13 +376,13 @@ for index, discr in enumerate(var_set):
         )
         hmc = collated["mc"][discr][allaxis]
         ax.stairs(
-            values=hmc.values() + np.sqrt(hmc.values()),
-            baseline=hmc.values() - np.sqrt(hmc.values()),
+            values=hmc.values() + np.sqrt(hmc.variance()),
+            baseline=hmc.values() - np.sqrt(hmc.variance()),
             edges=hmc.axes[0].edges,
             label="Stat. unc.",
             **errband_opts,
         )
-        plotratio(collated["data"][discr][allaxis], hmc, ax=rax)
+        rax = plotratio(collated["data"][discr][allaxis], hmc, ax=rax)
 
     ax.set_xlabel(None)
     ax.set_ylabel("Events")
