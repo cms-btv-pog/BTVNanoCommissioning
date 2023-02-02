@@ -232,16 +232,6 @@ met_filters = {
 
 
 ##JEC
-def load_jetfactory(campaign, path):
-    _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
-    with importlib.resources.path(_jet_path, path) as filename:
-        with gzip.open(filename) as fin:
-            jmestuff = cloudpickle.load(fin)
-
-    jet_factory = jmestuff["jet_factory"]
-    return jet_factory
-
-
 def load_jmefactory(campaign):
     _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
     with importlib.resources.path(
@@ -261,16 +251,6 @@ def add_jec_variables(jets, event_rho):
         )
     jets["event_rho"] = ak.broadcast_arrays(event_rho, jets.pt)[0]
     return jets
-
-
-def load_metfactory(campaign, path):
-    _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
-    with importlib.resources.path(_jet_path, path) as filename:
-        with gzip.open(filename) as fin:
-            jmestuff = cloudpickle.load(fin)
-
-    met_factory = jmestuff["met_factory"]
-    return met_factory
 
 
 ## PU weight

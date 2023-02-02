@@ -100,7 +100,12 @@ class NanoProcessor(processor.ProcessorABC):
         req_ele = ak.count(iso_ele.pt, axis=1) == 1
         iso_ele = ak.pad_none(iso_ele, 1, axis=1)
         iso_ele = iso_ele[:, 0]
-
+        iso_eindx = ak.mask(
+            ak.local_index(events.Electron.pt),
+            ((events.Electron.pt > 34) & ele_mvatightid(events, self._campaign)) == 1,
+        )
+        iso_eindx = ak.pad_none(iso_eindx, 1)
+        iso_eindx = iso_eindx[:, 0]
         ## Jet cuts
         event_jet = events.Jet[
             jet_id(events, self._campaign)
@@ -140,12 +145,18 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_QCDveto = (
             (iso_ele.pfRelIso03_all < 0.05)
-            & (abs(iso_ele.dz) < 0.01)
-            & (abs(iso_ele.dxy) < 0.002)
-            & (iso_ele.ip3d < 0.2)
+            & (abs(iso_ele.dz) < 0.02)
+            & (abs(iso_ele.dxy) < 0.01)
+            & (iso_ele.sip3d < 2.5)
             & (
-                (iso_ele.pt / mu_jet[:, 0].pt < 0.0)
-                | (iso_ele.pt / mu_jet[:, 0].pt > 0.75)
+                iso_ele.pt
+                / ak.firsts(
+                    events.Jet[
+                        (events.Jet.electronIdx1 == iso_eindx)
+                        | ((events.Jet.electronIdx2 == iso_eindx))
+                    ].pt
+                )
+                > 0.75
             )
         )
 

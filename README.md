@@ -94,6 +94,7 @@ More options for `runner.py`
                         files
   --isCorr              Run with SFs
   --isJERC              JER/JEC implemented to jet
+  --isSyst              Run with systematics for SF
   --executor {iterative,futures,parsl/slurm,parsl/condor,parsl/condor/naf_lite,dask/condor,dask/slurm,dask/lpc,dask/lxplus,dask/casa}
                         The type of executor to use (default: futures). 
   -j WORKERS, --workers WORKERS
@@ -283,8 +284,10 @@ WW_TuneCP5_13p6TeV-pythia8
 :exclamation: Do not make the file list greater than 4k files to avoid scaleout issues in various site
 
 ## Correction files configurations
+:heavy_exclamation_mark:  If the correction files are not supported yet by jsonpog-integration, you can still try with custom input data.
 
-### Options with custom input data (deprecated)
+### Options with custom input data 
+
 All the `lumiMask`, correction files (SFs, pileup weight), and JEC, JER files are under  `BTVNanoCommissioning/src/data/` following the substructure `${type}/${campaign}/${files}`(except `lumiMasks` and `Prescales`)
 
 | Type        | File type |  Comments|
@@ -335,7 +338,7 @@ Create a `dict` entry under `correction_config` with dedicated campaigns in `BTV
 </p>
 </details>
 
-### Use central maintained jsonpog-integration
+### Use central maintained jsonpog-integration 
 The official correction files collected in [jsonpog-integration](https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration) is updated by POG except `lumiMask` and `JME` still updated by maintainer. No longer to request input files in the `correction_config`.  
 
 <details><summary>See the example with `2017_UL`.</summary>

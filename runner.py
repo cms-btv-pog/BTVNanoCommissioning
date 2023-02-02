@@ -135,8 +135,8 @@ def get_main_parser():
     )
     parser.add_argument(
         "--memory",
-        type=str,
-        default="4GB",
+        type=int,
+        default=4,
         help="Memory used in jobs default ``(default: %(default)s)",
     )
     parser.add_argument(

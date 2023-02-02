@@ -99,16 +99,22 @@ class NanoProcessor(processor.ProcessorABC):
         req_muon = ak.count(iso_muon.pt, axis=1) == 1
         iso_muon = ak.pad_none(iso_muon, 1, axis=1)
         iso_muon = iso_muon[:, 0]
+        iso_muindx = ak.mask(
+            ak.local_index(events.Muon.pt),
+            ((events.Muon.pt > 30) & mu_idiso(events, self._campaign)) == 1,
+        )
+        iso_muindx = ak.pad_none(iso_muindx, 1)
+        iso_muindx = iso_muindx[:, 0]
 
         ## Jet cuts
         event_jet = events.Jet[
             jet_id(events, self._campaign)
             & (ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2))
-            & ((events.Jet.muEF + events.Jet.neEmEF) < 0.7)
         ]
         req_jets = ak.num(event_jet.pt) >= 4
 
         ## Soft Muon cuts
+
         soft_muon = events.Muon[softmu_mask(events, self._campaign)]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
         soft_muon = ak.pad_none(soft_muon, 1, axis=1)
@@ -117,6 +123,7 @@ class NanoProcessor(processor.ProcessorABC):
         mu_jet = event_jet[
             (ak.all(event_jet.metric_table(soft_muon) <= 0.4, axis=2))
             & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1))
+            & ((event_jet.muEF + event_jet.neEmEF) < 0.7)
         ]
         req_mujet = ak.num(mu_jet.pt, axis=1) >= 1
         mu_jet = ak.pad_none(mu_jet, 1, axis=1)
@@ -144,10 +151,16 @@ class NanoProcessor(processor.ProcessorABC):
             (iso_muon.pfRelIso04_all < 0.05)
             & (abs(iso_muon.dz) < 0.01)
             & (abs(iso_muon.dxy) < 0.002)
-            & (iso_muon.ip3d < 0.2)
+            & (iso_muon.sip3d < 2)
             & (
-                (iso_muon.pt / mu_jet[:, 0].pt < 0.0)
-                | (iso_muon.pt / mu_jet[:, 0].pt > 0.75)
+                iso_muon.pt
+                / ak.firsts(
+                    events.Jet[
+                        (events.Jet.muonIdx1 == iso_muindx)
+                        | ((events.Jet.muonIdx2 == iso_muindx))
+                    ].pt
+                )
+                > 0.75
             )
         )
 
