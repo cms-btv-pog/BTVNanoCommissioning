@@ -6,7 +6,6 @@ import awkward as ak
 
 
 def getSF(flav, CvL, CvB, file="DeepCSV_ctagSF_MiniAOD94X_2017_pTincl.root", syst=""):
-
     # _btag_path = "BTVNanoCommissioning.data.BTV.Rereco17_94X"
     with importlib.resources.path(
         file[: file.rfind("/")].replace("/", "."), file[file.rfind("/") + 1 :]

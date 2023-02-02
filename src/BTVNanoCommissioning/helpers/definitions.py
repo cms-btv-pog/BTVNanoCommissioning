@@ -3,7 +3,6 @@
 
 
 def definitions():
-
     jetINDEX = [0, 1, 28, 41, 48, 49, 56, 57, 58, 59, 63, 64, 65]
     trackINDEX = [
         6,

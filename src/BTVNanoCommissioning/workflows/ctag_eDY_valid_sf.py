@@ -350,7 +350,6 @@ class NanoProcessor(processor.ProcessorABC):
                     weight=weights.weight()[event_level],
                 )
             elif "btagDeep" in histname and "0" in histname:
-
                 h.fill(
                     flav=genflavor[:, 0],
                     syst="noSF",

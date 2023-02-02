@@ -152,7 +152,6 @@ elif "*" in args.variable:
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
-
     allaxis = {}
     if "flav" in collated[args.ref][discr].axes.name:
         allaxis["flav"] = sum
