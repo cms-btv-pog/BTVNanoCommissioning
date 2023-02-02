@@ -1030,7 +1030,7 @@ xsection = [
     {
         "id": "5b44ab37f368576cbd3d4e20",
         "process_name": "TTToHadronic_TuneCP5_13TeV-powheg-pythia8",
-        "cross_section": "313.9",
+        "cross_section": "378.9",
         "total_uncertainty": "0.5174",
         "DAS": "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "energy": "13",
@@ -1038,7 +1038,7 @@ xsection = [
     {
         "id": "5b44ab2cf368576cbd3d4e0f",
         "process_name": "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8",
-        "cross_section": "88.29",
+        "cross_section": "88.51",
         "total_uncertainty": "0.5174",
         "DAS": "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.004373",
@@ -1047,7 +1047,7 @@ xsection = [
     {
         "id": "5b44ab3df368576cbd3d4e2a",
         "process_name": "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8",
-        "cross_section": "365.34",
+        "cross_section": "366.3",
         "total_uncertainty": "0.5174",
         "DAS": "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v2/MINIAODSIM",
         "fraction_negative_weight": "0.003957",
@@ -1056,7 +1056,7 @@ xsection = [
     {
         "id": "5b44aad2f368576cbd3d4d90",
         "process_name": "ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8",
-        "cross_section": "35.6",
+        "cross_section": "39.65",
         "total_uncertainty": "0.02817",
         "DAS": "/ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.003758",
@@ -1065,7 +1065,7 @@ xsection = [
     {
         "id": "5b44aacef368576cbd3d4d8b",
         "process_name": "ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8",
-        "cross_section": "35.6",
+        "cross_section": "39.65",
         "total_uncertainty": "0.02827",
         "DAS": "/ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "fraction_negative_weight": "0.0034",
@@ -1074,7 +1074,7 @@ xsection = [
     {
         "id": "5b44aacbf368576cbd3d4d86",
         "process_name": "ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",
-        "cross_section": "136.02",
+        "cross_section": "134.2",
         "total_uncertainty": "0.6404",
         "DAS": "/ST_t-channel_top_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "energy": "13",
@@ -1082,7 +1082,7 @@ xsection = [
     {
         "id": "5b44aac8f368576cbd3d4d82",
         "process_name": "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",
-        "cross_section": "80.95",
+        "cross_section": "80.0",
         "total_uncertainty": "0.3487",
         "DAS": "/ST_t-channel_antitop_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "energy": "13",
@@ -1090,7 +1090,7 @@ xsection = [
     {
         "id": "5b44aacbf368576cbd3d4d86",
         "process_name": "ST_t-channel_top_4f_inclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",
-        "cross_section": "136.02",
+        "cross_section": "134.2",
         "total_uncertainty": "0.6404",
         "DAS": "/ST_t-channel_top_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "energy": "13",
@@ -1098,7 +1098,7 @@ xsection = [
     {
         "id": "5b44aac8f368576cbd3d4d82",
         "process_name": "ST_t-channel_antitop_4f_inclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",
-        "cross_section": "80.95",
+        "cross_section": "80.0",
         "total_uncertainty": "0.3487",
         "DAS": "/ST_t-channel_antitop_4f_inclusiveDecays_TuneCP5_13TeV-powhegV2-madspin-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/MINIAODSIM",
         "energy": "13",
