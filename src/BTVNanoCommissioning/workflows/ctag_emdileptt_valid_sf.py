@@ -500,7 +500,6 @@ class NanoProcessor(processor.ProcessorABC):
                     ),
                 )
             elif "hl_" in histname and histname.replace("hl_", "") in isomu0.fields:
-
                 h.fill(
                     flatten(isomu0[histname.replace("hl_", "")]),
                     weight=weights.weight()[event_level],

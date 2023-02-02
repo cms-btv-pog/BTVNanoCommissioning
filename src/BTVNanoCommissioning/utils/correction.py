@@ -101,6 +101,7 @@ met_filters = {
     },
 }
 
+
 ##JEC
 def load_jetfactory(campaign, path):
     _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
@@ -145,7 +146,6 @@ def load_metfactory(campaign, path):
 def load_pu(campaign, path):
     _pu_path = f"BTVNanoCommissioning.data.PU.{campaign}"
     with importlib.resources.path(_pu_path, path) as filename:
-
         if str(filename).endswith(".pkl.gz"):
             with gzip.open(filename) as fin:
                 compiled = cloudpickle.load(fin)
