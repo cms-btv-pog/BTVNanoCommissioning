@@ -286,7 +286,7 @@ class NanoProcessor(processor.ProcessorABC):
             elif (
                 "btagDeep" in histname
                 and "0" in histname
-                and histname in events.Jet.fields
+                and histname.replace("_0", "") in events.Jet.fields
             ):
                 h.fill(
                     flav=genflavor[:, 0],

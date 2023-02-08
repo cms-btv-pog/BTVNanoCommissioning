@@ -273,10 +273,13 @@ class NanoProcessor(processor.ProcessorABC):
                         ),
                     )
 
-            elif "btagDeep" in histname and histname in events.Jet.fields:
+            elif "btagDeep" in histname:
                 for i in range(2):
                     sel_jet = sjets[:, i]
-                    if str(i) in histname:
+                    if (
+                        str(i) in histname
+                        and histname.replace(f"_{i}", "") in events.Jet.fields
+                    ):
                         h.fill(
                             flav=flatten(genflavor[:, i]),
                             syst="noSF",

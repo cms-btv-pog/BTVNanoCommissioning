@@ -272,10 +272,13 @@ class NanoProcessor(processor.ProcessorABC):
                             ak.broadcast_arrays(weights.weight(), spfcands[i]["pt"])[0]
                         ),
                     )
-            elif "btagDeep" in histname and histname in events.Jet.fields:
+            elif "btagDeep" in histname:
                 for i in range(4):
                     sel_jet = sjets[:, i]
-                    if str(i) in histname:
+                    if (
+                        str(i) in histname
+                        and histname.replace(f"_{i}", "") in events.Jet.fields
+                    ):
                         h.fill(
                             flav=genflavor[:, i],
                             syst="noSF",
