@@ -4,7 +4,7 @@ from coffea import processor
 from coffea.analysis_tools import Weights
 
 from BTVNanoCommissioning.helpers.func import flatten
-from BTVNanoCommissioning.utils.correction import load_lumi, load_SF
+from BTVNanoCommissioning.utils.correction import load_lumi
 
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 from BTVNanoCommissioning.utils.selection import jet_id
@@ -18,7 +18,6 @@ class NanoProcessor(processor.ProcessorABC):
         self._campaign = campaign
         self._year = year
         self.lumiMask = load_lumi(self._campaign)
-        self.SF_map = load_SF(self._campaign)
         _hist_event_dict = histogrammer("ttcom")
         self.make_output = lambda: {
             "sumw": processor.defaultdict_accumulator(float),

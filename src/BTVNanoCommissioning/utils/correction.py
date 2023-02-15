@@ -10,9 +10,9 @@ from coffea.lookup_tools import extractor
 
 from coffea.lumi_tools import LumiMask
 from coffea.btag_tools import BTagScaleFactor
-from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
 from coffea.lookup_tools import extractor
 import correctionlib
+
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 
@@ -23,14 +23,14 @@ def load_SF(campaign):
         if SF == "JME" or SF == "lumiMask":
             continue
         if SF == "PU":
-            ## load from correction config
+            ## Check whether files in jsonpog-integration exist
             if os.path.exists(
                 f"src/BTVNanoCommissioning/jsonpog-integration/POG/LUM/{campaign}"
             ):
                 correction_map["PU"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/LUM/{campaign}/puWeights.json.gz"
                 )
-            ##
+            ## Otherwise custom files
             else:
                 _pu_path = f"BTVNanoCommissioning.data.PU.{campaign}"
                 with importlib.resources.path(
@@ -60,25 +60,31 @@ def load_SF(campaign):
             else:
                 correction_map["btag"] = {}
                 correction_map["ctag"] = {}
-                if campaign == "Rereco17_94X":
-                    _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
-                    for tagger in correction_config[campaign]["BTV"]:
-                        if tagger == "DeepCSVB" or tagger == "DeepJetB":
-                            with importlib.resources.path(
-                                _btag_path, correction_config[campaign]["BTV"][tagger]
-                            ) as filename:
-                                correction_map["btag"][tagger] = BTagScaleFactor(
+                _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
+                for tagger in correction_config[campaign]["BTV"]:
+                    with importlib.resources.path(
+                        _btag_path, correction_config[campaign]["BTV"][tagger]
+                    ) as filename:
+                        if "B" in tagger:
+                            correction_map["btag"][tagger] = BTagScaleFactor(
+                                filename,
+                                BTagScaleFactor.RESHAPE,
+                                methods="iterativefit,iterativefit,iterativefit",
+                            )
+                        else:
+                            if campaign == "Rereco17_94X":
+                                correction_map["ctag"][tagger] = (
+                                    "BTVNanoCommissioning/data/BTV/"
+                                    + campaign
+                                    + "/"
+                                    + correction_config[campaign]["BTV"][tagger]
+                                )
+                            else:
+                                correction_map["ctag"][tagger] = BTagScaleFactor(
                                     filename,
                                     BTagScaleFactor.RESHAPE,
                                     methods="iterativefit,iterativefit,iterativefit",
                                 )
-                        elif tagger == "DeepCSVC" or tagger == "DeepJetC":
-                            correction_map["ctag"][tagger] = (
-                                "BTVNanoCommissioning/data/BTV/"
-                                + campaign
-                                + "/"
-                                + correction_config[campaign]["BTV"][tagger]
-                            )
 
         elif SF == "LSF":
             correction_map["MUO_cfg"] = {
@@ -103,44 +109,69 @@ def load_SF(campaign):
                 correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
                 )
-            else:
+            ### Check if any custom corrections needed
+            # FIXME: (some low pT muons not supported in jsonpog-integration at the moment)
+
+            if (
+                ".json" in "\t".join(list(correction_config[campaign]["LSF"].values()))
+                or ".txt"
+                in "\t".join(list(correction_config[campaign]["LSF"].values()))
+                or ".root"
+                in "\t".join(list(correction_config[campaign]["LSF"].values()))
+            ):
                 _mu_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
                 ext = extractor()
                 with contextlib.ExitStack() as stack:
-                    real_paths = [
+                    inputs, real_paths = [
+                        k
+                        for k in correction_map["MUO_cfg"].keys()
+                        if ".json" in correction_map["MUO_cfg"][k]
+                        or ".txt" in correction_map["MUO_cfg"][k]
+                        or ".root" in correction_map["MUO_cfg"][k]
+                    ], [
                         stack.enter_context(importlib.resources.path(_mu_path, f))
-                        for f in correction_config[campaign]["LSF"].values()
+                        for f in correction_map["MUO_cfg"].values()
+                        if ".json" in f or ".txt" in f or ".root" in f
                     ]
+
                     ext.add_weight_sets(
                         [
                             f"{paths} {file}"
-                            for paths, file in zip(
-                                correction_config[campaign]["LSF"].keys(), real_paths
-                            )
-                            if "mu" in paths
+                            for paths, file in zip(inputs, real_paths)
+                            if ".json" in str(file)
+                            or ".txt" in str(file)
+                            or ".root" in str(file)
                         ]
                     )
                 ext.finalize()
-                correction_map["MUO"] = ext.make_evaluator()
+                correction_map["MUO_custom"] = ext.make_evaluator()
 
                 _ele_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
                 ext = extractor()
                 with contextlib.ExitStack() as stack:
-                    real_paths = [
+                    inputs, real_paths = [
+                        k
+                        for k in correction_map["EGM_cfg"].keys()
+                        if ".json" in correction_map["EGM_cfg"][k]
+                        or ".txt" in correction_map["EGM_cfg"][k]
+                        or ".root" in correction_map["EGM_cfg"][k]
+                    ], [
                         stack.enter_context(importlib.resources.path(_ele_path, f))
-                        for f in correction_config[campaign]["LSF"].values()
+                        for f in correction_map["EGM_cfg"].values()
+                        if ".json" in f or ".txt" in f or ".root" in f
                     ]
                     ext.add_weight_sets(
                         [
                             f"{paths} {file}"
-                            for paths, file in zip(
-                                correction_config[campaign]["LSF"].keys(), real_paths
-                            )
-                            if "ele" in paths
+                            for paths, file in zip(inputs, real_paths)
+                            if ".json" in str(file)
+                            or ".txt" in str(file)
+                            or ".root" in str(file)
                         ]
                     )
                 ext.finalize()
-                correction_map["EGM"] = ext.make_evaluator()
+                correction_map["EGM_custom"] = ext.make_evaluator()
+
     return correction_map
 
 
@@ -232,6 +263,7 @@ met_filters = {
 
 
 ##JEC
+# FIXME: would be nicer if we can move to correctionlib in the future together with factory and workable
 def load_jmefactory(campaign):
     _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
     with importlib.resources.path(
@@ -269,22 +301,6 @@ def load_pu(campaign, path):
     return compiled
 
 
-## BTag SFs
-def load_BTV(campaign, path, tagger):
-    if campaign == "Rereco17_94X":
-        _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
-        if tagger == "DeepCSVB" or tagger == "DeepJetB":
-            with importlib.resources.path(_btag_path, path[tagger]) as filename:
-                deepsf = BTagScaleFactor(
-                    filename,
-                    BTagScaleFactor.RESHAPE,
-                    methods="iterativefit,iterativefit,iterativefit",
-                )
-        elif tagger == "DeepCSVC" or tagger == "DeepJetC":
-            deepsf = "BTVNanoCommissioning/data/BTV/" + campaign + "/" + path[tagger]
-        return deepsf
-
-
 def puwei(correct_map, nPU):
     if "correctionlib" in str(type(correct_map["PU"])):
         return correct_map["PU"][list(correct_map["PU"].keys())[0]].evaluate(
@@ -298,21 +314,21 @@ def btagSFs(jet, correct_map, SFtype, syst="central"):
     if "correctionlib" in str(type(correct_map["btag"])):
         if SFtype.endswith("C"):
             ## hard coded
-            if "DeepJetC":
+            if SFtype == "DeepJetC":
                 return correct_map["ctag"]["deepJet_shape"].evaluate(
                     syst, jet.hadronFlavour, jet.btagDeepFlavCvL, jet.btagDeepFlavCvB
                 )
-            else:
+            if SFtype == "DeepCSVC":
                 return correct_map["ctag"]["deepCSV_shape"].evaluate(
                     syst, jet.hadronFlavour, jet.btagDeepCvL, jet.btagDeepCvB
                 )
         else:
-            if "DeepJetB":
+            if SFtype == "DeepJetB":
                 return correct_map["btag"]["deepJet_shape"].evaluate(
                     syst, jet.hadronFlavour, abs(jet.eta), jet.pt, jet.btagDeepFlavB
                 )
-            if "DeepCSVB":
-                return correct_map["btag"]["deepJet_shape"].evaluate(
+            if SFtype == "DeepCSVB":
+                return correct_map["btag"]["deepCSV_shape"].evaluate(
                     syst, jet.hadronFlavour, abs(jet.eta), jet.pt, jet.btagDeepB
                 )
     else:
@@ -335,22 +351,33 @@ def btagSFs(jet, correct_map, SFtype, syst="central"):
                 )
 
         else:
-            if SFtype == "DeepJetC":
+            if SFtype == "DeepJetB":
                 return correct_map["btag"][SFtype].eval(
-                    syst, jet.hadronFlavour, abs(jet.eta), jet.pt, jet.btagDeepFlavB
+                    syst,
+                    jet.hadronFlavour,
+                    abs(jet.eta),
+                    jet.pt,
+                    jet.btagDeepFlavB,
                 )
             else:
                 return correct_map["btag"][SFtype].eval(
-                    syst, jet.hadronFlavour, abs(jet.eta), jet.pt, jet.btagDeepB
+                    syst,
+                    jet.hadronFlavour,
+                    abs(jet.eta),
+                    jet.pt,
+                    jet.btagDeepB,
                 )
 
 
 ### Lepton SFs
-def eleSFs(ele, correct_map):
-    ele_eta = ak.fill_none(ele.eta, 0.0)
-    ele_pt = ak.fill_none(ele.pt, 20.0)
+def eleSFs(ele, correct_map, isHLT=False):
+    ele_eta = ele.eta
+    ele_pt = np.where(ele.pt < 20, 20.0, ele.pt)
     weight = 1.0
     for sf in correct_map["EGM_cfg"].keys():
+        ## Only apply SFs for lepton pass HLT filter
+        if not isHLT and "HLT" in sf:
+            continue
         sf_type = sf[: sf.find(" ")]
         if "correctionlib" in str(type(correct_map["EGM"])):
             if "Reco" in sf:
@@ -369,30 +396,73 @@ def eleSFs(ele, correct_map):
                 )
         else:
             if "ele_Trig" in sf:
-                weight = weight * correct_map["EGM"][sf_type](ele_pt)
+                weight = weight * correct_map["EGM_custom"][sf_type](ele_pt)
             elif "ele" in sf:
-                weight = weight * correct_map["EGM"][sf_type](ele_eta, ele_pt)
+                weight = weight * correct_map["EGM_custom"][sf_type](ele_eta, ele_pt)
     return weight
 
 
-def muSFs(mu, correct_map):
-    mu_eta = np.abs(ak.fill_none(mu.eta, 0.0))
-
+def muSFs(mu, correct_map, isHLT=False):
+    mu_eta = np.abs(mu.eta)
+    mu_pt = mu.pt
     weight = 1.0
+    sfs = 1.0
     for sf in correct_map["MUO_cfg"].keys():
-        min_pt = 15.0
-        if "HLT" in sf:
-            min_pt = 29.0
-        mu_pt = ak.fill_none(mu.pt, min_pt)
-        mu_pt = np.where(mu_pt < min_pt, min_pt, mu_pt)
-
+        ## Only apply SFs for lepton pass HLT filter
+        if not isHLT and "HLT" in sf:
+            continue
+        mask = mu_pt > 15.0
+        if "low" not in sf:
+            mu_pt = np.where(mu.pt < 15.0, 15.0, mu.pt)
+        else:
+            mu_pt = np.where(mu.pt >= 15.0, 15.0, mu.pt)
         sf_type = sf[: sf.find(" ")]
-        if "correctionlib" in str(type(correct_map["MUO"])):
+        if (
+            "correctionlib" in str(type(correct_map["MUO"]))
+            and "MUO_custom" in correct_map
+        ):
+            if "ID" in sf:
+                if "low" in sf:
+                    sfs = np.where(
+                        ~mask,
+                        correct_map["MUO_custom"][
+                            "mu_ID_lowNUM_TightID_DEN_TrackerMuons/abseta_pt_value"
+                        ](mu_eta, mu_pt),
+                        1.0,
+                    )
+                else:
+                    sfs = np.where(
+                        mask,
+                        correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
+                            sf[sf.find(" ") + 1 :], mu_eta, mu_pt, "sf"
+                        ),
+                        1.0,
+                    )
+            elif "Reco" in sf:
+                if "low" in sf:
+                    sfs = np.where(
+                        ~mask,
+                        correct_map["MUO_custom"][
+                            "mu_Reco_lowNUM_TrackerMuons_DEN_genTracks/abseta_pt_value"
+                        ](mu_eta, mu_pt),
+                        1.0,
+                    )
+                else:
+                    sfs = np.where(
+                        mu_pt > 15.0,
+                        correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
+                            sf[sf.find(" ") + 1 :], mu_eta, mu_pt, "sf"
+                        ),
+                        1.0,
+                    )
+
+            weight = weight * sfs
+        elif "correctionlib" in str(type(correct_map["MUO"])):
             weight = weight * correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
                 sf[sf.find(" ") + 1 :], mu_eta, mu_pt, "sf"
             )
         else:
             if "mu" in sf:
-                weight = weight * correct_map["MUO"][sf_type](mu_eta, mu_pt)
+                weight = weight * correct_map["MUO_custom"][sf_type](mu_eta, mu_pt)
 
     return weight

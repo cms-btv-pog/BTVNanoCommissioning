@@ -7,7 +7,7 @@ from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.helpers.func import flatten, update
 from BTVNanoCommissioning.helpers.definitions import definitions
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.correction import load_lumi, load_SF
+from BTVNanoCommissioning.utils.correction import load_lumi
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_mvatightid
 
@@ -18,7 +18,6 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         _hist_event_dict = histogrammer("validation")
-        self.SF_map = load_SF(self._campaign)
         self.make_output = lambda: {
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,

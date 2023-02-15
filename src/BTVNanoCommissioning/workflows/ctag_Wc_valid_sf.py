@@ -247,7 +247,7 @@ class NanoProcessor(processor.ProcessorABC):
                     "puweight", puwei(self.SF_map, events[event_level].Pileup.nTrueInt)
                 )
             if "MUO" in self.SF_map.keys() or "EGM" in self.SF_map.keys():
-                weights.add("lep1sf", muSFs(shmu, self.SF_map))
+                weights.add("lep1sf", muSFs(shmu, self.SF_map, True))
                 weights.add("lep2sf", muSFs(ssmu, self.SF_map))
 
         if isRealData:
@@ -381,8 +381,7 @@ class NanoProcessor(processor.ProcessorABC):
             elif (
                 "btagDeep" in histname
                 and "0" in histname
-                and histname in events.Jet.fields
-                and histname in events.Jet.fields
+                and histname.replace("_0", "") in events.Jet.fields
             ):
                 h.fill(
                     flav=smflav,
@@ -398,7 +397,7 @@ class NanoProcessor(processor.ProcessorABC):
                 if (
                     not isRealData
                     and self.isCorr
-                    and "BTV" in self.SF_map.keys()
+                    and "btag" in self.SF_map.keys()
                     and "_b" not in histname
                     and "_bb" not in histname
                     and "_lepb" not in histname
@@ -431,7 +430,7 @@ class NanoProcessor(processor.ProcessorABC):
                     ),
                     weight=weights.weight(),
                 )
-                if not isRealData and self.isCorr and "BTV" in self.SF_map.keys():
+                if not isRealData and self.isCorr and "btag" in self.SF_map.keys():
                     for syst in disc_list[histname.replace("_1", "")][1].keys():
                         h.fill(
                             flav=genflavor[:, 1],

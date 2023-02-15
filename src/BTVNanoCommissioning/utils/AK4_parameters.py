@@ -30,6 +30,8 @@ correction_config = {
             "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
             "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso 2017_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
+            "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2017_UL_ID.histo.json",
+            "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2017_UL_trackerMuon.histo.json",
         },
     },
     "Winter22Run3": {

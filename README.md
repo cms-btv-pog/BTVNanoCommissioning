@@ -91,7 +91,7 @@ More options for `runner.py`
                         (default: dummy_samples.json)
   --year YEAR           Year
   --campaign CAMPAIGN   Dataset campaign, change the corresponding correction
-                        files
+                        files{ "Rereco17_94X","Winter22Run3","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
   --isCorr              Run with SFs
   --isJERC              JER/JEC implemented to jet
   --isSyst              Run with systematics for SF
@@ -99,12 +99,12 @@ More options for `runner.py`
                         The type of executor to use (default: futures). 
   -j WORKERS, --workers WORKERS
                         Number of workers (cores/threads) to use for multi- worker executors (e.g. futures or condor) (default:
-                        12)
+                        3)
   -s SCALEOUT, --scaleout SCALEOUT
                         Number of nodes to scale out to if using slurm/condor.
                         Total number of concurrent threads is ``workers x
                         scaleout`` (default: 6)
-  --memory MEMORY       Memory used in jobs  ``(default: 4GB)
+  --memory MEMORY       Memory used in jobs (in GB) ``(default: 4GB)
   --disk DISK           Disk used in jobs  ``(default: 4GB)
   --voms VOMS           Path to voms proxy, made accessible to worker nodes.
                         By default a copy will be made to $HOME.

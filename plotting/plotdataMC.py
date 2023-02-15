@@ -263,8 +263,8 @@ for index, discr in enumerate(var_set):
         )
         hmc = collated["mc"][discr][SF_axis]
         ax.stairs(
-            values=hmc.values() + np.sqrt(hmc.values()),
-            baseline=hmc.values() - np.sqrt(hmc.values()),
+            values=hmc.values() + np.sqrt(hmc.variance()),
+            baseline=hmc.values() - np.sqrt(hmc.variance()),
             edges=hmc.axes[0].edges,
             label="Stat. unc.",
             **errband_opts,

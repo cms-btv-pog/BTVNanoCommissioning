@@ -121,7 +121,7 @@ def get_main_parser():
         "-j",
         "--workers",
         type=int,
-        default=12,
+        default=3,
         help="Number of workers (cores/threads) to use for multi-worker executors "
         "(e.g. futures or condor) (default: %(default)s)",
     )
@@ -135,14 +135,14 @@ def get_main_parser():
     )
     parser.add_argument(
         "--memory",
-        type=int,
-        default=4,
+        type=float,
+        default=4.0,
         help="Memory used in jobs default ``(default: %(default)s)",
     )
     parser.add_argument(
         "--disk",
-        type=str,
-        default="4GB",
+        type=float,
+        default=4,
         help="Disk used in jobs default ``(default: %(default)s)",
     )
     parser.add_argument(
@@ -624,7 +624,8 @@ if __name__ == "__main__":
                 queue="all",
                 cores=args.workers,
                 processes=args.scaleout,
-                memory=args.memory,
+                memory=f"{args.memory}GB",
+                disk=f"{args.disk}GB",
                 retries=args.retries,
                 walltime="00:30:00",
                 job_script_prologue=job_script_prologue,
@@ -632,8 +633,8 @@ if __name__ == "__main__":
         elif "condor" in args.executor:
             cluster = HTCondorCluster(
                 cores=args.workers,
-                memory=args.memory,
-                disk=args.disk,
+                memory=f"{args.memory}GB",
+                disk=f"{args.disk}GB",
                 job_script_prologue=job_script_prologue,
             )
 

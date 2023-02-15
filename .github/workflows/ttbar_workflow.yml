@@ -84,6 +84,3 @@ jobs:
     - name: Run example workflow with custom correction
       run: |
         python runner.py --workflow ttcom --json metadata/test_w_dj_mumu.json  --limit 1 --executor futures -j 4
-    - name: Run example workflow with correctionlib
-      run: |
-        python runner.py --workflow ttcom --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 4 --campaign 2017_UL
