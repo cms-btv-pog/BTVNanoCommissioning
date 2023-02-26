@@ -55,6 +55,9 @@ parser.add_argument(
     type=str,
     help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
+parser.add_argument(
+    "--xrange", type=str, default=None, help="custom x-range, --xrange xmin,xmax"
+)
 parser.add_argument("--ext", type=str, default="", help="prefix name/btv name tag")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
@@ -115,26 +118,27 @@ if "Run" in args.ref:
 else:
     hist_type = "step"
     label = "Simulation Preliminary"
-
-if "ttdilep" in args.phase:
-    if "ctag" in args.phase:
-        input_txt = r"ctag t$\bar{t}$ e$\mu$"
-    else:
-        input_txt = r"t$\bar{t}$ e$\mu$"
-    nj = 2
-elif "ttsemilep" in args.phase:
-    if "ctag" in args.phase:
-        input_txt = r"ctag t$\bar{t}$ $\mu$+jets"
-    else:
-        input_txt = r"t$\bar{t}$ $\mu$+jets"
+nj = 1
+if "Wc" in argparse.phase:
+    input_txt = "W+c"
+elif "DY" in args.phase:
+    input_txt = "DY+jets"
+elif "semilep" in args.phase:
+    input_txt = r"t$\bar{t}$ semileptonic"
     nj = 4
+elif "dilep" in args.phase:
+    input_txt = r"t$\bar{t}$ dileptonic"
+    nj = 2
+if "emctag" in args.phase:
+    input_txt = input_txt + " (e$\mu$)"
+elif "ectag" in args.phase:
+    input_txt = input_txt + " (e)"
+elif "ttdilep_sf" == args.phase:
+    input_txt = input_txt + " (e$\mu$)"
 else:
-    if "Wc" in args.phase:
-        input_txt = "W+c"
-    elif "DY" in args.phase:
-        input_txt = "DY+jets"
-    nj = 1
-
+    input_txt = input_txt + " ($\mu$)"
+if "ctag" in args.phase and "DY" not in args.phase:
+    input_txt = input_txt + "\nw/ soft-$\mu$"
 if args.shortref == "":
     args.shortref = args.ref
 
@@ -365,6 +369,10 @@ for index, discr in enumerate(var_set):
             alls = collated[c][discr][allaxis] + alls
         xmin, xmax = autoranger(alls)
         rax.set_xlim(xmin, xmax)
+        if args.xrange is not None:
+            xmin, xmax = float(args.xrange.split(",")[0]), float(
+                args.xrange.split(",")[1]
+            )
         rax.set_xlabel(xlabel)
         ax.set_xlabel(None)
         ax.set_ylabel("Events")

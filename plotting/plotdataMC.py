@@ -26,12 +26,17 @@ parser.add_argument(
     "--phase",
     required=True,
     choices=[
-        "dilep_sf",
+        "ttdilep_sf",
         "ttsemilep_sf",
         "ctag_Wc_sf",
         "ctag_DY_sf",
         "ctag_ttsemilep_sf",
         "ctag_ttdilep_sf",
+        "ectag_Wc_sf",
+        "ectag_DY_sf",
+        "ectag_ttsemilep_sf",
+        "ectag_ttdilep_sf",
+        "emctag_ttdilep_sf",
     ],
     dest="phase",
     help="which phase space",
@@ -64,6 +69,9 @@ parser.add_argument(
 
 parser.add_argument(
     "--SF", action="store_true", default=False, help="make w/, w/o SF comparisons"
+)
+parser.add_argument(
+    "--xrange", type=str, default=None, help="custom x-range, --xrange xmin,xmax"
 )
 parser.add_argument("--ext", type=str, default="", help="prefix name")
 parser.add_argument(
@@ -114,16 +122,10 @@ if "Wc" in arg.phase:
 elif "DY" in arg.phase:
     input_txt = "DY+jets"
 elif "semilep" in arg.phase:
-    if "ctag" in arg.phase:
-        input_txt = r"ctag t$\bar{t}$ $\mu$+jets"
-    else:
-        input_txt = r"t$\bar{t}$ $\mu$+jets"
+    input_txt = r"t$\bar{t}$ semileptonic"
     nj = 4
 elif "dilep" in arg.phase:
-    if "ctag" in arg.phase:
-        input_txt = r"ctag t$\bar{t}$ e$\mu$"
-    else:
-        input_txt = r"t$\bar{t}$ e$\mu$"
+    input_txt = r"t$\bar{t}$ dileptonic"
     nj = 2
 if (
     "njet" in arg.variable.split(",")
@@ -131,14 +133,23 @@ if (
     or "mu" in arg.variable.split(",")
 ):
     nj = 1
-
-if arg.splitOSSS == 1:
-    input_txt = input_txt + " OS"
-elif arg.splitOSSS == -1:
-    input_txt = input_txt + " SS"
+if "Wc" in arg.phase:
+    if arg.splitOSSS == 1:
+        input_txt = input_txt + " OS"
+    elif arg.splitOSSS == -1:
+        input_txt = input_txt + " SS"
+    else:
+        input_txt = input_txt + " OS-SS"
+if "emctag" in arg.phase:
+    input_txt = input_txt + " (e$\mu$)"
+elif "ectag" in arg.phase:
+    input_txt = input_txt + " (e)"
+elif "ttdilep_sf" == arg.phase:
+    input_txt = input_txt + " (e$\mu$)"
 else:
-    input_txt = input_txt + " OS-SS"
-
+    input_txt = input_txt + " ($\mu$)"
+if "ctag" in arg.phase and "DY" not in arg.phase:
+    input_txt = input_txt + "\nw/ soft-$\mu$"
 if arg.variable == "all":
     var_set = collated["mc"].keys()
 elif "*" in arg.variable:
@@ -263,8 +274,8 @@ for index, discr in enumerate(var_set):
         )
         hmc = collated["mc"][discr][SF_axis]
         ax.stairs(
-            values=hmc.values() + np.sqrt(hmc.variance()),
-            baseline=hmc.values() - np.sqrt(hmc.variance()),
+            values=hmc.values() + np.sqrt(hmc.variances()),
+            baseline=hmc.values() - np.sqrt(hmc.variances()),
             edges=hmc.axes[0].edges,
             label="Stat. unc.",
             **errband_opts,
@@ -316,8 +327,8 @@ for index, discr in enumerate(var_set):
         )
         hmc = collated["mc"][discr][noSF_axis]
         ax.stairs(
-            values=hmc.values() + np.sqrt(hmc.variance()),
-            baseline=hmc.values() - np.sqrt(hmc.variance()),
+            values=hmc.values() + np.sqrt(hmc.variances()),
+            baseline=hmc.values() - np.sqrt(hmc.variances()),
             edges=hmc.axes[0].edges,
             label="Stat. unc.",
             **errband_opts,
@@ -376,8 +387,8 @@ for index, discr in enumerate(var_set):
         )
         hmc = collated["mc"][discr][allaxis]
         ax.stairs(
-            values=hmc.values() + np.sqrt(hmc.variance()),
-            baseline=hmc.values() - np.sqrt(hmc.variance()),
+            values=hmc.values() + np.sqrt(hmc.variances()),
+            baseline=hmc.values() - np.sqrt(hmc.variances()),
             edges=hmc.axes[0].edges,
             label="Stat. unc.",
             **errband_opts,
@@ -417,10 +428,10 @@ for index, discr in enumerate(var_set):
     xmin, xmax = autoranger(
         collated["data"][discr][allaxis] + collated["mc"][discr][allaxis]
     )
+    if arg.xrange is not None:
+        xmin, xmax = float(arg.xrange.split(",")[0]), float(arg.xrange.split(",")[1])
     rax.set_xlim(xmin, xmax)
-    at = AnchoredText(
-        input_txt + "\n" + "BTV Commissioning" + "\n" + arg.ext, loc=2, frameon=False
-    )
+    at = AnchoredText(input_txt + "\n" + arg.ext, loc=2, frameon=False)
     ax.add_artist(at)
     scale = ""
     if arg.norm:
