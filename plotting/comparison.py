@@ -182,10 +182,10 @@ for index, discr in enumerate(var_set):
                 collated[c][discr][{"osss": 0}] + collated[c][discr][{"osss": 1}] * -1
             )
     if args.autorebin is not None:
-        if arg.autorebin.isdigit():
-            rebin = int(arg.autorebin)
+        if args.autorebin.isdigit():
+            rebin = int(args.autorebin)
         else:
-            rebin = np.array([float(i) for i in arg.autorebin.split(",")])
+            rebin = np.array([float(i) for i in args.autorebin.split(",")])
         collated["mc"][discr] = rebin_hist(
             collated["mc"][discr], collated["mc"][discr].axes[-1].name, rebin
         )

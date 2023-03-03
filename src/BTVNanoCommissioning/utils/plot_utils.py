@@ -213,9 +213,9 @@ def plotratio(
     if flow == "show":
         edges = np.array(
             [
-                edges[0] - (edges[1] - edges[0]) * 5,
+                edges[0] - (edges[1] - edges[0]) * 2,
                 *edges,
-                edges[-1] + (edges[1] - edges[0]) * 5,
+                edges[-1] + (edges[1] - edges[0]) * 2,
             ]
         )
     centers = (edges[1:] + edges[:-1]) / 2
@@ -430,9 +430,9 @@ def autoranger(hist, flow=None):
         val = hist.view(flow=True)["value"]
         axis = np.array(
             [
-                axis[0] - (axis[1] - axis[0]) * 5,
+                axis[0] - (axis[1] - axis[0]) * 2,
                 *axis,
-                axis[-1] + (axis[1] - axis[0]) * 5,
+                axis[-1] + (axis[1] - axis[0]) * 2,
             ]
         )
     for i in range(len(val)):
@@ -496,9 +496,9 @@ def MCerrorband(
         if flow == "show":
             edges = np.array(
                 [
-                    edges[0] - (edges[1] - edges[0]) * 5,
+                    edges[0] - (edges[1] - edges[0]) * 2,
                     *edges,
-                    edges[-1] + (edges[1] - edges[0]) * 5,
+                    edges[-1] + (edges[1] - edges[0]) * 2,
                 ]
             )
             values = hmc.view(flow=True)["value"] + np.sqrt(
@@ -537,14 +537,14 @@ def MCerrorband(
     else:
         values = hmc.values() + ext_error[1]
         baseline = hmc.values() - ext_error[0]
-        edges = axis.edges
+        edges = hmc.axes[-1].edges
 
         if flow == "show":
             edges = np.array(
                 [
-                    edges[0] - (edges[1] - edges[0]) * 5,
+                    edges[0] - (edges[1] - edges[0]) * 2,
                     *edges,
-                    edges[-1] + (edges[1] - edges[0]) * 5,
+                    edges[-1] + (edges[1] - edges[0]) * 2,
                 ]
             )
             values = hmc.view(flow=True)["value"] + ext_error[1]

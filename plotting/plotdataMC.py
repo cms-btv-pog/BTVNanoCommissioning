@@ -8,7 +8,7 @@ import mplhep as hep
 import hist
 
 plt.style.use(hep.style.ROOT)
-from BTVNanoCommissioning.utils.xs_scaler import getSumW, collate, scaleSumW
+from BTVNanoCommissioning.utils.xs_scaler import collate, scaleSumW
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
@@ -101,16 +101,12 @@ if not os.path.isdir(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/"):
     os.makedirs(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/")
 if len(arg.input.split(",")) > 1:
     output = {i: load(i) for i in arg.input.split(",")}
-    for out in output.keys():
-        output[out] = scaleSumW(output[out], arg.lumi, getSumW(output[out]))
 elif "*" in arg.input:
     files = glob.glob(arg.input)
     output = {i: load(i) for i in files}
-    for out in output.keys():
-        output[out] = scaleSumW(output[out], arg.lumi, getSumW(output[out]))
 else:
-    output = load(arg.input)
-    output = scaleSumW(output, arg.lumi, getSumW(output))
+    output = {arg.input: load(arg.input)}
+output = scaleSumW(output, arg.lumi)
 mergemap = {}
 if not any(".coffea" in o for o in output.keys()):
     mergemap["data"] = [m for m in output.keys() if "Run" in m]
@@ -170,7 +166,6 @@ for index, discr in enumerate(var_set):
     if "sumw" == discr:
         continue
     allaxis = {}
-
     if "Wc" in arg.phase:
         if arg.splitOSSS is None:  # OS-SS
             collated["mc"][discr] = (
@@ -306,7 +301,7 @@ for index, discr in enumerate(var_set):
             flow=arg.flow,
             ext_error=SFerror,
             label="SF unc.",
-            fill_opts=otther,
+            fill_opts=other,
         )  # stat. unc. errorband
         plotratio(hdata, collated["mc"][discr][noSF_axis], ax=rax, flow=arg.flow)
         plotratio(

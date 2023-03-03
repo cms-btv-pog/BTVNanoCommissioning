@@ -19,7 +19,7 @@ def histogrammer(workflow):
         20, 0.2, 6.2, name="pfRelIso03_all", label="Rel. Iso"
     )
     dr_axis = Hist.axis.Regular(20, 0, 8, name="dr", label="$\Delta$R")
-    dr_s_axis = Hist.axis.Regular(20, 0, 5, name="dr", label="$\Delta$R")
+    dr_s_axis = Hist.axis.Regular(20, 0, 0.5, name="dr", label="$\Delta$R")
     dxy_axis = Hist.axis.Regular(40, -0.05, 0.05, name="dxy", label="d_{xy}")
     dz_axis = Hist.axis.Regular(40, -0.01, 0.01, name="dz", label="d_{z}")
     qcddxy_axis = Hist.axis.Regular(40, -0.002, 0.002, name="dxy", label="d_{xy}")
