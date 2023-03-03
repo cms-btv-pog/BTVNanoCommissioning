@@ -103,7 +103,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Jet cuts
         jet_sel = jet_id(events, self._campaign) & (
-            ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2)
+            ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2, mask_identity=True)
         )
         if "DeepJet_nsv" in events.Jet.fields:
             jet_sel = jet_sel & (events.Jet.DeepJet_nsv > 0)
@@ -117,7 +117,11 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Muon-jet cuts
         mu_jet = event_jet[
-            (ak.all(event_jet.metric_table(soft_muon) <= 0.4, axis=2))
+            (
+                ak.all(
+                    event_jet.metric_table(soft_muon) <= 0.4, axis=2, mask_identity=True
+                )
+            )
             & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1))
             & ((event_jet.muEF + event_jet.neEmEF) < 0.7)
         ]
@@ -127,9 +131,19 @@ class NanoProcessor(processor.ProcessorABC):
         ## store jet index for PFCands, create mask on the jet index
         jet_selpf = (
             jet_id(events, self._campaign)
-            & (ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2))
+            & (
+                ak.all(
+                    events.Jet.metric_table(iso_muon) > 0.5, axis=2, mask_identity=True
+                )
+            )
             & ((events.Jet.muEF + events.Jet.neEmEF) < 0.7)
-            & (ak.all(events.Jet.metric_table(soft_muon) <= 0.4, axis=2))
+            & (
+                ak.all(
+                    events.Jet.metric_table(soft_muon) <= 0.4,
+                    axis=2,
+                    mask_identity=True,
+                )
+            )
             & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
         )
         if "DeepJet_nsv" in events.Jet.fields:
@@ -219,6 +233,8 @@ class NanoProcessor(processor.ProcessorABC):
         ssmu = soft_muon[event_level]
         smet = MET[event_level]
         smuon_jet = mu_jet[event_level]
+        nsoftmu = ak.count(ssmu.pt, axis=1)
+        nmujet = ak.count(smuon_jet.pt, axis=1)
         smuon_jet = smuon_jet[:, 0]
         ssmu = ssmu[:, 0]
         sz = shmu + ssmu

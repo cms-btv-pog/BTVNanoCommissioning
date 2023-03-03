@@ -6,7 +6,12 @@ from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
-from BTVNanoCommissioning.utils.plot_utils import plotratio, markers, autoranger
+from BTVNanoCommissioning.utils.plot_utils import (
+    plotratio,
+    markers,
+    autoranger,
+    rebin_hist,
+)
 
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.utils.xs_scaler import collate
@@ -58,6 +63,12 @@ parser.add_argument(
 parser.add_argument(
     "--xrange", type=str, default=None, help="custom x-range, --xrange xmin,xmax"
 )
+parser.add_argument(
+    "--flow",
+    type=str,
+    default=None,
+    help="str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
+)
 parser.add_argument("--ext", type=str, default="", help="prefix name/btv name tag")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
@@ -75,7 +86,7 @@ parser.add_argument(
 parser.add_argument(
     "--autorebin",
     default=None,
-    help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
+    help="Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)",
 )
 parser.add_argument(
     "--xlabel",
@@ -171,8 +182,16 @@ for index, discr in enumerate(var_set):
                 collated[c][discr][{"osss": 0}] + collated[c][discr][{"osss": 1}] * -1
             )
     if args.autorebin is not None:
-        rebin_factor = int(args.autorebin)
-        allaxis[collated[args.ref][discr].axes[-1].name] = hist.rebin(rebin_factor)
+        if arg.autorebin.isdigit():
+            rebin = int(arg.autorebin)
+        else:
+            rebin = np.array([float(i) for i in arg.autorebin.split(",")])
+        collated["mc"][discr] = rebin_hist(
+            collated["mc"][discr], collated["mc"][discr].axes[-1].name, rebin
+        )
+        collated["data"][discr] = rebin_hist(
+            collated["data"][discr], collated["data"][discr].axes[-1].name, rebin
+        )
     # FIXME: add wildcard option for xlabel
     # xlabel = (
     #     args.xlabel
@@ -232,6 +251,7 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
+            flow=args.flow,
         )
         hep.histplot(
             collated[args.ref][discr][caxis],
@@ -240,6 +260,7 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
+            flow=args.flow,
         )
         hep.histplot(
             collated[args.ref][discr][baxis],
@@ -248,6 +269,7 @@ for index, discr in enumerate(var_set):
             color="r",
             histtype=hist_type,
             ax=ax,
+            flow=args.flow,
         )
 
         mindex = 0
@@ -261,6 +283,7 @@ for index, discr in enumerate(var_set):
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
+                flow=args.flow,
             )
             hep.histplot(
                 collated[c][discr][caxis],
@@ -270,6 +293,7 @@ for index, discr in enumerate(var_set):
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
+                flow=args.flow,
             )
             hep.histplot(
                 collated[c][discr][baxis],
@@ -279,6 +303,7 @@ for index, discr in enumerate(var_set):
                 marker=markers[mindex + 1],
                 histtype="errorbar",
                 ax=ax,
+                flow=args.flow,
             )
             # comparison splitted by flavor
             rax = plotratio(
@@ -288,6 +313,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "b", "marker": markers[mindex + 1]},
                 clear=False,
+                flow=args.flow,
             )
             rax2 = plotratio(
                 collated[c][discr][caxis],
@@ -296,6 +322,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "g", "marker": markers[mindex + 1]},
                 clear=False,
+                flow=args.flow,
             )
             rax3 = plotratio(
                 collated[c][discr][baxis],
@@ -304,6 +331,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "r", "marker": markers[mindex + 1]},
                 clear=False,
+                flow=args.flow,
             )
             mindex += 1
 
@@ -346,6 +374,7 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
+            flow=args.flow,
         )
         for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
             hep.histplot(
@@ -354,6 +383,7 @@ for index, discr in enumerate(var_set):
                 histtype=hist_type,
                 yerr=True,
                 ax=ax,
+                flow=args.flow,
             )
         for i, c in enumerate(args.compared.split(",")):
             plotratio(
@@ -363,6 +393,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": ax.get_lines()[i + 1].get_color()},
                 clear=False,
+                flow=args.flow,
             )  ## No error band used
         alls = collated[args.ref][discr][allaxis]
         for c in args.compared.split(","):

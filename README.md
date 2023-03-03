@@ -397,8 +397,8 @@ e.g. python -m BTVNanoCommissioning.utils.compile_jec Winter22Run3 jec_compiled
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 
 ```
-python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt
-python plotdataMC.py -i "test*.coffea" --lumi 41500 -p dilep_sf -v z_mass,z_pt
+python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt --rebin 50,80,81,82,83,100.5
+python plotdataMC.py -i "test*.coffea" --lumi 41500 -p dilep_sf -v z_mass,z_pt 
 
 options:
   -h, --help            show this help message and exit
@@ -415,11 +415,13 @@ options:
   -i INPUT, --input INPUT
                         input coffea files (str), splitted different files with ','. Wildcard option * available as well.
    --autorebin AUTOREBIN
-                        Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
+                        Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)
    --xlabel XLABEL      rename the label for x-axis
    --splitOSSS SPLITOSSS 
                         Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used
-   --xrange XRANGE       custom x-range, --xrange xmin,xmax
+   --xrange XRANGE      custom x-range, --xrange xmin,xmax
+   --flow FLOW 
+                        str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.
 ```
 - data/data, MC/MC comparisons
 
@@ -449,10 +451,12 @@ options:
   --shortcomp SHORTCOMP
                         short names for compared datasets for legend, split by ','
    --autorebin AUTOREBIN
-                        Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
+                        Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)
    --xlabel XLABEL      rename the label for x-axis
    --norm               compare shape, normalized yield to reference
    --xrange XRANGE       custom x-range, --xrange xmin,xmax
+   --flow FLOW 
+                        str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.
 ```
 
 

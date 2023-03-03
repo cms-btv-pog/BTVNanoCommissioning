@@ -105,7 +105,11 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Muon jet cuts
         mu_jet = event_jet[
-            (ak.all(event_jet.metric_table(soft_muon) <= 0.4, axis=2))
+            (
+                ak.all(
+                    event_jet.metric_table(soft_muon) <= 0.4, axis=2, mask_identity=True
+                )
+            )
             & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1))
         ]
         req_mujet = ak.count(mu_jet.pt, axis=1) >= 1
@@ -115,7 +119,13 @@ class NanoProcessor(processor.ProcessorABC):
             ak.local_index(events.Jet.pt),
             (
                 jet_id(events, self._campaign)
-                & (ak.all(events.Jet.metric_table(soft_muon) <= 0.4, axis=2))
+                & (
+                    ak.all(
+                        events.Jet.metric_table(soft_muon) <= 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
+                )
                 & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
             )
             == 1,
@@ -174,12 +184,14 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         shmu = iso_ele[event_level]
         ssmu = soft_muon[event_level]
+        nsoftmu = ak.count(ssmu.pt, axis=1)
         softmu0 = ssmu[:, 0]
         sz = shmu[:, 0] + shmu[:, 1]
         isomu0 = shmu[:, 0]
         isomu1 = shmu[:, 1]
         sjets = event_jet[event_level]
         smuon_jet = mu_jet[event_level]
+        nmujet = ak.count(smuon_jet.pt, axis=1)
         smuon_jet = smuon_jet[:, 0]
         smet = MET[event_level]
         njet = ak.count(sjets.pt, axis=1)
@@ -439,6 +451,8 @@ class NanoProcessor(processor.ProcessorABC):
                             * disc_list[histname.replace("_1", "")][1][syst],
                         )
         output["njet"].fill(njet, weight=weights.weight())
+        output["nmujet"].fill(nmujet, weight=weights.weight())
+        output["nsoftmu"].fill(nsoftmu, weight=weights.weight())
         output["hl_ptratio"].fill(
             flav=genflavor[:, 0],
             ratio=isomu0.pt / sjets[:, 0].pt,

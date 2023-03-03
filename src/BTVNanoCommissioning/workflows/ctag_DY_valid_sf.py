@@ -111,8 +111,20 @@ class NanoProcessor(processor.ProcessorABC):
         ## Jet cuts
         event_jet = events.Jet[
             jet_id(events, self._campaign)
-            & (ak.all(events.Jet.metric_table(pos_dilep[:, 0]) > 0.4, axis=2))
-            & (ak.all(events.Jet.metric_table(neg_dilep[:, 0]) > 0.4, axis=2))
+            & (
+                ak.all(
+                    events.Jet.metric_table(pos_dilep[:, 0]) > 0.4,
+                    axis=2,
+                    mask_identity=True,
+                )
+            )
+            & (
+                ak.all(
+                    events.Jet.metric_table(neg_dilep[:, 0]) > 0.4,
+                    axis=2,
+                    mask_identity=True,
+                )
+            )
         ]
         req_jets = ak.num(event_jet.pt) >= 1
         event_jet = ak.pad_none(event_jet, 1, axis=1)
@@ -122,8 +134,20 @@ class NanoProcessor(processor.ProcessorABC):
             ak.local_index(events.Jet.pt),
             (
                 jet_id(events, self._campaign)
-                & (ak.all(events.Jet.metric_table(pos_dilep[:, 0]) > 0.4, axis=2))
-                & (ak.all(events.Jet.metric_table(neg_dilep[:, 0]) > 0.4, axis=2))
+                & (
+                    ak.all(
+                        events.Jet.metric_table(pos_dilep[:, 0]) > 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
+                )
+                & (
+                    ak.all(
+                        events.Jet.metric_table(neg_dilep[:, 0]) > 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
+                )
             )
             == 1,
         )

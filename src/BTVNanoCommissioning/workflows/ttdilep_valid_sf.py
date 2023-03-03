@@ -104,8 +104,20 @@ class NanoProcessor(processor.ProcessorABC):
         ## Jet cuts
         event_jet = events.Jet[
             jet_id(events, self._campaign)
-            & (ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))
-            & (ak.all(events.Jet.metric_table(events.Electron) > 0.4, axis=2))
+            & (
+                ak.all(
+                    events.Jet.metric_table(events.Muon) > 0.4,
+                    axis=2,
+                    mask_identity=True,
+                )
+            )
+            & (
+                ak.all(
+                    events.Jet.metric_table(events.Electron) > 0.4,
+                    axis=2,
+                    mask_identity=True,
+                )
+            )
         ]
         req_jets = ak.num(event_jet.pt) >= 2
 
@@ -121,8 +133,20 @@ class NanoProcessor(processor.ProcessorABC):
             ak.local_index(events.Jet.pt),
             (
                 jet_id(events, self._campaign)
-                & (ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))
-                & (ak.all(events.Jet.metric_table(events.Electron) > 0.4, axis=2))
+                & (
+                    ak.all(
+                        events.Jet.metric_table(events.Muon) > 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
+                )
+                & (
+                    ak.all(
+                        events.Jet.metric_table(events.Electron) > 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
+                )
             )
             == 1,
         )
@@ -142,6 +166,7 @@ class NanoProcessor(processor.ProcessorABC):
         smu = events.Muon[event_level]
         sel = events.Electron[event_level]
         sjets = event_jet[event_level]
+        nseljet = ak.count(sjets.pt, axis=1)
         sjets = sjets[:, :2]
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
@@ -342,7 +367,7 @@ class NanoProcessor(processor.ProcessorABC):
                 dr=flatten(smu.delta_r(sjets[:, i])),
                 weight=weights.weight(),
             )
-        output["njet"].fill(ak.count(sjets.pt, axis=1), weight=weights.weight())
+        output["njet"].fill(nseljet, weight=weights.weight())
 
         return {dataset: output}
 

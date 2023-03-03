@@ -25,9 +25,7 @@ def histogrammer(workflow):
     qcddxy_axis = Hist.axis.Regular(40, -0.002, 0.002, name="dxy", label="d_{xy}")
     sip3d_axis = Hist.axis.Regular(20, 0, 0.2, name="sip3d", label="SIP 3D")
     ptratio_axis = Hist.axis.Regular(50, 0, 1, name="ratio", label="ratio")
-    n_axis = Hist.axis.IntCategory(
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], name="n", label="N obj"
-    )
+    n_axis = Hist.axis.Integer(0, 10, name="n", label="N obj")
     osss_axis = Hist.axis.IntCategory([1, -1], name="osss", label="OS(+)/SS(-)")
     ### Workflow specific
     if "validation" == workflow:
@@ -217,6 +215,9 @@ def histogrammer(workflow):
     ### Common kinematic variables
     if "Wc_sf" not in workflow:
         _hist_dict["njet"] = Hist.Hist(n_axis, Hist.storage.Weight())
+        if "ctag_tt" in workflow:
+            _hist_dict["nmujet"] = Hist.Hist(n_axis, Hist.storage.Weight())
+            _hist_dict["nsoftmu"] = Hist.Hist(n_axis, Hist.storage.Weight())
         for obj in obj_list:
             if "jet" in obj or "soft_l" in obj:
                 if obj == "soft_l":
@@ -245,6 +246,8 @@ def histogrammer(workflow):
                     )
     else:
         _hist_dict["njet"] = Hist.Hist(osss_axis, n_axis, Hist.storage.Weight())
+        _hist_dict["nmujet"] = Hist.Hist(osss_axis, n_axis, Hist.storage.Weight())
+        _hist_dict["nsoftmu"] = Hist.Hist(osss_axis, n_axis, Hist.storage.Weight())
         for obj in obj_list:
             if "jet" in obj or "soft_l" in obj:
                 if obj == "soft_l":

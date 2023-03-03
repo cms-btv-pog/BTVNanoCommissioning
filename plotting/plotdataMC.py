@@ -13,8 +13,9 @@ from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
     SFerror,
-    errband_opts,
+    MCerrorband,
     autoranger,
+    rebin_hist,
 )
 
 bininfo = definitions()
@@ -77,7 +78,13 @@ parser.add_argument("--ext", type=str, default="", help="prefix name")
 parser.add_argument(
     "--autorebin",
     default=None,
-    help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
+    help="Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)",
+)
+parser.add_argument(
+    "--flow",
+    type=str,
+    default=None,
+    help="str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
 )
 
 parser.add_argument(
@@ -190,11 +197,16 @@ for index, discr in enumerate(var_set):
         noSF_axis["syst"] = "noSF"
 
     if arg.autorebin is not None:
-        rebin_factor = int(arg.autorebin)
-        allaxis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
-        if "flav" in collated["mc"][discr].axes.name:
-            noSF_axis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
-            SF_axis[collated["mc"][discr].axes[-1].name] = hist.rebin(rebin_factor)
+        if arg.autorebin.isdigit():
+            rebin = int(arg.autorebin)
+        else:
+            rebin = np.array([float(i) for i in arg.autorebin.split(",")])
+        collated["mc"][discr] = rebin_hist(
+            collated["mc"][discr], collated["mc"][discr].axes[-1].name, rebin
+        )
+        collated["data"][discr] = rebin_hist(
+            collated["data"][discr], collated["data"][discr].axes[-1].name, rebin
+        )
 
     if (
         "flav" in collated["mc"][discr].axes.name
@@ -247,11 +259,14 @@ for index, discr in enumerate(var_set):
         and arg.SF
     ):
         hdata = collated["data"][discr][noSF_axis]
+        edges = hdata.axes[-1].edges
+
         splitflav_stack = []
         splitflav_axis = SF_axis
         for i in range(4):
             splitflav_axis["flav"] = i
             splitflav_stack += [[collated["mc"][discr][splitflav_axis]]]
+
         SF_axis["flav"] = sum
         hep.histplot(
             splitflav_stack,
@@ -260,36 +275,40 @@ for index, discr in enumerate(var_set):
             histtype="fill",
             yerr=True,
             ax=ax,
+            flow=arg.flow,
         )
+        hmcnosf = collated["mc"][discr][noSF_axis]
         hep.histplot(
-            collated["mc"][discr][noSF_axis],
+            hmcnosf,
             label=["w/o SF"],
             color="tab:gray",
             width=2,
             yerr=True,
             ax=ax,
+            flow=arg.flow,
         )
         hep.histplot(
-            hdata, histtype="errorbar", color="black", label="Data", yerr=True, ax=ax
+            hdata,
+            histtype="errorbar",
+            color="black",
+            label="Data",
+            yerr=True,
+            ax=ax,
+            flow=arg.flow,
         )
         hmc = collated["mc"][discr][SF_axis]
-        ax.stairs(
-            values=hmc.values() + np.sqrt(hmc.variances()),
-            baseline=hmc.values() - np.sqrt(hmc.variances()),
-            edges=hmc.axes[0].edges,
-            label="Stat. unc.",
-            **errband_opts,
-        )
-        SFerror = SFerror(collated, discr)
+        MCerrorband(hmc, ax=ax, flow=arg.flow)  # stat. unc. errorband
+        SFerror = SFerror(collated, discr, flow=arg.flow)
         other = {"hatch": "\\\\", "lw": 0, "color": "r", "alpha": 0.4}
-        ax.stairs(
-            values=hmc.values() + SFerror[1],
-            baseline=hmc.values() + SFerror[0],
-            edges=hmc.axes[0].edges,
+        MCerrorband(
+            hmc,
+            ax=ax,
+            flow=arg.flow,
+            ext_error=SFerror,
             label="SF unc.",
-            **other,
-        )
-        plotratio(hdata, collated["mc"][discr][noSF_axis], ax=rax)
+            fill_opts=otther,
+        )  # stat. unc. errorband
+        plotratio(hdata, collated["mc"][discr][noSF_axis], ax=rax, flow=arg.flow)
         plotratio(
             hdata,
             hmc,
@@ -299,6 +318,7 @@ for index, discr in enumerate(var_set):
             denom_fill_opts=other,
             clear=False,
             label="SF unc.",
+            flow=arg.flow,
         )
 
     elif "syst" in collated["mc"][discr].axes.name and not arg.SF:
@@ -316,6 +336,7 @@ for index, discr in enumerate(var_set):
             label=["udsg", "pileup", "c", "b"],
             yerr=True,
             ax=ax,
+            flow=arg.flow,
         )
         hep.histplot(
             collated["data"][discr][noSF_axis],
@@ -324,16 +345,11 @@ for index, discr in enumerate(var_set):
             label="Data",
             yerr=True,
             ax=ax,
+            flow=arg.flow,
         )
         hmc = collated["mc"][discr][noSF_axis]
-        ax.stairs(
-            values=hmc.values() + np.sqrt(hmc.variances()),
-            baseline=hmc.values() - np.sqrt(hmc.variances()),
-            edges=hmc.axes[0].edges,
-            label="Stat. unc.",
-            **errband_opts,
-        )
-        rax = plotratio(collated["data"][discr][noSF_axis], hmc, ax=rax)
+        MCerrorband(hmc, ax=ax, flow=arg.flow)  # stat. unc. errorband
+        rax = plotratio(collated["data"][discr][noSF_axis], hmc, ax=rax, flow=arg.flow)
     elif "flav" in collated["mc"][discr].axes.name:
         splitflav_stack = []
         splitflav_axis = allaxis
@@ -349,6 +365,7 @@ for index, discr in enumerate(var_set):
             label=["udsg", "pileup", "c", "b"],
             yerr=True,
             ax=ax,
+            flow=arg.flow,
         )
         hep.histplot(
             collated["data"][discr][allaxis],
@@ -357,43 +374,34 @@ for index, discr in enumerate(var_set):
             label="Data",
             yerr=True,
             ax=ax,
+            flow=arg.flow,
         )
         hmc = collated["mc"][discr][allaxis]
 
-        ax.stairs(
-            values=hmc.values() + np.sqrt(hmc.values()),
-            baseline=hmc.values() - np.sqrt(hmc.values()),
-            edges=hmc.axes[0].edges,
-            label="Stat. unc.",
-            **errband_opts,
-        )
-        rax = plotratio(collated["data"][discr][allaxis], hmc, ax=rax)
+        rax = plotratio(collated["data"][discr][allaxis], hmc, ax=rax, flow=arg.flow)
     else:
+        hmc = collated["mc"][discr][allaxis]
+        hdata = collated["data"][discr][allaxis]
         hep.histplot(
-            collated["mc"][discr][allaxis],
+            hmc,
             color="tab:orange",
             histtype="fill",
             label=["MC"],
             yerr=True,
             ax=ax,
+            flow=arg.flow,
         )
         hep.histplot(
-            collated["data"][discr][allaxis],
+            hdata,
             histtype="errorbar",
             color="black",
             label="Data",
             yerr=True,
             ax=ax,
+            flow=arg.flow,
         )
-        hmc = collated["mc"][discr][allaxis]
-        ax.stairs(
-            values=hmc.values() + np.sqrt(hmc.variances()),
-            baseline=hmc.values() - np.sqrt(hmc.variances()),
-            edges=hmc.axes[0].edges,
-            label="Stat. unc.",
-            **errband_opts,
-        )
-        rax = plotratio(collated["data"][discr][allaxis], hmc, ax=rax)
+        MCerrorband(hmc, ax=ax, flow=arg.flow)  # stat. unc. errorband
+        rax = plotratio(collated["data"][discr][allaxis], hmc, ax=rax, flow=arg.flow)
 
     ax.set_xlabel(None)
     ax.set_ylabel("Events")
@@ -425,8 +433,9 @@ for index, discr in enumerate(var_set):
     rax.set_ylim(0, 2.0)
     ax.set_ylim(bottom=0.0)
 
+    rax.autoscale(True, axis="x", tight=True)
     xmin, xmax = autoranger(
-        collated["data"][discr][allaxis] + collated["mc"][discr][allaxis]
+        collated["data"][discr][allaxis] + collated["mc"][discr][allaxis], flow=arg.flow
     )
     if arg.xrange is not None:
         xmin, xmax = float(arg.xrange.split(",")[0]), float(arg.xrange.split(",")[1])
