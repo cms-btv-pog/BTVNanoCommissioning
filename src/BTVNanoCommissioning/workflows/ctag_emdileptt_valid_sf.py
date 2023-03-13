@@ -61,7 +61,7 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
 
         if self.isJERC:
-            add_jec(events, self._campaign, self._jet_factory)
+            events = add_jec(events, self._campaign, self._jet_factory)
         if isRealData:
             output["sumw"] = len(events)
         else:
@@ -110,7 +110,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Muon cuts
         iso_muon_mu = events.Muon[
-            (events.Muon.pt > 14) & mu_idiso(events, self._campaign)
+            (events.Muon.pt > 24) & mu_idiso(events, self._campaign)
         ]
         iso_muon_ele = events.Muon[
             (events.Muon.pt > 14) & mu_idiso(events, self._campaign)
@@ -137,7 +137,19 @@ class NanoProcessor(processor.ProcessorABC):
         iso_mu = ak.pad_none(iso_mu, 1)
 
         ## Jet cuts
-        event_jet = events.Jet[jet_id(events, self._campaign)]
+        event_jet = events.Jet[
+            jet_id(events, self._campaign)
+            & (
+                ak.all(
+                    events.Jet.metric_table(iso_ele) > 0.4, axis=2, mask_identity=True
+                )
+            )
+            & (
+                ak.all(
+                    events.Jet.metric_table(iso_mu) > 0.4, axis=2, mask_identity=True
+                )
+            )
+        ]
         req_jets = ak.count(event_jet.pt, axis=1) >= 2
 
         ## Soft Muon cuts

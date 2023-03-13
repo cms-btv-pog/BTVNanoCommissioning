@@ -93,6 +93,9 @@ parser.add_argument(
     default=None,
     help="Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used",
 )
+parser.add_argument(
+    "--ylabel", type=str, default=None, help="Modify y-axis label of plot"
+)
 
 
 arg = parser.parse_args()
@@ -190,12 +193,13 @@ for index, discr in enumerate(var_set):
         noSF_axis = allaxis
         SF_axis["syst"] = "SF"
         noSF_axis["syst"] = "noSF"
-
+    do_xerr = False
     if arg.autorebin is not None:
         if arg.autorebin.isdigit():
             rebin = int(arg.autorebin)
         else:
             rebin = np.array([float(i) for i in arg.autorebin.split(",")])
+            do_xerr = True
         collated["mc"][discr] = rebin_hist(
             collated["mc"][discr], collated["mc"][discr].axes[-1].name, rebin
         )
@@ -253,9 +257,6 @@ for index, discr in enumerate(var_set):
         and "syst" in collated["mc"][discr].axes.name
         and arg.SF
     ):
-        hdata = collated["data"][discr][noSF_axis]
-        edges = hdata.axes[-1].edges
-
         splitflav_stack = []
         splitflav_axis = SF_axis
         for i in range(4):
@@ -270,26 +271,26 @@ for index, discr in enumerate(var_set):
             histtype="fill",
             yerr=True,
             ax=ax,
-            flow=arg.flow,
+            # flow=arg.flow
         )
-        hmcnosf = collated["mc"][discr][noSF_axis]
         hep.histplot(
-            hmcnosf,
+            collated["mc"][discr][noSF_axis],
             label=["w/o SF"],
             color="tab:gray",
             width=2,
             yerr=True,
             ax=ax,
-            flow=arg.flow,
+            # flow=arg.flow
         )
         hep.histplot(
-            hdata,
+            collated["data"][discr][noSF_axis],
             histtype="errorbar",
             color="black",
             label="Data",
             yerr=True,
             ax=ax,
-            flow=arg.flow,
+            xerr=do_xerr
+            # flow=arg.flow
         )
         hmc = collated["mc"][discr][SF_axis]
         MCerrorband(hmc, ax=ax, flow=arg.flow)  # stat. unc. errorband
@@ -303,9 +304,15 @@ for index, discr in enumerate(var_set):
             label="SF unc.",
             fill_opts=other,
         )  # stat. unc. errorband
-        plotratio(hdata, collated["mc"][discr][noSF_axis], ax=rax, flow=arg.flow)
         plotratio(
-            hdata,
+            collated["data"][discr][noSF_axis],
+            collated["mc"][discr][noSF_axis],
+            ax=rax,
+            flow=arg.flow,
+            xerr=do_xerr,
+        )
+        plotratio(
+            collated["data"][discr][noSF_axis],
             hmc,
             ax=rax,
             ext_denom_error=SFerror,
@@ -314,6 +321,7 @@ for index, discr in enumerate(var_set):
             clear=False,
             label="SF unc.",
             flow=arg.flow,
+            xerr=do_xerr,
         )
 
     elif "syst" in collated["mc"][discr].axes.name and not arg.SF:
@@ -331,7 +339,7 @@ for index, discr in enumerate(var_set):
             label=["udsg", "pileup", "c", "b"],
             yerr=True,
             ax=ax,
-            flow=arg.flow,
+            # flow=arg.flow
         )
         hep.histplot(
             collated["data"][discr][noSF_axis],
@@ -340,11 +348,14 @@ for index, discr in enumerate(var_set):
             label="Data",
             yerr=True,
             ax=ax,
-            flow=arg.flow,
+            xerr=do_xerr
+            # flow=arg.flow
         )
         hmc = collated["mc"][discr][noSF_axis]
         MCerrorband(hmc, ax=ax, flow=arg.flow)  # stat. unc. errorband
-        rax = plotratio(collated["data"][discr][noSF_axis], hmc, ax=rax, flow=arg.flow)
+        rax = plotratio(
+            collated["data"][discr][noSF_axis], hmc, ax=rax, flow=arg.flow, xerr=do_xerr
+        )
     elif "flav" in collated["mc"][discr].axes.name:
         splitflav_stack = []
         splitflav_axis = allaxis
@@ -360,7 +371,7 @@ for index, discr in enumerate(var_set):
             label=["udsg", "pileup", "c", "b"],
             yerr=True,
             ax=ax,
-            flow=arg.flow,
+            # flow=arg.flow
         )
         hep.histplot(
             collated["data"][discr][allaxis],
@@ -369,14 +380,16 @@ for index, discr in enumerate(var_set):
             label="Data",
             yerr=True,
             ax=ax,
-            flow=arg.flow,
+            xerr=do_xerr
+            # flow=arg.flow
         )
         hmc = collated["mc"][discr][allaxis]
-
-        rax = plotratio(collated["data"][discr][allaxis], hmc, ax=rax, flow=arg.flow)
+        MCerrorband(hmc, ax=ax)
+        rax = plotratio(
+            collated["data"][discr][allaxis], hmc, ax=rax, flow=arg.flow, xerr=do_xerr
+        )
     else:
         hmc = collated["mc"][discr][allaxis]
-        hdata = collated["data"][discr][allaxis]
         hep.histplot(
             hmc,
             color="tab:orange",
@@ -384,19 +397,22 @@ for index, discr in enumerate(var_set):
             label=["MC"],
             yerr=True,
             ax=ax,
-            flow=arg.flow,
+            # flow=arg.flow
         )
         hep.histplot(
-            hdata,
+            collated["data"][discr][allaxis],
             histtype="errorbar",
             color="black",
             label="Data",
             yerr=True,
             ax=ax,
-            flow=arg.flow,
+            xerr=do_xerr
+            # flow=arg.flow
         )
         MCerrorband(hmc, ax=ax, flow=arg.flow)  # stat. unc. errorband
-        rax = plotratio(collated["data"][discr][allaxis], hmc, ax=rax, flow=arg.flow)
+        rax = plotratio(
+            collated["data"][discr][allaxis], hmc, ax=rax, flow=arg.flow, xerr=do_xerr
+        )
 
     ax.set_xlabel(None)
     ax.set_ylabel("Events")

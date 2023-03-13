@@ -396,8 +396,10 @@ e.g. python -m BTVNanoCommissioning.utils.compile_jec Winter22Run3 jec_compiled
 
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 
+:new: non-uniform rebinning is possible, specify the bins with  list of edges `--rebin 50,80,81,82,83,100.5`
+
 ```
-python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt --rebin 50,80,81,82,83,100.5
+python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt 
 python plotdataMC.py -i "test*.coffea" --lumi 41500 -p dilep_sf -v z_mass,z_pt 
 
 options:
@@ -417,6 +419,7 @@ options:
    --autorebin AUTOREBIN
                         Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)
    --xlabel XLABEL      rename the label for x-axis
+   --ylabel YLABEL      rename the label for y-axis
    --splitOSSS SPLITOSSS 
                         Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used
    --xrange XRANGE      custom x-range, --xrange xmin,xmax
@@ -453,6 +456,7 @@ options:
    --autorebin AUTOREBIN
                         Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)
    --xlabel XLABEL      rename the label for x-axis
+   --ylabel YLABEL      rename the label for y-axis
    --norm               compare shape, normalized yield to reference
    --xrange XRANGE       custom x-range, --xrange xmin,xmax
    --flow FLOW 

@@ -58,7 +58,7 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
 
         if self.isJERC:
-            add_jec(events, self._campaign, self._jet_factory)
+            events = add_jec(events, self._campaign, self._jet_factory)
         if isRealData:
             output["sumw"] = len(events)
         else:
@@ -72,7 +72,11 @@ class NanoProcessor(processor.ProcessorABC):
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
 
         ## HLT
-        triggers = ["IsoMu24"]
+        triggers = [
+            "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
+            "Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+            "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        ]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)

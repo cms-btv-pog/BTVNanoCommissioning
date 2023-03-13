@@ -251,7 +251,7 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
-            flow=args.flow,
+            # #flow=args.flow,
         )
         hep.histplot(
             collated[args.ref][discr][caxis],
@@ -260,7 +260,7 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
-            flow=args.flow,
+            # flow=args.flow,
         )
         hep.histplot(
             collated[args.ref][discr][baxis],
@@ -269,7 +269,7 @@ for index, discr in enumerate(var_set):
             color="r",
             histtype=hist_type,
             ax=ax,
-            flow=args.flow,
+            # flow=args.flow,
         )
 
         mindex = 0
@@ -283,7 +283,7 @@ for index, discr in enumerate(var_set):
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
-                flow=args.flow,
+                # flow=args.flow,
             )
             hep.histplot(
                 collated[c][discr][caxis],
@@ -293,7 +293,7 @@ for index, discr in enumerate(var_set):
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
-                flow=args.flow,
+                # flow=args.flow,
             )
             hep.histplot(
                 collated[c][discr][baxis],
@@ -303,7 +303,7 @@ for index, discr in enumerate(var_set):
                 marker=markers[mindex + 1],
                 histtype="errorbar",
                 ax=ax,
-                flow=args.flow,
+                # flow=args.flow,
             )
             # comparison splitted by flavor
             rax = plotratio(
@@ -313,7 +313,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "b", "marker": markers[mindex + 1]},
                 clear=False,
-                flow=args.flow,
+                # flow=args.flow,
             )
             rax2 = plotratio(
                 collated[c][discr][caxis],
@@ -322,7 +322,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "g", "marker": markers[mindex + 1]},
                 clear=False,
-                flow=args.flow,
+                # flow=args.flow,
             )
             rax3 = plotratio(
                 collated[c][discr][baxis],
@@ -331,7 +331,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "r", "marker": markers[mindex + 1]},
                 clear=False,
-                flow=args.flow,
+                # flow=args.flow,
             )
             mindex += 1
 
@@ -374,7 +374,7 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
-            flow=args.flow,
+            # flow=args.flow,
         )
         for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
             hep.histplot(
@@ -383,7 +383,7 @@ for index, discr in enumerate(var_set):
                 histtype=hist_type,
                 yerr=True,
                 ax=ax,
-                flow=args.flow,
+                # flow=args.flow,
             )
         for i, c in enumerate(args.compared.split(",")):
             plotratio(
@@ -393,7 +393,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": ax.get_lines()[i + 1].get_color()},
                 clear=False,
-                flow=args.flow,
+                # flow=args.flow,
             )  ## No error band used
         alls = collated[args.ref][discr][allaxis]
         for c in args.compared.split(","):

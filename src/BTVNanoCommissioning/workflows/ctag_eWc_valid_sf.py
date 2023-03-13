@@ -64,7 +64,7 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
 
         if self.isJERC:
-            add_jec(events, self._campaign, self._jet_factory)
+            events = add_jec(events, self._campaign, self._jet_factory)
         if isRealData:
             output["sumw"] = len(events)
         else:
@@ -459,8 +459,8 @@ class NanoProcessor(processor.ProcessorABC):
                             * disc_list[histname.replace("_1", "")][1][syst],
                         )
         output["njet"].fill(osss, njet, weight=weights.weight())
-        output["nmujet"].fill(nmujet, weight=weights.weight())
-        output["nsoftmu"].fill(nsoftmu, weight=weights.weight())
+        output["nmujet"].fill(osss, nmujet, weight=weights.weight())
+        output["nsoftmu"].fill(osss, nsoftmu, weight=weights.weight())
         output["hl_ptratio"].fill(
             flav=genflavor[:, 0],
             osss=osss,

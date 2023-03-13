@@ -65,7 +65,7 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
 
         if self.isJERC:
-            add_jec(events, self._campaign, self._jet_factory)
+            events = add_jec(events, self._campaign, self._jet_factory)
         if isRealData:
             output["sumw"] = len(events)
         else:

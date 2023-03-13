@@ -10,9 +10,7 @@ from coffea.lookup_tools import extractor
 
 from coffea.lumi_tools import LumiMask
 from coffea.btag_tools import BTagScaleFactor
-from coffea.lookup_tools import extractor
 import correctionlib
-
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 
@@ -185,7 +183,7 @@ def load_lumi(campaign):
 
 ## MET filters
 met_filters = {
-    "UL16": {
+    "2016preVFP_UL": {
         "data": [
             "goodVertices",
             "globalSuperTightHaloUL16Filter",
@@ -207,7 +205,29 @@ met_filters = {
             "eeBadScFilter",
         ],
     },
-    "UL17": {
+    "2016postVFP_UL": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHaloUL16Filter",
+            "HBHENoiseFilter",
+            "HBHENoiseIsoFilter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "eeBadScFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "HBHENoiseFilter",
+            "HBHENoiseIsoFilter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "eeBadScFilter",
+        ],
+    },
+    "2017_UL": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",
@@ -233,7 +253,7 @@ met_filters = {
             "ecalBadCalibFilter",
         ],
     },
-    "UL18": {
+    "2018_UL": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",
@@ -286,21 +306,6 @@ def add_jec_variables(jets, event_rho):
 
 
 ## PU weight
-def load_pu(campaign, path):
-    _pu_path = f"BTVNanoCommissioning.data.PU.{campaign}"
-    with importlib.resources.path(_pu_path, path) as filename:
-        if str(filename).endswith(".pkl.gz"):
-            with gzip.open(filename) as fin:
-                compiled = cloudpickle.load(fin)
-        elif str(filename).endswith(".histo.root"):
-            ext = extractor()
-            ext.add_weight_sets([f"* * {filename}"])
-            ext.finalize()
-            compiled = ext.make_evaluator()
-
-    return compiled
-
-
 def puwei(correct_map, nPU):
     if "correctionlib" in str(type(correct_map["PU"])):
         return correct_map["PU"][list(correct_map["PU"].keys())[0]].evaluate(
