@@ -67,7 +67,9 @@ parser.add_argument(
     type=str,
     help="rename the label of variables to plot, splitted by ,.  Wildcard option * NOT available here",
 )
-
+parser.add_argument(
+    "--ylabel", type=str, default=None, help="Modify y-axis label of plot"
+)
 parser.add_argument(
     "--SF", action="store_true", default=False, help="make w/, w/o SF comparisons"
 )
@@ -86,15 +88,11 @@ parser.add_argument(
     default=None,
     help="str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
 )
-
 parser.add_argument(
     "--splitOSSS",
     type=int,
     default=None,
     help="Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used",
-)
-parser.add_argument(
-    "--ylabel", type=str, default=None, help="Modify y-axis label of plot"
 )
 
 
@@ -123,8 +121,15 @@ else:
     mergemap["mc"] = mclist
     mergemap["data"] = datalist
 collated = collate(output, mergemap)
+### input text settings
 if "Wc" in arg.phase:
     input_txt = "W+c"
+    if arg.splitOSSS == 1:
+        input_txt = input_txt + " OS"
+    elif arg.splitOSSS == -1:
+        input_txt = input_txt + " SS"
+    else:
+        input_txt = input_txt + " OS-SS"
 elif "DY" in arg.phase:
     input_txt = "DY+jets"
 elif "semilep" in arg.phase:
@@ -139,13 +144,6 @@ if (
     or "mu" in arg.variable.split(",")
 ):
     nj = 1
-if "Wc" in arg.phase:
-    if arg.splitOSSS == 1:
-        input_txt = input_txt + " OS"
-    elif arg.splitOSSS == -1:
-        input_txt = input_txt + " SS"
-    else:
-        input_txt = input_txt + " OS-SS"
 if "emctag" in arg.phase:
     input_txt = input_txt + " (e$\mu$)"
 elif "ectag" in arg.phase:

@@ -396,7 +396,7 @@ e.g. python -m BTVNanoCommissioning.utils.compile_jec Winter22Run3 jec_compiled
 
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 
-:new: non-uniform rebinning is possible, specify the bins with  list of edges `--rebin 50,80,81,82,83,100.5`
+:new: non-uniform rebinning is possible, specify the bins with  list of edges `--autorebin 50,80,81,82,83,100.5`
 
 ```
 python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt 

@@ -23,12 +23,17 @@ parser.add_argument(
     "--phase",
     required=True,
     choices=[
-        "dilep_sf",
+        "ttdilep_sf",
         "ttsemilep_sf",
         "ctag_Wc_sf",
         "ctag_DY_sf",
         "ctag_ttsemilep_sf",
         "ctag_ttdilep_sf",
+        "ectag_Wc_sf",
+        "ectag_DY_sf",
+        "ectag_ttsemilep_sf",
+        "ectag_ttdilep_sf",
+        "emctag_ttdilep_sf",
     ],
     dest="phase",
     help="which phase space",
@@ -93,6 +98,15 @@ parser.add_argument(
     type=str,
     help="rename the label of variables to plot, splitted by ,.  Wildcard option * NOT available here",
 )
+parser.add_argument(
+    "--ylabel", type=str, default=None, help="Modify y-axis label of plot"
+)
+parser.add_argument(
+    "--splitOSSS",
+    type=int,
+    default=None,
+    help="Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used",
+)
 args = parser.parse_args()
 output = {}
 if len(args.input.split(",")) > 1:
@@ -130,8 +144,15 @@ else:
     hist_type = "step"
     label = "Simulation Preliminary"
 nj = 1
-if "Wc" in argparse.phase:
+### input text settings
+if "Wc" in args.phase:
     input_txt = "W+c"
+    if args.splitOSSS == 1:
+        input_txt = input_txt + " OS"
+    elif args.splitOSSS == -1:
+        input_txt = input_txt + " SS"
+    else:
+        input_txt = input_txt + " OS-SS"
 elif "DY" in args.phase:
     input_txt = "DY+jets"
 elif "semilep" in args.phase:
@@ -173,19 +194,27 @@ for index, discr in enumerate(var_set):
     if "syst" in collated[args.ref][discr].axes.name:
         allaxis["syst"] = sum
     if "osss" in collated[args.ref][discr].axes.name:  ## do dominal OS-SS
-        collated[args.ref][discr] = (
-            collated[args.ref][discr][{"osss": 0}]
-            + collated[args.ref][discr][{"osss": 1}] * -1
-        )
-        for c in args.compared.split(","):
-            collated[c][discr] = (
-                collated[c][discr][{"osss": 0}] + collated[c][discr][{"osss": 1}] * -1
+        if args.splitOSSS is None:  # OS-SS
+            collated[args.ref][discr] = (
+                collated[args.ref][discr][{"osss": 0}]
+                + collated[args.ref][discr][{"osss": 1}] * -1
             )
+            for c in args.compared.split(","):
+                collated[c][discr] = (
+                    collated[c][discr][{"osss": 0}]
+                    + collated[c][discr][{"osss": 1}] * -1
+                )
+        elif args.splitOSSS == 1:
+            allaxis["osss"] = 0  # opposite sign
+        elif args.splitOSSS == -1:
+            allaxis["osss"] = 1  # same sign
+    do_xerr = False
     if args.autorebin is not None:
         if args.autorebin.isdigit():
             rebin = int(args.autorebin)
         else:
             rebin = np.array([float(i) for i in args.autorebin.split(",")])
+            do_xerr = True
         collated["mc"][discr] = rebin_hist(
             collated["mc"][discr], collated["mc"][discr].axes[-1].name, rebin
         )
@@ -251,7 +280,8 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
-            # #flow=args.flow,
+            xerr=do_xerr
+            # flow=args.flow,
         )
         hep.histplot(
             collated[args.ref][discr][caxis],
@@ -260,6 +290,7 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
+            xerr=do_xerr
             # flow=args.flow,
         )
         hep.histplot(
@@ -269,6 +300,7 @@ for index, discr in enumerate(var_set):
             color="r",
             histtype=hist_type,
             ax=ax,
+            xerr=do_xerr
             # flow=args.flow,
         )
 
@@ -283,6 +315,7 @@ for index, discr in enumerate(var_set):
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
+                xerr=do_xerr
                 # flow=args.flow,
             )
             hep.histplot(
@@ -293,6 +326,7 @@ for index, discr in enumerate(var_set):
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
+                xerr=do_xerr
                 # flow=args.flow,
             )
             hep.histplot(
@@ -303,6 +337,7 @@ for index, discr in enumerate(var_set):
                 marker=markers[mindex + 1],
                 histtype="errorbar",
                 ax=ax,
+                xerr=do_xerr
                 # flow=args.flow,
             )
             # comparison splitted by flavor
@@ -313,6 +348,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "b", "marker": markers[mindex + 1]},
                 clear=False,
+                xerr=do_xerr
                 # flow=args.flow,
             )
             rax2 = plotratio(
@@ -322,6 +358,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "g", "marker": markers[mindex + 1]},
                 clear=False,
+                xerr=do_xerr
                 # flow=args.flow,
             )
             rax3 = plotratio(
@@ -331,6 +368,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "r", "marker": markers[mindex + 1]},
                 clear=False,
+                xerr=do_xerr
                 # flow=args.flow,
             )
             mindex += 1
@@ -347,9 +385,7 @@ for index, discr in enumerate(var_set):
         rax3.set_xlabel(xlabel)
         ax.legend()
 
-        at = AnchoredText(
-            input_txt + "\n" + "BTV Commissioning" + "\n" + text, loc=2, frameon=False
-        )
+        at = AnchoredText(input_txt + "\n" + text, loc=2, frameon=False)
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
         if args.log:
@@ -374,6 +410,7 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
+            xerr=do_xerr
             # flow=args.flow,
         )
         for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
@@ -383,6 +420,7 @@ for index, discr in enumerate(var_set):
                 histtype=hist_type,
                 yerr=True,
                 ax=ax,
+                xerr=do_xerr
                 # flow=args.flow,
             )
         for i, c in enumerate(args.compared.split(",")):
@@ -393,6 +431,7 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": ax.get_lines()[i + 1].get_color()},
                 clear=False,
+                xerr=do_xerr
                 # flow=args.flow,
             )  ## No error band used
         alls = collated[args.ref][discr][allaxis]
@@ -406,14 +445,12 @@ for index, discr in enumerate(var_set):
             )
         rax.set_xlabel(xlabel)
         ax.set_xlabel(None)
-        ax.set_ylabel("Events")
+        ax.set_ylabel(args.ylabel)
         rax.set_ylabel("Other/Ref")
         ax.legend(loc=1)
         rax.set_ylim(0.0, 2.0)
 
-        at = AnchoredText(
-            input_txt + "\n" + "BTV Commissioning" + "\n" + text, loc=2, frameon=False
-        )
+        at = AnchoredText(input_txt + "\n" + args.ext, loc=2, frameon=False)
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
         ax.set_ylim(bottom=0)
