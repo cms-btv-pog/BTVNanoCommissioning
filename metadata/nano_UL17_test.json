@@ -1,0 +1,8 @@
+{
+"TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8": [
+        "root://xrootd-cms.infn.it//store/mc/RunIISummer20UL17NanoAODv9/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v9-v1/2510000/EFBBD9DF-1B6A-C54A-9CA5-704B819BB6A8.root"],
+"WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8":
+["root://xrootd-cms.infn.it///store/mc/RunIISummer20UL17NanoAODv9/WJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/PUForTRKv2_TRKv2_106X_mc2017_realistic_v9-v2/60000/03F5AB12-7343-D44C-849C-3A86E60906DD.root"],
+"SingleMuon_Run2017B-UL2017_MiniAODv2_NanoAODv9-v1": [
+        "root://grid-cms-xrootd.physik.rwth-aachen.de:1094///store/data/Run2017B/SingleMuon/NANOAOD/UL2017_MiniAODv2_NanoAODv9-v1/120000/3274AED5-511E-3E45-8BCC-684FFD2F5BA8.root"]
+}

@@ -13,7 +13,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8","3.10"]
     
     defaults:
       run:
@@ -21,6 +21,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: update submodules
+      run: |
+          git config  --file=.gitmodules submodule.src/BTVNanoCommissioning/jsonpog-integration.url https://milee:${{ secrets.GIT_CERN_PWD }}@gitlab.cern.ch/cms-nanoAOD/jsonpog-integration.git
+          git submodule sync
+          git config --list
+          git submodule update --init --recursive 
     - uses: cvmfs-contrib/github-action-cvmfs@v2
       with:
         cvmfs_repositories: 'grid.cern.ch'
@@ -29,10 +35,9 @@ jobs:
       uses: conda-incubator/setup-miniconda@v2
       with:
         python-version: ${{ matrix.python-version }}
-        mamba-version: "*"
+        miniforge-variant: Mambaforge
         channels: conda-forge,defaults
         channel-priority: true
-        auto-update-conda: true
         activate-environment: btv_coffea
         environment-file: test_env.yml
         auto-activate-base: false
@@ -80,28 +85,55 @@ jobs:
       run: |
         python -m BTVNanoCommissioning.utils.compile_jec Rereco17_94X jec_compiled
         
-    - name:  btag semileptonic ttbar workflow
+    - name:  btag semileptonic ttbar workflows with custom correction
       run: |
-        python runner.py --workflow ttsemilep_sf --json metadata/test_w_dj_mu.json  --limit 1 --executor iterative --isCorr --isJERC
+        python runner.py --workflow ttsemilep_sf --json metadata/test_w_dj_mu.json  --limit 1 --executor futures -j 4 --isCorr --isJERC
     
-    - name: ctag semileptonic muon ttbar workflows
+    - name: ctag semileptonic muon ttbar workflows with custom correction
       run: |
-        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_w_dj_mu.json  --limit 1 --executor iterative --isCorr --isJERC
+        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_w_dj_mu.json  --limit 1 --executor futures -j 4 --isCorr --isJERC
     
-    - name: ctag semileptonic electron ttbar workflows
+    - name: ctag semileptonic electron ttbar workflows with custom correction
       run: |
-        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_w_dj_e.json  --limit 1 --executor iterative --isCorr --isJERC
+        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_w_dj_e.json  --limit 1 --executor futures -j 4 --isCorr --isJERC
 
-    - name: btag dileptonic ttbar workflow
+    - name: btag dileptonic ttbar workflows with custom correction
       run: |
-        python runner.py --workflow ttdilep_sf --json metadata/test_w_dj_mumu.json  --limit 1 --executor iterative --isCorr --isJERC
+        python runner.py --workflow ttdilep_sf --json metadata/test_w_dj_mumu.json  --limit 1 --executor futures -j 4 --isCorr --isJERC
     
-    - name: ctag dileptonic muon ttbar workflows
+    - name: ctag dileptonic muon ttbar workflows with custom correction
       run: |
-        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_w_dj_mumu.json  --limit 1 --executor iterative --isCorr --isJERC
-    - name: ctag dileptonic electron ttbar workflows
+        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_w_dj_mumu.json  --limit 1 --executor futures -j 4 --isCorr --isJERC
+    - name: ctag dileptonic electron ttbar workflows with custom correction 
       run: |
-        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_w_dj_ee.json  --limit 1 --executor iterative --isCorr --isJERC
-    - name: ctag dileptonic emu ttbar workflows
+        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_w_dj_ee.json  --limit 1 --executor futures -j 4 --isCorr --isJERC
+    - name: ctag dileptonic emu ttbar workflows with custom correction
       run: |
-        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_w_dj_emu.json  --limit 1 --executor iterative --isCorr --isJERC
+        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_w_dj_emu.json  --limit 1 --executor futures -j 4 --isCorr --isJERC
+
+    - name:  btag semileptonic ttbar workflows with correctionlib
+      run: |
+        python runner.py --workflow ttsemilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 4 --campaign 2017_UL
+    
+    - name: ctag semileptonic muon ttbar workflows with correctionlib
+      run: |
+        python runner.py --workflow ctag_ttsemilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 4 --campaign 2017_UL
+    
+    - name: ctag semileptonic electron ttbar workflows with correctionlib
+      run: |
+        python runner.py --workflow ectag_ttsemilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 4 --campaign 2017_UL
+
+    - name: btag dileptonic ttbar workflows with correctionlib
+      run: |
+        python runner.py --workflow ttdilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 4 --campaign 2017_UL
+    
+    - name: ctag dileptonic muon ttbar workflows with correctionlib
+      run: |
+        python runner.py --workflow ctag_ttdilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 4 --campaign 2017_UL
+    - name: ctag dileptonic electron ttbar workflows with correctionlib 
+      run: |
+        python runner.py --workflow ectag_ttdilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 4 --campaign 2017_UL
+    - name: ctag dileptonic emu ttbar workflows with correctionlib
+      run: |
+        python runner.py --workflow emctag_ttdilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 4 --campaign 2017_UL
+        

@@ -3,10 +3,9 @@ import numpy as np, awkward as ak
 from coffea import processor
 from coffea.analysis_tools import Weights
 
-from BTVNanoCommissioning.helpers.func import flatten, update
+from BTVNanoCommissioning.helpers.func import flatten
 from BTVNanoCommissioning.utils.correction import load_lumi
-from BTVNanoCommissioning.utils.AK4_parameters import correction_config
-from BTVNanoCommissioning.helpers.definitions import definitions
+
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 from BTVNanoCommissioning.utils.selection import jet_id
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
@@ -18,7 +17,7 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self._year = year
-        self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
+        self.lumiMask = load_lumi(self._campaign)
         _hist_event_dict = histogrammer("ttcom")
         self.make_output = lambda: {
             "sumw": processor.defaultdict_accumulator(float),
@@ -46,9 +45,6 @@ class NanoProcessor(processor.ProcessorABC):
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
-        weights = Weights(len(events), storeIndividual=True)
-        if not isRealData:
-            weights.add("genweight", events.genWeight)
 
         ## HLT
         triggers = [
@@ -92,6 +88,8 @@ class NanoProcessor(processor.ProcessorABC):
         event_level = ak.fill_none(
             req_trig & req_jets & req_ele & req_muon & req_opposite_charge, False
         )
+        if len(events[event_level]) == 0:
+            return {dataset: output}
 
         ####################
         # Selected objects #
@@ -106,26 +104,29 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         # Weight & Geninfo #
         ####################
+        weights = Weights(len(events[event_level]), storeIndividual=True)
+
         if isRealData:
             genflavor = ak.zeros_like(sjets.pt)
         else:
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
             genflavor = sjets.hadronFlavour + 1 * par_flav
-            genweiev = ak.flatten(
-                ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[0]
-            )
+            weights.add("genweight", events[event_level].genWeight)
+            genweiev = ak.flatten(ak.broadcast_arrays(weights.weight(), sjets["pt"])[0])
         ####################
         #  Fill histogram  #
         ####################
         for histname, h in output.items():
-            if "Deep" in histname and "btag" not in histname:
+            if (
+                "Deep" in histname
+                and "btag" not in histname
+                and histname in events.Jet.fields
+            ):
                 h.fill(
                     flatten(genflavor),
                     flatten(sjets[histname]),
                     weight=flatten(
-                        ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[
-                            0
-                        ]
+                        ak.broadcast_arrays(weights.weight(), sjets["pt"])[0]
                     ),
                 )
             elif "jet" in histname and histname.replace("jet0_", "") in sjets.fields:
@@ -133,39 +134,39 @@ class NanoProcessor(processor.ProcessorABC):
                 h.fill(
                     flatten(genflavor[:, 0]),
                     flatten(jet[histname.replace(f"jet0_", "")]),
-                    weight=weights.weight()[event_level],
+                    weight=weights.weight(),
                 )
             elif "jet" in histname and histname.replace("jet1_", "") in sjets.fields:
                 jet = sjets[:, 1]
                 h.fill(
                     flatten(genflavor[:, 1]),
                     flatten(jet[histname.replace(f"jet1_", "")]),
-                    weight=weights.weight()[event_level],
+                    weight=weights.weight(),
                 )
 
             elif "mu" in histname and histname.replace("mu_", "") in smu.fields:
                 h.fill(
                     flatten(smu[histname.replace("mu_", "")]),
-                    weight=weights.weight()[event_level],
+                    weight=weights.weight(),
                 )
             elif "ele" in histname and histname.replace("ele_", "") in sele.fields:
                 h.fill(
                     flatten(sele[histname.replace("ele_", "")]),
-                    weight=weights.weight()[event_level],
+                    weight=weights.weight(),
                 )
 
         output["dr_mujet0"].fill(
             flatten(genflavor[:, 0]),
             flatten(sjets[:, 0].delta_r(smu)),
-            weight=weights.weight()[event_level],
+            weight=weights.weight(),
         )
         output["dr_mujet1"].fill(
             flatten(genflavor[:, 1]),
             flatten(sjets[:, 1].delta_r(smu)),
-            weight=weights.weight()[event_level],
+            weight=weights.weight(),
         )
 
-        return output
+        return {dataset: output}
 
     def postprocess(self, accumulator):
         return accumulator

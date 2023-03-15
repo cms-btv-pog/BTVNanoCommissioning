@@ -20,6 +20,16 @@ def update(events, collections):
     out = events
     for name, value in collections.items():
         out = ak.with_field(out, value, name)
+        if (
+            "float" not in str(ak.type(value))
+            and "int" not in str(ak.type(value))
+            and "bool" not in str(ak.type(value))
+        ):
+            if name == "Jet":
+                out.Jet["pt"] = value.pt
+            elif name == "MET":
+                out.MET["pt"] = value.pt
+                out.MET["phi"] = value.phi
     return out
 
 

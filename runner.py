@@ -75,9 +75,18 @@ def get_main_parser():
     parser.add_argument(
         "--campaign",
         default="Rereco17_94X",
+        choices=[
+            "Rereco17_94X",
+            "Winter22Run3",
+            "2018_UL",
+            "2017_UL",
+            "2016preVFP_UL",
+            "2016postVFP_UL",
+        ],
         help="Dataset campaign, change the corresponding correction files",
     )
     parser.add_argument("--isCorr", action="store_true", help="Run with SFs")
+    parser.add_argument("--isSyst", action="store_true", help="Run with systematics")
     parser.add_argument(
         "--isJERC", action="store_true", help="JER/JEC implemented to jet"
     )
@@ -112,7 +121,7 @@ def get_main_parser():
         "-j",
         "--workers",
         type=int,
-        default=12,
+        default=3,
         help="Number of workers (cores/threads) to use for multi-worker executors "
         "(e.g. futures or condor) (default: %(default)s)",
     )
@@ -126,14 +135,14 @@ def get_main_parser():
     )
     parser.add_argument(
         "--memory",
-        type=str,
-        default="4GB",
+        type=float,
+        default=4.0,
         help="Memory used in jobs default ``(default: %(default)s)",
     )
     parser.add_argument(
         "--disk",
-        type=str,
-        default="4GB",
+        type=float,
+        default=4,
         help="Disk used in jobs default ``(default: %(default)s)",
     )
     parser.add_argument(
@@ -269,7 +278,7 @@ if __name__ == "__main__":
         processor_instance = workflows[args.workflow](args.year, args.campaign)
     else:
         processor_instance = workflows[args.workflow](
-            args.year, args.campaign, args.isCorr, args.isJERC
+            args.year, args.campaign, args.isCorr, args.isJERC, args.isSyst
         )
 
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
@@ -325,7 +334,7 @@ if __name__ == "__main__":
                 "skipbadfiles": args.skipbadfiles,
                 "schema": processor.NanoAODSchema,
                 "workers": args.workers,
-                "xrootdtimeout": 300,
+                "xrootdtimeout": 900,
             },
             chunksize=args.chunk,
             maxchunks=args.max,
@@ -564,7 +573,6 @@ if __name__ == "__main__":
                 maxchunks=args.max,
             )
         save(output, args.output)
-        print(output)
         print(f"Saving output to {args.output}")
     elif "dask" in args.executor:
         from dask_jobqueue import SLURMCluster, HTCondorCluster
@@ -616,7 +624,8 @@ if __name__ == "__main__":
                 queue="all",
                 cores=args.workers,
                 processes=args.scaleout,
-                memory=args.memory,
+                memory=f"{args.memory}GB",
+                disk=f"{args.disk}GB",
                 retries=args.retries,
                 walltime="00:30:00",
                 job_script_prologue=job_script_prologue,
@@ -624,8 +633,8 @@ if __name__ == "__main__":
         elif "condor" in args.executor:
             cluster = HTCondorCluster(
                 cores=args.workers,
-                memory=args.memory,
-                disk=args.disk,
+                memory=f"{args.memory}GB",
+                disk=f"{args.disk}GB",
                 job_script_prologue=job_script_prologue,
             )
 

@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from hist import intervals
 import scipy.stats
 import warnings
+import hist
 
 errband_opts = {
     "hatch": "////",
@@ -137,7 +137,7 @@ def plotratio(
     denom,
     ax=None,
     clear=True,
-    overflow="none",
+    flow=None,
     xerr=False,
     error_opts={},
     denom_fill_opts={},
@@ -157,10 +157,8 @@ def plotratio(
             Axes object (if None, one is created)
         clear : bool, optional
             Whether to clear Axes before drawing (if passed); if False, this function will skip drawing the legend
-        overflow : str, optional
-            If overflow behavior is not 'none', extra bins will be drawn on either end of the nominal
-            axis range, to represent the contents of the overflow bins.  See `Hist.sum` documentation
-            for a description of the options.
+        flow : str, optional {None, "show", "sum"}
+            Whether plot the under/overflow bin. If "show", add additional under/overflow bin. If "sum", add the under/overflow bin content to first/last bin.
         xerr: bool, optional
             If true, then error bars are drawn for x-axis to indicate the size of the bin.
         error_opts : dict, optional
@@ -212,12 +210,51 @@ def plotratio(
     ax.set_xlabel(axis.label)
     ax.set_ylabel(num.label)
     edges = axis.edges
-    centers = axis.centers
+    if flow == "show":
+        edges = np.array(
+            [
+                edges[0] - (edges[1] - edges[0]) * 2,
+                *edges,
+                edges[-1] + (edges[1] - edges[0]) * 2,
+            ]
+        )
+    centers = (edges[1:] + edges[:-1]) / 2
     ranges = (edges[1:] - edges[:-1]) / 2 if xerr else None
-
     sumw_num, sumw2_num = num.values(), num.variances()
     sumw_denom, sumw2_denom = denom.values(), denom.variances()
 
+    if flow == "show":
+        print("Show under/overflow bin ")
+        sumw_num, sumw2_num = (
+            num.view(flow=True)["value"],
+            num.view(flow=True)["variance"],
+        )
+        sumw_denom, sumw2_denom = (
+            denom.view(flow=True)["value"],
+            denom.view(flow=True)["variance"],
+        )
+    elif flow == "sum":
+        print("Merge under/overflow bin to first/last bin")
+
+        sumw_num[0], sumw2_num[0] = (
+            sumw_num[0] + num.view(flow=True)["value"][0],
+            sumw2_num[0] + num.view(flow=True)["value"][0],
+        )
+        sumw_num[-1], sumw2_num[-1] = (
+            sumw_num[-1] + num.view(flow=True)["value"][-1],
+            sumw2_num[-1] + num.view(flow=True)["value"][-1],
+        )
+        sumw_denom[0], sumw2_denom[0] = (
+            sumw_denom[0] + denom.view(flow=True)["value"][0],
+            sumw2_denom[0] + denom.view(flow=True)["value"][0],
+        )
+        sumw_denom[-1], sumw2_denom[-1] = (
+            sumw_denom[-1] + denom.view(flow=True)["value"][-1],
+            sumw2_denom[-1] + denom.view(flow=True)["value"][-1],
+        )
+    else:
+        sumw_num, sumw2_num = num.values(), num.variances()
+        sumw_denom, sumw2_denom = denom.values(), denom.variances()
     rsumw = sumw_num / sumw_denom
     if unc == "clopper-pearson":
         rsumw_err = np.abs(clopper_pearson_interval(sumw_num, sumw_denom) - rsumw)
@@ -294,7 +331,7 @@ def plotratio(
 
 
 ## Calculate SF error
-def SFerror(collated, discr):
+def SFerror(collated, discr, flow=None):
     err_up = (
         collated["mc"][discr][{"syst": "SFup", "flav": sum}].values()
         - collated["mc"][discr][{"syst": "SF", "flav": sum}].values()
@@ -303,6 +340,24 @@ def SFerror(collated, discr):
         collated["mc"][discr][{"syst": "SFdn", "flav": sum}].values()
         - collated["mc"][discr][{"syst": "SF", "flav": sum}].values()
     )
+    if flow is not None:
+        err_up = (
+            collated["mc"][discr][{"syst": "SFup", "flav": sum}].view(flow=True)[
+                "value"
+            ]
+            - collated["mc"][discr][{"syst": "SF", "flav": sum}].view(flow=True)[
+                "value"
+            ]
+        )
+        err_dn = (
+            collated["mc"][discr][{"syst": "SFdn", "flav": sum}].view(flow=True)[
+                "value"
+            ]
+            - collated["mc"][discr][{"syst": "SF", "flav": sum}].view(flow=True)[
+                "value"
+            ]
+        )
+
     if "C" in discr:  ## scale uncertainties for charm tagger by 2
         err_up = np.sqrt(
             np.add(
@@ -330,12 +385,56 @@ def SFerror(collated, discr):
                 ),
             )
         )
+        if flow:
+            err_up = np.sqrt(
+                np.add(
+                    np.power(err_up, 2),
+                    np.power(
+                        2
+                        * (
+                            collated["mc"][discr][{"syst": "SFup", "flav": 4}].view(
+                                flow=True
+                            )["value"]
+                            - collated["mc"][discr][{"syst": "SF", "flav": 4}].view(
+                                flow=True
+                            )["value"]
+                        ),
+                        2,
+                    ),
+                )
+            )
+            err_dn = np.sqrt(
+                np.add(
+                    np.power(err_dn, 2),
+                    np.power(
+                        2
+                        * (
+                            collated["mc"][discr][{"syst": "SFdn", "flav": 4}].view(
+                                flow=True
+                            )["value"]
+                            - collated["mc"][discr][{"syst": "SF", "flav": 4}].view(
+                                flow=True
+                            )["value"]
+                        ),
+                        2,
+                    ),
+                )
+            )
 
     return np.array([err_dn, err_up])
 
 
-def autoranger(hist):
+def autoranger(hist, flow=None):
     val, axis = hist.values(), hist.axes[-1].edges
+    if flow == "show":
+        val = hist.view(flow=True)["value"]
+        axis = np.array(
+            [
+                axis[0] - (axis[1] - axis[0]) * 2,
+                *axis,
+                axis[-1] + (axis[1] - axis[0]) * 2,
+            ]
+        )
     for i in range(len(val)):
         if val[i] != 0:
             mins = i
@@ -345,3 +444,186 @@ def autoranger(hist):
             maxs = i + 1
             break
     return axis[mins], axis[maxs]
+
+
+def MCerrorband(
+    hmc,
+    ax=None,
+    flow=None,
+    label="Stat. unc.",
+    fill_opts=None,
+    ext_error=None,
+    clear=False,
+):
+    """Create a ratio plot, dividing two compatible histograms
+    Parameters
+    ----------
+        hmc : Hist
+            A single-axis histogram
+        ax : matplotlib.axes.Axes, optional
+            Axes object (if None, one is created)
+        flow : str, optional {None, "show", "sum"}
+            Whether plot the under/overflow bin. If "show", add additional under/overflow bin. If "sum", add the under/overflow bin content to first/last bin.
+        fill_opts : dict, optional
+            A dictionary of options to pass to the matplotlib
+            `ax.fill_between <https://matplotlib.org/3.1.1/api/_as_gen/matplotlib.axes.Axes.fill_between.html>`_ call
+            internal to this function, filling the denominator uncertainty band.  Leave blank for defaults.
+        label : str, optional
+            Associate a label to this entry (note: y axis label set by ``num.label``)
+        ext_error: list of np.array[error_up,error_down], optional
+            External MC errors not stored in the original histogram
+        clear : bool, optional
+            Whether to clear Axes before drawing (if passed); if False, this function will skip drawing the legend
+
+    Returns
+    -------
+        ax : matplotlib.axes.Axes
+            A matplotlib `Axes <https://matplotlib.org/3.1.1/api/axes_api.html>`_ object
+    """
+    if ax is None:
+        fig, ax = plt.subplots(1, 1)
+    else:
+        if not isinstance(ax, plt.Axes):
+            raise ValueError("ax must be a matplotlib Axes object")
+        if clear:
+            ax.clear()
+
+    if ext_error is None:
+        values = hmc.values() + np.sqrt(hmc.variances())
+        baseline = hmc.values() - np.sqrt(hmc.variances())
+        edges = hmc.axes[0].edges
+
+        if flow == "show":
+            edges = np.array(
+                [
+                    edges[0] - (edges[1] - edges[0]) * 2,
+                    *edges,
+                    edges[-1] + (edges[1] - edges[0]) * 2,
+                ]
+            )
+            values = hmc.view(flow=True)["value"] + np.sqrt(
+                hmc.view(flow=True)["variance"]
+            )
+            baseline = hmc.view(flow=True)["value"] - np.sqrt(
+                hmc.view(flow=True)["variance"]
+            )
+        if flow == "sum":
+            values[0], values[-1] = (
+                hmc.view(flow=True)["value"] + np.sqrt(hmc.view(flow=True)["variance"])
+            )[0] + values[0], (
+                hmc.view(flow=True)["value"] + np.sqrt(hmc.view(flow=True)["variance"])
+            )[
+                -1
+            ] + values[
+                -1
+            ]
+            baseline[0], baseline[-1] = (
+                hmc.view(flow=True)["value"] - np.sqrt(hmc.view(flow=True)["variance"])
+            )[0] + baseline[0], (
+                hmc.view(flow=True)["value"] - np.sqrt(hmc.view(flow=True)["variance"])
+            )[
+                -1
+            ] + baseline[
+                -1
+            ]
+
+        ax.stairs(
+            values=values,
+            baseline=baseline,
+            edges=edges,
+            label=label,
+            **errband_opts,
+        )
+    else:
+        values = hmc.values() + ext_error[1]
+        baseline = hmc.values() - ext_error[0]
+        edges = hmc.axes[-1].edges
+
+        if flow == "show":
+            edges = np.array(
+                [
+                    edges[0] - (edges[1] - edges[0]) * 2,
+                    *edges,
+                    edges[-1] + (edges[1] - edges[0]) * 2,
+                ]
+            )
+            values = hmc.view(flow=True)["value"] + ext_error[1]
+            baseline = hmc.view(flow=True)["value"] - ext_error[0]
+        if flow == "sum":
+            values[0], values[-1] = (hmc.view(flow=True)["value"] + ext_error[1])[
+                0
+            ] + values[0], (hmc.view(flow=True)["value"] + ext_error[0])[-1] + values[
+                -1
+            ]
+            baseline[0], baseline[-1] = (hmc.view(flow=True)["value"] - ext_error[1])[
+                0
+            ] + baseline[0], (hmc.view(flow=True)["value"] - ext_error[0])[
+                -1
+            ] + baseline[
+                -1
+            ]
+
+        ax.stairs(
+            values=values,
+            baseline=baseline,
+            edges=edges,
+            label=label,
+            **fill_opts,
+        )
+
+
+## Very nice implementtion from Kenneth Long:
+## https://gist.github.com/kdlong/d697ee691c696724fc656186c25f8814
+def rebin_hist(h, axis_name, edges):
+    if type(edges) == int:
+        return h[{axis_name: hist.rebin(edges)}]
+
+    ax = h.axes[axis_name]
+    ax_idx = [a.name for a in h.axes].index(axis_name)
+    if not all([np.isclose(x, ax.edges).any() for x in edges]):
+        raise ValueError(
+            f"Cannot rebin histogram due to incompatible edges for axis '{ax.name}'\n"
+            f"Edges of histogram are {ax.edges}, requested rebinning to {edges}"
+        )
+
+    # If you rebin to a subset of initial range, keep the overflow and underflow
+    overflow = ax.traits.overflow or (
+        edges[-1] < ax.edges[-1] and not np.isclose(edges[-1], ax.edges[-1])
+    )
+    underflow = ax.traits.underflow or (
+        edges[0] > ax.edges[0] and not np.isclose(edges[0], ax.edges[0])
+    )
+    flow = overflow or underflow
+    new_ax = hist.axis.Variable(
+        edges, name=ax.name, overflow=overflow, underflow=underflow
+    )
+    axes = list(h.axes)
+    axes[ax_idx] = new_ax
+
+    hnew = hist.Hist(*axes, name=h.name, storage=h._storage_type())
+
+    # Offset from bin edge to avoid numeric issues
+    offset = 0.5 * np.min(ax.edges[1:] - ax.edges[:-1])
+    edges_eval = edges + offset
+    edge_idx = ax.index(edges_eval)
+    # Avoid going outside the range, reduceat will add the last index anyway
+    if edge_idx[-1] == ax.size + ax.traits.overflow:
+        edge_idx = edge_idx[:-1]
+
+    if underflow:
+        # Only if the original axis had an underflow should you offset
+        if ax.traits.underflow:
+            edge_idx += 1
+        edge_idx = np.insert(edge_idx, 0, 0)
+
+    # Take is used because reduceat sums i:len(array) for the last entry, in the case
+    # where the final bin isn't the same between the initial and rebinned histogram, you
+    # want to drop this value. Add tolerance of 1/2 min bin width to avoid numeric issues
+    hnew.values(flow=flow)[...] = np.add.reduceat(
+        h.values(flow=flow), edge_idx, axis=ax_idx
+    ).take(indices=range(new_ax.size + underflow + overflow), axis=ax_idx)
+    if hnew._storage_type() == hist.storage.Weight():
+        hnew.variances(flow=flow)[...] = np.add.reduceat(
+            h.variances(flow=flow), edge_idx, axis=ax_idx
+        ).take(indices=range(new_ax.size + underflow + overflow), axis=ax_idx)
+    return hnew

@@ -15,8 +15,8 @@ Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD sa
 :heavy_exclamation_mark: suggested to install under `bash` environment
 
 ```
-# only first time 
-git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
+# only first time, including submodules
+git clone --recursive git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
 
 # activate enviroment once you have coffea framework 
 conda activate btv_coffea
@@ -91,19 +91,20 @@ More options for `runner.py`
                         (default: dummy_samples.json)
   --year YEAR           Year
   --campaign CAMPAIGN   Dataset campaign, change the corresponding correction
-                        files
+                        files{ "Rereco17_94X","Winter22Run3","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
   --isCorr              Run with SFs
   --isJERC              JER/JEC implemented to jet
+  --isSyst              Run with systematics for SF
   --executor {iterative,futures,parsl/slurm,parsl/condor,parsl/condor/naf_lite,dask/condor,dask/slurm,dask/lpc,dask/lxplus,dask/casa}
                         The type of executor to use (default: futures). 
   -j WORKERS, --workers WORKERS
                         Number of workers (cores/threads) to use for multi- worker executors (e.g. futures or condor) (default:
-                        12)
+                        3)
   -s SCALEOUT, --scaleout SCALEOUT
                         Number of nodes to scale out to if using slurm/condor.
                         Total number of concurrent threads is ``workers x
                         scaleout`` (default: 6)
-  --memory MEMORY       Memory used in jobs  ``(default: 4GB)
+  --memory MEMORY       Memory used in jobs (in GB) ``(default: 4GB)
   --disk DISK           Disk used in jobs  ``(default: 4GB)
   --voms VOMS           Path to voms proxy, made accessible to worker nodes.
                         By default a copy will be made to $HOME.
@@ -283,6 +284,9 @@ WW_TuneCP5_13p6TeV-pythia8
 :exclamation: Do not make the file list greater than 4k files to avoid scaleout issues in various site
 
 ## Correction files configurations
+:heavy_exclamation_mark:  If the correction files are not supported yet by jsonpog-integration, you can still try with custom input data.
+
+### Options with custom input data 
 
 All the `lumiMask`, correction files (SFs, pileup weight), and JEC, JER files are under  `BTVNanoCommissioning/src/data/` following the substructure `${type}/${campaign}/${files}`(except `lumiMasks` and `Prescales`)
 
@@ -297,7 +301,9 @@ All the `lumiMask`, correction files (SFs, pileup weight), and JEC, JER files ar
 
 Create a `dict` entry under `correction_config` with dedicated campaigns in `BTVNanoCommissioning/src/utils/AK4_parameters.py`.
 
-Take `Rereco17_94X` as an example.
+
+<details><summary>Take `Rereco17_94X` as an example.</summary>
+<p>
 
 ```python
 # specify campaign
@@ -329,6 +335,45 @@ Take `Rereco17_94X` as an example.
     },
 ```
 
+</p>
+</details>
+
+### Use central maintained jsonpog-integration 
+The official correction files collected in [jsonpog-integration](https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration) is updated by POG except `lumiMask` and `JME` still updated by maintainer. No longer to request input files in the `correction_config`.  
+
+<details><summary>See the example with `2017_UL`.</summary>
+<p>
+
+```python
+  "2017_UL": {
+        # Same with custom config
+        "lumiMask": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.txt",
+        "JME": "jec_compiled.pkl.gz",
+        # no config need to be specify for PU weights
+        "PU": None,
+        # Btag SFs - specify $TAGGER : $TYPE-> find [$TAGGER_$TYPE] in json file
+        "BTV": {"deepCSV": "shape", "deepJet": "shape"},
+        
+        "LSF": {
+        # Electron SF - Following the scheme: "${SF_name} ${year}": "${WP}"
+        # https://github.com/cms-egamma/cms-egamma-docs/blob/master/docs/EgammaSFJSON.md
+            "ele_ID 2017": "wp90iso",
+            "ele_Reco 2017": "RecoAbove20",
+
+        # Muon SF - Following the scheme: "${SF_name} ${year}": "${WP}"
+        # WPs : ['NUM_GlobalMuons_DEN_genTracks', 'NUM_HighPtID_DEN_TrackerMuons', 'NUM_HighPtID_DEN_genTracks', 'NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight', 'NUM_LooseID_DEN_TrackerMuons', 'NUM_LooseID_DEN_genTracks', 'NUM_LooseRelIso_DEN_LooseID', 'NUM_LooseRelIso_DEN_MediumID', 'NUM_LooseRelIso_DEN_MediumPromptID', 'NUM_LooseRelIso_DEN_TightIDandIPCut', 'NUM_LooseRelTkIso_DEN_HighPtIDandIPCut', 'NUM_LooseRelTkIso_DEN_TrkHighPtIDandIPCut', 'NUM_MediumID_DEN_TrackerMuons', 'NUM_MediumID_DEN_genTracks', 'NUM_MediumPromptID_DEN_TrackerMuons', 'NUM_MediumPromptID_DEN_genTracks', 'NUM_Mu50_or_OldMu100_or_TkMu100_DEN_CutBasedIdGlobalHighPt_and_TkIsoLoose', 'NUM_SoftID_DEN_TrackerMuons', 'NUM_SoftID_DEN_genTracks', 'NUM_TightID_DEN_TrackerMuons', 'NUM_TightID_DEN_genTracks', 'NUM_TightRelIso_DEN_MediumID', 'NUM_TightRelIso_DEN_MediumPromptID', 'NUM_TightRelIso_DEN_TightIDandIPCut', 'NUM_TightRelTkIso_DEN_HighPtIDandIPCut', 'NUM_TightRelTkIso_DEN_TrkHighPtIDandIPCut', 'NUM_TrackerMuons_DEN_genTracks', 'NUM_TrkHighPtID_DEN_TrackerMuons', 'NUM_TrkHighPtID_DEN_genTracks']
+
+            "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
+            "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
+            "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso 2017_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
+        },
+    },
+```
+
+</p>
+</details>
+
 ## Create compiled JERC file(`pkl.gz`)
 
 :exclamation: In case existing correction file doesn't work for you due to the incompatibility of `cloudpickle` in different python versions. Please recompile the file to get new pickle file.
@@ -351,9 +396,11 @@ e.g. python -m BTVNanoCommissioning.utils.compile_jec Winter22Run3 jec_compiled
 
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 
+:new: non-uniform rebinning is possible, specify the bins with  list of edges `--autorebin 50,80,81,82,83,100.5`
+
 ```
-python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt
-python plotdataMC.py -i "test*.coffea" --lumi 41500 -p dilep_sf -v z_mass,z_pt
+python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt 
+python plotdataMC.py -i "test*.coffea" --lumi 41500 -p dilep_sf -v z_mass,z_pt 
 
 options:
   -h, --help            show this help message and exit
@@ -370,10 +417,14 @@ options:
   -i INPUT, --input INPUT
                         input coffea files (str), splitted different files with ','. Wildcard option * available as well.
    --autorebin AUTOREBIN
-                        Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
+                        Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)
    --xlabel XLABEL      rename the label for x-axis
+   --ylabel YLABEL      rename the label for y-axis
    --splitOSSS SPLITOSSS 
                         Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used
+   --xrange XRANGE      custom x-range, --xrange xmin,xmax
+   --flow FLOW 
+                        str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.
 ```
 - data/data, MC/MC comparisons
 
@@ -403,9 +454,13 @@ options:
   --shortcomp SHORTCOMP
                         short names for compared datasets for legend, split by ','
    --autorebin AUTOREBIN
-                        Rebin the plotting variables by merging N bins in case the current binning is too fine for you 
+                        Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)
    --xlabel XLABEL      rename the label for x-axis
+   --ylabel YLABEL      rename the label for y-axis
    --norm               compare shape, normalized yield to reference
+   --xrange XRANGE       custom x-range, --xrange xmin,xmax
+   --flow FLOW 
+                        str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.
 ```
 
 

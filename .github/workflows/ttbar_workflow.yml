@@ -1,4 +1,4 @@
-name: Baseline Workflow
+name: Baseline ttbar Workflow
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.9","3.10"]
     
     defaults:
       run:
@@ -21,6 +21,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: update submodules
+      run: |
+          git config  --file=.gitmodules submodule.src/BTVNanoCommissioning/jsonpog-integration.url https://milee:${{ secrets.GIT_CERN_PWD }}@gitlab.cern.ch/cms-nanoAOD/jsonpog-integration.git
+          git submodule sync
+          git config --list
+          git submodule update --init --recursive 
     - uses: cvmfs-contrib/github-action-cvmfs@v2
       with:
         cvmfs_repositories: 'grid.cern.ch'
@@ -29,10 +35,9 @@ jobs:
       uses: conda-incubator/setup-miniconda@v2
       with:
         python-version: ${{ matrix.python-version }}
-        mamba-version: "*"
+        miniforge-variant: Mambaforge
         channels: conda-forge,defaults
         channel-priority: true
-        auto-update-conda: true
         activate-environment: btv_coffea
         environment-file: test_env.yml
         auto-activate-base: false
@@ -76,6 +81,6 @@ jobs:
       run: |
         pip install -e .
 
-    - name: Run example workflow
+    - name: Run example workflow with custom correction
       run: |
-        python runner.py --workflow ttcom --json metadata/test_w_dj_mumu.json  --limit 1 --executor iterative
+        python runner.py --workflow ttcom --json metadata/test_w_dj_mumu.json  --limit 1 --executor futures -j 4

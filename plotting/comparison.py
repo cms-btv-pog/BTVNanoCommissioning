@@ -6,7 +6,12 @@ from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
-from BTVNanoCommissioning.utils.plot_utils import plotratio, markers, autoranger
+from BTVNanoCommissioning.utils.plot_utils import (
+    plotratio,
+    markers,
+    autoranger,
+    rebin_hist,
+)
 
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.utils.xs_scaler import collate
@@ -18,12 +23,17 @@ parser.add_argument(
     "--phase",
     required=True,
     choices=[
-        "dilep_sf",
+        "ttdilep_sf",
         "ttsemilep_sf",
         "ctag_Wc_sf",
         "ctag_DY_sf",
         "ctag_ttsemilep_sf",
         "ctag_ttdilep_sf",
+        "ectag_Wc_sf",
+        "ectag_DY_sf",
+        "ectag_ttsemilep_sf",
+        "ectag_ttdilep_sf",
+        "emctag_ttdilep_sf",
     ],
     dest="phase",
     help="which phase space",
@@ -55,6 +65,15 @@ parser.add_argument(
     type=str,
     help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
+parser.add_argument(
+    "--xrange", type=str, default=None, help="custom x-range, --xrange xmin,xmax"
+)
+parser.add_argument(
+    "--flow",
+    type=str,
+    default=None,
+    help="str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
+)
 parser.add_argument("--ext", type=str, default="", help="prefix name/btv name tag")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
@@ -72,12 +91,21 @@ parser.add_argument(
 parser.add_argument(
     "--autorebin",
     default=None,
-    help="Rebin the plotting variables by merging N bins in case the current binning is too fine for you ",
+    help="Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)",
 )
 parser.add_argument(
     "--xlabel",
     type=str,
     help="rename the label of variables to plot, splitted by ,.  Wildcard option * NOT available here",
+)
+parser.add_argument(
+    "--ylabel", type=str, default=None, help="Modify y-axis label of plot"
+)
+parser.add_argument(
+    "--splitOSSS",
+    type=int,
+    default=None,
+    help="Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used",
 )
 args = parser.parse_args()
 output = {}
@@ -115,26 +143,34 @@ if "Run" in args.ref:
 else:
     hist_type = "step"
     label = "Simulation Preliminary"
-
-if "ttdilep" in args.phase:
-    if "ctag" in args.phase:
-        input_txt = r"ctag t$\bar{t}$ e$\mu$"
+nj = 1
+### input text settings
+if "Wc" in args.phase:
+    input_txt = "W+c"
+    if args.splitOSSS == 1:
+        input_txt = input_txt + " OS"
+    elif args.splitOSSS == -1:
+        input_txt = input_txt + " SS"
     else:
-        input_txt = r"t$\bar{t}$ e$\mu$"
-    nj = 2
-elif "ttsemilep" in args.phase:
-    if "ctag" in args.phase:
-        input_txt = r"ctag t$\bar{t}$ $\mu$+jets"
-    else:
-        input_txt = r"t$\bar{t}$ $\mu$+jets"
+        input_txt = input_txt + " OS-SS"
+elif "DY" in args.phase:
+    input_txt = "DY+jets"
+elif "semilep" in args.phase:
+    input_txt = r"t$\bar{t}$ semileptonic"
     nj = 4
+elif "dilep" in args.phase:
+    input_txt = r"t$\bar{t}$ dileptonic"
+    nj = 2
+if "emctag" in args.phase:
+    input_txt = input_txt + " (e$\mu$)"
+elif "ectag" in args.phase:
+    input_txt = input_txt + " (e)"
+elif "ttdilep_sf" == args.phase:
+    input_txt = input_txt + " (e$\mu$)"
 else:
-    if "Wc" in args.phase:
-        input_txt = "W+c"
-    elif "DY" in args.phase:
-        input_txt = "DY+jets"
-    nj = 1
-
+    input_txt = input_txt + " ($\mu$)"
+if "ctag" in args.phase and "DY" not in args.phase:
+    input_txt = input_txt + "\nw/ soft-$\mu$"
 if args.shortref == "":
     args.shortref = args.ref
 
@@ -158,17 +194,33 @@ for index, discr in enumerate(var_set):
     if "syst" in collated[args.ref][discr].axes.name:
         allaxis["syst"] = sum
     if "osss" in collated[args.ref][discr].axes.name:  ## do dominal OS-SS
-        collated[args.ref][discr] = (
-            collated[args.ref][discr][{"osss": 0}]
-            + collated[args.ref][discr][{"osss": 1}] * -1
-        )
-        for c in args.compared.split(","):
-            collated[c][discr] = (
-                collated[c][discr][{"osss": 0}] + collated[c][discr][{"osss": 1}] * -1
+        if args.splitOSSS is None:  # OS-SS
+            collated[args.ref][discr] = (
+                collated[args.ref][discr][{"osss": 0}]
+                + collated[args.ref][discr][{"osss": 1}] * -1
             )
+            for c in args.compared.split(","):
+                collated[c][discr] = (
+                    collated[c][discr][{"osss": 0}]
+                    + collated[c][discr][{"osss": 1}] * -1
+                )
+        elif args.splitOSSS == 1:
+            allaxis["osss"] = 0  # opposite sign
+        elif args.splitOSSS == -1:
+            allaxis["osss"] = 1  # same sign
+    do_xerr = False
     if args.autorebin is not None:
-        rebin_factor = int(args.autorebin)
-        allaxis[collated[args.ref][discr].axes[-1].name] = hist.rebin(rebin_factor)
+        if args.autorebin.isdigit():
+            rebin = int(args.autorebin)
+        else:
+            rebin = np.array([float(i) for i in args.autorebin.split(",")])
+            do_xerr = True
+        collated["mc"][discr] = rebin_hist(
+            collated["mc"][discr], collated["mc"][discr].axes[-1].name, rebin
+        )
+        collated["data"][discr] = rebin_hist(
+            collated["data"][discr], collated["data"][discr].axes[-1].name, rebin
+        )
     # FIXME: add wildcard option for xlabel
     # xlabel = (
     #     args.xlabel
@@ -228,6 +280,8 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
+            xerr=do_xerr
+            # flow=args.flow,
         )
         hep.histplot(
             collated[args.ref][discr][caxis],
@@ -236,6 +290,8 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
+            xerr=do_xerr
+            # flow=args.flow,
         )
         hep.histplot(
             collated[args.ref][discr][baxis],
@@ -244,6 +300,8 @@ for index, discr in enumerate(var_set):
             color="r",
             histtype=hist_type,
             ax=ax,
+            xerr=do_xerr
+            # flow=args.flow,
         )
 
         mindex = 0
@@ -257,6 +315,8 @@ for index, discr in enumerate(var_set):
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
+                xerr=do_xerr
+                # flow=args.flow,
             )
             hep.histplot(
                 collated[c][discr][caxis],
@@ -266,6 +326,8 @@ for index, discr in enumerate(var_set):
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
+                xerr=do_xerr
+                # flow=args.flow,
             )
             hep.histplot(
                 collated[c][discr][baxis],
@@ -275,6 +337,8 @@ for index, discr in enumerate(var_set):
                 marker=markers[mindex + 1],
                 histtype="errorbar",
                 ax=ax,
+                xerr=do_xerr
+                # flow=args.flow,
             )
             # comparison splitted by flavor
             rax = plotratio(
@@ -284,6 +348,8 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "b", "marker": markers[mindex + 1]},
                 clear=False,
+                xerr=do_xerr
+                # flow=args.flow,
             )
             rax2 = plotratio(
                 collated[c][discr][caxis],
@@ -292,6 +358,8 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "g", "marker": markers[mindex + 1]},
                 clear=False,
+                xerr=do_xerr
+                # flow=args.flow,
             )
             rax3 = plotratio(
                 collated[c][discr][baxis],
@@ -300,6 +368,8 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "r", "marker": markers[mindex + 1]},
                 clear=False,
+                xerr=do_xerr
+                # flow=args.flow,
             )
             mindex += 1
 
@@ -315,9 +385,7 @@ for index, discr in enumerate(var_set):
         rax3.set_xlabel(xlabel)
         ax.legend()
 
-        at = AnchoredText(
-            input_txt + "\n" + "BTV Commissioning" + "\n" + text, loc=2, frameon=False
-        )
+        at = AnchoredText(input_txt + "\n" + text, loc=2, frameon=False)
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
         if args.log:
@@ -342,6 +410,8 @@ for index, discr in enumerate(var_set):
             histtype=hist_type,
             yerr=True,
             ax=ax,
+            xerr=do_xerr
+            # flow=args.flow,
         )
         for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
             hep.histplot(
@@ -350,6 +420,8 @@ for index, discr in enumerate(var_set):
                 histtype=hist_type,
                 yerr=True,
                 ax=ax,
+                xerr=do_xerr
+                # flow=args.flow,
             )
         for i, c in enumerate(args.compared.split(",")):
             plotratio(
@@ -359,22 +431,26 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": ax.get_lines()[i + 1].get_color()},
                 clear=False,
+                xerr=do_xerr
+                # flow=args.flow,
             )  ## No error band used
         alls = collated[args.ref][discr][allaxis]
         for c in args.compared.split(","):
             alls = collated[c][discr][allaxis] + alls
         xmin, xmax = autoranger(alls)
         rax.set_xlim(xmin, xmax)
+        if args.xrange is not None:
+            xmin, xmax = float(args.xrange.split(",")[0]), float(
+                args.xrange.split(",")[1]
+            )
         rax.set_xlabel(xlabel)
         ax.set_xlabel(None)
-        ax.set_ylabel("Events")
+        ax.set_ylabel(args.ylabel)
         rax.set_ylabel("Other/Ref")
         ax.legend(loc=1)
         rax.set_ylim(0.0, 2.0)
 
-        at = AnchoredText(
-            input_txt + "\n" + "BTV Commissioning" + "\n" + text, loc=2, frameon=False
-        )
+        at = AnchoredText(input_txt + "\n" + args.ext, loc=2, frameon=False)
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
         ax.set_ylim(bottom=0)

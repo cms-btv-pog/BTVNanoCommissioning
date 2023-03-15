@@ -3,53 +3,44 @@ import collections, numpy as np, awkward as ak
 from coffea import processor
 from coffea.analysis_tools import Weights
 
-from BTVNanoCommissioning.utils.AK4_parameters import correction_config
+
 from BTVNanoCommissioning.utils.correction import (
     load_lumi,
+    load_SF,
     eleSFs,
     muSFs,
-    load_pu,
-    load_BTV,
+    puwei,
+    btagSFs,
     load_jmefactory,
 )
-from BTVNanoCommissioning.helpers.func import flatten, update
+from BTVNanoCommissioning.helpers.func import flatten
 from BTVNanoCommissioning.helpers.update_branch import missing_branch, add_jec
-from BTVNanoCommissioning.helpers.cTagSFReader import getSF
+
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_cuttightid
 
 
 class NanoProcessor(processor.ProcessorABC):
-    def __init__(self, year="2017", campaign="Rereco17_94X", isCorr=True, isJERC=False):
+    def __init__(
+        self,
+        year="2017",
+        campaign="Rereco17_94X",
+        isCorr=True,
+        isJERC=False,
+        isSyst=False,
+    ):
         self._year = year
         self._campaign = campaign
         self.isCorr = isCorr
         self.isJERC = isJERC
-        self.lumiMask = load_lumi(correction_config[self._campaign]["lumiMask"])
+        self.isSyst = isSyst
+        self.lumiMask = load_lumi(self._campaign)
 
         ## Load corrections
         if isCorr:
-            if "BTV" in correction_config[self._campaign].keys():
-                self._deepjetc_sf = load_BTV(
-                    self._campaign, correction_config[self._campaign]["BTV"], "DeepJetC"
-                )
-                self._deepjetb_sf = load_BTV(
-                    self._campaign, correction_config[self._campaign]["BTV"], "DeepJetB"
-                )
-                self._deepcsvc_sf = load_BTV(
-                    self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVC"
-                )
-                self._deepcsvb_sf = load_BTV(
-                    self._campaign, correction_config[self._campaign]["BTV"], "DeepCSVB"
-                )
-            if "PU" in correction_config[self._campaign].keys():
-                self._pu = load_pu(
-                    self._campaign, correction_config[self._campaign]["PU"]
-                )
+            self.SF_map = load_SF(self._campaign)
         if isJERC:
-            self._jet_factory = load_jmefactory(
-                self._campaign, correction_config[self._campaign]["JME"]
-            )
+            self._jet_factory = load_jmefactory(self._campaign)
         _hist_event_dict = histogrammer("ttdilep_sf")
         self.make_output = lambda: {
             "sumw": processor.defaultdict_accumulator(float),
@@ -65,9 +56,9 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
         events = missing_branch(events)
-        weights = Weights(len(events), storeIndividual=True)
+
         if self.isJERC:
-            add_jec(events, self._campaign, self._jet_factory)
+            events = add_jec(events, self._campaign, self._jet_factory)
         if isRealData:
             output["sumw"] = len(events)
         else:
@@ -81,7 +72,11 @@ class NanoProcessor(processor.ProcessorABC):
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
 
         ## HLT
-        triggers = ["IsoMu24"]
+        triggers = [
+            "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
+            "Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+            "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        ]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -113,8 +108,20 @@ class NanoProcessor(processor.ProcessorABC):
         ## Jet cuts
         event_jet = events.Jet[
             jet_id(events, self._campaign)
-            & (ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))
-            & (ak.all(events.Jet.metric_table(events.Electron) > 0.4, axis=2))
+            & (
+                ak.all(
+                    events.Jet.metric_table(events.Muon) > 0.4,
+                    axis=2,
+                    mask_identity=True,
+                )
+            )
+            & (
+                ak.all(
+                    events.Jet.metric_table(events.Electron) > 0.4,
+                    axis=2,
+                    mask_identity=True,
+                )
+            )
         ]
         req_jets = ak.num(event_jet.pt) >= 2
 
@@ -130,8 +137,20 @@ class NanoProcessor(processor.ProcessorABC):
             ak.local_index(events.Jet.pt),
             (
                 jet_id(events, self._campaign)
-                & (ak.all(events.Jet.metric_table(events.Muon) > 0.4, axis=2))
-                & (ak.all(events.Jet.metric_table(events.Electron) > 0.4, axis=2))
+                & (
+                    ak.all(
+                        events.Jet.metric_table(events.Muon) > 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
+                )
+                & (
+                    ak.all(
+                        events.Jet.metric_table(events.Electron) > 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
+                )
             )
             == 1,
         )
@@ -142,6 +161,8 @@ class NanoProcessor(processor.ProcessorABC):
             req_trig & req_lumi & req_muon & req_ele & req_jets & req_opposite_charge
         )
         event_level = ak.fill_none(event_level, False)
+        if len(events[event_level]) == 0:
+            return {dataset: output}
 
         ####################
         # Selected objects #
@@ -149,9 +170,10 @@ class NanoProcessor(processor.ProcessorABC):
         smu = events.Muon[event_level]
         sel = events.Electron[event_level]
         sjets = event_jet[event_level]
+        nseljet = ak.count(sjets.pt, axis=1)
         sjets = sjets[:, :2]
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
-        if self._campaign != "Rereco17_94X":
+        if "PFCands" in events.fields:
             jetindx0 = jetindx[:, 0]
             jetindx1 = jetindx[:, 1]
             spfcands = collections.defaultdict(dict)
@@ -173,40 +195,17 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         # Weight & Geninfo #
         ####################
+        weights = Weights(len(events[event_level]), storeIndividual=True)
         if not isRealData:
-            weights.add("genweight", events.genWeight)
+            weights.add("genweight", events[event_level].genWeight)
         if not isRealData and self.isCorr:
-            if "PU" in correction_config[self._campaign].keys():
-                if self._campaign == "Rereco17_94X":
-                    puname = f"{self._year}_pileupweight"
-                else:
-                    puname = "PU"
-                weights.add("puweight", self._pu[puname](events.Pileup.nTrueInt))
-            if "LSF" in correction_config[self._campaign].keys():
+            if "PU" in self.SF_map.keys():
                 weights.add(
-                    "lep1sf",
-                    np.where(
-                        event_level,
-                        muSFs(
-                            ak.firsts(events.Muon),
-                            self._campaign,
-                            correction_config[self._campaign]["LSF"],
-                        ),
-                        1.0,
-                    ),
+                    "puweight", puwei(self.SF_map, events[event_level].Pileup.nTrueInt)
                 )
-                weights.add(
-                    "lep2sf",
-                    np.where(
-                        event_level,
-                        eleSFs(
-                            ak.firsts(events.Electron),
-                            self._campaign,
-                            correction_config[self._campaign]["LSF"],
-                        ),
-                        1.0,
-                    ),
-                )
+            if "MUO" in self.SF_map.keys() or "EGM" in self.SF_map.keys():
+                weights.add("lep1sf", muSFs(smu[:, 0], self.SF_map, True))
+                weights.add("lep2sf", eleSFs(sel[:, 0], self.SF_map))
 
         if isRealData:
             genflavor = ak.zeros_like(sjets.pt)
@@ -217,90 +216,49 @@ class NanoProcessor(processor.ProcessorABC):
             jetsfs_b = collections.defaultdict(dict)
             csvsfs_c = collections.defaultdict(dict)
             csvsfs_b = collections.defaultdict(dict)
-            if self.isCorr and "BTV" in correction_config[self._campaign].keys():
+            if self.isCorr and (
+                "btag" in self.SF_map.keys() or "ctag" in self.SF_map.keys()
+            ):
                 for i in range(2):
-                    jetsfs_c[i]["SF"] = getSF(
-                        sjets[:, i].hadronFlavour,
-                        sjets[:, i].btagDeepFlavCvL,
-                        sjets[:, i].btagDeepFlavCvB,
-                        self._deepjetc_sf,
-                    )
-                    jetsfs_c[i]["SFup"] = getSF(
-                        sjets[:, i].hadronFlavour,
-                        sjets[:, i].btagDeepFlavCvL,
-                        sjets[:, i].btagDeepFlavCvB,
-                        self._deepjetc_sf,
-                        "TotalUncUp",
-                    )
-                    jetsfs_c[i]["SFdn"] = getSF(
-                        sjets[:, i].hadronFlavour,
-                        sjets[:, i].btagDeepFlavCvL,
-                        sjets[:, i].btagDeepFlavCvB,
-                        self._deepjetc_sf,
-                        "TotalUncDown",
-                    )
-                    jetsfs_b[i]["SF"] = self._deepjetb_sf.eval(
-                        "central",
-                        sjets[:, i].hadronFlavour,
-                        abs(sjets[:, i].eta),
-                        sjets[:, i].pt,
-                        discr=sjets[:, i].btagDeepFlavB,
-                    )
-                    jetsfs_b[i]["SFup"] = self._deepjetb_sf.eval(
-                        "up_jes",
-                        sjets[:, i].hadronFlavour,
-                        abs(sjets[:, i].eta),
-                        sjets[:, i].pt,
-                        discr=sjets[:, i].btagDeepFlavB,
-                    )
-                    jetsfs_b[i]["SFdn"] = self._deepjetb_sf.eval(
-                        "down_jes",
-                        sjets[:, i].hadronFlavour,
-                        abs(sjets[:, i].eta),
-                        sjets[:, i].pt,
-                        discr=sjets[:, i].btagDeepFlavB,
-                    )
-                    csvsfs_c[i]["SF"] = getSF(
-                        sjets[:, i].hadronFlavour,
-                        sjets[:, i].btagDeepCvL,
-                        sjets[:, i].btagDeepCvB,
-                        self._deepcsvc_sf,
-                    )
-                    csvsfs_c[i]["SFup"] = getSF(
-                        sjets[:, i].hadronFlavour,
-                        sjets[:, i].btagDeepCvL,
-                        sjets[:, i].btagDeepCvB,
-                        self._deepcsvc_sf,
-                        "TotalUncUp",
-                    )
-                    csvsfs_c[i]["SFdn"] = getSF(
-                        sjets[:, i].hadronFlavour,
-                        sjets[:, i].btagDeepCvL,
-                        sjets[:, i].btagDeepCvB,
-                        self._deepcsvc_sf,
-                        "TotalUncDown",
-                    )
-                    csvsfs_b[i]["SFup"] = self._deepcsvb_sf.eval(
-                        "up_jes",
-                        sjets[:, i].hadronFlavour,
-                        abs(sjets[:, i].eta),
-                        sjets[:, i].pt,
-                        discr=sjets[:, i].btagDeepB,
-                    )
-                    csvsfs_b[i]["SF"] = self._deepcsvb_sf.eval(
-                        "central",
-                        sjets[:, i].hadronFlavour,
-                        abs(sjets[:, i].eta),
-                        sjets[:, i].pt,
-                        discr=sjets[:, i].btagDeepB,
-                    )
-                    csvsfs_b[i]["SFdn"] = self._deepcsvb_sf.eval(
-                        "down_jes",
-                        sjets[:, i].hadronFlavour,
-                        abs(sjets[:, i].eta),
-                        sjets[:, i].pt,
-                        discr=sjets[:, i].btagDeepB,
-                    )
+                    jetsfs_c[i]["SF"] = btagSFs(sjets[:, i], self.SF_map, "DeepJetC")
+                    jetsfs_b[i]["SF"] = btagSFs(sjets[:, i], self.SF_map, "DeepJetB")
+                    csvsfs_c[i]["SF"] = btagSFs(sjets[:, i], self.SF_map, "DeepCSVC")
+                    csvsfs_b[i]["SF"] = btagSFs(sjets[:, i], self.SF_map, "DeepCSVB")
+                    if self.isSyst:
+                        for syst in [
+                            "hf",
+                            "lf",
+                            "cferr1",
+                            "cferr2",
+                            "hfstat1",
+                            "hfstat2",
+                            "lfstats1",
+                            "lfstats2",
+                        ]:
+                            jetsfs_c[i][f"SF_{syst}_up"] = btagSFs(
+                                sjets[:, i], self.SF_map, "DeepJetC", f"up_{syst}"
+                            )
+                            jetsfs_c[i][f"SF_{syst}_dn"] = btagSFs(
+                                sjets[:, i], self.SF_map, "DeepJetC", f"down_{syst}"
+                            )
+                            csvsfs_c[i][f"SF_{syst}_up"] = btagSFs(
+                                sjets[:, i], self.SF_map, "DeepCSVC", f"up_{syst}"
+                            )
+                            csvsfs_c[i][f"SF_{syst}_dn"] = btagSFs(
+                                sjets[:, i], self.SF_map, "DeepCSVC", f"down_{syst}"
+                            )
+                        csvsfs_b[i][f"SF_{syst}_up"] = btagSFs(
+                            sjets[:, i], self.SF_map, "DeepCSVB", f"up"
+                        )
+                        csvsfs_b[i][f"SF_{syst}_dn"] = btagSFs(
+                            sjets[:, i], self.SF_map, "DeepCSVB", f"down"
+                        )
+                        jetsfs_b[i][f"SF_{syst}_up"] = btagSFs(
+                            sjets[:, i], self.SF_map, "DeepJetB", f"up"
+                        )
+                        jetsfs_b[i][f"SF_{syst}_dn"] = btagSFs(
+                            sjets[:, i], self.SF_map, "DeepJetB", f"down"
+                        )
                 disc_list = {
                     "btagDeepB": csvsfs_b,
                     "btagDeepC": csvsfs_b,
@@ -316,17 +274,23 @@ class NanoProcessor(processor.ProcessorABC):
         #  Fill histogram  #
         ####################
         for histname, h in output.items():
-            if "Deep" in histname and "btag" not in histname:
+            if (
+                "Deep" in histname
+                and "btag" not in histname
+                and histname in events.Jet.fields
+            ):
                 h.fill(
                     flatten(genflavor),
                     flatten(sjets[histname]),
                     weight=flatten(
-                        ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[
-                            0
-                        ]
+                        ak.broadcast_arrays(weights.weight(), sjets["pt"])[0]
                     ),
                 )
-            elif "PFCands" in histname and self._campaign != "Rereco17_94X":
+            elif (
+                "PFCands" in events.fields
+                and "PFCands" in histname
+                and histname.split("_")[1] in events.PFCands.fields
+            ):
                 for i in range(2):
                     h.fill(
                         flatten(
@@ -334,16 +298,17 @@ class NanoProcessor(processor.ProcessorABC):
                         ),
                         flatten(spfcands[i][histname.replace("PFCands_", "")]),
                         weight=flatten(
-                            ak.broadcast_arrays(
-                                weights.weight()[event_level], spfcands[i]["pt"]
-                            )[0]
+                            ak.broadcast_arrays(weights.weight(), spfcands[i]["pt"])[0]
                         ),
                     )
 
             elif "btagDeep" in histname:
                 for i in range(2):
                     sel_jet = sjets[:, i]
-                    if str(i) in histname:
+                    if (
+                        str(i) in histname
+                        and histname.replace(f"_{i}", "") in events.Jet.fields
+                    ):
                         h.fill(
                             flav=flatten(genflavor[:, i]),
                             syst="noSF",
@@ -354,12 +319,12 @@ class NanoProcessor(processor.ProcessorABC):
                                     sel_jet[histname.replace(f"_{i}", "")],
                                 )
                             ),
-                            weight=weights.weight()[event_level],
+                            weight=weights.weight(),
                         )
                         if (
                             not isRealData
                             and self.isCorr
-                            and "BTV" in correction_config[self._campaign].keys()
+                            and "btag" in self.SF_map.keys()
                             and "_b" not in histname
                             and "_bb" not in histname
                             and "_lepb" not in histname
@@ -377,18 +342,18 @@ class NanoProcessor(processor.ProcessorABC):
                                             sel_jet[histname.replace(f"_{i}", "")],
                                         )
                                     ),
-                                    weight=weights.weight()[event_level]
+                                    weight=weights.weight()
                                     * disc_list[histname.replace(f"_{i}", "")][i][syst],
                                 )
             elif "mu_" in histname and histname.replace("mu_", "") in smu.fields:
                 h.fill(
                     flatten(smu[histname.replace("mu_", "")]),
-                    weight=weights.weight()[event_level],
+                    weight=weights.weight(),
                 )
             elif "ele_" in histname and histname.replace("ele_", "") in sel.fields:
                 h.fill(
                     flatten(sel[histname.replace("ele_", "")]),
-                    weight=weights.weight()[event_level],
+                    weight=weights.weight(),
                 )
             elif "jet" in histname and "dr" not in histname and "njet" != histname:
                 for i in range(2):
@@ -397,18 +362,16 @@ class NanoProcessor(processor.ProcessorABC):
                         h.fill(
                             flatten(genflavor[:, i]),
                             flatten(sel_jet[histname.replace(f"jet{i}_", "")]),
-                            weight=weights.weight()[event_level],
+                            weight=weights.weight(),
                         )
 
         for i in range(2):
             output[f"dr_mujet{i}"].fill(
                 flav=flatten(genflavor[:, i]),
                 dr=flatten(smu.delta_r(sjets[:, i])),
-                weight=weights.weight()[event_level],
+                weight=weights.weight(),
             )
-        output["njet"].fill(
-            ak.count(sjets.pt, axis=1), weight=weights.weight()[event_level]
-        )
+        output["njet"].fill(nseljet, weight=weights.weight())
 
         return {dataset: output}
 

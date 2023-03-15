@@ -3,12 +3,21 @@ import awkward as ak
 
 ## Jet pu ID not exist in Winter22Run3 sample
 def jet_id(events, campaign):
-    if campaign != "Winter22Run3":
+    if campaign == "Rereco17_94X":
         jetmask = (
             (events.Jet.pt > 20)
             & (abs(events.Jet.eta) <= 2.5)
             & (events.Jet.jetId >= 5)
             & ((events.Jet.pt > 50) | (events.Jet.puId >= 7))
+        )
+    elif campaign != "Winter22Run3":
+        ## Modified based on Run3 changes included by Annika:
+        # https://github.com/AnnikaStein/BTVNanoCommissioning/commit/24237031f4deef30f524851646d156d000a8d4cf
+        jetmask = (
+            (events.Jet.pt > 20)
+            & (abs(events.Jet.eta) <= 2.5)
+            & (events.Jet.jetId >= 5)
+            & (events.Jet.chHEF > 0.01)
         )
     else:
         jetmask = (

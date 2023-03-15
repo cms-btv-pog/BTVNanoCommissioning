@@ -19,14 +19,13 @@ def histogrammer(workflow):
         20, 0.2, 6.2, name="pfRelIso03_all", label="Rel. Iso"
     )
     dr_axis = Hist.axis.Regular(20, 0, 8, name="dr", label="$\Delta$R")
+    dr_s_axis = Hist.axis.Regular(20, 0, 0.5, name="dr", label="$\Delta$R")
     dxy_axis = Hist.axis.Regular(40, -0.05, 0.05, name="dxy", label="d_{xy}")
     dz_axis = Hist.axis.Regular(40, -0.01, 0.01, name="dz", label="d_{z}")
     qcddxy_axis = Hist.axis.Regular(40, -0.002, 0.002, name="dxy", label="d_{xy}")
     sip3d_axis = Hist.axis.Regular(20, 0, 0.2, name="sip3d", label="SIP 3D")
     ptratio_axis = Hist.axis.Regular(50, 0, 1, name="ratio", label="ratio")
-    n_axis = Hist.axis.IntCategory(
-        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10], name="n", label="N obj"
-    )
+    n_axis = Hist.axis.Integer(0, 10, name="n", label="N obj")
     osss_axis = Hist.axis.IntCategory([1, -1], name="osss", label="OS(+)/SS(-)")
     ### Workflow specific
     if "validation" == workflow:
@@ -77,7 +76,7 @@ def histogrammer(workflow):
         )
         # delta R between soft muon and mu-jet
         _hist_dict["dr_lmujetsmu"] = Hist.Hist(
-            flav_axis, dr_axis, Hist.storage.Weight()
+            flav_axis, dr_s_axis, Hist.storage.Weight()
         )
         # delta R between hard muon and mu-jet
         _hist_dict["dr_lmujethmu"] = Hist.Hist(
@@ -119,7 +118,7 @@ def histogrammer(workflow):
         )
         # delta R between soft muon and mu-jet
         _hist_dict["dr_lmujetsmu"] = Hist.Hist(
-            flav_axis, dr_axis, Hist.storage.Weight()
+            flav_axis, dr_s_axis, Hist.storage.Weight()
         )
         # delta R between hard muon and mu-jet
         _hist_dict["dr_lmujethmu"] = Hist.Hist(
@@ -167,7 +166,7 @@ def histogrammer(workflow):
         )
         # delta R between soft muon and mu-jet
         _hist_dict["dr_lmujetsmu"] = Hist.Hist(
-            flav_axis, osss_axis, dr_axis, Hist.storage.Weight()
+            flav_axis, osss_axis, dr_s_axis, Hist.storage.Weight()
         )
         # delta R between hard muon and mu-jet
         _hist_dict["dr_lmujethmu"] = Hist.Hist(
@@ -216,6 +215,9 @@ def histogrammer(workflow):
     ### Common kinematic variables
     if "Wc_sf" not in workflow:
         _hist_dict["njet"] = Hist.Hist(n_axis, Hist.storage.Weight())
+        if "ctag_tt" in workflow:
+            _hist_dict["nmujet"] = Hist.Hist(n_axis, Hist.storage.Weight())
+            _hist_dict["nsoftmu"] = Hist.Hist(n_axis, Hist.storage.Weight())
         for obj in obj_list:
             if "jet" in obj or "soft_l" in obj:
                 if obj == "soft_l":
@@ -244,15 +246,18 @@ def histogrammer(workflow):
                     )
     else:
         _hist_dict["njet"] = Hist.Hist(osss_axis, n_axis, Hist.storage.Weight())
+        _hist_dict["nmujet"] = Hist.Hist(osss_axis, n_axis, Hist.storage.Weight())
+        _hist_dict["nsoftmu"] = Hist.Hist(osss_axis, n_axis, Hist.storage.Weight())
         for obj in obj_list:
             if "jet" in obj or "soft_l" in obj:
                 if obj == "soft_l":
                     _hist_dict["soft_l_pt"] = Hist.Hist(
                         flav_axis, osss_axis, softlpt_axis, Hist.storage.Weight()
                     )
-                _hist_dict[f"{obj}_pt"] = Hist.Hist(
-                    flav_axis, osss_axis, jpt_axis, Hist.storage.Weight()
-                )
+                else:
+                    _hist_dict[f"{obj}_pt"] = Hist.Hist(
+                        flav_axis, osss_axis, jpt_axis, Hist.storage.Weight()
+                    )
                 _hist_dict[f"{obj}_eta"] = Hist.Hist(
                     flav_axis, osss_axis, eta_axis, Hist.storage.Weight()
                 )
