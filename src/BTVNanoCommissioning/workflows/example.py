@@ -1,0 +1,236 @@
+import collections, awkward as ak, numpy as np
+import uproot
+from coffea import processor
+from coffea.analysis_tools import Weights
+
+# functions to load SFs, corrections
+from BTVNanoCommissioning.utils.correction import (
+    load_lumi,
+    load_SF,
+    eleSFs,
+    muSFs,
+    puwei,
+    btagSFs,
+    JME_shifts,
+    Roccor_shifts,
+)
+
+# user helper function
+from BTVNanoCommissioning.helpers.func import flatten, update, uproot_writeable
+from BTVNanoCommissioning.helpers.update_branch import missing_branch
+
+## load histograms & selctions for this workflow
+from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_cuttightid
+
+
+class NanoProcessor(processor.ProcessorABC):
+    def __init__(
+        self,
+        year="2017",
+        campaign="Rereco17_94X",
+        isCorr=True,
+        isJERC=False,
+        isSyst=False,
+        isArray=False,
+        noHist=False,
+        chunksize=75000,
+    ):
+        self._year = year
+        self._campaign = campaign
+        self.isCorr = isCorr
+        self.isJERC = isJERC
+        self.isSyst = isSyst
+        self.isArray = isArray
+        self.noHist = noHist
+        self.lumiMask = load_lumi(self._campaign)
+        self.chunksize = chunksize
+        ## Load corrections
+        if isCorr:
+            self.SF_map = load_SF(self._campaign)
+
+    @property
+    def accumulator(self):
+        return self._accumulator
+
+    ## Apply corrections on momentum/mass on MET, Jet, Muon
+    def process(self, events):
+        isRealData = not hasattr(events, "genWeight")
+        dataset = events.metadata["dataset"]
+        events = missing_branch(events)
+        shifts = []
+        if "JME" in self.SF_map.keys() and self.isJERC:
+            syst_JERC = True if self.isSyst != None else False
+            if self.isSyst == "JERC_split":
+                syst_JERC = "split"
+            shifts = JME_shifts(
+                shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
+            )
+        else:
+            shifts = [
+                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
+            ]
+        if "roccor" in self.SF_map.keys():
+            shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
+        else:
+            shifts[0][0]["Muon"] = events.Muon
+
+        return processor.accumulate(
+            self.process_shift(update(events, collections), name)
+            for collections, name in shifts
+        )
+
+    ## Processed events per-chunk, made selections, filled histogram, stored root files
+    def process_shift(self, events, shift_name):
+        dataset = events.metadata["dataset"]
+        isRealData = not hasattr(events, "genWeight")
+        ######################
+        #  Create histogram  #
+        ######################
+        _hist_event_dict = {"": None} if self.noHist else histogrammer("example")
+
+        output = {
+            "sumw": processor.defaultdict_accumulator(float),
+            **_hist_event_dict,
+        }
+        if isRealData:
+            output["sumw"] = len(events)
+        else:
+            output["sumw"] = ak.sum(events.genWeight)
+        ####################
+        #    Selections    #
+        ####################
+        ## Lumimask
+        req_lumi = np.ones(len(events), dtype="bool")
+        if isRealData:
+            req_lumi = self.lumiMask(events.run, events.luminosityBlock)
+
+        ## HLT
+        triggers = [
+            "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
+            "Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+            "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+        ]
+        checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
+        if ak.all(checkHLT == False):
+            raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
+        elif ak.any(checkHLT == False):
+            print(np.array(triggers)[~checkHLT], " not exist in", dataset)
+        trig_arrs = [
+            events.HLT[_trig] for _trig in triggers if hasattr(events.HLT, _trig)
+        ]
+        req_trig = np.zeros(len(events), dtype="bool")
+        for t in trig_arrs:
+            req_trig = req_trig | t
+
+        ##### Add some selections
+        ## Muon cuts
+        # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
+
+        ## Electron cuts
+        # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
+
+        ## Jet cuts
+
+        ## Other cuts
+
+        event_level = (
+            req_trig & req_lumi  # & req_muon & req_ele & req_jets & req_opposite_charge
+        )
+        event_level = ak.fill_none(event_level, False)
+        if len(events[event_level]) == 0:
+            return {dataset: output}
+
+        ####################
+        # Selected objects #
+        ####################
+        smu = events.Muon[event_level]
+        sele = events.Electron[event_level]
+        sjets = events.Jet[event_level]
+        ####################
+        # Weight & Geninfo #
+        ####################
+        weights = Weights(len(events[event_level]), storeIndividual=True)
+        if not isRealData:
+            weights.add("genweight", events[event_level].genWeight)
+            par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
+            genflavor = sjets.hadronFlavour + 1 * par_flav
+            if self.isCorr:
+                syst_wei = True if self.isSyst != None else False
+                if "PU" in self.SF_map.keys():
+                    puwei(
+                        events[event_level].Pileup.nTrueInt,
+                        self.SF_map,
+                        weights,
+                        syst_wei,
+                    )
+                if "MUO" in self.SF_map.keys():
+                    muSFs(smu, self.SF_map, weights, syst_wei, False)
+                if "EGM" in self.SF_map.keys():
+                    eleSFs(sele, self.SF_map, weights, syst_wei, False)
+                if "BTV" in self.SF_map.keys():
+                    btagSFs(sjets, self.SF_map, weights, "DeepJetC", syst_wei)
+                    btagSFs(sjets, self.SF_map, weights, "DeepJetB", syst_wei)
+                    btagSFs(sjets, self.SF_map, weights, "DeepCSVB", syst_wei)
+                    btagSFs(sjets, self.SF_map, weights, "DeepCSVC", syst_wei)
+        else:
+            genflavor = ak.zeros_like(sjets.pt)
+
+        # Systematics information
+        if shift_name is None:
+            systematics = ["nominal"] + list(weights.variations)
+        else:
+            systematics = [shift_name]
+        exclude_btv = [
+            "DeepCSVC",
+            "DeepCSVB",
+            "DeepJetB",
+            "DeepJetB",
+        ]  # exclude b-tag SFs for btag inputs
+
+        ####################
+        #  Fill histogram  #
+        ####################
+        for syst in systematics:
+            if self.isSyst == None and syst != "nominal":
+                break
+            if self.noHist:
+                break
+            weight = (
+                weights.weight()
+                if syst == "nominal" or syst == shift_name
+                else weights.weight(modifier=syst)
+            )  # shift up/down for weight systematics
+            output["$VAR"].fill()
+
+        #######################
+        #  Create root files  #
+        #######################
+        if self.isArray:
+            # Keep the structure of events and pruned the object size
+            pruned_ev = events[event_level]  # pruned events
+            pruned_ev.Electron = (
+                sele  # replace electron collections with selected electron
+            )
+            # Add custom variables
+            if not isRealData:
+                pruned_ev["weight"] = weights.weight()
+                for ind_wei in weights.weightStatistics.keys():
+                    pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
+                        include=[ind_wei]
+                    )
+            # Create a list of variables want to store. For objects from the PFNano file, specify as {object}_{variable}, wildcard option only accepted at the end of the string
+            out_branch = np.setdiff1d(
+                np.array(pruned_ev.fields), np.array(events.fields)
+            )  # stored customed variables
+            out_branch = np.append(out_branch, ["Jet_btagDeep*", "Electron_pt"])
+            # write to root files
+            with uproot.recreate(
+                f"tmp/{dataset}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+            ) as fout:
+                fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
+        return {dataset: output}
+
+    ## post process, return the accumulator, compressed
+    def postprocess(self, accumulator):
+        return accumulator

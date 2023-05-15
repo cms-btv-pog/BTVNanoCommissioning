@@ -137,7 +137,6 @@ def collate(output, mergemap):
             else:
                 merged[files] = dict(output[files].items())
     for group, names in mergemap.items():
-        print(group, names)
         out[group] = processor.accumulate(
             [v for k, v in merged.items() if k.split("_FNAME_")[0] in names]
         )

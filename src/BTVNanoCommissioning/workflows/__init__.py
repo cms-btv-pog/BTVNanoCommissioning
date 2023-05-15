@@ -43,6 +43,10 @@ from BTVNanoCommissioning.workflows.ctag_semileptt_valid_sf import (
     NanoProcessor as CTAGSemilepttValidSFProcessor,
 )
 
+# from BTVNanoCommissioning.workflows.example import (
+#     NanoProcessor as ExampleProcessor,
+# )
+
 # FIXME - make names more systematic?
 workflows = {}
 workflows["validation"] = ValidationProcessor
@@ -66,4 +70,6 @@ workflows["ectag_Wc_sf"] = CTAGeWcValidSFProcessor
 workflows["ctag_DY_sf"] = CTAGDYValidSFProcessor
 workflows["ectag_DY_sf"] = CTAGeDYValidSFProcessor
 
+# Tutorial
+# workflows["example"] = ExampleProcessor
 __all__ = ["workflows"]

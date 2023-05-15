@@ -94,7 +94,10 @@ More options for `runner.py`
                         files{ "Rereco17_94X","Winter22Run3","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
   --isCorr              Run with SFs
   --isJERC              JER/JEC implemented to jet
-  --isSyst              Run with systematics for SF
+  --isSyst              Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None(not extract )
+  --isArray             Output root files
+  --noHist              Not save histogram coffea files
+  --overwrite           Overwrite exist files
   --executor {iterative,futures,parsl/slurm,parsl/condor,parsl/condor/naf_lite,dask/condor,dask/slurm,dask/lpc,dask/lxplus,dask/casa}
                         The type of executor to use (default: futures). 
   -j WORKERS, --workers WORKERS
@@ -110,7 +113,7 @@ More options for `runner.py`
                         By default a copy will be made to $HOME.
   --chunk N             Number of events per process chunk
   --retries N           Number of retries for coffea processor
- --index INDEX         (Specific for dask/lxplus file splitting, default:0,0) 
+  --index INDEX         (Specific for dask/lxplus file splitting, default:0,0) 
                         Format: $dictindex,$fileindex. $dictindex refers to the index of the file list split to 50 files per dask-worker.
                         The job will start submission from the corresponding indices
   --validate            Do not process, just check all files are accessible
@@ -123,17 +126,19 @@ More options for `runner.py`
 </p>
 </details>
 
-### Roadmap for running the tool
+### Roadmap for running the tool (for commissioning tasks)
 
 1. Is the `.json` file ready? If not, create it following the instructions in the  [Make the json files](#make-the-json-files) section. Please use the correct naming scheme
 
-2. Put the `lumiMask`, correction files (SFs, pileup weight), and JER, JEC files under the dict entry in `BTVNanoCommissioning/src/utils/AK4_parameters.py`. See details in [Correction files configurations](#correction-files-configurations)
+2. Put the `lumiMask`, correction files (SFs, pileup weight), and JER, JEC files under the dict entry in `utils/AK4_parameters.py`. See details in [Correction files configurations](#correction-files-configurations)
 
 3. If the JERC file `jec_compiled.pkl.gz` is missing in the `data/JME/${campaign}` directory, create it through [Create compiled JERC file](#create-compiled-jerc-filepklgz)
 
-4. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz)
+4. If selections and output histogram/arrays need to change, modify the dedicated `workflows`
 
-5. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add to `src/BTVNanoCommissioning/helpers/xsection.py`
+5. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz). You can also specified `--isArray` to store the skimmed root files.
+
+6. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add to `src/BTVNanoCommissioning/helpers/xsection.py`
 
 ### Commands for different phase space
 
@@ -353,7 +358,9 @@ The official correction files collected in [jsonpog-integration](https://gitlab.
         "PU": None,
         # Btag SFs - specify $TAGGER : $TYPE-> find [$TAGGER_$TYPE] in json file
         "BTV": {"deepCSV": "shape", "deepJet": "shape"},
-        
+        "roccor": None,
+         # JMAR, IDs from JME- Following the scheme: "${SF_name}": "${WP}"
+        "JMAR": {"PUJetID_eff": "L"},
         "LSF": {
         # Electron SF - Following the scheme: "${SF_name} ${year}": "${WP}"
         # https://github.com/cms-egamma/cms-egamma-docs/blob/master/docs/EgammaSFJSON.md
@@ -399,14 +406,14 @@ You can specify `-v all` to plot all the variables in the `coffea` file, or use 
 :new: non-uniform rebinning is possible, specify the bins with  list of edges `--autorebin 50,80,81,82,83,100.5`
 
 ```
-python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt 
-python plotdataMC.py -i "test*.coffea" --lumi 41500 -p dilep_sf -v z_mass,z_pt 
+python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p ttdilep_sf -v z_mass,z_pt 
+python plotdataMC.py -i "test*.coffea" --lumi 41500 -p ttdilep_sf -v z_mass,z_pt 
 
 options:
   -h, --help            show this help message and exit
   --lumi LUMI           luminosity in /pb
   --com COM             sqrt(s) in TeV
-  -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
+  -p {ttdilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
                         which phase space
   --log LOG             log on y axis
   --norm NORM           Use for reshape SF, scale to same yield as no SFs case

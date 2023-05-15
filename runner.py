@@ -86,11 +86,23 @@ def get_main_parser():
         help="Dataset campaign, change the corresponding correction files",
     )
     parser.add_argument("--isCorr", action="store_true", help="Run with SFs")
-    parser.add_argument("--isSyst", action="store_true", help="Run with systematics")
+    parser.add_argument(
+        "--isSyst",
+        default=None,
+        type=str,
+        choices=[None, "all", "weight_only", "JERC_split"],
+        help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
+    )
     parser.add_argument(
         "--isJERC", action="store_true", help="JER/JEC implemented to jet"
     )
-
+    parser.add_argument("--isArray", action="store_true", help="Output root files")
+    parser.add_argument(
+        "--noHist", action="store_true", help="Not output coffea histogram"
+    )
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Overwrite exist files"
+    )
     # Scale out
     parser.add_argument(
         "--executor",
@@ -274,13 +286,33 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # load workflow
-    if "ttcom" == args.workflow or "validation" == args.workflow:
-        processor_instance = workflows[args.workflow](args.year, args.campaign)
-    else:
-        processor_instance = workflows[args.workflow](
-            args.year, args.campaign, args.isCorr, args.isJERC, args.isSyst
-        )
 
+    processor_instance = workflows[args.workflow](
+        args.year,
+        args.campaign,
+        args.isCorr,
+        args.isJERC,
+        args.isSyst,
+        args.isArray,
+        args.noHist,
+        args.chunk,
+    )
+    ## create tmp directory and check file exist or not
+    from os import path
+
+    if path.exists(f"{args.output}") and args.overwrite == False:
+        raise Exception(f"{args.output} exists")
+
+    if args.isArray:
+        if path.exists("tmp"):
+            os.system("rm -r tmp")
+        os.mkdir("tmp")
+
+        if (
+            path.exists(f'{args.output.replace(".coffea", "").replace("hists_","")}/')
+            and args.overwrite == False
+        ):
+            raise Exception("Directory exists")
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """
         dask/parsl needs to export x509 to read over xrootd
@@ -339,7 +371,7 @@ if __name__ == "__main__":
             chunksize=args.chunk,
             maxchunks=args.max,
         )
-        save(output, args.output)
+
     elif "parsl" in args.executor:
         import parsl
         from parsl.providers import LocalProvider, CondorProvider, SlurmProvider
@@ -572,7 +604,7 @@ if __name__ == "__main__":
                 chunksize=args.chunk,
                 maxchunks=args.max,
             )
-        save(output, args.output)
+
         print(f"Saving output to {args.output}")
     elif "dask" in args.executor:
         from dask_jobqueue import SLURMCluster, HTCondorCluster
@@ -665,7 +697,7 @@ if __name__ == "__main__":
                     chunksize=args.chunk,
                     maxchunks=args.max,
                 )
-                save(output, args.output)
+
             else:
                 findex = int(args.index.split(",")[1])
                 for sindex, sample in enumerate(sample_dict.keys()):
@@ -696,12 +728,28 @@ if __name__ == "__main__":
                             chunksize=args.chunk,
                             maxchunks=args.max,
                         )
-                        save(
-                            output,
-                            args.output.replace(
-                                ".coffea", f"_{sindex}_{findex}.coffea"
-                            ),
-                        )
-
-    print(output)
-    print(f"Saving output to {args.output}")
+                        if args.noHist == False:
+                            save(
+                                output,
+                                args.output.replace(
+                                    ".coffea", f"_{sindex}_{findex}.coffea"
+                                ),
+                            )
+    if not splitjobs:
+        if args.noHist == False:
+            save(output, args.output)
+    if args.isArray:
+        if args.overwrite and path.exists(
+            args.output.replace(".coffea", "").replace("hists_", "")
+        ):
+            os.system(
+                f'rm -r {args.output.replace(".coffea", "").replace("hists_", "")}'
+            )
+        os.mkdir(args.output.replace(".coffea", "").replace("hists_", ""))
+        os.system(
+            f'mv tmp/*.root {args.output.replace(".coffea", "").replace("hists_","")}/.'
+        )
+        os.system("rm -r tmp")
+    if args.noHist == False:
+        print(output)
+        print(f"Saving output to {args.output}")
