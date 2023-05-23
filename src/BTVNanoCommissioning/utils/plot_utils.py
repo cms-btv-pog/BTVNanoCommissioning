@@ -607,7 +607,7 @@ def rebin_hist(h, axis_name, edges):
     )
     flow = overflow or underflow
     new_ax = hist.axis.Variable(
-        edges, name=ax.name, overflow=overflow, underflow=underflow
+        edges, name=ax.name, label=ax.label, overflow=overflow, underflow=underflow
     )
     axes = list(h.axes)
     axes[ax_idx] = new_ax

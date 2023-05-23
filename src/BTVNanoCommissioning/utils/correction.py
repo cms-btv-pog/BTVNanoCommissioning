@@ -94,14 +94,24 @@ def load_SF(campaign, syst=False):
                 e: f for e, f in config[campaign]["LSF"].items() if "ele" in e
             }
             ## Muon
+            print(
+                "muon",
+                os.path.exists(
+                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/MUO/{campaign}"
+                ),
+                os.path.exists(
+                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}"
+                ),
+            )
             if os.path.exists(
                 f"src/BTVNanoCommissioning/jsonpog-integration/POG/MUO/{campaign}"
-            ) and os.path.exists(
-                f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}"
             ):
                 correction_map["MUO"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/MUO/{campaign}/muon_Z.json.gz"
                 )
+            if os.path.exists(
+                f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}"
+            ):
                 correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
                 )

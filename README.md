@@ -264,7 +264,7 @@ python runner.py --wf ttcom --executor parsl/slurm
 
 ## Make the json files
 
-Use the `fetch.py` in `filefetcher`, the `$input_DAS_list` is the info extract from DAS, and output json files in `metadata/`
+Use the `fetch.py` in `scripts`, the `$input_DAS_list` is the info extract from DAS, and output json files 
 
 ```
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
@@ -470,6 +470,39 @@ options:
                         str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.
 ```
 
+### Store histograms from coffea file
+
+Using `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/TH2D` with hist. MC info would reweight to corresponding luminosity.
+
+`python scripts/make_template.py -i "testfile/*.coffea" --lumi 7650 -o test.root -v mujet_pt -a '{"flav":0,"osss":"sum"}'`
+
+```
+  -i INPUT, --input INPUT
+                        Input coffea file(s)
+  -v VARIABLE, --variable VARIABLE
+                        Variables to store(histogram name)
+  -a AXIS, --axis AXIS  dict, put the slicing of histogram, specify 'sum' option as string
+  --lumi LUMI           Luminosity in /pb
+  -o OUTPUT, --output OUTPUT
+                        output root file name
+  --mergemap MERGEMAP   Specify mergemap as dict, '{merge1:[dataset1,dataset2]...}' Also works with the json file with dict
+```
+
+<details><summary>mergemap example</summary>
+<p>
+
+```json
+{
+    "WJets": ["WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8"],
+    "VV": [ "WW_TuneCP5_13p6TeV-pythia8", "WZ_TuneCP5_13p6TeV-pythia8", "ZZ_TuneCP5_13p6TeV-pythia8"],
+    "TT": [ "TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8", "TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8"],
+    "ST":[ "TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8", "TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8", "TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8", "TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8"],
+"data":[ "Muon_Run2022C-PromptReco-v1", "SingleMuon_Run2022C-PromptReco-v1", "Muon_Run2022D-PromptReco-v1", "Muon_Run2022D-PromptReco-v2"]
+}
+```
+
+</p>
+</details>
 
 ### Running jupyter remotely
 See also https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Remote-jupyter

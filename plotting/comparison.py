@@ -104,7 +104,7 @@ elif "*" in args.input:
     files = glob.glob(args.input)
     output = {i: load(i) for i in files}
 else:
-    output = load(args.input)
+    output = {args.input: load(args.input)}
 mergemap = {}
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{args.phase}_{args.ext}_{time}/"):
