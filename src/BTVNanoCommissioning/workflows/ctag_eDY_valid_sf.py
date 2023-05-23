@@ -200,6 +200,7 @@ class NanoProcessor(processor.ProcessorABC):
         sjets = event_jet[event_level]
         njet = ak.count(sjets.pt, axis=1)
         sel_mu = ak.concatenate([sposmu, snegmu])
+        sel_jet = sjets[:, 0]
         sele = ak.zip(
             {
                 b: ak.Array(np.reshape(sel_mu[b].to_numpy(), (len(sposmu[b]), 2)))
@@ -215,15 +216,15 @@ class NanoProcessor(processor.ProcessorABC):
                 ]
                 .pFCandsIdx
             ]
-        sel_jet = sjets[:, 0]
+
         ####################
         # Weight & Geninfo #
         ####################
         weights = Weights(len(events[event_level]), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events[event_level].genWeight)
-            par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
-            genflavor = sjets.hadronFlavour + 1 * par_flav
+            par_flav = (sel_jet.partonFlavour == 0) & (sel_jet.hadronFlavour == 0)
+            genflavor = sel_jet.hadronFlavour + 1 * par_flav
             if self.isCorr:
                 syst_wei = True if self.isSyst != None else False
                 if "PU" in self.SF_map.keys():
@@ -241,7 +242,7 @@ class NanoProcessor(processor.ProcessorABC):
                     btagSFs(sel_jet, self.SF_map, weights, "DeepCSVB", syst_wei)
                     btagSFs(sel_jet, self.SF_map, weights, "DeepCSVC", syst_wei)
         else:
-            genflavor = ak.zeros_like(sjets.pt)
+            genflavor = ak.zeros_like(sel_jet.pt)
 
         # Systematics information
         if shift_name is None:
@@ -276,14 +277,9 @@ class NanoProcessor(processor.ProcessorABC):
                 ):
                     h.fill(
                         syst,
-                        flatten(genflavor),
-                        flatten(sel_jet[histname]),
-                        weight=flatten(
-                            ak.broadcast_arrays(
-                                weights.partial_weight(exclude=exclude_btv),
-                                sel_jet["pt"],
-                            )[0]
-                        ),
+                        genflavor,
+                        sel_jet[histname],
+                        weight=weights.partial_weight(exclude=exclude_btv),
                     )
                 elif (
                     "PFCands" in events.fields
@@ -292,9 +288,7 @@ class NanoProcessor(processor.ProcessorABC):
                 ):
                     h.fill(
                         syst,
-                        flatten(
-                            ak.broadcast_arrays(genflavor[:, 0], spfcands["pt"])[0]
-                        ),
+                        flatten(ak.broadcast_arrays(genflavor, spfcands["pt"])[0]),
                         flatten(spfcands[histname.replace("PFCands_", "")]),
                         weight=flatten(
                             ak.broadcast_arrays(
@@ -325,7 +319,7 @@ class NanoProcessor(processor.ProcessorABC):
                 elif "jet_" in histname:
                     h.fill(
                         syst,
-                        genflavor[:, 0],
+                        genflavor,
                         sel_jet[histname.replace("jet_", "")],
                         weight=weight,
                     )
@@ -336,7 +330,7 @@ class NanoProcessor(processor.ProcessorABC):
                 ):
                     h.fill(
                         syst="noSF",
-                        flav=genflavor[:, 0],
+                        flav=genflavor,
                         discr=np.where(
                             sel_jet[histname.replace("_0", "")] < 0,
                             -0.2,
@@ -347,7 +341,7 @@ class NanoProcessor(processor.ProcessorABC):
                     if not isRealData and self.isCorr and "btag" in self.SF_map.keys():
                         h.fill(
                             syst=syst,
-                            flav=genflavor[:, 0],
+                            flav=genflavor,
                             discr=np.where(
                                 sel_jet[histname.replace("_0", "")] < 0,
                                 -0.2,

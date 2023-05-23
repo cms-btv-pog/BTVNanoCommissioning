@@ -174,9 +174,7 @@ class NanoProcessor(processor.ProcessorABC):
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
             genflavor = sjets.hadronFlavour + 1 * par_flav
             genweiev = ak.flatten(
-                ak.broadcast_arrays(
-                    events[event_level].genWeight, sjets["pt"]
-                )[0]
+                ak.broadcast_arrays(events[event_level].genWeight, sjets["pt"])[0]
             )
             if self.isCorr:
                 syst_wei = True if self.isSyst != None else False

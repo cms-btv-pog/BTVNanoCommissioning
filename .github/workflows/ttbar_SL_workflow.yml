@@ -1,4 +1,4 @@
-name: ctag W+c Workflow
+name: ttbar semileptonic Workflows
 
 on:
   push:
@@ -85,15 +85,17 @@ jobs:
       run: |
         python -m BTVNanoCommissioning.utils.compile_jec 2017_UL jec_compiled
         
-    
-    - name: ctag muon W+c workflows with correctionlib
+   
+
+    - name:  btag semileptonic ttbar workflows with correctionlib
       run: |
-        python runner.py --workflow ctag_Wc_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6  --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray 
+        python runner.py --workflow ttsemilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6 --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray 
     
-    - name: ctag electron W+c workflows with correctionlib
+    - name: ctag semileptonic muon ttbar workflows with correctionlib
       run: |
-        python runner.py --workflow ectag_Wc_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6  --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray 
+        python runner.py --workflow ctag_ttsemilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6 --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray 
     
-    
-    
-    
+    - name: ctag semileptonic electron ttbar workflows with correctionlib
+      run: |
+        python runner.py --workflow ectag_ttsemilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6 --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray 
+
