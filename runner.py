@@ -179,12 +179,19 @@ def get_main_parser():
         help="Number of retries for coffea processor",
     )
     parser.add_argument(
+        "--fsize",
+        type=int,
+        default=50,
+        help="(Specific for dask/lxplus file splitting, default: %(default)s)\n Numbers of file processed per dask-worker",
+    )
+    parser.add_argument(
         "--index",
         type=str,
         default="0,0",
-        help="(Specific for dask/lxplus file splitting, ``default: %(default)s)\n   Format: $dictindex,$fileindex. $dictindex refers to the index, splitted $dictindex and $fileindex with ','"
-        "$dictindex refers the index in the json dict, $fileindex refers to the index of the file list split to 50 files per dask-worker. The job will start submission from the corresponding indices",
+        help=f"(Specific for dask/lxplus file splitting, default: %(default)s)\n   Format: $dict_index_start,$dict_index_start,$dict_index_stop,$dict_index_stop. Stop indices are optional. $dict_index refers to the index, splitted $dict_index and $file_index with ','"
+        "$dict_index refers the index in the json dict, $file_index refers to the index of the file list split to N(defined by fszie) files per dask-worker. The job will start(stop) submission from(with) the corresponding indices",
     )
+
     # Debugging
     parser.add_argument(
         "--validate",
@@ -704,16 +711,22 @@ if __name__ == "__main__":
                     if sindex < int(args.index.split(",")[0]):
                         continue
                     if int(args.index.split(",")[1]) == findex:
-                        mins = findex * 50
+                        mins = findex * args.fsize
                     else:
                         mins = 0
                         findex = 0
                     while mins < len(sample_dict[sample]):
                         splitted = {}
-                        maxs = mins + 50
+                        maxs = mins + args.fsize
                         splitted[sample] = sample_dict[sample][mins:maxs]
                         mins = maxs
                         findex = findex + 1
+                        if (
+                            len(args.index.split(",")) == 4
+                            and findex > int(args.index.split(",")[3])
+                            and sindex > int(args.index.split(",")[2])
+                        ):
+                            break
                         output = processor.run_uproot_job(
                             splitted,
                             treename="Events",

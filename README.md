@@ -30,30 +30,10 @@ bash Miniconda3-latest-Linux-x86_64.sh
 ```
 NOTE: always make sure that conda, python, and pip point to local Miniconda installation (`which conda` etc.).
 
-You can either use the default environment `base` or create a new one:
+You could simply create the environment through the existing `test_env.yml` under your conda environment, and activate it
 ```
-# create new environment with python 3.8 or higher (up to 3.10), e.g. environment of name `btv_coffea`
-conda create --name btv_coffea python=3.8
-# activate environment `btv_coffea`
+conda env create -f test_env.yml 
 conda activate btv_coffea
-```
-You could simply create the environment through the existing `test_env.yml` under your conda environment
-```
-conda env create -f test_env.yml -p ${conda_dir}/envs/btv_coffea
-```
-
-Or install manually for the required packages, coffea, xrootd, and more:
-```
-pip install git+https://github.com/CoffeaTeam/coffea.git #latest published release with `pip install coffea`
-conda install -c conda-forge xrootd
-conda install -c conda-forge ca-certificates
-conda install -c conda-forge ca-policy-lcg
-conda install -c conda-forge dask-jobqueue
-conda install -c anaconda bokeh 
-conda install -c conda-forge 'fsspec>=0.3.3'
-conda install dask
-conda install -c anaconda 'openssl==1.1.1s'
-conda install -c conda-forge parsl
 ```
 
 Once the environment is set up, compile the python package:
@@ -113,9 +93,14 @@ More options for `runner.py`
                         By default a copy will be made to $HOME.
   --chunk N             Number of events per process chunk
   --retries N           Number of retries for coffea processor
-  --index INDEX         (Specific for dask/lxplus file splitting, default:0,0) 
-                        Format: $dictindex,$fileindex. $dictindex refers to the index of the file list split to 50 files per dask-worker.
-                        The job will start submission from the corresponding indices
+  --fsize FSIZE         (Specific for dask/lxplus file splitting, default: 50) Numbers of file processed per
+                        dask-worker
+  --index INDEX         (Specific for dask/lxplus file splitting, default: 0,0) Format:
+                        $dict_index_start,$dict_index_start,$dict_index_stop,$dict_index_stop. Stop indices are
+                        optional. $dict_index refers to the index, splitted $dict_index and $file_index with
+                        ','$dict_index refers the index in the json dict, $file_index refers to the index of the
+                        file list split to N(defined by fszie) files per dask-worker. The job will start(stop)
+                        submission from(with) the corresponding indices
   --validate            Do not process, just check all files are accessible
   --skipbadfiles        Skip bad files.
   --only ONLY           Only process specific dataset or file
@@ -139,6 +124,8 @@ More options for `runner.py`
 5. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz). You can also specified `--isArray` to store the skimmed root files.
 
 6. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add to `src/BTVNanoCommissioning/helpers/xsection.py`
+
+Info for developers can be [found](#m)
 
 ### Commands for different phase space
 
@@ -504,9 +491,20 @@ Using `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D
 </p>
 </details>
 
-### Running jupyter remotely
-See also https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Remote-jupyter
+## Notes for developer
+Here provides some tips for developers using this directory. 
 
+### Setup CI pipeline for fork branch
+Since the CI pipelines involve reading files via `xrood` and access gitlab.cern.ch, you need to save some secrets in your directory. 
+
+Find the secret configuration in the direcotry : `Settings>>Secrets>>Actions`, and create the following entries and configured in corresponding places.
+- `GIT_CERN_SSH_PRIVATE`: 
+  1. Create a ssh key pair(not overwrite with your local one), put the public key to your CERN ssh key configuration
+  2. Copy the private key to the entry
+- `GRID_PASSWORD`: Put your grid password to the entry
+- `GRID_USERCERT` & `GRID_USERKEY`:  Encrypt your grid user certification `base64 -i ~/.globus/userkey.pem` and `base64 -i ~/.globus/usercert.pem` and copy to the entry. 
+
+### Running jupyter remotely
 1. On your local machine, edit `.ssh/config`:
 ```
 Host lxplus*
@@ -525,5 +523,3 @@ Host *_f
 jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
 ```
 4. URL for notebook will be printed, copy and open in local browser
-
-
