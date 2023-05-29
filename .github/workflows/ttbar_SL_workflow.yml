@@ -26,8 +26,8 @@ jobs:
         SSHKEY: ${{ secrets.GIT_CERN_SSH_PRIVATE }}
       run: |
         mkdir  $HOME/.ssh
-        echo "$SSHKEY" > $HOME/.ssh/id_ed25519
-        chmod 600  $HOME/.ssh/id_ed25519
+        echo "$SSHKEY" > $HOME/.ssh/id_rsa
+        chmod 600  $HOME/.ssh/id_rsa
         echo "HOST *" > ~/.ssh/config
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
         git submodule update --init --recursive 
@@ -101,5 +101,5 @@ jobs:
     
     - name: ctag semileptonic electron ttbar workflows with correctionlib
       run: |
-        python runner.py --workflow ectag_ttsemilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6 --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray  --max 5 --chunk 50000g
+        python runner.py --workflow ectag_ttsemilep_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6 --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray  --max 5 --chunk 50000
 

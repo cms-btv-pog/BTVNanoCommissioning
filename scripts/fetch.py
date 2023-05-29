@@ -3,6 +3,7 @@ from os import popen, listdir, makedirs, path, system
 import json
 import argparse
 
+# Adapt some developments from Andrey Pozdnyakov in CoffeaRunner https://github.com/cms-rwth/CoffeaRunner/blob/master/filefetcher/fetch.py
 parser = argparse.ArgumentParser(
     description="Run analysis on baconbits files using processor coffea files"
 )
@@ -30,13 +31,14 @@ parser.add_argument(
 parser.add_argument(
     "--from_path",
     action="store_true",
-    help="For samples that are not published on DAS. If this option is set then the format of the --inpit file must be adjusted. It should be: \n dataset_name path_to_files.",
+    help="For samples that are not published on DAS. If this option is set then the format of the --input file must be adjusted. It should be: \n dataset_name path_to_files.",
     default=False,
 )
 
 args = parser.parse_args()
 
 
+# Adapt
 def getFilesFromDas(args):
     fset = []
     with open(args.input) as fp:

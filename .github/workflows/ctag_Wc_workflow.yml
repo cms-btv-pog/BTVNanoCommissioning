@@ -26,9 +26,9 @@ jobs:
         SSHKEY: ${{ secrets.GIT_CERN_SSH_PRIVATE }}
       run: |
         mkdir  $HOME/.ssh
-        echo "$SSHKEY" > $HOME/.ssh/id_ed25519
+        echo "$SSHKEY" > $HOME/.ssh/id_rsa
         ls -lrt $HOME/.ssh
-        chmod 600  $HOME/.ssh/id_ed25519
+        chmod 600  $HOME/.ssh/id_rsa
         echo "HOST *" > ~/.ssh/config
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
         git submodule update --init --recursive 

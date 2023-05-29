@@ -30,7 +30,7 @@ bash Miniconda3-latest-Linux-x86_64.sh
 ```
 NOTE: always make sure that conda, python, and pip point to local Miniconda installation (`which conda` etc.).
 
-You could simply create the environment through the existing `test_env.yml` under your conda environment, and activate it
+You can simply create the environment through the existing `test_env.yml` under your conda environment, and activate it
 ```
 conda env create -f test_env.yml 
 conda activate btv_coffea
@@ -74,10 +74,10 @@ More options for `runner.py`
                         files{ "Rereco17_94X","Winter22Run3","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
   --isCorr              Run with SFs
   --isJERC              JER/JEC implemented to jet
-  --isSyst              Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None(not extract )
+  --isSyst              Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None(not extract)
   --isArray             Output root files
   --noHist              Not save histogram coffea files
-  --overwrite           Overwrite exist files
+  --overwrite           Overwrite existing files
   --executor {iterative,futures,parsl/slurm,parsl/condor,parsl/condor/naf_lite,dask/condor,dask/slurm,dask/lpc,dask/lxplus,dask/casa}
                         The type of executor to use (default: futures). 
   -j WORKERS, --workers WORKERS
@@ -93,14 +93,12 @@ More options for `runner.py`
                         By default a copy will be made to $HOME.
   --chunk N             Number of events per process chunk
   --retries N           Number of retries for coffea processor
-  --fsize FSIZE         (Specific for dask/lxplus file splitting, default: 50) Numbers of file processed per
+  --fsize FSIZE         (Specific for dask/lxplus file splitting, default: 50) Numbers of files processed per
                         dask-worker
   --index INDEX         (Specific for dask/lxplus file splitting, default: 0,0) Format:
-                        $dict_index_start,$dict_index_start,$dict_index_stop,$dict_index_stop. Stop indices are
-                        optional. $dict_index refers to the index, splitted $dict_index and $file_index with
-                        ','$dict_index refers the index in the json dict, $file_index refers to the index of the
-                        file list split to N(defined by fszie) files per dask-worker. The job will start(stop)
-                        submission from(with) the corresponding indices
+                        $dict_index_start,$file_index_start,$dict_index_stop,$file_index_stop. Stop indices are
+                        optional. $dict_index refers to the index, splitted $dict_index and $file_index with ','
+                        $dict_index refers to the sample dictionary of the samples json file. $file_index refers to the N-th batch of files per dask-worker, with its size being defined by the option --index. The job will start (stop) submission from (with) the corresponding indices.
   --validate            Do not process, just check all files are accessible
   --skipbadfiles        Skip bad files.
   --only ONLY           Only process specific dataset or file
@@ -115,17 +113,17 @@ More options for `runner.py`
 
 1. Is the `.json` file ready? If not, create it following the instructions in the  [Make the json files](#make-the-json-files) section. Please use the correct naming scheme
 
-2. Put the `lumiMask`, correction files (SFs, pileup weight), and JER, JEC files under the dict entry in `utils/AK4_parameters.py`. See details in [Correction files configurations](#correction-files-configurations)
+2. Add the `lumiMask`, correction files (SFs, pileup weight), and JER, JEC files under the dict entry in `utils/AK4_parameters.py`. See details in [Correction files configurations](#correction-files-configurations)
 
 3. If the JERC file `jec_compiled.pkl.gz` is missing in the `data/JME/${campaign}` directory, create it through [Create compiled JERC file](#create-compiled-jerc-filepklgz)
 
-4. If selections and output histogram/arrays need to change, modify the dedicated `workflows`
+4. If selections and output histogram/arrays need to be changed, modify the dedicated `workflows`
 
-5. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz). You can also specified `--isArray` to store the skimmed root files.
+5. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz). You can also specify `--isArray` to store the skimmed root files.
 
-6. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add to `src/BTVNanoCommissioning/helpers/xsection.py`
+6. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add it to `src/BTVNanoCommissioning/helpers/xsection.py`
 
-Info for developers can be [found](#m)
+Info for developers can be [found](#notes-for-developers)
 
 ### Commands for different phase space
 
@@ -251,7 +249,7 @@ python runner.py --wf ttcom --executor parsl/slurm
 
 ## Make the json files
 
-Use the `fetch.py` in `scripts`, the `$input_DAS_list` is the info extract from DAS, and output json files 
+Use `fetch.py` in folder `scripts/` to obtain your samples json files. `$input_DAS_list` is the name of your samples in CMS DAS, and $output_json_name$ is the name of your output samples json file.
 
 ```
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
@@ -459,7 +457,7 @@ options:
 
 ### Store histograms from coffea file
 
-Using `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/TH2D` with hist. MC info would reweight to corresponding luminosity.
+Use `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/TH2D` with hist. MC histograms can be reweighted to according to luminosity value given via `--lumi`
 
 `python scripts/make_template.py -i "testfile/*.coffea" --lumi 7650 -o test.root -v mujet_pt -a '{"flav":0,"osss":"sum"}'`
 
@@ -467,7 +465,7 @@ Using `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D
   -i INPUT, --input INPUT
                         Input coffea file(s)
   -v VARIABLE, --variable VARIABLE
-                        Variables to store(histogram name)
+                        Variables to store (histogram name)
   -a AXIS, --axis AXIS  dict, put the slicing of histogram, specify 'sum' option as string
   --lumi LUMI           Luminosity in /pb
   -o OUTPUT, --output OUTPUT
@@ -491,18 +489,19 @@ Using `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D
 </p>
 </details>
 
-## Notes for developer
-Here provides some tips for developers using this directory. 
-
+## Notes for developers
+The BTV tutorial for coffea part is under `notebooks` and the template to construct new workflow is `src/BTVNanoCommissioning/workflows/example.py`
+Here are some tips provided for developers working on their forked version of this repository. 
 ### Setup CI pipeline for fork branch
-Since the CI pipelines involve reading files via `xrood` and access gitlab.cern.ch, you need to save some secrets in your directory. 
+Since the CI pipelines involve reading files via `xrootd` and access gitlab.cern.ch, you need to save some secrets in your forked directory. 
 
-Find the secret configuration in the direcotry : `Settings>>Secrets>>Actions`, and create the following entries and configured in corresponding places.
+Yout can find the secret configuration in the direcotry : `Settings>>Secrets>>Actions`, and create the following secrets:
+
 - `GIT_CERN_SSH_PRIVATE`: 
-  1. Create a ssh key pair(not overwrite with your local one), put the public key to your CERN ssh key configuration
+  1. Create a ssh key pair with `ssh-keygen -t rsa -b 4096` (do not overwrite with your local one), add the public key to your CERN gitlab account
   2. Copy the private key to the entry
-- `GRID_PASSWORD`: Put your grid password to the entry
-- `GRID_USERCERT` & `GRID_USERKEY`:  Encrypt your grid user certification `base64 -i ~/.globus/userkey.pem` and `base64 -i ~/.globus/usercert.pem` and copy to the entry. 
+- `GRID_PASSWORD`: Add your grid password to the entry.
+- `GRID_USERCERT` & `GRID_USERKEY`:  Encrypt your grid user certification `base64 -i ~/.globus/userkey.pem` and `base64 -i ~/.globus/usercert.pem` and copy the output to the entry. 
 
 ### Running jupyter remotely
 1. On your local machine, edit `.ssh/config`:

@@ -101,7 +101,7 @@ def get_main_parser():
         "--noHist", action="store_true", help="Not output coffea histogram"
     )
     parser.add_argument(
-        "--overwrite", action="store_true", help="Overwrite exist files"
+        "--overwrite", action="store_true", help="Overwrite existing files"
     )
     # Scale out
     parser.add_argument(
@@ -182,14 +182,14 @@ def get_main_parser():
         "--fsize",
         type=int,
         default=50,
-        help="(Specific for dask/lxplus file splitting, default: %(default)s)\n Numbers of file processed per dask-worker",
+        help="(Specific for dask/lxplus file splitting, default: %(default)s)\n Numbers of files processed per dask-worker",
     )
     parser.add_argument(
         "--index",
         type=str,
         default="0,0",
-        help=f"(Specific for dask/lxplus file splitting, default: %(default)s)\n   Format: $dict_index_start,$dict_index_start,$dict_index_stop,$dict_index_stop. Stop indices are optional. $dict_index refers to the index, splitted $dict_index and $file_index with ','"
-        "$dict_index refers the index in the json dict, $file_index refers to the index of the file list split to N(defined by fszie) files per dask-worker. The job will start(stop) submission from(with) the corresponding indices",
+        help=f"(Specific for dask/lxplus file splitting, default: %(default)s)\n   Format: $dict_index_start,$file_index_start,$dict_index_stop,$file_index_stop. Stop indices are optional. $dict_index refers to the index, splitted $dict_index and $file_index with ','"
+        "$dict_index refers to the sample dictionary of the samples json file. $file_index refers to the N-th batch of files per dask-worker, with its size being defined by the option --index. The job will start (stop) submission from (with) the corresponding indices.",
     )
 
     # Debugging
@@ -611,8 +611,6 @@ if __name__ == "__main__":
                 chunksize=args.chunk,
                 maxchunks=args.max,
             )
-
-        print(f"Saving output to {args.output}")
     elif "dask" in args.executor:
         from dask_jobqueue import SLURMCluster, HTCondorCluster
         from distributed import Client

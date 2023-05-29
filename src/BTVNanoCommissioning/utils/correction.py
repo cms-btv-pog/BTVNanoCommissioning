@@ -1229,6 +1229,7 @@ def top_pT_reweighting(gen):
 
 
 # Jennet adds PS weights
+# https://github.com/andrzejnovak/boostedhiggs/blob/master/boostedhiggs/corrections.py#L88-L108
 def add_ps_weight(weights, ps_weights):
     nom = np.ones(len(weights.weight()))
     up_isr = np.ones(len(weights.weight()))
