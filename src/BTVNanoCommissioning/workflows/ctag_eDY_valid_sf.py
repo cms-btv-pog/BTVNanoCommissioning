@@ -1,5 +1,5 @@
-import collections, numpy as np, awkward as ak
-
+import collections, awkward as ak, numpy as np
+import uproot
 from coffea import processor
 from coffea.analysis_tools import Weights
 
@@ -9,10 +9,11 @@ from BTVNanoCommissioning.utils.correction import (
     eleSFs,
     puwei,
     btagSFs,
-    load_jmefactory,
+    JME_shifts,
+    Roccor_shifts,
 )
-from BTVNanoCommissioning.helpers.func import flatten
-from BTVNanoCommissioning.helpers.update_branch import missing_branch, add_jec
+from BTVNanoCommissioning.helpers.func import flatten, update, uproot_writeable
+from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
@@ -27,37 +28,63 @@ class NanoProcessor(processor.ProcessorABC):
         isCorr=True,
         isJERC=False,
         isSyst=False,
+        isArray=False,
+        noHist=False,
+        chunksize=75000,
     ):
         self._year = year
         self._campaign = campaign
         self.isCorr = isCorr
         self.isJERC = isJERC
         self.isSyst = isSyst
+        self.isArray = isArray
+        self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
+        self.chunksize = chunksize
         ## Load corrections
         if isCorr:
             self.SF_map = load_SF(self._campaign)
-
-        if isJERC:
-            self._jet_factory = load_jmefactory(self._campaign)
-        _hist_event_dict = histogrammer("ectag_DY_sf")
-        self.make_output = lambda: {
-            "sumw": processor.defaultdict_accumulator(float),
-            **_hist_event_dict,
-        }
 
     @property
     def accumulator(self):
         return self._accumulator
 
     def process(self, events):
-        output = self.make_output()
+        isRealData = not hasattr(events, "genWeight")
+        dataset = events.metadata["dataset"]
+        events = missing_branch(events)
+        shifts = []
+        if "JME" in self.SF_map.keys() and self.isJERC:
+            syst_JERC = True if self.isSyst != None else False
+            if self.isSyst == "JERC_split":
+                syst_JERC = "split"
+            shifts = JME_shifts(
+                shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
+            )
+        else:
+            shifts = [
+                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
+            ]
+        if "roccor" in self.SF_map.keys():
+            shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
+        else:
+            shifts[0][0]["Muon"] = events.Muon
+
+        return processor.accumulate(
+            self.process_shift(update(events, collections), name)
+            for collections, name in shifts
+        )
+
+    def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        events = missing_branch(events)
+        _hist_event_dict = {"": None} if self.noHist else histogrammer("ectag_DY_sf")
 
-        if self.isJERC:
-            events = add_jec(events, self._campaign, self._jet_factory)
+        output = {
+            "sumw": processor.defaultdict_accumulator(float),
+            **_hist_event_dict,
+        }
+
         if isRealData:
             output["sumw"] = len(events)
         else:
@@ -172,6 +199,14 @@ class NanoProcessor(processor.ProcessorABC):
         sz = sposmu + snegmu
         sjets = event_jet[event_level]
         njet = ak.count(sjets.pt, axis=1)
+        sel_mu = ak.concatenate([sposmu, snegmu])
+        sel_jet = sjets[:, 0]
+        sele = ak.zip(
+            {
+                b: ak.Array(np.reshape(sel_mu[b].to_numpy(), (len(sposmu[b]), 2)))
+                for b in sposmu.fields
+            }
+        )
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
             spfcands = events[event_level].PFCands[
@@ -181,173 +216,193 @@ class NanoProcessor(processor.ProcessorABC):
                 ]
                 .pFCandsIdx
             ]
-        sel_jet = sjets[:, 0]
+
         ####################
         # Weight & Geninfo #
         ####################
         weights = Weights(len(events[event_level]), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events[event_level].genWeight)
-        if not isRealData and self.isCorr:
-            if "PU" in self.SF_map.keys():
-                weights.add(
-                    "puweight", puwei(self.SF_map, events[event_level].Pileup.nTrueInt)
-                )
-            if "MUO" in self.SF_map.keys() or "EGM" in self.SF_map.keys():
-                weights.add("lep1sf", eleSFs(sposmu, self.SF_map, True))
-                weights.add("lep2sf", eleSFs(snegmu, self.SF_map, True))
-
-        if isRealData:
-            genflavor = ak.zeros_like(sjets.pt)
+            par_flav = (sel_jet.partonFlavour == 0) & (sel_jet.hadronFlavour == 0)
+            genflavor = sel_jet.hadronFlavour + 1 * par_flav
+            if self.isCorr:
+                syst_wei = True if self.isSyst != None else False
+                if "PU" in self.SF_map.keys():
+                    puwei(
+                        events[event_level].Pileup.nTrueInt,
+                        self.SF_map,
+                        weights,
+                        syst_wei,
+                    )
+                if "EGM" in self.SF_map.keys():
+                    eleSFs(sele, self.SF_map, weights, syst_wei, False)
+                if "BTV" in self.SF_map.keys():
+                    btagSFs(sel_jet, self.SF_map, weights, "DeepJetC", syst_wei)
+                    btagSFs(sel_jet, self.SF_map, weights, "DeepJetB", syst_wei)
+                    btagSFs(sel_jet, self.SF_map, weights, "DeepCSVB", syst_wei)
+                    btagSFs(sel_jet, self.SF_map, weights, "DeepCSVC", syst_wei)
         else:
-            par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
-            genflavor = sjets.hadronFlavour + 1 * par_flav
-            if self.isCorr and (
-                "btag" in self.SF_map.keys() or "ctag" in self.SF_map.keys()
-            ):
-                jetsfs_c = collections.defaultdict(dict)
-                jetsfs_b = collections.defaultdict(dict)
-                csvsfs_c = collections.defaultdict(dict)
-                csvsfs_b = collections.defaultdict(dict)
+            genflavor = ak.zeros_like(sel_jet.pt)
 
-                if self.isCorr and (
-                    "btag" in self.SF_map.keys() or "ctag" in self.SF_map.keys()
-                ):
-                    jetsfs_c[0]["SF"] = btagSFs(sjets[:, 0], self.SF_map, "DeepJetC")
-                    jetsfs_b[0]["SF"] = btagSFs(sjets[:, 0], self.SF_map, "DeepJetB")
-                    csvsfs_c[0]["SF"] = btagSFs(sjets[:, 0], self.SF_map, "DeepCSVC")
-                    csvsfs_b[0]["SF"] = btagSFs(sjets[:, 0], self.SF_map, "DeepCSVB")
-                    if self.isSyst:
-                        for syst in [
-                            "hf",
-                            "lf",
-                            "cferr1",
-                            "cferr2",
-                            "hfstat1",
-                            "hfstat2",
-                            "lfstats1",
-                            "lfstats2",
-                        ]:
-                            jetsfs_c[0][f"SF_{syst}_up"] = btagSFs(
-                                sjets[:, 0], self.SF_map, "DeepJetC", f"up_{syst}"
-                            )
-                            jetsfs_c[0][f"SF_{syst}_dn"] = btagSFs(
-                                sjets[:, 0], self.SF_map, "DeepJetC", f"down_{syst}"
-                            )
-                            csvsfs_c[0][f"SF_{syst}_up"] = btagSFs(
-                                sjets[:, 0], self.SF_map, "DeepCSVC", f"up_{syst}"
-                            )
-                            csvsfs_c[0][f"SF_{syst}_dn"] = btagSFs(
-                                sjets[:, 0], self.SF_map, "DeepCSVC", f"down_{syst}"
-                            )
-                        csvsfs_b[0][f"SF_{syst}_up"] = btagSFs(
-                            sjets[:, 0], self.SF_map, "DeepCSVB", f"up"
-                        )
-                        csvsfs_b[0][f"SF_{syst}_dn"] = btagSFs(
-                            sjets[:, 0], self.SF_map, "DeepCSVB", f"down"
-                        )
-                        jetsfs_b[0][f"SF_{syst}_up"] = btagSFs(
-                            sjets[:, 0], self.SF_map, "DeepJetB", f"up"
-                        )
-                        jetsfs_b[0][f"SF_{syst}_dn"] = btagSFs(
-                            sjets[:, 0], self.SF_map, "DeepJetB", f"down"
-                        )
+        # Systematics information
+        if shift_name is None:
+            systematics = ["nominal"] + list(weights.variations)
+        else:
+            systematics = [shift_name]
+        exclude_btv = [
+            "DeepCSVC",
+            "DeepCSVB",
+            "DeepJetB",
+            "DeepJetB",
+        ]  # exclude b-tag SFs for btag inputs
 
-                disc_list = {
-                    "btagDeepB": csvsfs_b,
-                    "btagDeepC": csvsfs_b,
-                    "btagDeepFlavB": jetsfs_b,
-                    "btagDeepFlavC": jetsfs_b,
-                    "btagDeepCvL": csvsfs_c,
-                    "btagDeepCvB": csvsfs_c,
-                    "btagDeepFlavCvL": jetsfs_c,
-                    "btagDeepFlavCvB": jetsfs_c,
-                }
         ####################
         #  Fill histogram  #
         ####################
-        for histname, h in output.items():
-            if (
-                "Deep" in histname
-                and "btag" not in histname
-                and histname in events.Jet.fields
-            ):
-                h.fill(
-                    flatten(genflavor),
-                    flatten(sjets[histname]),
-                    weight=flatten(
-                        ak.broadcast_arrays(weights.weight(), sjets["pt"])[0]
-                    ),
-                )
-            elif (
-                "PFCands" in events.fields
-                and "PFCands" in histname
-                and histname.split("_")[0] in events.PFCands.fields
-            ):
-                h.fill(
-                    flatten(ak.broadcast_arrays(genflavor[:, 0], spfcands["pt"])[0]),
-                    flatten(spfcands[histname.replace("PFCands_", "")]),
-                    weight=flatten(
-                        ak.broadcast_arrays(weights.weight(), spfcands["pt"])[0]
-                    ),
-                )
-            elif "posl_" in histname and histname.replace("posl_", "") in sposmu.fields:
-                h.fill(
-                    flatten(sposmu[histname.replace("posl_", "")]),
-                    weight=weights.weight(),
-                )
-            elif "negl_" in histname and histname.replace("negl_", "") in snegmu.fields:
-                h.fill(
-                    flatten(snegmu[histname.replace("negl_", "")]),
-                    weight=weights.weight(),
-                )
-            elif "jet_" in histname:
-                h.fill(
-                    genflavor[:, 0],
-                    sel_jet[histname.replace("jet_", "")],
-                    weight=weights.weight(),
-                )
-            elif (
-                "btagDeep" in histname
-                and "0" in histname
-                and histname.replace("_0", "") in events.Jet.fields
-            ):
-                h.fill(
-                    flav=genflavor[:, 0],
-                    syst="noSF",
-                    discr=np.where(
-                        sel_jet[histname.replace("_0", "")] < 0,
-                        -0.2,
-                        sel_jet[histname.replace("_0", "")],
-                    ),
-                    weight=weights.weight(),
-                )
+        for syst in systematics:
+            if self.isSyst == None and syst != "nominal":
+                break
+            if self.noHist:
+                break
+            weight = (
+                weights.weight()
+                if syst == "nominal" or syst == shift_name
+                else weights.weight(modifier=syst)
+            )
+            for histname, h in output.items():
                 if (
-                    not isRealData
-                    and self.isCorr
-                    and "btag" in self.SF_map.keys()
-                    and "_b" not in histname
-                    and "_bb" not in histname
-                    and "_lepb" not in histname
+                    "Deep" in histname
+                    and "btag" not in histname
+                    and histname in events.Jet.fields
                 ):
-                    for syst in disc_list[histname.replace("_0", "")][0].keys():
+                    h.fill(
+                        syst,
+                        genflavor,
+                        sel_jet[histname],
+                        weight=weights.partial_weight(exclude=exclude_btv),
+                    )
+                elif (
+                    "PFCands" in events.fields
+                    and "PFCands" in histname
+                    and histname.split("_")[1] in events.PFCands.fields
+                ):
+                    h.fill(
+                        syst,
+                        flatten(ak.broadcast_arrays(genflavor, spfcands["pt"])[0]),
+                        flatten(spfcands[histname.replace("PFCands_", "")]),
+                        weight=flatten(
+                            ak.broadcast_arrays(
+                                weights.partial_weight(exclude=exclude_btv),
+                                spfcands["pt"],
+                            )[0]
+                        ),
+                    )
+                elif (
+                    "posl_" in histname
+                    and histname.replace("posl_", "") in sposmu.fields
+                ):
+                    h.fill(
+                        syst,
+                        flatten(sposmu[histname.replace("posl_", "")]),
+                        weight=weight,
+                    )
+                elif (
+                    "negl_" in histname
+                    and histname.replace("negl_", "") in snegmu.fields
+                ):
+                    h.fill(
+                        syst,
+                        flatten(snegmu[histname.replace("negl_", "")]),
+                        weight=weight,
+                    )
+
+                elif "jet_" in histname:
+                    h.fill(
+                        syst,
+                        genflavor,
+                        sel_jet[histname.replace("jet_", "")],
+                        weight=weight,
+                    )
+                elif (
+                    "btagDeep" in histname
+                    and "0" in histname
+                    and histname.replace("_0", "") in events.Jet.fields
+                ):
+                    h.fill(
+                        syst="noSF",
+                        flav=genflavor,
+                        discr=np.where(
+                            sel_jet[histname.replace("_0", "")] < 0,
+                            -0.2,
+                            sel_jet[histname.replace("_0", "")],
+                        ),
+                        weight=weights.partial_weight(exclude=exclude_btv),
+                    )
+                    if not isRealData and self.isCorr and "btag" in self.SF_map.keys():
                         h.fill(
-                            flav=genflavor[:, 0],
                             syst=syst,
+                            flav=genflavor,
                             discr=np.where(
                                 sel_jet[histname.replace("_0", "")] < 0,
                                 -0.2,
                                 sel_jet[histname.replace("_0", "")],
                             ),
-                            weight=weights.weight()
-                            * disc_list[histname.replace("_0", "")][0][syst],
+                            weight=weight,
                         )
-        output["njet"].fill(njet, weight=weights.weight())
-        output["dr_mumu"].fill(dr=snegmu.delta_r(sposmu), weight=weights.weight())
-        output["z_pt"].fill(flatten(sz.pt), weight=weights.weight())
-        output["z_eta"].fill(flatten(sz.eta), weight=weights.weight())
-        output["z_phi"].fill(flatten(sz.phi), weight=weights.weight())
-        output["z_mass"].fill(flatten(sz.mass), weight=weights.weight())
+            output["njet"].fill(syst, njet, weight=weight)
+            output["dr_mumu"].fill(syst, snegmu.delta_r(sposmu), weight=weight)
+            output["z_pt"].fill(syst, flatten(sz.pt), weight=weight)
+            output["z_eta"].fill(syst, flatten(sz.eta), weight=weight)
+            output["z_phi"].fill(syst, flatten(sz.phi), weight=weight)
+            output["z_mass"].fill(syst, flatten(sz.mass), weight=weight)
+        #######################
+        #  Create root files  #
+        #######################
+        if self.isArray:
+            # Keep the structure of events and pruned the object size
+            pruned_ev = events[event_level]
+            pruned_ev.Jet = sel_jet
+            pruned_ev.Muon = sele
+            pruned_ev["dilep"] = sposmu + snegmu
+            pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
+            pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta
+            pruned_ev["dilep", "phi"] = pruned_ev.dilep.phi
+            pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
+            if "PFCands" in events.fields:
+                pruned_ev.PFCands = spfcands
+            # Add custom variables
+            if not isRealData:
+                pruned_ev["weight"] = weights.weight()
+                for ind_wei in weights.weightStatistics.keys():
+                    pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
+                        include=[ind_wei]
+                    )
+
+            pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
+            pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)
+
+            # Create a list of variables want to store. For objects from the PFNano file, specify as {object}_{variable}, wildcard option only accepted at the end of the string
+            out_branch = np.setdiff1d(
+                np.array(pruned_ev.fields), np.array(events.fields)
+            )
+            out_branch = np.delete(
+                out_branch,
+                np.where((out_branch == "dilep")),
+            )
+
+            for kin in ["pt", "eta", "phi", "mass", "pfRelIso04_all", "dxy", "dz"]:
+                for obj in ["Muon", "Jet", "dilep"]:
+                    if (obj != "Muon") and ("pfRelIso04_all" == kin or "d" in kin):
+                        continue
+                    out_branch = np.append(out_branch, [f"{obj}_{kin}"])
+            out_branch = np.append(
+                out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*"]
+            )
+            # write to root files
+            with uproot.recreate(
+                f"tmp/{dataset}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+            ) as fout:
+                fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
         return {dataset: output}
 
     def postprocess(self, accumulator):

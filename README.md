@@ -30,30 +30,10 @@ bash Miniconda3-latest-Linux-x86_64.sh
 ```
 NOTE: always make sure that conda, python, and pip point to local Miniconda installation (`which conda` etc.).
 
-You can either use the default environment `base` or create a new one:
+You can simply create the environment through the existing `test_env.yml` under your conda environment, and activate it
 ```
-# create new environment with python 3.8 or higher (up to 3.10), e.g. environment of name `btv_coffea`
-conda create --name btv_coffea python=3.8
-# activate environment `btv_coffea`
+conda env create -f test_env.yml 
 conda activate btv_coffea
-```
-You could simply create the environment through the existing `test_env.yml` under your conda environment
-```
-conda env create -f test_env.yml -p ${conda_dir}/envs/btv_coffea
-```
-
-Or install manually for the required packages, coffea, xrootd, and more:
-```
-pip install git+https://github.com/CoffeaTeam/coffea.git #latest published release with `pip install coffea`
-conda install -c conda-forge xrootd
-conda install -c conda-forge ca-certificates
-conda install -c conda-forge ca-policy-lcg
-conda install -c conda-forge dask-jobqueue
-conda install -c anaconda bokeh 
-conda install -c conda-forge 'fsspec>=0.3.3'
-conda install dask
-conda install -c anaconda 'openssl==1.1.1s'
-conda install -c conda-forge parsl
 ```
 
 Once the environment is set up, compile the python package:
@@ -94,7 +74,10 @@ More options for `runner.py`
                         files{ "Rereco17_94X","Winter22Run3","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
   --isCorr              Run with SFs
   --isJERC              JER/JEC implemented to jet
-  --isSyst              Run with systematics for SF
+  --isSyst              Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None(not extract)
+  --isArray             Output root files
+  --noHist              Not save histogram coffea files
+  --overwrite           Overwrite existing files
   --executor {iterative,futures,parsl/slurm,parsl/condor,parsl/condor/naf_lite,dask/condor,dask/slurm,dask/lpc,dask/lxplus,dask/casa}
                         The type of executor to use (default: futures). 
   -j WORKERS, --workers WORKERS
@@ -110,9 +93,12 @@ More options for `runner.py`
                         By default a copy will be made to $HOME.
   --chunk N             Number of events per process chunk
   --retries N           Number of retries for coffea processor
- --index INDEX         (Specific for dask/lxplus file splitting, default:0,0) 
-                        Format: $dictindex,$fileindex. $dictindex refers to the index of the file list split to 50 files per dask-worker.
-                        The job will start submission from the corresponding indices
+  --fsize FSIZE         (Specific for dask/lxplus file splitting, default: 50) Numbers of files processed per
+                        dask-worker
+  --index INDEX         (Specific for dask/lxplus file splitting, default: 0,0) Format:
+                        $dict_index_start,$file_index_start,$dict_index_stop,$file_index_stop. Stop indices are
+                        optional. $dict_index refers to the index, splitted $dict_index and $file_index with ','
+                        $dict_index refers to the sample dictionary of the samples json file. $file_index refers to the N-th batch of files per dask-worker, with its size being defined by the option --index. The job will start (stop) submission from (with) the corresponding indices.
   --validate            Do not process, just check all files are accessible
   --skipbadfiles        Skip bad files.
   --only ONLY           Only process specific dataset or file
@@ -123,17 +109,21 @@ More options for `runner.py`
 </p>
 </details>
 
-### Roadmap for running the tool
+### Roadmap for running the tool (for commissioning tasks)
 
 1. Is the `.json` file ready? If not, create it following the instructions in the  [Make the json files](#make-the-json-files) section. Please use the correct naming scheme
 
-2. Put the `lumiMask`, correction files (SFs, pileup weight), and JER, JEC files under the dict entry in `BTVNanoCommissioning/src/utils/AK4_parameters.py`. See details in [Correction files configurations](#correction-files-configurations)
+2. Add the `lumiMask`, correction files (SFs, pileup weight), and JER, JEC files under the dict entry in `utils/AK4_parameters.py`. See details in [Correction files configurations](#correction-files-configurations)
 
 3. If the JERC file `jec_compiled.pkl.gz` is missing in the `data/JME/${campaign}` directory, create it through [Create compiled JERC file](#create-compiled-jerc-filepklgz)
 
-4. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz)
+4. If selections and output histogram/arrays need to be changed, modify the dedicated `workflows`
 
-5. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add to `src/BTVNanoCommissioning/helpers/xsection.py`
+5. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz). You can also specify `--isArray` to store the skimmed root files.
+
+6. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add it to `src/BTVNanoCommissioning/helpers/xsection.py`
+
+Info for developers can be [found](#notes-for-developers)
 
 ### Commands for different phase space
 
@@ -259,7 +249,7 @@ python runner.py --wf ttcom --executor parsl/slurm
 
 ## Make the json files
 
-Use the `fetch.py` in `filefetcher`, the `$input_DAS_list` is the info extract from DAS, and output json files in `metadata/`
+Use `fetch.py` in folder `scripts/` to obtain your samples json files. `$input_DAS_list` is the name of your samples in CMS DAS, and $output_json_name$ is the name of your output samples json file.
 
 ```
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
@@ -353,7 +343,9 @@ The official correction files collected in [jsonpog-integration](https://gitlab.
         "PU": None,
         # Btag SFs - specify $TAGGER : $TYPE-> find [$TAGGER_$TYPE] in json file
         "BTV": {"deepCSV": "shape", "deepJet": "shape"},
-        
+        "roccor": None,
+         # JMAR, IDs from JME- Following the scheme: "${SF_name}": "${WP}"
+        "JMAR": {"PUJetID_eff": "L"},
         "LSF": {
         # Electron SF - Following the scheme: "${SF_name} ${year}": "${WP}"
         # https://github.com/cms-egamma/cms-egamma-docs/blob/master/docs/EgammaSFJSON.md
@@ -399,14 +391,14 @@ You can specify `-v all` to plot all the variables in the `coffea` file, or use 
 :new: non-uniform rebinning is possible, specify the bins with  list of edges `--autorebin 50,80,81,82,83,100.5`
 
 ```
-python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p dilep_sf -v z_mass,z_pt 
-python plotdataMC.py -i "test*.coffea" --lumi 41500 -p dilep_sf -v z_mass,z_pt 
+python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p ttdilep_sf -v z_mass,z_pt 
+python plotdataMC.py -i "test*.coffea" --lumi 41500 -p ttdilep_sf -v z_mass,z_pt 
 
 options:
   -h, --help            show this help message and exit
   --lumi LUMI           luminosity in /pb
   --com COM             sqrt(s) in TeV
-  -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
+  -p {ttdilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
                         which phase space
   --log LOG             log on y axis
   --norm NORM           Use for reshape SF, scale to same yield as no SFs case
@@ -463,10 +455,55 @@ options:
                         str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.
 ```
 
+### Store histograms from coffea file
+
+Use `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/TH2D` with hist. MC histograms can be reweighted to according to luminosity value given via `--lumi`
+
+`python scripts/make_template.py -i "testfile/*.coffea" --lumi 7650 -o test.root -v mujet_pt -a '{"flav":0,"osss":"sum"}'`
+
+```
+  -i INPUT, --input INPUT
+                        Input coffea file(s)
+  -v VARIABLE, --variable VARIABLE
+                        Variables to store (histogram name)
+  -a AXIS, --axis AXIS  dict, put the slicing of histogram, specify 'sum' option as string
+  --lumi LUMI           Luminosity in /pb
+  -o OUTPUT, --output OUTPUT
+                        output root file name
+  --mergemap MERGEMAP   Specify mergemap as dict, '{merge1:[dataset1,dataset2]...}' Also works with the json file with dict
+```
+
+<details><summary>mergemap example</summary>
+<p>
+
+```json
+{
+    "WJets": ["WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8"],
+    "VV": [ "WW_TuneCP5_13p6TeV-pythia8", "WZ_TuneCP5_13p6TeV-pythia8", "ZZ_TuneCP5_13p6TeV-pythia8"],
+    "TT": [ "TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8", "TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8"],
+    "ST":[ "TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8", "TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8", "TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8", "TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8"],
+"data":[ "Muon_Run2022C-PromptReco-v1", "SingleMuon_Run2022C-PromptReco-v1", "Muon_Run2022D-PromptReco-v1", "Muon_Run2022D-PromptReco-v2"]
+}
+```
+
+</p>
+</details>
+
+## Notes for developers
+The BTV tutorial for coffea part is under `notebooks` and the template to construct new workflow is `src/BTVNanoCommissioning/workflows/example.py`
+Here are some tips provided for developers working on their forked version of this repository. 
+### Setup CI pipeline for fork branch
+Since the CI pipelines involve reading files via `xrootd` and access gitlab.cern.ch, you need to save some secrets in your forked directory. 
+
+Yout can find the secret configuration in the direcotry : `Settings>>Secrets>>Actions`, and create the following secrets:
+
+- `GIT_CERN_SSH_PRIVATE`: 
+  1. Create a ssh key pair with `ssh-keygen -t rsa -b 4096` (do not overwrite with your local one), add the public key to your CERN gitlab account
+  2. Copy the private key to the entry
+- `GRID_PASSWORD`: Add your grid password to the entry.
+- `GRID_USERCERT` & `GRID_USERKEY`:  Encrypt your grid user certification `base64 -i ~/.globus/userkey.pem` and `base64 -i ~/.globus/usercert.pem` and copy the output to the entry. 
 
 ### Running jupyter remotely
-See also https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Remote-jupyter
-
 1. On your local machine, edit `.ssh/config`:
 ```
 Host lxplus*
@@ -485,5 +522,3 @@ Host *_f
 jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
 ```
 4. URL for notebook will be printed, copy and open in local browser
-
-

@@ -3,11 +3,11 @@ import argparse, os, arrow, glob
 from coffea.util import load
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
-
 import mplhep as hep
 import hist
 
 plt.style.use(hep.style.ROOT)
+from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.utils.xs_scaler import collate, scaleSumW
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
 from BTVNanoCommissioning.utils.plot_utils import (
@@ -26,19 +26,7 @@ parser.add_argument(
     "-p",
     "--phase",
     required=True,
-    choices=[
-        "ttdilep_sf",
-        "ttsemilep_sf",
-        "ctag_Wc_sf",
-        "ctag_DY_sf",
-        "ctag_ttsemilep_sf",
-        "ctag_ttdilep_sf",
-        "ectag_Wc_sf",
-        "ectag_DY_sf",
-        "ectag_ttsemilep_sf",
-        "ectag_ttdilep_sf",
-        "emctag_ttdilep_sf",
-    ],
+    choices=list(workflows.keys()),
     dest="phase",
     help="which phase space",
 )
@@ -186,11 +174,13 @@ for index, discr in enumerate(var_set):
         SF_axis = allaxis
         noSF_axis = allaxis
     if "syst" in collated["mc"][discr].axes.name:
-        allaxis["syst"] = sum
+        allaxis["syst"] = "nominal"
         SF_axis = allaxis
         noSF_axis = allaxis
-        SF_axis["syst"] = "SF"
-        noSF_axis["syst"] = "noSF"
+        systlist = [i for i in range(collated["mc"][discr].axes[0].size)]
+        if "noSF" in systlist:
+            noSF_axis["syst"] = "noSF"
+
     do_xerr = False
     if arg.autorebin is not None:
         if arg.autorebin.isdigit():
@@ -322,10 +312,11 @@ for index, discr in enumerate(var_set):
             xerr=do_xerr,
         )
 
-    elif "syst" in collated["mc"][discr].axes.name and not arg.SF:
+    elif (
+        "syst" in collated["mc"][discr].axes.name and not arg.SF and "noSF" in systlist
+    ):
         splitflav_stack = []
         splitflav_axis = noSF_axis
-
         for i in range(4):
             splitflav_axis["flav"] = i
             splitflav_stack += [collated["mc"][discr][splitflav_axis]]

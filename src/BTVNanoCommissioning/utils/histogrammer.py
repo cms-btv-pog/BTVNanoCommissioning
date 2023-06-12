@@ -35,251 +35,294 @@ def histogrammer(workflow):
         for i in range(2):
             obj_list.append(f"jet{i}")
             _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
-                flav_axis, dr_axis, Hist.storage.Weight()
+                syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
     elif "ttdilep_sf" == workflow:
         obj_list = ["mu", "ele"]
         for i in range(2):
             obj_list.append(f"jet{i}")
             _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
-                flav_axis, dr_axis, Hist.storage.Weight()
+                syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
         for i in ["mu", "ele"]:
             if i == "mu":
                 _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                    iso_axis, Hist.storage.Weight()
+                    syst_axis, iso_axis, Hist.storage.Weight()
                 )
             else:
                 _hist_dict[f"{i}_pfRelIso03_all"] = Hist.Hist(
-                    iso_axis, Hist.storage.Weight()
+                    syst_axis, iso_axis, Hist.storage.Weight()
                 )
-            _hist_dict[f"{i}_dxy"] = Hist.Hist(dxy_axis, Hist.storage.Weight())
-            _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
+            _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                syst_axis, dxy_axis, Hist.storage.Weight()
+            )
+            _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
     elif "ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
         for i in range(4):
             obj_list.append(f"jet{i}")
             _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
-                flav_axis, dr_axis, Hist.storage.Weight()
+                syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
         for i in ["mu"]:
             _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                iso_axis, Hist.storage.Weight()
+                syst_axis, iso_axis, Hist.storage.Weight()
             )
-            _hist_dict[f"{i}_dxy"] = Hist.Hist(dxy_axis, Hist.storage.Weight())
-            _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
+            _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                syst_axis, dxy_axis, Hist.storage.Weight()
+            )
+            _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
     elif "ctag_ttdilep_sf" in workflow:
         obj_list = ["hl", "sl", "soft_l", "MET", "z", "lmujet"]
         _hist_dict["z_mass"] = Hist.Hist(
-            Hist.axis.Regular(50, 50, 100, name="mass", label=" $m_Z$ [GeV]"),
+            syst_axis,
+            Hist.axis.Regular(
+                50, 50, 100, name="mass", label=" $m_{\\ell\\ell}$ [GeV]"
+            ),
             Hist.storage.Weight(),
         )
         # delta R between soft muon and mu-jet
         _hist_dict["dr_lmujetsmu"] = Hist.Hist(
-            flav_axis, dr_s_axis, Hist.storage.Weight()
+            syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
         )
         # delta R between hard muon and mu-jet
         _hist_dict["dr_lmujethmu"] = Hist.Hist(
-            flav_axis, dr_axis, Hist.storage.Weight()
+            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
         )
         # delta R between soft muon and hard muon
-        _hist_dict["dr_lmusmu"] = Hist.Hist(dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_lmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["hl", "sl", "soft_l"]:
             if i == "soft_l":
                 _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
-                    flav_axis, softliso_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, softliso_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dxy"] = Hist.Hist(
-                    flav_axis, dxy_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, dxy_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dz"] = Hist.Hist(
-                    flav_axis, dz_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, dz_axis, Hist.storage.Weight()
                 )
             else:
                 _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                    iso_axis, Hist.storage.Weight()
+                    syst_axis, iso_axis, Hist.storage.Weight()
                 )
-                _hist_dict[f"{i}_dxy"] = Hist.Hist(qcddxy_axis, Hist.storage.Weight())
-                _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
+                _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                    syst_axis, qcddxy_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{i}_dz"] = Hist.Hist(
+                    syst_axis, dz_axis, Hist.storage.Weight()
+                )
             # lepton / jet pT ratio
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
-                flav_axis, ptratio_axis, Hist.storage.Weight()
+                syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
 
     elif "ctag_ttsemilep_sf" in workflow:
         obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
         _hist_dict["z_mass"] = Hist.Hist(
-            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_Z$ [GeV]"),
+            syst_axis,
+            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\ell}$ [GeV]"),
             Hist.storage.Weight(),
         )
         _hist_dict["w_mass"] = Hist.Hist(
-            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_W$ [GeV]"),
+            syst_axis,
+            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\nu}$ [GeV]"),
             Hist.storage.Weight(),
         )
         # delta R between soft muon and mu-jet
         _hist_dict["dr_lmujetsmu"] = Hist.Hist(
-            flav_axis, dr_s_axis, Hist.storage.Weight()
+            syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
         )
         # delta R between hard muon and mu-jet
         _hist_dict["dr_lmujethmu"] = Hist.Hist(
-            flav_axis, dr_axis, Hist.storage.Weight()
+            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
         )
         # delta R between hard muon and soft-muon
-        _hist_dict["dr_lmusmu"] = Hist.Hist(dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_lmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["hl", "soft_l"]:
             if i == "soft_l":
                 _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
-                    flav_axis, softliso_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, softliso_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dxy"] = Hist.Hist(
-                    flav_axis, dxy_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, dxy_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dz"] = Hist.Hist(
-                    flav_axis, dz_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, dz_axis, Hist.storage.Weight()
                 )
             else:
                 _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                    iso_axis, Hist.storage.Weight()
+                    syst_axis, iso_axis, Hist.storage.Weight()
                 )
-                _hist_dict[f"{i}_dxy"] = Hist.Hist(dxy_axis, Hist.storage.Weight())
-                _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
+                _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                    syst_axis, dxy_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{i}_dz"] = Hist.Hist(
+                    syst_axis, dz_axis, Hist.storage.Weight()
+                )
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
-                flav_axis, ptratio_axis, Hist.storage.Weight()
+                syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
 
     elif "Wc_sf" in workflow:
         obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
         _hist_dict["SV_charge"] = Hist.Hist(
+            syst_axis,
             osss_axis,
             Hist.axis.Regular(20, -10, 10, name="charge", label="SV charge"),
             Hist.storage.Weight(),
         )
         _hist_dict["z_mass"] = Hist.Hist(
+            syst_axis,
             osss_axis,
-            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_Z$ [GeV]"),
+            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\ell}$ [GeV]"),
             Hist.storage.Weight(),
         )
         _hist_dict["w_mass"] = Hist.Hist(
+            syst_axis,
             osss_axis,
-            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_W$ [GeV]"),
+            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\nu}$ [GeV]"),
             Hist.storage.Weight(),
         )
         # delta R between soft muon and mu-jet
         _hist_dict["dr_lmujetsmu"] = Hist.Hist(
-            flav_axis, osss_axis, dr_s_axis, Hist.storage.Weight()
+            syst_axis, flav_axis, osss_axis, dr_s_axis, Hist.storage.Weight()
         )
         # delta R between hard muon and mu-jet
         _hist_dict["dr_lmujethmu"] = Hist.Hist(
-            flav_axis, osss_axis, dr_axis, Hist.storage.Weight()
+            syst_axis, flav_axis, osss_axis, dr_axis, Hist.storage.Weight()
         )
         # delta R between hard muon and soft-muon
-        _hist_dict["dr_lmusmu"] = Hist.Hist(osss_axis, dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_lmusmu"] = Hist.Hist(
+            syst_axis, osss_axis, dr_axis, Hist.storage.Weight()
+        )
         for i in ["hl", "soft_l"]:
             if i == "soft_l":
                 _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
-                    flav_axis, osss_axis, softliso_axis, Hist.storage.Weight()
+                    syst_axis,
+                    flav_axis,
+                    osss_axis,
+                    softliso_axis,
+                    Hist.storage.Weight(),
                 )
                 _hist_dict[f"{i}_dxy"] = Hist.Hist(
-                    flav_axis, osss_axis, dxy_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, osss_axis, dxy_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dz"] = Hist.Hist(
-                    flav_axis, osss_axis, dz_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, osss_axis, dz_axis, Hist.storage.Weight()
                 )
             else:
                 _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                    osss_axis, iso_axis, Hist.storage.Weight()
+                    syst_axis, osss_axis, iso_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dxy"] = Hist.Hist(
-                    osss_axis, qcddxy_axis, Hist.storage.Weight()
+                    syst_axis, osss_axis, qcddxy_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dz"] = Hist.Hist(
-                    osss_axis, dz_axis, Hist.storage.Weight()
+                    syst_axis, osss_axis, dz_axis, Hist.storage.Weight()
                 )
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
-                flav_axis, osss_axis, ptratio_axis, Hist.storage.Weight()
+                syst_axis, flav_axis, osss_axis, ptratio_axis, Hist.storage.Weight()
             )
 
     elif "DY_sf" in workflow:
         obj_list = ["posl", "negl", "z", "jet"]
         _hist_dict["z_mass"] = Hist.Hist(
-            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_Z$ [GeV]"),
+            syst_axis,
+            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\ell}$ [GeV]"),
             Hist.storage.Weight(),
         )
-        _hist_dict["dr_mumu"] = Hist.Hist(dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_mumu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["posl", "negl"]:
             _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                iso_axis, Hist.storage.Weight()
+                syst_axis, iso_axis, Hist.storage.Weight()
             )
-            _hist_dict[f"{i}_dxy"] = Hist.Hist(dxy_axis, Hist.storage.Weight())
-            _hist_dict[f"{i}_dz"] = Hist.Hist(dz_axis, Hist.storage.Weight())
+            _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                syst_axis, dxy_axis, Hist.storage.Weight()
+            )
+            _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
     ### Common kinematic variables
     if "Wc_sf" not in workflow:
-        _hist_dict["njet"] = Hist.Hist(n_axis, Hist.storage.Weight())
+        _hist_dict["njet"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
         if "ctag_tt" in workflow:
-            _hist_dict["nmujet"] = Hist.Hist(n_axis, Hist.storage.Weight())
-            _hist_dict["nsoftmu"] = Hist.Hist(n_axis, Hist.storage.Weight())
+            _hist_dict["nmujet"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
+            _hist_dict["nsoftmu"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
         for obj in obj_list:
             if "jet" in obj or "soft_l" in obj:
                 if obj == "soft_l":
                     _hist_dict["soft_l_pt"] = Hist.Hist(
-                        flav_axis, softlpt_axis, Hist.storage.Weight()
+                        syst_axis, flav_axis, softlpt_axis, Hist.storage.Weight()
                     )
                 else:
                     _hist_dict[f"{obj}_pt"] = Hist.Hist(
-                        flav_axis, jpt_axis, Hist.storage.Weight()
+                        syst_axis, flav_axis, jpt_axis, Hist.storage.Weight()
                     )
                 _hist_dict[f"{obj}_eta"] = Hist.Hist(
-                    flav_axis, eta_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, eta_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{obj}_phi"] = Hist.Hist(
-                    flav_axis, phi_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, phi_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{obj}_mass"] = Hist.Hist(
-                    flav_axis, mass_axis, Hist.storage.Weight()
-                )
-            else:
-                _hist_dict[f"{obj}_pt"] = Hist.Hist(pt_axis, Hist.storage.Weight())
-                _hist_dict[f"{obj}_phi"] = Hist.Hist(phi_axis, Hist.storage.Weight())
-                if obj != "MET":
-                    _hist_dict[f"{obj}_eta"] = Hist.Hist(
-                        eta_axis, Hist.storage.Weight()
-                    )
-    else:
-        _hist_dict["njet"] = Hist.Hist(osss_axis, n_axis, Hist.storage.Weight())
-        _hist_dict["nmujet"] = Hist.Hist(osss_axis, n_axis, Hist.storage.Weight())
-        _hist_dict["nsoftmu"] = Hist.Hist(osss_axis, n_axis, Hist.storage.Weight())
-        for obj in obj_list:
-            if "jet" in obj or "soft_l" in obj:
-                if obj == "soft_l":
-                    _hist_dict["soft_l_pt"] = Hist.Hist(
-                        flav_axis, osss_axis, softlpt_axis, Hist.storage.Weight()
-                    )
-                else:
-                    _hist_dict[f"{obj}_pt"] = Hist.Hist(
-                        flav_axis, osss_axis, jpt_axis, Hist.storage.Weight()
-                    )
-                _hist_dict[f"{obj}_eta"] = Hist.Hist(
-                    flav_axis, osss_axis, eta_axis, Hist.storage.Weight()
-                )
-                _hist_dict[f"{obj}_phi"] = Hist.Hist(
-                    flav_axis, osss_axis, phi_axis, Hist.storage.Weight()
-                )
-                _hist_dict[f"{obj}_mass"] = Hist.Hist(
-                    flav_axis, osss_axis, mass_axis, Hist.storage.Weight()
+                    syst_axis, flav_axis, mass_axis, Hist.storage.Weight()
                 )
             else:
                 _hist_dict[f"{obj}_pt"] = Hist.Hist(
-                    osss_axis, pt_axis, Hist.storage.Weight()
+                    syst_axis, pt_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{obj}_phi"] = Hist.Hist(
-                    osss_axis, phi_axis, Hist.storage.Weight()
+                    syst_axis, phi_axis, Hist.storage.Weight()
                 )
                 if obj != "MET":
                     _hist_dict[f"{obj}_eta"] = Hist.Hist(
-                        osss_axis, eta_axis, Hist.storage.Weight()
+                        syst_axis, eta_axis, Hist.storage.Weight()
+                    )
+    else:
+        _hist_dict["njet"] = Hist.Hist(
+            syst_axis, osss_axis, n_axis, Hist.storage.Weight()
+        )
+        _hist_dict["nmujet"] = Hist.Hist(
+            syst_axis, osss_axis, n_axis, Hist.storage.Weight()
+        )
+        _hist_dict["nsoftmu"] = Hist.Hist(
+            syst_axis, osss_axis, n_axis, Hist.storage.Weight()
+        )
+        for obj in obj_list:
+            if "jet" in obj or "soft_l" in obj:
+                if obj == "soft_l":
+                    _hist_dict["soft_l_pt"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        osss_axis,
+                        softlpt_axis,
+                        Hist.storage.Weight(),
+                    )
+                else:
+                    _hist_dict[f"{obj}_pt"] = Hist.Hist(
+                        syst_axis, flav_axis, osss_axis, jpt_axis, Hist.storage.Weight()
+                    )
+                _hist_dict[f"{obj}_eta"] = Hist.Hist(
+                    syst_axis, flav_axis, osss_axis, eta_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{obj}_phi"] = Hist.Hist(
+                    syst_axis, flav_axis, osss_axis, phi_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{obj}_mass"] = Hist.Hist(
+                    syst_axis, flav_axis, osss_axis, mass_axis, Hist.storage.Weight()
+                )
+            else:
+                _hist_dict[f"{obj}_pt"] = Hist.Hist(
+                    syst_axis, osss_axis, pt_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{obj}_phi"] = Hist.Hist(
+                    syst_axis, osss_axis, phi_axis, Hist.storage.Weight()
+                )
+                if obj != "MET":
+                    _hist_dict[f"{obj}_eta"] = Hist.Hist(
+                        syst_axis, osss_axis, eta_axis, Hist.storage.Weight()
                     )
 
-    ### Btag variables
+    ### Btag input variables & PFCands
     bininfo = definitions()
     for d in bininfo.keys():
         ranges = bininfo[d]["manual_ranges"]
@@ -291,6 +334,7 @@ def histogrammer(workflow):
         )
         if "Wc_sf" in workflow:
             _hist_dict[d] = Hist.Hist(
+                syst_axis,
                 flav_axis,
                 osss_axis,
                 Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels),
@@ -298,6 +342,7 @@ def histogrammer(workflow):
             )
         else:
             _hist_dict[d] = Hist.Hist(
+                syst_axis,
                 flav_axis,
                 Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels),
                 Hist.storage.Weight(),
@@ -327,16 +372,16 @@ def histogrammer(workflow):
         for i in range(njet):
             if "Wc_sf" in workflow:
                 _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                    syst_axis,
                     flav_axis,
                     osss_axis,
-                    syst_axis,
                     Hist.axis.Regular(30, -0.2, 1, name="discr", label=disc),
                     Hist.storage.Weight(),
                 )
             else:
                 _hist_dict[f"{disc}_{i}"] = Hist.Hist(
-                    flav_axis,
                     syst_axis,
+                    flav_axis,
                     Hist.axis.Regular(30, -0.2, 1, name="discr", label=disc),
                     Hist.storage.Weight(),
                 )

@@ -22,15 +22,18 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: update submodules
+      env:
+        SSHKEY: ${{ secrets.GIT_CERN_SSH_PRIVATE }}
       run: |
-          git config  --file=.gitmodules submodule.src/BTVNanoCommissioning/jsonpog-integration.url https://milee:${{ secrets.GIT_CERN_PWD }}@gitlab.cern.ch/cms-nanoAOD/jsonpog-integration.git
-          git submodule sync
-          git config --list
-          git submodule update --init --recursive 
+        mkdir  $HOME/.ssh
+        echo "$SSHKEY" > $HOME/.ssh/id_rsa
+        chmod 600  $HOME/.ssh/id_rsa
+        echo "HOST *" > ~/.ssh/config        
+        echo "StrictHostKeyChecking no" >> ~/.ssh/config
+        git submodule update --init --recursive 
     - uses: cvmfs-contrib/github-action-cvmfs@v2
       with:
         cvmfs_repositories: 'grid.cern.ch'
-
     - name: Set conda environment
       uses: conda-incubator/setup-miniconda@v2
       with:
@@ -83,20 +86,14 @@ jobs:
     
     - name: Compile JEC
       run: |
-        python -m BTVNanoCommissioning.utils.compile_jec Rereco17_94X jec_compiled
+        python -m BTVNanoCommissioning.utils.compile_jec 2017_UL jec_compiled
         
-    - name: ctag muon DY workflows with custom correction
-      run: |
-        python runner.py --workflow ctag_DY_sf --json metadata/test_w_dj_mumu.json  --limit 1 --executor futures -j 4 --isCorr --isJERC
     
     - name: ctag muon DY workflows with correctionlib
       run: |
-        python runner.py --workflow ctag_DY_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 4 --campaign 2017_UL
+        python runner.py --workflow ctag_DY_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6 --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray  --year 2017 --max 5 --chunk 50000
     
-    - name: ctag electron DY workflows with custom correction
-      run: |
-        python runner.py --workflow ectag_DY_sf --json metadata/test_w_dj_ee.json  --limit 1 --executor futures -j 4 --isCorr --isJERC
 
     - name: ctag electron DY workflows with correctionlib
       run: |
-        python runner.py --workflow ectag_DY_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 4 --campaign 2017_UL
+        python runner.py --workflow ectag_DY_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6 --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray --year 2017 --max 5 --chunk 50000

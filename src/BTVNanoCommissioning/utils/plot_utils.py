@@ -213,9 +213,11 @@ def plotratio(
     if flow == "show":
         edges = np.array(
             [
-                edges[0] - (edges[1] - edges[0]) * 2,
+                edges[0] - (edges[1] - edges[0]) * 3,
+                edges[0] - (edges[1] - edges[0]),
                 *edges,
-                edges[-1] + (edges[1] - edges[0]) * 2,
+                edges[-1] + (edges[1] - edges[0]),
+                edges[-1] + (edges[1] - edges[0]) * 3,
             ]
         )
     centers = (edges[1:] + edges[:-1]) / 2
@@ -229,9 +231,17 @@ def plotratio(
             num.view(flow=True)["value"],
             num.view(flow=True)["variance"],
         )
+        sumw_num, sumw2_num = np.insert(sumw_num, -1, 0), np.insert(sumw2_num, -1, 0)
+        sumw_num, sumw2_num = np.insert(sumw_num, 1, 0), np.insert(sumw2_num, 1, 0)
         sumw_denom, sumw2_denom = (
             denom.view(flow=True)["value"],
             denom.view(flow=True)["variance"],
+        )
+        sumw_denom, sumw2_denom = np.insert(sumw_denom, -1, 0), np.insert(
+            sumw2_denom, -1, 0
+        )
+        sumw_denom, sumw2_denom = np.insert(sumw_denom, 1, 0), np.insert(
+            sumw2_denom, 1, 0
         )
     elif flow == "sum":
         print("Merge under/overflow bin to first/last bin")
@@ -430,9 +440,11 @@ def autoranger(hist, flow=None):
         val = hist.view(flow=True)["value"]
         axis = np.array(
             [
-                axis[0] - (axis[1] - axis[0]) * 2,
+                axis[0] - (axis[1] - axis[0]) * 3,
+                axis[0] - (axis[1] - axis[0]),
                 *axis,
-                axis[-1] + (axis[1] - axis[0]) * 2,
+                axis[-1] + (axis[1] - axis[0]),
+                axis[-1] + (axis[1] - axis[0]) * 3,
             ]
         )
     for i in range(len(val)):
@@ -595,7 +607,7 @@ def rebin_hist(h, axis_name, edges):
     )
     flow = overflow or underflow
     new_ax = hist.axis.Variable(
-        edges, name=ax.name, overflow=overflow, underflow=underflow
+        edges, name=ax.name, label=ax.label, overflow=overflow, underflow=underflow
     )
     axes = list(h.axes)
     axes[ax_idx] = new_ax

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
+from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
@@ -22,19 +23,7 @@ parser.add_argument(
     "-p",
     "--phase",
     required=True,
-    choices=[
-        "ttdilep_sf",
-        "ttsemilep_sf",
-        "ctag_Wc_sf",
-        "ctag_DY_sf",
-        "ctag_ttsemilep_sf",
-        "ctag_ttdilep_sf",
-        "ectag_Wc_sf",
-        "ectag_DY_sf",
-        "ectag_ttsemilep_sf",
-        "ectag_ttdilep_sf",
-        "emctag_ttdilep_sf",
-    ],
+    choices=list(workflows.keys()),
     dest="phase",
     help="which phase space",
 )
@@ -50,7 +39,7 @@ parser.add_argument(
     "-c", "--compared", required=True, type=str, help="compared datasets, splitted by ,"
 )
 parser.add_argument(
-    "--sepflav", default=False, type=bool, help="seperate flavour(b/c/light)"
+    "--sepflav", action="store_true", help="seperate flavour(b/c/light)"
 )
 parser.add_argument("--log", action="store_true", help="log on y axis")
 parser.add_argument(
@@ -115,7 +104,7 @@ elif "*" in args.input:
     files = glob.glob(args.input)
     output = {i: load(i) for i in files}
 else:
-    output = load(args.input)
+    output = {args.input: load(args.input)}
 mergemap = {}
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{args.phase}_{args.ext}_{time}/"):
@@ -135,6 +124,7 @@ else:
         for f in output.keys():
             comparelist.extend([m for m in output[f].keys() if c == m])
         mergemap[c] = comparelist
+print(output.keys(), mergemap.keys())
 collated = collate(output, mergemap)
 ### style settings
 if "Run" in args.ref:
@@ -192,7 +182,7 @@ for index, discr in enumerate(var_set):
     if "flav" in collated[args.ref][discr].axes.name:
         allaxis["flav"] = sum
     if "syst" in collated[args.ref][discr].axes.name:
-        allaxis["syst"] = sum
+        allaxis["syst"] = "nominal"
     if "osss" in collated[args.ref][discr].axes.name:  ## do dominal OS-SS
         if args.splitOSSS is None:  # OS-SS
             collated[args.ref][discr] = (
@@ -429,7 +419,7 @@ for index, discr in enumerate(var_set):
                 collated[args.ref][discr][allaxis],
                 ax=rax,
                 denom_fill_opts=None,
-                error_opts={"color": ax.get_lines()[i + 1].get_color()},
+                error_opts={"color": ax.get_lines()[i * 2 + 1].get_color()},
                 clear=False,
                 xerr=do_xerr
                 # flow=args.flow,

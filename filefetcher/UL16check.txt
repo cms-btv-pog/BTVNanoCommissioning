@@ -1,2 +1,0 @@
-/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/mullerd-RunIISummer19UL16PFNanoAOD-106X_mcRun2_asymptotic_v13-v2-9be171d1324f26729af3130e6500956b/USER
-/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/mullerd-RunIISummer20UL16PFNanoAOD-106X_mcRun2_asymptotic_v13-v2-9be171d1324f26729af3130e6500956b/USER

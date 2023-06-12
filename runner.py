@@ -86,11 +86,23 @@ def get_main_parser():
         help="Dataset campaign, change the corresponding correction files",
     )
     parser.add_argument("--isCorr", action="store_true", help="Run with SFs")
-    parser.add_argument("--isSyst", action="store_true", help="Run with systematics")
+    parser.add_argument(
+        "--isSyst",
+        default=None,
+        type=str,
+        choices=[None, "all", "weight_only", "JERC_split"],
+        help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
+    )
     parser.add_argument(
         "--isJERC", action="store_true", help="JER/JEC implemented to jet"
     )
-
+    parser.add_argument("--isArray", action="store_true", help="Output root files")
+    parser.add_argument(
+        "--noHist", action="store_true", help="Not output coffea histogram"
+    )
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Overwrite existing files"
+    )
     # Scale out
     parser.add_argument(
         "--executor",
@@ -167,12 +179,19 @@ def get_main_parser():
         help="Number of retries for coffea processor",
     )
     parser.add_argument(
+        "--fsize",
+        type=int,
+        default=50,
+        help="(Specific for dask/lxplus file splitting, default: %(default)s)\n Numbers of files processed per dask-worker",
+    )
+    parser.add_argument(
         "--index",
         type=str,
         default="0,0",
-        help="(Specific for dask/lxplus file splitting, ``default: %(default)s)\n   Format: $dictindex,$fileindex. $dictindex refers to the index, splitted $dictindex and $fileindex with ','"
-        "$dictindex refers the index in the json dict, $fileindex refers to the index of the file list split to 50 files per dask-worker. The job will start submission from the corresponding indices",
+        help=f"(Specific for dask/lxplus file splitting, default: %(default)s)\n   Format: $dict_index_start,$file_index_start,$dict_index_stop,$file_index_stop. Stop indices are optional. $dict_index refers to the index, splitted $dict_index and $file_index with ','"
+        "$dict_index refers to the sample dictionary of the samples json file. $file_index refers to the N-th batch of files per dask-worker, with its size being defined by the option --index. The job will start (stop) submission from (with) the corresponding indices.",
     )
+
     # Debugging
     parser.add_argument(
         "--validate",
@@ -274,13 +293,33 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # load workflow
-    if "ttcom" == args.workflow or "validation" == args.workflow:
-        processor_instance = workflows[args.workflow](args.year, args.campaign)
-    else:
-        processor_instance = workflows[args.workflow](
-            args.year, args.campaign, args.isCorr, args.isJERC, args.isSyst
-        )
 
+    processor_instance = workflows[args.workflow](
+        args.year,
+        args.campaign,
+        args.isCorr,
+        args.isJERC,
+        args.isSyst,
+        args.isArray,
+        args.noHist,
+        args.chunk,
+    )
+    ## create tmp directory and check file exist or not
+    from os import path
+
+    if path.exists(f"{args.output}") and args.overwrite == False:
+        raise Exception(f"{args.output} exists")
+
+    if args.isArray:
+        if path.exists("tmp"):
+            os.system("rm -r tmp")
+        os.mkdir("tmp")
+
+        if (
+            path.exists(f'{args.output.replace(".coffea", "").replace("hists_","")}/')
+            and args.overwrite == False
+        ):
+            raise Exception("Directory exists")
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """
         dask/parsl needs to export x509 to read over xrootd
@@ -339,7 +378,7 @@ if __name__ == "__main__":
             chunksize=args.chunk,
             maxchunks=args.max,
         )
-        save(output, args.output)
+
     elif "parsl" in args.executor:
         import parsl
         from parsl.providers import LocalProvider, CondorProvider, SlurmProvider
@@ -572,8 +611,6 @@ if __name__ == "__main__":
                 chunksize=args.chunk,
                 maxchunks=args.max,
             )
-        save(output, args.output)
-        print(f"Saving output to {args.output}")
     elif "dask" in args.executor:
         from dask_jobqueue import SLURMCluster, HTCondorCluster
         from distributed import Client
@@ -665,23 +702,29 @@ if __name__ == "__main__":
                     chunksize=args.chunk,
                     maxchunks=args.max,
                 )
-                save(output, args.output)
+
             else:
                 findex = int(args.index.split(",")[1])
                 for sindex, sample in enumerate(sample_dict.keys()):
                     if sindex < int(args.index.split(",")[0]):
                         continue
                     if int(args.index.split(",")[1]) == findex:
-                        mins = findex * 50
+                        mins = findex * args.fsize
                     else:
                         mins = 0
                         findex = 0
                     while mins < len(sample_dict[sample]):
                         splitted = {}
-                        maxs = mins + 50
+                        maxs = mins + args.fsize
                         splitted[sample] = sample_dict[sample][mins:maxs]
                         mins = maxs
                         findex = findex + 1
+                        if (
+                            len(args.index.split(",")) == 4
+                            and findex > int(args.index.split(",")[3])
+                            and sindex > int(args.index.split(",")[2])
+                        ):
+                            break
                         output = processor.run_uproot_job(
                             splitted,
                             treename="Events",
@@ -696,12 +739,28 @@ if __name__ == "__main__":
                             chunksize=args.chunk,
                             maxchunks=args.max,
                         )
-                        save(
-                            output,
-                            args.output.replace(
-                                ".coffea", f"_{sindex}_{findex}.coffea"
-                            ),
-                        )
-
-    print(output)
-    print(f"Saving output to {args.output}")
+                        if args.noHist == False:
+                            save(
+                                output,
+                                args.output.replace(
+                                    ".coffea", f"_{sindex}_{findex}.coffea"
+                                ),
+                            )
+    if not splitjobs:
+        if args.noHist == False:
+            save(output, args.output)
+    if args.isArray:
+        if args.overwrite and path.exists(
+            args.output.replace(".coffea", "").replace("hists_", "")
+        ):
+            os.system(
+                f'rm -r {args.output.replace(".coffea", "").replace("hists_", "")}'
+            )
+        os.mkdir(args.output.replace(".coffea", "").replace("hists_", ""))
+        os.system(
+            f'mv tmp/*.root {args.output.replace(".coffea", "").replace("hists_","")}/.'
+        )
+        os.system("rm -r tmp")
+    if args.noHist == False:
+        print(output)
+        print(f"Saving output to {args.output}")
