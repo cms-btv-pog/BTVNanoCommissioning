@@ -62,7 +62,7 @@ More options for `runner.py`
 <p>
 
 ```
---wf {validation,ttcom,ttdilep_sf,ttsemilep_sf,emctag_ttdilep_sf,ctag_ttdilep_sf,ectag_ttdilep_sf,ctag_ttsemilep_sf,ectag_ttsemilep_sf,ctag_Wc_sf,ectag_Wc_sf,ctag_DY_sf,ectag_DY_sf}, --workflow {validation,ttcom,ttdilep_sf,ttsemilep_sf,emctag_ttdilep_sf,ctag_ttdilep_sf,ectag_ttdilep_sf,ctag_ttsemilep_sf,ectag_ttsemilep_sf,ctag_Wc_sf,ectag_Wc_sf,ctag_DY_sf,ectag_DY_sf}
+--wf {validation,ttcom,ttdilep_sf,ttsemilep_sf,emctag_ttdilep_sf,ctag_ttdilep_sf,ectag_ttdilep_sf,ctag_ttsemilep_sf,ectag_ttsemilep_sf,ctag_Wc_sf,ectag_Wc_sf,ctag_DY_sf,ectag_DY_sf,BTA}, --workflow {validation,ttcom,ttdilep_sf,ttsemilep_sf,emctag_ttdilep_sf,ctag_ttdilep_sf,ectag_ttdilep_sf,ctag_ttsemilep_sf,ectag_ttsemilep_sf,ctag_Wc_sf,ectag_Wc_sf,ctag_DY_sf,ectag_DY_sf,BTA}
                         Which processor to run
   -o OUTPUT, --output OUTPUT
                         Output histogram filename (default: hists.coffea)
@@ -71,7 +71,7 @@ More options for `runner.py`
                         (default: dummy_samples.json)
   --year YEAR           Year
   --campaign CAMPAIGN   Dataset campaign, change the corresponding correction
-                        files{ "Rereco17_94X","Winter22Run3","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
+                        files{ "Rereco17_94X","Winter22Run3","Summer22Run3","Summer22Run3EE","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
   --isCorr              Run with SFs
   --isJERC              JER/JEC implemented to jet
   --isSyst              Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None(not extract)
@@ -196,6 +196,23 @@ python runner.py --workflow valid --json metadata/$json file
 </details>
 
 
+
+
+#### BTA - BTagAnalyzer Ntuple producer
+
+Based on Congqiao's [development](notebooks/BTA_array_producer.ipynb) to produce BTA ntuples based on PFNano.
+
+:exclamation: Only the newest version [BTV_Run3_2022_Comm_v2](https://github.com/cms-jet/PFNano/tree/13_0_7_from124MiniAOD) ntuples work. Example files are given in [this](metadata/test_bta_run3.json) json. Optimize the chunksize(`--chunk`) in terms of the memory usage. This depends on sample, if the sample has huge jet collection/b-c hardons. The more info you store, the more memory you need. I would suggest to test with `iterative` to estimate the size.
+
+<details><summary>details</summary>
+<p>
+
+```
+python runner.py --wf BTA --json metadata/test_bta_run3.json --campaign Summer22Run3
+```
+
+</p>
+</details>
 
 ## Scale-out (Sites)
 

@@ -9,7 +9,7 @@ import numpy as np
 import uproot
 from coffea.util import load, save
 from coffea import processor
-
+from coffea.nanoevents import PFNanoAODSchema
 from BTVNanoCommissioning.workflows import workflows
 
 
@@ -78,6 +78,8 @@ def get_main_parser():
         choices=[
             "Rereco17_94X",
             "Winter22Run3",
+            "Summer22Run3",
+            "Summer22Run3EE",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",
@@ -371,7 +373,7 @@ if __name__ == "__main__":
             executor=_exec,
             executor_args={
                 "skipbadfiles": args.skipbadfiles,
-                "schema": processor.NanoAODSchema,
+                "schema": PFNanoAODSchema,
                 "workers": args.workers,
                 "xrootdtimeout": 900,
             },
@@ -588,7 +590,7 @@ if __name__ == "__main__":
                 executor=processor.parsl_executor,
                 executor_args={
                     "skipbadfiles": args.skipbadfiles,
-                    "schema": processor.NanoAODSchema,
+                    "schema": PFNanoAODSchema,
                     "config": None,
                 },
                 chunksize=args.chunk,
@@ -602,7 +604,7 @@ if __name__ == "__main__":
                 executor=processor.parsl_executor,
                 executor_args={
                     "skipbadfiles": args.skipbadfiles,
-                    "schema": processor.NanoAODSchema,
+                    "schema": PFNanoAODSchema,
                     "merging": True,
                     "merges_executors": ["merge"],
                     "jobs_executors": ["run"],
@@ -696,7 +698,7 @@ if __name__ == "__main__":
                     executor_args={
                         "client": client,
                         "skipbadfiles": args.skipbadfiles,
-                        "schema": processor.NanoAODSchema,
+                        "schema": PFNanoAODSchema,
                         "retries": args.retries,
                     },
                     chunksize=args.chunk,
@@ -733,7 +735,7 @@ if __name__ == "__main__":
                             executor_args={
                                 "client": client,
                                 "skipbadfiles": args.skipbadfiles,
-                                "schema": processor.NanoAODSchema,
+                                "schema": PFNanoAODSchema,
                                 "retries": args.retries,
                             },
                             chunksize=args.chunk,
