@@ -39,4 +39,12 @@ correction_config = {
         "PU": "puweight_Winter22Run3.histo.root",
         "JME": "jec_compiled.pkl.gz",
     },
+    "Summer22Run3": {
+        "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
+        "JME": "winter_jec_compiled.pkl.gz",  # not this is from Winter22Run3 since this is not yet finished
+    },
+    "Summer22EERun3": {
+        "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
+        "JME": "jec_compiled.pkl.gz",
+    },
 }
