@@ -12,6 +12,8 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     cumsum,
     is_from_GSP,
 )
+from BTVNanoCommissioning.helpers.func import update
+from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts
 
 
 ## Based on coffea_array_producer.ipynb from Congqiao
@@ -21,7 +23,7 @@ class NanoProcessor(processor.ProcessorABC):
         year="2022",
         campaign="Summer22Run3",
         isCorr=False,
-        isJERC=False,
+        isJERC=True,
         isSyst=False,
         isArray=True,
         noHist=False,
@@ -30,12 +32,34 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self.chunksize = chunksize
+        self.isJERC = isJERC
+        self.SF_map = load_SF(self._campaign)
 
     @property
     def accumulator(self):
         return self._accumulator
 
     def process(self, events):
+        isRealData = not hasattr(events, "genWeight")
+        dataset = events.metadata["dataset"]
+        events = missing_branch(events)
+        shifts = []
+
+        if "JME" in self.SF_map.keys() and self.isJERC:
+            shifts = JME_shifts(
+                shifts, self.SF_map, events, self._campaign, isRealData, False
+            )
+        else:
+            shifts = [
+                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
+            ]
+
+        return processor.accumulate(
+            self.process_shift(update(events, collections), name)
+            for collections, name in shifts
+        )
+
+    def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
         events = missing_branch(events)
@@ -337,7 +361,6 @@ class NanoProcessor(processor.ProcessorABC):
         jet = events.Jet[
             (events.Jet.pt > 20.0) & (abs(events.Jet.eta) < 2.5)
         ]  # basic selection
-        print(events)
         zeros = ak.zeros_like(jet.pt, dtype=int)
         Jet = ak.zip(
             {
@@ -346,16 +369,16 @@ class NanoProcessor(processor.ProcessorABC):
                 "eta": jet.eta,
                 "phi": jet.phi,
                 "mass": jet.mass,
-                "uncorrpt": (1 - jet.rawFactor) * jet.pt,
+                "uncorrpt": jet.pt_orig,
                 # jet ID/pileup ID // !!!
                 "looseID": jet.jetId >= 2,
                 "tightID": jet.jetId >= 4,
                 "tightlepvetoID": jet.jetId >= 6,
                 # pileup ID (essentially userInt('puId106XUL18Id') for UL18)
-                ## no pu id in run3
-                # 'pileup_tightID':ak.values_astype((jet.puId & (1 << 0) > 0) | (jet.pt > 50.), int)  if "Run3" not in self._campaign else ak.zeros_like(jet.pt),
-                # 'pileup_mediumID': ak.values_astype((jet.puId & (1 << 1) > 0) | (jet.pt > 50.), int) if "Run3" not in self.campaign else ak.zeros_like(jet.pt),
-                # 'pileup_looseID': ak.values_astype((jet.puId & (1 << 2) > 0) | (jet.pt > 50.), int) if "Run3" not in self.campaign else ak.zeros_like(jet.pt),
+                # PU ID for Run 3 is not ready
+                # 'pileup_tightID':ak.values_astype((jet.puId & (1 << 0) > 0) | (jet.pt > 50.), int)  ,
+                # 'pileup_mediumID': ak.values_astype((jet.puId & (1 << 1) > 0) | (jet.pt > 50.), int) ,
+                # 'pileup_looseID': ak.values_astype((jet.puId & (1 << 2) > 0) | (jet.pt > 50.), int) ,
                 # taggers/vars // JP/JBP to be calibrated.. !!!
                 "area": jet.area,
                 "Proba": jet.Proba,

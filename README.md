@@ -208,7 +208,7 @@ Based on Congqiao's [development](notebooks/BTA_array_producer.ipynb) to produce
 <p>
 
 ```
-python runner.py --wf BTA --json metadata/test_bta_run3.json --campaign Summer22Run3
+python runner.py --wf BTA --json metadata/test_bta_run3.json --campaign Summer22Run3 --isJERC
 ```
 
 </p>
