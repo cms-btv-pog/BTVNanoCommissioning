@@ -15,7 +15,7 @@ from BTVNanoCommissioning.utils.plot_utils import (
 )
 
 plt.style.use(hep.style.ROOT)
-from BTVNanoCommissioning.utils.xs_scaler import collate
+from BTVNanoCommissioning.helpers.xs_scaler import collate
 
 bininfo = definitions()
 parser = argparse.ArgumentParser(description="make comparison for different campaigns")
