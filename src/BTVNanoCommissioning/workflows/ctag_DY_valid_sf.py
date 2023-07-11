@@ -18,7 +18,6 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_mvatightid
-import hist
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -84,12 +83,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         output = {
             "sumw": processor.defaultdict_accumulator(float),
-            # **_hist_event_dict,
-            "MET_pt": hist.Hist(
-                hist.axis.StrCategory([], name="syst", growth=True),
-                hist.axis.Regular(50, 0, 200, name="pt", label=" $p_{T}$ [GeV]"),
-                hist.storage.Weight(),
-            ),
+            **_hist_event_dict,
         }
 
         if isRealData:
@@ -274,95 +268,92 @@ class NanoProcessor(processor.ProcessorABC):
                 if syst == "nominal" or syst == shift_name
                 else weights.weight(modifier=syst)
             )
-            # for histname, h in output.items():
-            #     if (
-            #         "Deep" in histname
-            #         and "btag" not in histname
-            #         and histname in events.Jet.fields
-            #     ):
-            #         h.fill(
-            #             syst,
-            #             genflavor,
-            #             sel_jet[histname],
-            #             weight=weights.partial_weight(exclude=exclude_btv),
-            #         )
-            #     elif (
-            #         "PFCands" in events.fields
-            #         and "PFCands" in histname
-            #         and histname.split("_")[1] in events.PFCands.fields
-            #     ):
-            #         h.fill(
-            #             syst,
-            #             flatten(ak.broadcast_arrays(genflavor, spfcands["pt"])[0]),
-            #             flatten(spfcands[histname.replace("PFCands_", "")]),
-            #             weight=flatten(
-            #                 ak.broadcast_arrays(
-            #                     weights.partial_weight(exclude=exclude_btv),
-            #                     spfcands["pt"],
-            #                 )[0]
-            #             ),
-            #         )
-            #     elif (
-            #         "posl_" in histname
-            #         and histname.replace("posl_", "") in sposmu.fields
-            #     ):
-            #         h.fill(
-            #             syst,
-            #             flatten(sposmu[histname.replace("posl_", "")]),
-            #             weight=weight,
-            #         )
-            #     elif (
-            #         "negl_" in histname
-            #         and histname.replace("negl_", "") in snegmu.fields
-            #     ):
-            #         h.fill(
-            #             syst,
-            #             flatten(snegmu[histname.replace("negl_", "")]),
-            #             weight=weight,
-            #         )
+            for histname, h in output.items():
+                if (
+                    "Deep" in histname
+                    and "btag" not in histname
+                    and histname in events.Jet.fields
+                ):
+                    h.fill(
+                        syst,
+                        genflavor,
+                        sel_jet[histname],
+                        weight=weights.partial_weight(exclude=exclude_btv),
+                    )
+                elif (
+                    "PFCands" in events.fields
+                    and "PFCands" in histname
+                    and histname.split("_")[1] in events.PFCands.fields
+                ):
+                    h.fill(
+                        syst,
+                        flatten(ak.broadcast_arrays(genflavor, spfcands["pt"])[0]),
+                        flatten(spfcands[histname.replace("PFCands_", "")]),
+                        weight=flatten(
+                            ak.broadcast_arrays(
+                                weights.partial_weight(exclude=exclude_btv),
+                                spfcands["pt"],
+                            )[0]
+                        ),
+                    )
+                elif (
+                    "posl_" in histname
+                    and histname.replace("posl_", "") in sposmu.fields
+                ):
+                    h.fill(
+                        syst,
+                        flatten(sposmu[histname.replace("posl_", "")]),
+                        weight=weight,
+                    )
+                elif (
+                    "negl_" in histname
+                    and histname.replace("negl_", "") in snegmu.fields
+                ):
+                    h.fill(
+                        syst,
+                        flatten(snegmu[histname.replace("negl_", "")]),
+                        weight=weight,
+                    )
 
-            #     elif "jet_" in histname:
-            #         h.fill(
-            #             syst,
-            #             genflavor,
-            #             sel_jet[histname.replace("jet_", "")],
-            #             weight=weight,
-            #         )
-            #     elif (
-            #         "btagDeep" in histname
-            #         and "0" in histname
-            #         and histname.replace("_0", "") in events.Jet.fields
-            #     ):
-            #         h.fill(
-            #             syst="noSF",
-            #             flav=genflavor,
-            #             discr=np.where(
-            #                 sel_jet[histname.replace("_0", "")] < 0,
-            #                 -0.2,
-            #                 sel_jet[histname.replace("_0", "")],
-            #             ),
-            #             weight=weights.partial_weight(exclude=exclude_btv),
-            #         )
-            #         if not isRealData and self.isCorr and "btag" in self.SF_map.keys():
-            #             h.fill(
-            #                 syst=syst,
-            #                 flav=genflavor,
-            #                 discr=np.where(
-            #                     sel_jet[histname.replace("_0", "")] < 0,
-            #                     -0.2,
-            #                     sel_jet[histname.replace("_0", "")],
-            #                 ),
-            #                 weight=weight,
-            #             )
-            # output["njet"].fill(syst, njet, weight=weight)
-            # output["dr_mumu"].fill(syst, snegmu.delta_r(sposmu), weight=weight)
-            # output["z_pt"].fill(syst, flatten(sz.pt), weight=weight)
-            # output["z_eta"].fill(syst, flatten(sz.eta), weight=weight)
-            # output["z_phi"].fill(syst, flatten(sz.phi), weight=weight)
-            # output["z_mass"].fill(syst, flatten(sz.mass), weight=weight)
-            output["MET_pt"].fill(
-                syst, flatten(events[event_level].PuppiMET.pt), weight=weight
-            )
+                elif "jet_" in histname:
+                    h.fill(
+                        syst,
+                        genflavor,
+                        sel_jet[histname.replace("jet_", "")],
+                        weight=weight,
+                    )
+                elif (
+                    "btagDeep" in histname
+                    and "0" in histname
+                    and histname.replace("_0", "") in events.Jet.fields
+                ):
+                    h.fill(
+                        syst="noSF",
+                        flav=genflavor,
+                        discr=np.where(
+                            sel_jet[histname.replace("_0", "")] < 0,
+                            -0.2,
+                            sel_jet[histname.replace("_0", "")],
+                        ),
+                        weight=weights.partial_weight(exclude=exclude_btv),
+                    )
+                    if not isRealData and self.isCorr and "btag" in self.SF_map.keys():
+                        h.fill(
+                            syst=syst,
+                            flav=genflavor,
+                            discr=np.where(
+                                sel_jet[histname.replace("_0", "")] < 0,
+                                -0.2,
+                                sel_jet[histname.replace("_0", "")],
+                            ),
+                            weight=weight,
+                        )
+            output["njet"].fill(syst, njet, weight=weight)
+            output["dr_mumu"].fill(syst, snegmu.delta_r(sposmu), weight=weight)
+            output["z_pt"].fill(syst, flatten(sz.pt), weight=weight)
+            output["z_eta"].fill(syst, flatten(sz.eta), weight=weight)
+            output["z_phi"].fill(syst, flatten(sz.phi), weight=weight)
+            output["z_mass"].fill(syst, flatten(sz.mass), weight=weight)
         #######################
         #  Create root files  #
         #######################
