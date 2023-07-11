@@ -10,7 +10,7 @@ def jet_id(events, campaign):
             & (events.Jet.jetId >= 5)
             & ((events.Jet.pt > 50) | (events.Jet.puId >= 7))
         )
-    elif campaign != "Winter22Run3":
+    elif "Run3" in campaign:
         ## Modified based on Run3 changes included by Annika:
         # https://github.com/AnnikaStein/BTVNanoCommissioning/commit/24237031f4deef30f524851646d156d000a8d4cf
         jetmask = (
@@ -30,7 +30,7 @@ def jet_id(events, campaign):
 
 ## FIXME: Electron cutbased Id & MVA ID not exist in Winter22Run3 sample
 def ele_cuttightid(events, campaign):
-    if campaign != "Winter22Run3":
+    if "Run3" not in campaign:
         elemask = (
             (abs(events.Electron.eta) < 1.4442)
             | ((abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566))
@@ -43,7 +43,7 @@ def ele_cuttightid(events, campaign):
 
 
 def ele_mvatightid(events, campaign):
-    if campaign != "Winter22Run3":
+    if "Run3" not in campaign:
         elemask = (
             (abs(events.Electron.eta) < 1.4442)
             | ((abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566))

@@ -130,7 +130,7 @@ def to_bitwise_trigger(pass_trig, builder):
     return builder
 
 
-@nb.vectorize([nb.float64(nb.int64)])
+@nb.vectorize([nb.float64(nb.int64)], forceobj=True)
 def get_hadron_mass(hadron_pids):
     return hadron_mass_table[abs(hadron_pids)]
 

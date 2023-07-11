@@ -47,7 +47,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         if "JME" in self.SF_map.keys() and self.isJERC:
             shifts = JME_shifts(
-                shifts, self.SF_map, events, self._campaign, isRealData, False
+                shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )
         else:
             shifts = [
@@ -394,6 +394,9 @@ class NanoProcessor(processor.ProcessorABC):
                 "DeepFlavourCvsBDiscN": jet.btagNegDeepFlavCvB,
             }
         )
+        if isRealData:
+            Jet["vetomap"] = jet.veto
+            print(Jet.vetomap, ak.any(jet.veto == 1))
 
         if not isRealData:
             Jet["nbHadrons"] = jet.nBHadrons
