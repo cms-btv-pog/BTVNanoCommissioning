@@ -42,6 +42,9 @@ from BTVNanoCommissioning.workflows.ctag_ettsemilep_valid_sf import (
 from BTVNanoCommissioning.workflows.ctag_semileptt_valid_sf import (
     NanoProcessor as CTAGSemilepttValidSFProcessor,
 )
+from BTVNanoCommissioning.workflows.BTA_producer import (
+    NanoProcessor as BTA_processor,
+)
 
 # from BTVNanoCommissioning.workflows.example import (
 #     NanoProcessor as ExampleProcessor,
@@ -72,4 +75,6 @@ workflows["ectag_DY_sf"] = CTAGeDYValidSFProcessor
 
 # Tutorial
 # workflows["example"] = ExampleProcessor
+# BTA producer
+workflows["BTA"] = BTA_processor
 __all__ = ["workflows"]

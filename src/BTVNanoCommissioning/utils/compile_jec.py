@@ -260,6 +260,36 @@ def jet_factories(campaign):
                 ]
             ),
         },
+        "Summer22EERun3": {
+            "mc": jet_factory_factory(
+                files=[
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_JRV1_MC_SF_AK4PFPuppi.jersf.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_JRV1_MC_PtResolution_AK4PFPuppi.jr.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_V1_MC_L1FastJet_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_V1_MC_L2Relative_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_V1_MC_L2Residual_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_V1_MC_L3Absolute_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_V1_MC_UncertaintySources_AK4PFPuppi.junc.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_V1_MC_Uncertainty_AK4PFPuppi.junc.txt",
+                ]
+            ),
+            "dataF": jet_factory_factory(
+                files=[
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_RunF_V1_DATA_L1FastJet_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_RunF_V1_DATA_L2Relative_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_RunF_V1_DATA_L3Absolute_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_RunF_V1_DATA_L2L3Residual_AK4PFPuppi.jec.txt",
+                ]
+            ),
+            "dataG": jet_factory_factory(
+                files=[
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_RunG_V1_DATA_L1FastJet_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_RunG_V1_DATA_L2Relative_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_RunG_V1_DATA_L3Absolute_AK4PFPuppi.jec.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22EERun3/Summer22EEPrompt22_RunG_V1_DATA_L2L3Residual_AK4PFPuppi.jec.txt",
+                ]
+            ),
+        },
     }
     return jet_factory[campaign]
 

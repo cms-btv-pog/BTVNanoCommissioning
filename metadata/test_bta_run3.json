@@ -1,0 +1,7 @@
+{
+    "DoubleMuon_Run2022C-10Dec2022-v1":[
+        "root://eoscms.cern.ch//eos/cms/store/group/phys_btag/nano-commissioning/Run3/DoubleMu/nano_data2022ABCD_1.root"
+    ],
+    "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8":["root://eoscms.cern.ch//eos/cms/store/user/coli/PFNano/2022/mc/TTto4Q_TuneCP5_13p6TeV_powheg-pythia8/PFNano_v1_Run3Summer22MiniAODv3-124X_v12-v4/230629_163448/0000/nano_mcRun3_8.root"]
+
+}

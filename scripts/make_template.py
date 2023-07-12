@@ -1,6 +1,6 @@
 from coffea.util import load
 import uproot, sys, os, argparse, hist
-from BTVNanoCommissioning.utils.xs_scaler import collate, scaleSumW
+from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
 
 parser = argparse.ArgumentParser(description="Make templates from coffea files")
 parser.add_argument(

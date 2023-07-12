@@ -1,5 +1,5 @@
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import add_jec_variables
+from BTVNanoCommissioning.utils.correction import add_jec_variables, jetveto
 import numpy as np
 
 
@@ -104,7 +104,12 @@ def missing_branch(events):
                 "MetUnclustEnUpDeltaY": met.MetUnclustEnUpDeltaY,
             },
         )
-
+    if (
+        "Run2022C" in events.metadata["dataset"]
+        or "Run2022D" in events.metadata["dataset"]
+        or "Run2022E" in events.metadata["dataset"]
+    ):
+        events.Jet = update(events.Jet, {"veto": jetveto(events)})
     return events
 
 

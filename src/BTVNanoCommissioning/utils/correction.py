@@ -326,6 +326,37 @@ met_filters = {
     },
 }
 
+import matplotlib.pyplot as plt
+
+ext_jetvetomap = extractor()
+ext_jetvetomap.add_weight_sets(
+    [
+        "RunCD jetvetomap src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunCD_v1.histo.root",
+        "RunE jetvetomap src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunE_v1.histo.root",
+    ]
+)
+
+ext_jetvetomap.finalize()
+jetvetomap = ext_jetvetomap.make_evaluator()
+
+
+def jetveto(events):
+    if (
+        "Run2022C" in events.metadata["dataset"]
+        or "Run2022D" in events.metadata["dataset"]
+    ):
+        return ak.where(
+            jetvetomap["RunCD"](events.Jet.phi, events.Jet.eta) > 0,
+            ak.ones_like(events.Jet.eta),
+            ak.zeros_like(events.Jet.eta),
+        )
+    elif "Run2022E" in events.metadata["dataset"]:
+        return ak.where(
+            jetvetomap["RunE"](events.Jet.phi, events.Jet.eta) > 0,
+            ak.ones_like(events.Jet.eta),
+            ak.zeros_like(events.Jet.eta),
+        )
+
 
 ##JEC
 # FIXME: would be nicer if we can move to correctionlib in the future together with factory and workable
@@ -352,7 +383,15 @@ def add_jec_variables(jets, event_rho):
 
 
 ## JERC
-def JME_shifts(shifts, correct_map, events, campaign, isRealData, systematic=False):
+def JME_shifts(
+    shifts,
+    correct_map,
+    events,
+    campaign,
+    isRealData,
+    systematic=False,
+    exclude_jetveto=False,
+):
     dataset = events.metadata["dataset"]
     if isRealData:
         if "2016preVFP_UL" == campaign:
@@ -378,29 +417,36 @@ def JME_shifts(shifts, correct_map, events, campaign, isRealData, systematic=Fal
     )
     met = correct_map["JME"]["met_factory"].build(events.MET, jets, {})
     ## HEM 18 issue
-    if isRealData and "2018" in campaign:
-        _runid = events.run >= 319077
-        j_mask = ak.where(
-            _runid
-            & (jets.phi > -1.57)
-            & (jets.phi < -0.87)
-            & (jets.eta > -2.5)
-            & (jets.eta < -1.3),
-            0.8,
-            1,
-        )
-        j_high_eta_mask = ak.where(
-            _runid
-            & (jets.phi > -1.57)
-            & (jets.phi < -0.87)
-            & (jets.eta > -3.0)
-            & (jets.eta < -2.5),
-            0.65,
-            1,
-        )
+    if isRealData:
+        if "2018" in events.metadata["dataset"]:
+            _runid = events.run >= 319077
+            j_mask = ak.where(
+                _runid
+                & (jets.phi > -1.57)
+                & (jets.phi < -0.87)
+                & (jets.eta > -2.5)
+                & (jets.eta < -1.3),
+                0.8,
+                1,
+            )
+            j_high_eta_mask = ak.where(
+                _runid
+                & (jets.phi > -1.57)
+                & (jets.phi < -0.87)
+                & (jets.eta > -3.0)
+                & (jets.eta < -2.5),
+                0.65,
+                1,
+            )
 
-        for var in ["mass", "pt"]:
-            jets[var] = j_mask * j_high_eta_mask * jets[var]
+            for var in ["mass", "pt"]:
+                jets[var] = j_mask * j_high_eta_mask * jets[var]
+        if (
+            "Run2022C" in events.metadata["dataset"]
+            or "Run2022D" in events.metadata["dataset"]
+            or "Run2022E" in events.metadata["dataset"]
+        ) and not exclude_jetveto:
+            jets["pt"] = ak.where(jets.veto == 0, jets.pt, 0.0)
     shifts += [({"Jet": jets, "MET": met}, None)]
 
     ## systematics
