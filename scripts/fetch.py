@@ -109,7 +109,7 @@ def getFilesFromPath(args, lim=None):
 def getRootFilesFromPath(d, lim=None):
     import subprocess
 
-    if "xrootd" in d:
+    if "root://" in d:
         sp = d.split("/")
         siteIP = "/".join(sp[0:4])
         pathToFiles = "/".join(sp[3:]) + "/"

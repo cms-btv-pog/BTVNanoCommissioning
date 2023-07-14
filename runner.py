@@ -79,7 +79,7 @@ def get_main_parser():
             "Rereco17_94X",
             "Winter22Run3",
             "Summer22Run3",
-            "Summer22Run3EE",
+            "Summer22EERun3",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",

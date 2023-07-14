@@ -369,7 +369,7 @@ class NanoProcessor(processor.ProcessorABC):
                 "eta": jet.eta,
                 "phi": jet.phi,
                 "mass": jet.mass,
-                "uncorrpt": jet.pt_orig,
+                "uncorrpt": jet.pt_raw,
                 # jet ID/pileup ID // !!!
                 "looseID": jet.jetId >= 2,
                 "tightID": jet.jetId >= 4,
@@ -385,18 +385,71 @@ class NanoProcessor(processor.ProcessorABC):
                 "ProbaN": jet.ProbaN,
                 "Bprob": jet.Bprob,
                 "BprobN": jet.BprobN,
-                # taggers
+                # Deep Jet
                 "DeepFlavourBDisc": jet.btagDeepFlavB,
                 "DeepFlavourCvsLDisc": jet.btagDeepFlavCvL,
                 "DeepFlavourCvsBDisc": jet.btagDeepFlavCvB,
+                "DeepFlavourBDisc_b": jet.btagDeepFlavB_b,
+                "DeepFlavourBDisc_bb": jet.btagDeepFlavB_bb,
+                "DeepFlavourBDisc_lepb": jet.btagDeepFlavB_lepb,
+                "DeepFlavourCDisc": jet.btagDeepFlavC,
+                "DeepFlavourUDSDisc": jet.btagDeepFlavUDS,
+                "DeepFlavourGDisc": jet.btagDeepFlavG,
                 "DeepFlavourBDiscN": jet.btagNegDeepFlavB,
                 "DeepFlavourCvsLDiscN": jet.btagNegDeepFlavCvL,
                 "DeepFlavourCvsBDiscN": jet.btagNegDeepFlavCvB,
+                "DeepFlavourBDisc_bN": jet.btagNegDeepFlavB_b,
+                "DeepFlavourBDisc_bbN": jet.btagNegDeepFlavB_bb,
+                "DeepFlavourBDisc_lepbN": jet.btagNegDeepFlavB_lepb,
+                "DeepFlavourQGDiscN": jet.btagNegDeepFlavQG,
+                "DeepFlavourCDiscN": jet.btagNegDeepFlavC,
+                "DeepFlavourUDSDiscN": jet.btagNegDeepFlavUDS,
+                "DeepFlavourGDiscN": jet.btagNegDeepFlavG,
+                # Particle net
+                "PNetBDisc": jet.btagPNetB,
+                "PNetCvsLDisc": jet.btagPNetCvL,
+                "PNetCvsBDisc": jet.btagPNetCvB,
+                "PNetQvsGDisc": jet.btagPNetQvG,
+                "PNetTauvsJetDisc": jet.btagPNetTauVJet,
+                "PNetRegPtRawCorr": jet.PNetRegPtRawCorr,
+                "PNetRegPtRawCorrNeutrino": jet.PNetRegPtRawCorrNeutrino,
+                "PNetRegPtRawRes": jet.PNetRegPtRawRes,
+                "PNetBDisc_b": jet.btagPNetProbB,
+                "PNetCDisc": jet.btagPNetProbC,
+                "PNetUDSDisc": jet.btagPNetProbUDS,
+                "PNetGDisc": jet.btagPNetProbG,
+                "PNetBDiscN": jet.btagNegPNetB,
+                "PNetCvsLDiscN": jet.btagNegPNetCvL,
+                "PNetCvsBDiscN": jet.btagNegPNetCvB,
+                "PNetBDisc_bN": jet.btagNegPNetProbB,
+                "PNetCDiscN": jet.btagNegPNetProbC,
+                "PNetUDSDiscN": jet.btagNegPNetProbUDS,
+                "PNetGDiscN": jet.btagNegPNetProbG,
+                # ParT
+                "ParTBDisc": jet.btagRobustParTAK4B,
+                "ParTCvsLDisc": jet.btagRobustParTAK4CvL,
+                "ParTCvsBDisc": jet.btagRobustParTAK4CvB,
+                "ParTQvsGDisc": jet.btagRobustParTAK4QG,
+                "ParTBDisc_b": jet.btagRobustParTAK4B_b,
+                "ParTBDisc_bb": jet.btagRobustParTAK4B_bb,
+                "ParTBDisc_lepb": jet.btagRobustParTAK4B_lepb,
+                "ParTCDisc": jet.btagRobustParTAK4C,
+                "ParTUDSDisc": jet.btagRobustParTAK4UDS,
+                "ParTGDisc": jet.btagRobustParTAK4G,
+                "ParTBDiscN": jet.btagNegRobustParTAK4B,
+                "ParTCvsLDiscN": jet.btagNegRobustParTAK4CvL,
+                "ParTCvsBDiscN": jet.btagNegRobustParTAK4CvB,
+                "ParTQvsGDiscN": jet.btagNegRobustParTAK4QG,
+                "ParTBDisc_bN": jet.btagNegRobustParTAK4B_b,
+                "ParTBDisc_bbN": jet.btagNegRobustParTAK4B_bb,
+                "ParTBDisc_lepbN": jet.btagNegRobustParTAK4B_lepb,
+                "ParTCDiscN": jet.btagNegRobustParTAK4C,
+                "ParTUDSDiscN": jet.btagNegRobustParTAK4UDS,
+                "ParTGDiscN": jet.btagNegRobustParTAK4G,
             }
         )
         if isRealData:
             Jet["vetomap"] = jet.veto
-            print(Jet.vetomap, ak.any(jet.veto == 1))
 
         if not isRealData:
             Jet["nbHadrons"] = jet.nBHadrons
@@ -463,182 +516,185 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         #    Trkj     #
         ###############
+        if "QCD" in events.metadata["dataset"]:
+            trkj = events.JetPFCands[
+                (events.JetPFCands.pf.trkQuality != 0) & (events.JetPFCands.pt > 1.0)
+            ]
 
-        trkj = events.JetPFCands[
-            (events.JetPFCands.pf.trkQuality != 0) & (events.JetPFCands.pt > 1.0)
-        ]
+            # selection for "TrkInc" in BTA
+            trkj = trkj[
+                (trkj.pf.trkHighPurity == 1)
+                & (trkj.pf.trkAlgo != 9)
+                & (trkj.pf.trkAlgo != 10)
+                & (trkj.pt > 5.0)
+                & (trkj.pf.numberOfHits >= 11)
+                & (trkj.pf.numberOfPixelHits >= 2)
+                & (trkj.pf.trkChi2 < 10)
+                & (trkj.pf.lostOuterHits <= 2)
+                & (trkj.pf.dz < 1.0)
+            ]
 
-        # selection for "TrkInc" in BTA
-        trkj = trkj[
-            (trkj.pf.trkHighPurity == 1)
-            & (trkj.pf.trkAlgo != 9)
-            & (trkj.pf.trkAlgo != 10)
-            & (trkj.pt > 5.0)
-            & (trkj.pf.numberOfHits >= 11)
-            & (trkj.pf.numberOfPixelHits >= 2)
-            & (trkj.pf.trkChi2 < 10)
-            & (trkj.pf.lostOuterHits <= 2)
-            & (trkj.pf.dz < 1.0)
-        ]
+            pair = ak.cartesian(
+                [jet, trkj], axis=1, nested=True
+            )  # dim: (event, jet, pfcand)
+            matched = (pair["0"].pt_orig == pair["1"].jet.pt) & (
+                pair["0"].delta_r(pair["1"].pf) < 0.4
+            )
+            trkj_jetbased = pair["1"][matched]  # dim: (event, jet, pfcand)
 
-        pair = ak.cartesian(
-            [jet, trkj], axis=1, nested=True
-        )  # dim: (event, jet, pfcand)
-        matched = (pair["0"].pt == pair["1"].jet.pt) & (
-            pair["0"].delta_r(pair["1"].pf) < 0.4
-        )
-        trkj_jetbased = pair["1"][matched]  # dim: (event, jet, pfcand)
+            # calculate pTrel
+            vec = ak.zip(
+                {
+                    "pt": trkj_jetbased.pf.trkPt,
+                    "eta": trkj_jetbased.pf.trkEta,
+                    "phi": trkj_jetbased.pf.trkPhi,
+                    "mass": trkj_jetbased.pf.mass,
+                },
+                behavior=vector.behavior,
+                with_name="PtEtaPhiMLorentzVector",
+            )
+            ptperp = vec.dot(jet) / jet.p
+            trkj_jetbased["ptrel"] = np.sqrt(np.maximum(vec.p**2 - ptperp**2, 0))
 
-        # calculate pTrel
-        vec = ak.zip(
-            {
-                "pt": trkj_jetbased.pf.trkPt,
-                "eta": trkj_jetbased.pf.trkEta,
-                "phi": trkj_jetbased.pf.trkPhi,
-                "mass": trkj_jetbased.pf.mass,
-            },
-            behavior=vector.behavior,
-            with_name="PtEtaPhiMLorentzVector",
-        )
-        ptperp = vec.dot(jet) / jet.p
-        trkj_jetbased["ptrel"] = np.sqrt(np.maximum(vec.p**2 - ptperp**2, 0))
+            # flatten jet-based track arrays
+            trkj_jetbased_flat = ak.flatten(
+                trkj_jetbased, axis=2
+            )  # dim: (event, pfcand)
+            trkj_jetbased_num = ak.num(trkj_jetbased, axis=2)
 
-        # flatten jet-based track arrays
-        trkj_jetbased_flat = ak.flatten(trkj_jetbased, axis=2)  # dim: (event, pfcand)
-        trkj_jetbased_num = ak.num(trkj_jetbased, axis=2)
+            TrkInc = ak.zip(
+                {
+                    "pt": ak.fill_none(trkj_jetbased_flat.pf.trkPt, 0),
+                    "eta": ak.fill_none(trkj_jetbased_flat.pf.trkEta, 0),
+                    "phi": ak.fill_none(trkj_jetbased_flat.pf.trkPhi, 0),
+                    "ptrel": ak.fill_none(trkj_jetbased_flat.ptrel, 0),
+                }
+            )
 
-        TrkInc = ak.zip(
-            {
-                "pt": ak.fill_none(trkj_jetbased_flat.pf.trkPt, 0),
-                "eta": ak.fill_none(trkj_jetbased_flat.pf.trkEta, 0),
-                "phi": ak.fill_none(trkj_jetbased_flat.pf.trkPhi, 0),
-                "ptrel": ak.fill_none(trkj_jetbased_flat.ptrel, 0),
-            }
-        )
+            # assign the first and last index of matched muons to Jet
+            lastidx = cumsum(trkj_jetbased_num)
 
-        # assign the first and last index of matched muons to Jet
-        lastidx = cumsum(trkj_jetbased_num)
+            firstidx = ak.where(
+                ak.num(trkj_jetbased_num) > 0,
+                ak.concatenate([0, lastidx[:, :-1]], axis=1),
+                lastidx,
+            )
 
-        firstidx = ak.where(
-            ak.num(trkj_jetbased_num) > 0,
-            ak.concatenate([0, lastidx[:, :-1]], axis=1),
-            lastidx,
-        )
+            Jet["nFirstTrkInc"] = firstidx
+            Jet["nLastTrkInc"] = lastidx
 
-        Jet["nFirstTrkInc"] = firstidx
-        Jet["nLastTrkInc"] = lastidx
+            ###############
+            #    PFMuon   #
+            ###############
 
-        ###############
-        #    PFMuon   #
-        ###############
+            # find muon PFCands inside a jet
+            # based on SoftPFMuonTagInfoProducer:
+            # https://github.com/cms-sw/cmssw/blob/10_6_X/RecoBTag/SoftLepton/plugins/SoftPFMuonTagInfoProducer.cc
 
-        # find muon PFCands inside a jet
-        # based on SoftPFMuonTagInfoProducer:
-        # https://github.com/cms-sw/cmssw/blob/10_6_X/RecoBTag/SoftLepton/plugins/SoftPFMuonTagInfoProducer.cc
+            mutrkj = events.JetPFCands[
+                (events.JetPFCands.pf.trkQuality != 0)
+                & (events.JetPFCands.pt > 2.0)
+                & (abs(events.JetPFCands.pf.pdgId) == 13)
+            ]
 
-        mutrkj = events.JetPFCands[
-            (events.JetPFCands.pf.trkQuality != 0)
-            & (events.JetPFCands.pt > 2.0)
-            & (abs(events.JetPFCands.pf.pdgId) == 13)
-        ]
+            # match muon PFCands to muons
+            pair = ak.cartesian(
+                [mutrkj, events.Muon], axis=1, nested=True
+            )  # dim: (event, pfcand, mu)
+            matched = (
+                (pair["0"].pf.pdgId == pair["1"].pdgId)
+                & (pair["0"].pf.delta_r(pair["1"]) < 0.01)
+                & ((pair["0"].pt - pair["1"].pt) / pair["0"].pt < 0.1)
+            )
+            mutrkj["mu"] = ak.firsts(
+                pair["1"][matched], axis=2
+            )  # dim same with mutrkj: (event, matched-pfcand), None if not matching with a muon
 
-        # match muon PFCands to muons
-        pair = ak.cartesian(
-            [mutrkj, events.Muon], axis=1, nested=True
-        )  # dim: (event, pfcand, mu)
-        matched = (
-            (pair["0"].pf.pdgId == pair["1"].pdgId)
-            & (pair["0"].pf.delta_r(pair["1"]) < 0.01)
-            & ((pair["0"].pt - pair["1"].pt) / pair["0"].pt < 0.1)
-        )
-        mutrkj["mu"] = ak.firsts(
-            pair["1"][matched], axis=2
-        )  # dim same with mutrkj: (event, matched-pfcand), None if not matching with a muon
+            # match muon PFCands also to jets
+            pair = ak.cartesian(
+                [jet, mutrkj], axis=1, nested=True
+            )  # dim: (event, jet, pfcand)
+            matched = pair["0"].pt_orig == pair["1"].jet.pt
+            mutrkj_jetbased = pair["1"][matched]  # dim: (event, jet, matched-pfcand)
 
-        # match muon PFCands also to jets
-        pair = ak.cartesian(
-            [jet, mutrkj], axis=1, nested=True
-        )  # dim: (event, jet, pfcand)
-        matched = pair["0"].pt == pair["1"].jet.pt
-        mutrkj_jetbased = pair["1"][matched]  # dim: (event, jet, matched-pfcand)
+            # further requirement: must match with a muon and require the loose ID
+            mutrkj_jetbased = mutrkj_jetbased[
+                ak.fill_none(mutrkj_jetbased.mu.looseId, False)
+            ]  # dim: (event, jet, matched-muons)
+            mu_jetbased = mutrkj_jetbased.mu
 
-        # further requirement: must match with a muon and require the loose ID
-        mutrkj_jetbased = mutrkj_jetbased[
-            ak.fill_none(mutrkj_jetbased.mu.looseId, False)
-        ]  # dim: (event, jet, matched-muons)
-        mu_jetbased = mutrkj_jetbased.mu
+            # calculate pTrel and other kinematics
+            ptperp = mu_jetbased.dot(jet) / jet.p
+            mu_jetbased["ptrel"] = np.sqrt(mu_jetbased.p**2 - ptperp**2)
+            # ratio and ratioRel seems different from the BTA value..
+            mu_jetbased["ratio"] = mu_jetbased.pt / jet.pt
+            mu_jetbased["ratioRel"] = (
+                mu_jetbased.t * jet.t - mu_jetbased.dot(jet)
+            ) / jet.mass2
 
-        # calculate pTrel and other kinematics
-        ptperp = mu_jetbased.dot(jet) / jet.p
-        mu_jetbased["ptrel"] = np.sqrt(mu_jetbased.p**2 - ptperp**2)
-        # ratio and ratioRel seems different from the BTA value..
-        mu_jetbased["ratio"] = mu_jetbased.pt / jet.pt
-        mu_jetbased["ratioRel"] = (
-            mu_jetbased.t * jet.t - mu_jetbased.dot(jet)
-        ) / jet.mass2
+            mu_jetbased["deltaR"] = mu_jetbased.delta_r(jet)
 
-        mu_jetbased["deltaR"] = mu_jetbased.delta_r(jet)
+            # quality
+            zeros = ak.zeros_like(mu_jetbased.pt, dtype=int)
+            mu_jetbased["GoodQuality"] = zeros
+            mu_jetbased["GoodQuality"] = ak.where(
+                mu_jetbased.isGlobal, zeros + 1, mu_jetbased["GoodQuality"]
+            )
+            mu_jetbased["GoodQuality"] = ak.where(
+                (mu_jetbased["GoodQuality"] == 1)
+                & (mu_jetbased.nStations >= 2)
+                & (mutrkj_jetbased.pf.numberOfHits >= 11)
+                & (mutrkj_jetbased.pf.numberOfPixelHits >= 2)
+                & (mutrkj_jetbased.pf.trkChi2 < 10),
+                zeros + 2,
+                mu_jetbased["GoodQuality"],
+            )
 
-        # quality
-        zeros = ak.zeros_like(mu_jetbased.pt, dtype=int)
-        mu_jetbased["GoodQuality"] = zeros
-        mu_jetbased["GoodQuality"] = ak.where(
-            mu_jetbased.isGlobal, zeros + 1, mu_jetbased["GoodQuality"]
-        )
-        mu_jetbased["GoodQuality"] = ak.where(
-            (mu_jetbased["GoodQuality"] == 1)
-            & (mu_jetbased.nStations >= 2)
-            & (mutrkj_jetbased.pf.numberOfHits >= 11)
-            & (mutrkj_jetbased.pf.numberOfPixelHits >= 2)
-            & (mutrkj_jetbased.pf.trkChi2 < 10),
-            zeros + 2,
-            mu_jetbased["GoodQuality"],
-        )
+            # flatten jet-based track arrays
+            mu_jetbased_flat = ak.flatten(mu_jetbased, axis=2)  # dim: (event, pfcand)
+            mu_jetbased_jetidx_flat = ak.flatten(
+                ak.broadcast_arrays(ak.local_index(jet, axis=1), mu_jetbased.pt)[0],
+                axis=2,
+            )
+            mu_jetbased_num = ak.num(mu_jetbased, axis=2)
 
-        # flatten jet-based track arrays
-        mu_jetbased_flat = ak.flatten(mu_jetbased, axis=2)  # dim: (event, pfcand)
-        mu_jetbased_jetidx_flat = ak.flatten(
-            ak.broadcast_arrays(ak.local_index(jet, axis=1), mu_jetbased.pt)[0], axis=2
-        )
-        mu_jetbased_num = ak.num(mu_jetbased, axis=2)
+            PFMuon = ak.zip(
+                {
+                    "IdxJet": ak.fill_none(mu_jetbased_jetidx_flat, 0),
+                    "pt": ak.fill_none(mu_jetbased_flat.pt, 0),
+                    "eta": ak.fill_none(mu_jetbased_flat.eta, 0),
+                    "phi": ak.fill_none(mu_jetbased_flat.phi, 0),
+                    "ptrel": ak.fill_none(mu_jetbased_flat.ptrel, 0),
+                    "ratio": ak.fill_none(mu_jetbased_flat.ratio, 0),
+                    "ratioRel": ak.fill_none(mu_jetbased_flat.ratioRel, 0),
+                    "deltaR": ak.fill_none(mu_jetbased_flat.deltaR, 0),
+                    "IP": ak.fill_none(
+                        mu_jetbased_flat.ip3d
+                        * np.sign(mu_jetbased_flat.dxy + mu_jetbased_flat.dz),
+                        0,
+                    ),
+                    "IPsig": ak.fill_none(
+                        mu_jetbased_flat.sip3d
+                        * np.sign(mu_jetbased_flat.dxy + mu_jetbased_flat.dz),
+                        0,
+                    ),
+                    "IP2D": ak.fill_none(mu_jetbased_flat.dxy, 0),
+                    "IP2Dsig": ak.fill_none(
+                        mu_jetbased_flat.dxy / mu_jetbased_flat.dxyErr, 0
+                    ),
+                    "GoodQuality": ak.fill_none(mu_jetbased_flat.GoodQuality, 0),
+                }
+            )
 
-        PFMuon = ak.zip(
-            {
-                "IdxJet": ak.fill_none(mu_jetbased_jetidx_flat, 0),
-                "pt": ak.fill_none(mu_jetbased_flat.pt, 0),
-                "eta": ak.fill_none(mu_jetbased_flat.eta, 0),
-                "phi": ak.fill_none(mu_jetbased_flat.phi, 0),
-                "ptrel": ak.fill_none(mu_jetbased_flat.ptrel, 0),
-                "ratio": ak.fill_none(mu_jetbased_flat.ratio, 0),
-                "ratioRel": ak.fill_none(mu_jetbased_flat.ratioRel, 0),
-                "deltaR": ak.fill_none(mu_jetbased_flat.deltaR, 0),
-                "IP": ak.fill_none(
-                    mu_jetbased_flat.ip3d
-                    * np.sign(mu_jetbased_flat.dxy + mu_jetbased_flat.dz),
-                    0,
-                ),
-                "IPsig": ak.fill_none(
-                    mu_jetbased_flat.sip3d
-                    * np.sign(mu_jetbased_flat.dxy + mu_jetbased_flat.dz),
-                    0,
-                ),
-                "IP2D": ak.fill_none(mu_jetbased_flat.dxy, 0),
-                "IP2Dsig": ak.fill_none(
-                    mu_jetbased_flat.dxy / mu_jetbased_flat.dxyErr, 0
-                ),
-                "GoodQuality": ak.fill_none(mu_jetbased_flat.GoodQuality, 0),
-            }
-        )
-
-        # assign the first and last index of matched muons to Jet
-        lastidx = cumsum(mu_jetbased_num)
-        firstidx = ak.where(
-            ak.num(mu_jetbased_num) > 0,
-            ak.concatenate([0, lastidx[:, :-1]], axis=1),
-            lastidx,
-        )
-        Jet["nFirstSM"] = firstidx
-        Jet["nLastSM"] = lastidx
+            # assign the first and last index of matched muons to Jet
+            lastidx = cumsum(mu_jetbased_num)
+            firstidx = ak.where(
+                ak.num(mu_jetbased_num) > 0,
+                ak.concatenate([0, lastidx[:, :-1]], axis=1),
+                lastidx,
+            )
+            Jet["nFirstSM"] = firstidx
+            Jet["nLastSM"] = lastidx
 
         ###############
         #  Write root #
@@ -649,9 +705,10 @@ class NanoProcessor(processor.ProcessorABC):
             "PV": PV,
             "Jet": Jet,
             "TagVarCSV": TagVarCSV,
-            "TrkInc": TrkInc,
-            "PFMuon": PFMuon,
         }
+        if "QCD" in events.metadata["dataset"]:
+            output["TrkInc"] = TrkInc
+            output["PFMuon"] = PFMuon
         if not isRealData:
             output["bQuark"] = bQuark
             output["cQuark"] = cQuark
@@ -659,10 +716,8 @@ class NanoProcessor(processor.ProcessorABC):
             output["DHadron"] = DHadron
             output["Genlep"] = Genlep
             output["GenV0"] = GenV0
-
-        with uproot.recreate(
-            f"{dataset}_{int(events.metadata['entrystop']/self.chunksize)}.root"
-        ) as fout:
+        fname = f"{dataset}_f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        with uproot.recreate(fname) as fout:
             output_root = {}
             for bname in output.keys():
                 if not output[bname].fields:
