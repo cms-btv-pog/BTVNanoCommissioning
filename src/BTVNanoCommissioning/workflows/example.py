@@ -62,7 +62,7 @@ class NanoProcessor(processor.ProcessorABC):
         if "JME" in self.SF_map.keys() and self.isJERC:
             syst_JERC = True if self.isSyst != None else False
             if self.isSyst == "JERC_split":
-                syst_JERC = "split"
+                syst_JERC = "split"  # JEC splitted into 11 sources instead of JES_total
             shifts = JME_shifts(
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
@@ -85,7 +85,7 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
         ######################
-        #  Create histogram  #
+        #  Create histogram  # : Get the histogram dict from `histogrammer`
         ######################
         _hist_event_dict = {"": None} if self.noHist else histogrammer("example")
 
@@ -134,29 +134,35 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Other cuts
 
+        ## Apply all selections
         event_level = (
             req_trig & req_lumi  # & req_muon & req_ele & req_jets & req_opposite_charge
         )
         event_level = ak.fill_none(event_level, False)
+        # Skip empty events
         if len(events[event_level]) == 0:
             return {dataset: output}
 
         ####################
-        # Selected objects #
+        # Selected objects # : Pruned objects with reduced event_level
         ####################
         smu = events.Muon[event_level]
         sele = events.Electron[event_level]
         sjets = events.Jet[event_level]
         ####################
-        # Weight & Geninfo #
+        # Weight & Geninfo # : Add weight to selected events
         ####################
+        # create Weights object to save individual weights
         weights = Weights(len(events[event_level]), storeIndividual=True)
         if not isRealData:
             weights.add("genweight", events[event_level].genWeight)
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
             genflavor = sjets.hadronFlavour + 1 * par_flav
+            # Load SFs
             if self.isCorr:
-                syst_wei = True if self.isSyst != None else False
+                syst_wei = (
+                    True if self.isSyst != None else False
+                )  # load systematic flag
                 if "PU" in self.SF_map.keys():
                     puwei(
                         events[event_level].Pileup.nTrueInt,
@@ -165,10 +171,13 @@ class NanoProcessor(processor.ProcessorABC):
                         syst_wei,
                     )
                 if "MUO" in self.SF_map.keys():
-                    muSFs(smu, self.SF_map, weights, syst_wei, False)
+                    muSFs(
+                        smu, self.SF_map, weights, syst_wei, False
+                    )  # input selected muon
                 if "EGM" in self.SF_map.keys():
                     eleSFs(sele, self.SF_map, weights, syst_wei, False)
                 if "BTV" in self.SF_map.keys():
+                    # For BTV weight, you need to specify type
                     btagSFs(sjets, self.SF_map, weights, "DeepJetC", syst_wei)
                     btagSFs(sjets, self.SF_map, weights, "DeepJetB", syst_wei)
                     btagSFs(sjets, self.SF_map, weights, "DeepCSVB", syst_wei)
@@ -176,10 +185,10 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             genflavor = ak.zeros_like(sjets.pt)
 
-        # Systematics information
-        if shift_name is None:
+        # Systematics information (add name of systematics)
+        if shift_name is None:  # weight variations
             systematics = ["nominal"] + list(weights.variations)
-        else:
+        else:  # resolution/ scale variation would use the shift_name
             systematics = [shift_name]
         exclude_btv = [
             "DeepCSVC",
@@ -204,7 +213,7 @@ class NanoProcessor(processor.ProcessorABC):
             output["$VAR"].fill()
 
         #######################
-        #  Create root files  #
+        #  Create root files  # : Save arrays in to root file, keep axis structure
         #######################
         if self.isArray:
             # Keep the structure of events and pruned the object size

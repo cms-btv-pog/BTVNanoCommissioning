@@ -63,8 +63,8 @@ df_back = pd.read_csv(
     "src/BTVNanoCommissioning/helpers/ParticleTable.csv", delimiter=",", skiprows=4
 )
 df_main, df_back = df_main.astype({"ID": int}), df_back.astype({"PDGID": int})
-main = dict(zip(df_main.ID, df_main.Mass))
-backup = dict(zip(df_back.PDGID, df_back["MASS(GeV)"] * 1000))
+main = dict(zip(df_main.ID, df_main.Mass / 1000.0))
+backup = dict(zip(df_back.PDGID, df_back["MASS(GeV)"]))
 hadron_mass_table = {**main, **{k: v for k, v in backup.items() if k not in main}}
 
 
