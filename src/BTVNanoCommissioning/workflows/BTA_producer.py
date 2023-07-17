@@ -555,7 +555,7 @@ class NanoProcessor(processor.ProcessorABC):
                 with_name="PtEtaPhiMLorentzVector",
             )
             # use a more consistent ptrel calculation to avoid precision lost (previously using sqrt(ptrack^2 - ptperp^2))
-            trkj_jetbased['ptrel'] = (vec - jet).cross(jet).p / jet.p  # trk_p * sin(theta(trk, jet))
+            trkj_jetbased['ptrel'] = (vec.subtract(jet)).cross(jet).p / jet.p  # trk_p * sin(theta(trk, jet))
 
             # flatten jet-based track arrays
             trkj_jetbased_flat = ak.flatten(
@@ -625,7 +625,7 @@ class NanoProcessor(processor.ProcessorABC):
             mu_jetbased = mutrkj_jetbased.mu
 
             # calculate pTrel and other kinematics
-            mu_jetbased['ptrel'] = (mu_jetbased - jet).cross(jet).p / jet.p  # mu_p * sin(theta(mu, jet))
+            mu_jetbased['ptrel'] = (mu_jetbased.subtract(jet)).cross(jet).p / jet.p  # mu_p * sin(theta(mu, jet))
             mu_jetbased['ratio'] = mu_jetbased.pt / jet.pt_raw
             mu_jetbased['ratioRel'] = (mu_jetbased.t * jet.t - mu_jetbased.dot(jet)) / jet.p2 * (jet.pt / jet.pt_raw)
             mu_jetbased['deltaR'] = mu_jetbased.delta_r(jet)

@@ -2,6 +2,7 @@ import awkward as ak
 import numba as nb
 import numpy as np
 import pandas as pd
+import coffea.nanoevents.methods.vector as vector
 import os, psutil
 
 BTA_HLT = [
