@@ -11,6 +11,7 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     get_hadron_mass,
     cumsum,
     is_from_GSP,
+    calc_ip_vector,
 )
 from BTVNanoCommissioning.helpers.func import update
 from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts
@@ -553,8 +554,8 @@ class NanoProcessor(processor.ProcessorABC):
                 behavior=vector.behavior,
                 with_name="PtEtaPhiMLorentzVector",
             )
-            ptperp = vec.dot(jet) / jet.p
-            trkj_jetbased["ptrel"] = np.sqrt(np.maximum(vec.p**2 - ptperp**2, 0))
+            # use a more consistent ptrel calculation to avoid precision lost (previously using sqrt(ptrack^2 - ptperp^2))
+            trkj_jetbased['ptrel'] = (vec - jet).cross(jet).p / jet.p  # trk_p * sin(theta(trk, jet))
 
             # flatten jet-based track arrays
             trkj_jetbased_flat = ak.flatten(
@@ -624,15 +625,19 @@ class NanoProcessor(processor.ProcessorABC):
             mu_jetbased = mutrkj_jetbased.mu
 
             # calculate pTrel and other kinematics
-            ptperp = mu_jetbased.dot(jet) / jet.p
-            mu_jetbased["ptrel"] = np.sqrt(mu_jetbased.p**2 - ptperp**2)
-            # ratio and ratioRel seems different from the BTA value..
-            mu_jetbased["ratio"] = mu_jetbased.pt / jet.pt
-            mu_jetbased["ratioRel"] = (
-                mu_jetbased.t * jet.t - mu_jetbased.dot(jet)
-            ) / jet.mass2
+            mu_jetbased['ptrel'] = (mu_jetbased - jet).cross(jet).p / jet.p  # mu_p * sin(theta(mu, jet))
+            mu_jetbased['ratio'] = mu_jetbased.pt / (jet.pt * (1 - jet.rawFactor))
+            mu_jetbased['ratioRel'] = (mu_jetbased.t * jet.t - mu_jetbased.dot(jet)) / jet.p2 / (1 - jet.rawFactor)
+            mu_jetbased['deltaR'] = mu_jetbased.delta_r(jet)
 
-            mu_jetbased["deltaR"] = mu_jetbased.delta_r(jet)
+            # correct the impact parameter signs according to the jet direction
+            # *note*: The original 2D IP sign is curvature based, obtained from track->dxy(vertex.position()).
+            #         In SoftPFMuonTagInfoProducer, IP is obtained from IPTools: 
+            #              IPTools::signedTransverseImpactParameter(trackref, jet direction, vertex)
+            #         The sign is positive if dot(2D IP vector, jet direction) > 0; similar for 3D IP signs
+            #         The sign is recomputed to follow the BTA (SoftPFMuonTagInfoProducer) scheme.
+            mu_jetbased['ip2dsign_jetref'] = np.sign(calc_ip_vector(mu_jetbased, mu_jetbased.dxy, mu_jetbased.dz, is_3d=False).dot(jet))
+            mu_jetbased['ip3dsign_jetref'] = np.sign(calc_ip_vector(mu_jetbased, mu_jetbased.dxy, mu_jetbased.dz, is_3d=True).dot(jet))
 
             # quality
             zeros = ak.zeros_like(mu_jetbased.pt, dtype=int)
@@ -670,17 +675,22 @@ class NanoProcessor(processor.ProcessorABC):
                     "deltaR": ak.fill_none(mu_jetbased_flat.deltaR, 0),
                     "IP": ak.fill_none(
                         mu_jetbased_flat.ip3d
-                        * np.sign(mu_jetbased_flat.dxy + mu_jetbased_flat.dz),
+                        * mu_jetbased_flat.ip3dsign_jetref,
                         0,
                     ),
                     "IPsig": ak.fill_none(
                         mu_jetbased_flat.sip3d
-                        * np.sign(mu_jetbased_flat.dxy + mu_jetbased_flat.dz),
+                        * mu_jetbased_flat.ip3dsign_jetref,
                         0,
                     ),
-                    "IP2D": ak.fill_none(mu_jetbased_flat.dxy, 0),
+                    "IP2D": ak.fill_none(
+                        abs(mu_jetbased_flat.dxy)
+                        * mu_jetbased_flat.ip2dsign_jetref,
+                        0),
                     "IP2Dsig": ak.fill_none(
-                        mu_jetbased_flat.dxy / mu_jetbased_flat.dxyErr, 0
+                        abs(mu_jetbased_flat.dxy / mu_jetbased_flat.dxyErr)
+                        * mu_jetbased_flat.ip2dsign_jetref,
+                        0
                     ),
                     "GoodQuality": ak.fill_none(mu_jetbased_flat.GoodQuality, 0),
                 }
