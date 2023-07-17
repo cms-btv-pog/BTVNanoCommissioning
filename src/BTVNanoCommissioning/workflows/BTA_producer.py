@@ -626,8 +626,8 @@ class NanoProcessor(processor.ProcessorABC):
 
             # calculate pTrel and other kinematics
             mu_jetbased['ptrel'] = (mu_jetbased - jet).cross(jet).p / jet.p  # mu_p * sin(theta(mu, jet))
-            mu_jetbased['ratio'] = mu_jetbased.pt / (jet.pt * (1 - jet.rawFactor))
-            mu_jetbased['ratioRel'] = (mu_jetbased.t * jet.t - mu_jetbased.dot(jet)) / jet.p2 / (1 - jet.rawFactor)
+            mu_jetbased['ratio'] = mu_jetbased.pt / jet.pt_raw
+            mu_jetbased['ratioRel'] = (mu_jetbased.t * jet.t - mu_jetbased.dot(jet)) / jet.p2 * (jet.pt / jet.pt_raw)
             mu_jetbased['deltaR'] = mu_jetbased.delta_r(jet)
 
             # correct the impact parameter signs according to the jet direction
