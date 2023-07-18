@@ -29,12 +29,20 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=True,
         noHist=False,
         chunksize=75000,
+        addPFMuons=False, # BTA custom argument
+        addAllTracks=False, # BTA custom argument
     ):
         self._year = year
         self._campaign = campaign
         self.chunksize = chunksize
         self.isJERC = isJERC
         self.SF_map = load_SF(self._campaign)
+
+        # addPFMuons: if true, include the TrkInc and PFMuon collections, used by QCD based SF methods
+        # addAllTracks: if true, include the Track collection used for JP calibration; 
+        #               when running on data, requires events passing HLT_PFJet80
+        self.addPFMuons = addPFMuons
+        self.addAllTracks = addAllTracks
 
     @property
     def accumulator(self):
@@ -64,6 +72,10 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
         events = missing_branch(events)
+
+        if isRealData and self.addAllTracks:
+            events = events[events.HLT.PFJet80]
+
         # basic variables
         basic_vars = {
             "Run": events.run,
@@ -469,12 +481,10 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
             # genJet pT
-            genJetIdx = ak.where(
-                jet.genJetIdx < ak.num(events.GenJet), jet.genJetIdx, zeros - 1
-            )  # in case the genJet index out of range
-            Jet["genpt"] = ak.where(
-                genJetIdx >= 0, events.GenJet[genJetIdx].pt, zeros - 1
-            )
+            genJetIdx = jet.genJetIdx.mask[
+                (jet.genJetIdx >= ak.num(events.GenJet)) & (jet.genJetIdx < 0)
+            ] # in case the genJet index out of range
+            Jet['genpt'] = ak.fill_none(events.GenJet[genJetIdx].pt, -1)
 
             # gen-level jet cleaning aginst prompt leptons
             genlep_prompt = genlep[(Genlep.mother != 0) & (Genlep.mother % 10 == 0)]
@@ -514,10 +524,10 @@ class NanoProcessor(processor.ProcessorABC):
             }
         )
 
-        ###############
-        #    Trkj     #
-        ###############
-        if "QCD" in events.metadata["dataset"]:
+        if self.addPFMuons:
+            ###############
+            #    Trkj     #
+            ###############
             trkj = events.JetPFCands[
                 (events.JetPFCands.pf.trkQuality != 0) & (events.JetPFCands.pt > 1.0)
             ]
@@ -686,11 +696,12 @@ class NanoProcessor(processor.ProcessorABC):
                     "IP2D": ak.fill_none(
                         abs(mu_jetbased_flat.dxy)
                         * mu_jetbased_flat.ip2dsign_jetref,
-                        0),
+                        0,
+                    ),
                     "IP2Dsig": ak.fill_none(
                         abs(mu_jetbased_flat.dxy / mu_jetbased_flat.dxyErr)
                         * mu_jetbased_flat.ip2dsign_jetref,
-                        0
+                        0,
                     ),
                     "GoodQuality": ak.fill_none(mu_jetbased_flat.GoodQuality, 0),
                 }
@@ -706,6 +717,177 @@ class NanoProcessor(processor.ProcessorABC):
             Jet["nFirstSM"] = firstidx
             Jet["nLastSM"] = lastidx
 
+        if self.addAllTracks:
+            ###############
+            #    Track    #
+            ###############
+
+            # select full track collection based on CandIPProducer
+            # reference code https://github.com/cms-sw/cmssw/blob/master/RecoBTag/ImpactParameter/plugins/IPProducer.h
+
+            trkj = events.JetPFCands[
+                (events.JetPFCands.pf.trkQuality != 0)
+                & (events.JetPFCands.pt > 1.)
+            ]
+
+            # selection based on CandIPProducer & BTA
+            trkj = trkj[
+                (trkj.pf.numberOfHits >= 0)
+                & (trkj.pf.numberOfPixelHits >= 1)
+                & (trkj.pf.trkChi2 <= 5)
+                & (trkj.dxyFromPV < 0.2)
+                & (trkj.dzFromPV < 17)
+                & (trkj.btagJetDistVal <= 0.07)
+                & (trkj.btagDecayLenVal < 5)
+            ]
+
+            pair = ak.cartesian(
+                [jet, trkj], axis=1, nested=True
+            ) # dim: (event, jet, pfcand)
+            matched = (
+                (pair['0'].pt_orig == pair['1'].jet.pt)
+                & (pair['0'].delta_r(pair['1'].pf) < 0.3)
+             ) # use deltaR < 0.3 according to BTA
+
+            trkj_jetbased = pair['1'][matched] # dim: (event, jet, pfcand)
+
+            # calculate basic kinematics
+            trkj_jetbased['pvec'] = ak.zip(
+                {
+                    'pt': trkj_jetbased.pf.trkPt,
+                    'eta': trkj_jetbased.pf.trkEta,
+                    'phi': trkj_jetbased.pf.trkPhi,
+                    'mass': trkj_jetbased.pf.mass,
+                },
+                behavior=vector.behavior,
+                with_name='PtEtaPhiMLorentzVector'
+            )
+
+            # calculate IP variables 
+            # (same with PFMuon, use the jet direction as reference to determine the IP signs)
+            ip2dvec = calc_ip_vector(trkj_jetbased.pf, trkj_jetbased.dxyFromPV, trkj_jetbased.dzFromPV, is_3d=False)
+            ip3dvec = calc_ip_vector(trkj_jetbased.pf, trkj_jetbased.dxyFromPV, trkj_jetbased.dzFromPV, is_3d=True)
+            trkj_jetbased['sign2D'] = ak.values_astype(np.sign(ip2dvec.dot(jet)), int)
+            trkj_jetbased['sign3D'] = ak.values_astype(np.sign(ip3dvec.dot(jet)), int)
+            trkj_jetbased['IP3D'] = ip3dvec.p
+
+            trkj_jetbased['isHitL1'] = ak.values_astype(trkj_jetbased.pf.lostInnerHits == -1, int)  # according to definition of lostInnerHits
+
+            # assign categories (findCat in BTA)
+            cats = {
+                0: dict(withFirstPixel=-1, nPixelHitsRange=(1, 99), etaRange=(0., 4.5), pRange=(1., 999.),  nHitsRange=(1, 50), chiRange=(0, 5)),
+                1: dict(withFirstPixel=1,  nPixelHitsRange=(1, 3),  etaRange=(0., 4.5), pRange=(1., 999.),  nHitsRange=(1, 50), chiRange=(0, 5)),
+                2: dict(withFirstPixel=1,  nPixelHitsRange=(4, 99), etaRange=(0., 1.),  pRange=(1., 3.),    nHitsRange=(1, 50), chiRange=(0, 5)),
+                3: dict(withFirstPixel=1,  nPixelHitsRange=(4, 99), etaRange=(0., 1.),  pRange=(3., 6.),    nHitsRange=(1, 50), chiRange=(0, 5)),
+                4: dict(withFirstPixel=1,  nPixelHitsRange=(4, 99), etaRange=(0., 1.),  pRange=(6., 999.),  nHitsRange=(1, 50), chiRange=(0, 5)),
+                5: dict(withFirstPixel=1,  nPixelHitsRange=(4, 99), etaRange=(1., 2.),  pRange=(1., 6.),    nHitsRange=(1, 50), chiRange=(0, 5)),
+                6: dict(withFirstPixel=1,  nPixelHitsRange=(4, 99), etaRange=(1., 2.),  pRange=(6., 12.),   nHitsRange=(1, 50), chiRange=(0, 5)),
+                7: dict(withFirstPixel=1,  nPixelHitsRange=(4, 99), etaRange=(1., 2.),  pRange=(12., 999.), nHitsRange=(1, 50), chiRange=(0, 5)),
+                8: dict(withFirstPixel=1,  nPixelHitsRange=(4, 99), etaRange=(2., 4.5), pRange=(1., 18.),   nHitsRange=(1, 50), chiRange=(0, 5)),
+                9: dict(withFirstPixel=1,  nPixelHitsRange=(4, 99), etaRange=(2., 4.5), pRange=(18., 999.), nHitsRange=(1, 50), chiRange=(0, 5)),
+            }
+            pass_cat = lambda t, i: (
+                (
+                    ((cats[i]['withFirstPixel'] == 1) & (t.isHitL1 == 1))
+                    | ((cats[i]['withFirstPixel'] == -1) & (t.isHitL1 == 0))
+                    | (cats[i]['withFirstPixel'] == 0)
+                )
+                & (
+                    (t.pf.numberOfPixelHits >= cats[i]['nPixelHitsRange'][0])
+                    & (t.pf.numberOfPixelHits <= cats[i]['nPixelHitsRange'][1])
+                )
+                & (
+                    (abs(t.pf.trkEta) >= cats[i]['etaRange'][0])
+                    & (abs(t.pf.trkEta) <= cats[i]['etaRange'][1])
+                )
+                & (
+                    (t.pvec.p >= cats[i]['pRange'][0])
+                    & (t.pvec.p <= cats[i]['pRange'][1])
+                )
+                & (
+                    (t.pf.numberOfHits >= cats[i]['nHitsRange'][0])
+                    & (t.pf.numberOfHits <= cats[i]['nHitsRange'][1])
+                )
+                & (
+                    (t.pf.trkChi2 >= cats[i]['chiRange'][0])
+                    & (t.pf.trkChi2 <= cats[i]['chiRange'][1])
+                )
+            )
+
+            zeros = ak.zeros_like(trkj_jetbased.pt, dtype=int)
+            trkj_jetbased['category'] = zeros - 1  # initial category index: -1
+            for idx in range(0, 10):
+                trkj_jetbased['category'] = ak.where(
+                    (trkj_jetbased['category'] == -1) & pass_cat(trkj_jetbased, idx),
+                    zeros + idx,
+                    trkj_jetbased['category']
+                )
+
+            # flatten jet-based track arrays
+            trkj_jetbased_flat = ak.flatten(trkj_jetbased, axis=2) # dim: (event, pfcand)
+            trkj_jetbased_num = ak.num(trkj_jetbased, axis=2)
+
+            Track = ak.zip({
+                'pt': ak.fill_none(trkj_jetbased_flat.pf.trkPt, 0),
+                'eta': ak.fill_none(trkj_jetbased_flat.pf.trkEta, 0),
+                'phi': ak.fill_none(trkj_jetbased_flat.pf.trkPhi, 0),
+                'p': ak.fill_none(trkj_jetbased_flat.pf.trkP, 0),
+
+                'chi2': ak.fill_none(trkj_jetbased_flat.pf.trkChi2, 0),
+                'dist': ak.fill_none(trkj_jetbased_flat.btagJetDistVal, 0),
+                'length': ak.fill_none(trkj_jetbased_flat.btagDecayLenVal, 0),
+
+                # IP with curvature based
+                'dxy': ak.fill_none(trkj_jetbased_flat.dxyFromPV, 0),
+                'dz': ak.fill_none(trkj_jetbased_flat.dzFromPV, 0),
+                'dxyError': ak.fill_none(trkj_jetbased_flat.dxyErrFromPV, 0),
+                'dzError': ak.fill_none(trkj_jetbased_flat.dzErrFromPV, 0),
+                'sign2D': ak.fill_none(trkj_jetbased_flat.sign2D, 0),
+                'sign3D': ak.fill_none(trkj_jetbased_flat.sign3D, 0),
+
+                # IP with jet direction as reference
+                'IP2D': ak.fill_none(
+                    abs(trkj_jetbased_flat.dxyFromPV)
+                    * trkj_jetbased_flat.sign2D,
+                    0,
+                ),
+                'IP2Dsig': ak.fill_none(
+                    abs(trkj_jetbased_flat.dxyFromPV / trkj_jetbased_flat.pf.d0Err)
+                    * trkj_jetbased_flat.sign2D,
+                    0,
+                ),
+                'IP2Derr': ak.fill_none(trkj_jetbased_flat.pf.d0Err, 0),
+                # 'IP': ak.fill_none(trkj_jetbased_flat.IP3D * trkj_jetbased_flat.sign3D, 0), # this also works
+                'IP': ak.fill_none(
+                    abs(trkj_jetbased_flat.btagSip3dVal)
+                    * trkj_jetbased_flat.sign3D,
+                    0,
+                ),
+                'IPsig': ak.fill_none(
+                    abs(trkj_jetbased_flat.btagSip3dSig)
+                    * trkj_jetbased_flat.sign3D,
+                    0,
+                ),
+
+                # hits in tracker
+                'nHitAll': ak.fill_none(trkj_jetbased_flat.pf.numberOfHits, 0),
+                'nHitPixel': ak.fill_none(trkj_jetbased_flat.pf.numberOfPixelHits, 0),
+                'isHitL1': ak.fill_none(trkj_jetbased_flat.isHitL1, 0),
+
+                # category
+                'category': ak.fill_none(trkj_jetbased_flat.category, -1),
+            })
+
+            # assign the first and last index of matched muons to Jet
+            lastidx = cumsum(trkj_jetbased_num)
+            firstidx = ak.where(
+                ak.num(trkj_jetbased_num) > 0,
+                ak.concatenate([0, lastidx[:, :-1]], axis=1),
+                lastidx,
+            )
+            Jet['nFirstTrack'] = firstidx
+            Jet['nLastTrack'] = lastidx
+
         ###############
         #  Write root #
         ###############
@@ -716,9 +898,11 @@ class NanoProcessor(processor.ProcessorABC):
             "Jet": Jet,
             "TagVarCSV": TagVarCSV,
         }
-        if "QCD" in events.metadata["dataset"]:
+        if self.addPFMuons:
             output["TrkInc"] = TrkInc
             output["PFMuon"] = PFMuon
+        if self.addAllTracks:
+            output["Track"] = Track
         if not isRealData:
             output["bQuark"] = bQuark
             output["cQuark"] = cQuark
