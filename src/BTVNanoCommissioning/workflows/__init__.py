@@ -1,3 +1,5 @@
+from functools import partial
+
 # Validation
 from BTVNanoCommissioning.workflows.validation import (
     NanoProcessor as ValidationProcessor,
@@ -77,4 +79,7 @@ workflows["ectag_DY_sf"] = CTAGeDYValidSFProcessor
 # workflows["example"] = ExampleProcessor
 # BTA producer
 workflows["BTA"] = BTA_processor
+workflows["BTA_addPFMuons"] = partial(BTA_processor, addPFMuons=True)
+workflows["BTA_addAllTracks"] = partial(BTA_processor, addAllTracks=True)
+
 __all__ = ["workflows"]

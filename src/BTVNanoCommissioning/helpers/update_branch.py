@@ -4,7 +4,7 @@ import numpy as np
 
 
 def missing_branch(events):
-    events.fixedGridRhoFastjetAll = (
+    events['fixedGridRhoFastjetAll'] = (
         events.fixedGridRhoFastjetAll
         if hasattr(events, "fixedGridRhoFastjetAll")
         else events.Rho.fixedGridRhoFastjetAll
