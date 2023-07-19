@@ -46,15 +46,6 @@ BTA_HLT = [
     "BTagMu_AK4Jet300_Mu5",
     "BTagMu_AK8DiJet170_Mu5",
     "BTagMu_AK8Jet300_Mu5",
-    "BTagMu_AK4DiJet20_Mu5_noalgo",
-    "BTagMu_AK4DiJet40_Mu5_noalgo",
-    "BTagMu_AK4DiJet70_Mu5_noalgo",
-    "BTagMu_AK4DiJet110_Mu5_noalgo",
-    "BTagMu_AK4DiJet170_Mu5_noalgo",
-    "BTagMu_AK4Jet300_Mu5_noalgo",
-    "BTagMu_AK8DiJet170_Mu5_noalgo",
-    "BTagMu_AK8Jet300_Mu5_noalgo",
-    "BTagMu_AK8Jet170_DoubleMu5_noalgo",
 ]
 # mass table from https://github.com/scikit-hep/particle/blob/master/src/particle/data/particle2022.csv and https://gitlab.cern.ch/lhcb-conddb/DDDB/-/blob/master/param/ParticleTable.txt
 df_main = pd.read_csv(
