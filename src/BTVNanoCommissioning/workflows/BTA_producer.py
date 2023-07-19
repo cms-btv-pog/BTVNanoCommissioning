@@ -575,10 +575,10 @@ class NanoProcessor(processor.ProcessorABC):
 
             TrkInc = ak.zip(
                 {
-                    "pt": ak.fill_none(trkj_jetbased_flat.pf.trkPt, 0),
-                    "eta": ak.fill_none(trkj_jetbased_flat.pf.trkEta, 0),
-                    "phi": ak.fill_none(trkj_jetbased_flat.pf.trkPhi, 0),
-                    "ptrel": ak.fill_none(trkj_jetbased_flat.ptrel, 0),
+                    "pt": ak.fill_none(trkj_jetbased_flat.pf.trkPt, -99.),
+                    "eta": ak.fill_none(trkj_jetbased_flat.pf.trkEta, -99.),
+                    "phi": ak.fill_none(trkj_jetbased_flat.pf.trkPhi, -99.),
+                    "ptrel": ak.fill_none(trkj_jetbased_flat.ptrel, -99.),
                 }
             )
 
@@ -675,33 +675,33 @@ class NanoProcessor(processor.ProcessorABC):
 
             PFMuon = ak.zip(
                 {
-                    "IdxJet": ak.fill_none(mu_jetbased_jetidx_flat, 0),
-                    "pt": ak.fill_none(mu_jetbased_flat.pt, 0),
-                    "eta": ak.fill_none(mu_jetbased_flat.eta, 0),
-                    "phi": ak.fill_none(mu_jetbased_flat.phi, 0),
-                    "ptrel": ak.fill_none(mu_jetbased_flat.ptrel, 0),
-                    "ratio": ak.fill_none(mu_jetbased_flat.ratio, 0),
-                    "ratioRel": ak.fill_none(mu_jetbased_flat.ratioRel, 0),
-                    "deltaR": ak.fill_none(mu_jetbased_flat.deltaR, 0),
+                    "IdxJet": ak.fill_none(mu_jetbased_jetidx_flat, -1),
+                    "pt": ak.fill_none(mu_jetbased_flat.pt, -99.),
+                    "eta": ak.fill_none(mu_jetbased_flat.eta, -99.),
+                    "phi": ak.fill_none(mu_jetbased_flat.phi, -99.),
+                    "ptrel": ak.fill_none(mu_jetbased_flat.ptrel, -99.),
+                    "ratio": ak.fill_none(mu_jetbased_flat.ratio, -99.),
+                    "ratioRel": ak.fill_none(mu_jetbased_flat.ratioRel, -99.),
+                    "deltaR": ak.fill_none(mu_jetbased_flat.deltaR, -99.),
                     "IP": ak.fill_none(
                         mu_jetbased_flat.ip3d
                         * mu_jetbased_flat.ip3dsign_jetref,
-                        0,
+                        -99.,
                     ),
                     "IPsig": ak.fill_none(
                         mu_jetbased_flat.sip3d
                         * mu_jetbased_flat.ip3dsign_jetref,
-                        0,
+                        -99.,
                     ),
                     "IP2D": ak.fill_none(
                         abs(mu_jetbased_flat.dxy)
                         * mu_jetbased_flat.ip2dsign_jetref,
-                        0,
+                        -99.,
                     ),
                     "IP2Dsig": ak.fill_none(
                         abs(mu_jetbased_flat.dxy / mu_jetbased_flat.dxyErr)
                         * mu_jetbased_flat.ip2dsign_jetref,
-                        0,
+                        -99.,
                     ),
                     "GoodQuality": ak.fill_none(mu_jetbased_flat.GoodQuality, 0),
                 }
@@ -828,20 +828,19 @@ class NanoProcessor(processor.ProcessorABC):
             trkj_jetbased_num = ak.num(trkj_jetbased, axis=2)
 
             Track = ak.zip({
-                'pt': ak.fill_none(trkj_jetbased_flat.pf.trkPt, 0),
-                'eta': ak.fill_none(trkj_jetbased_flat.pf.trkEta, 0),
-                'phi': ak.fill_none(trkj_jetbased_flat.pf.trkPhi, 0),
-                'p': ak.fill_none(trkj_jetbased_flat.pf.trkP, 0),
-
-                'chi2': ak.fill_none(trkj_jetbased_flat.pf.trkChi2, 0),
-                'dist': ak.fill_none(trkj_jetbased_flat.btagJetDistVal, 0),
-                'length': ak.fill_none(trkj_jetbased_flat.btagDecayLenVal, 0),
+                'pt': ak.fill_none(trkj_jetbased_flat.pf.trkPt, -99.),
+                'eta': ak.fill_none(trkj_jetbased_flat.pf.trkEta, -99.),
+                'phi': ak.fill_none(trkj_jetbased_flat.pf.trkPhi, -99.),
+                'p': ak.fill_none(trkj_jetbased_flat.pf.trkP, -99.),
+                'chi2': ak.fill_none(trkj_jetbased_flat.pf.trkChi2, -99.),
+                'dist': ak.fill_none(trkj_jetbased_flat.btagJetDistVal, -99.),
+                'length': ak.fill_none(trkj_jetbased_flat.btagDecayLenVal, -99.),
 
                 # IP with curvature based
-                'dxy': ak.fill_none(trkj_jetbased_flat.dxyFromPV, 0),
-                'dz': ak.fill_none(trkj_jetbased_flat.dzFromPV, 0),
-                'dxyError': ak.fill_none(trkj_jetbased_flat.dxyErrFromPV, 0),
-                'dzError': ak.fill_none(trkj_jetbased_flat.dzErrFromPV, 0),
+                'dxy': ak.fill_none(trkj_jetbased_flat.dxyFromPV, -99.),
+                'dz': ak.fill_none(trkj_jetbased_flat.dzFromPV, -99.),
+                'dxyError': ak.fill_none(trkj_jetbased_flat.dxyErrFromPV, -99.),
+                'dzError': ak.fill_none(trkj_jetbased_flat.dzErrFromPV, -99.),
                 'sign2D': ak.fill_none(trkj_jetbased_flat.sign2D, 0),
                 'sign3D': ak.fill_none(trkj_jetbased_flat.sign3D, 0),
 
@@ -849,29 +848,29 @@ class NanoProcessor(processor.ProcessorABC):
                 'IP2D': ak.fill_none(
                     abs(trkj_jetbased_flat.dxyFromPV)
                     * trkj_jetbased_flat.sign2D,
-                    0,
+                    -99.,
                 ),
                 'IP2Dsig': ak.fill_none(
                     abs(trkj_jetbased_flat.dxyFromPV / trkj_jetbased_flat.pf.d0Err)
                     * trkj_jetbased_flat.sign2D,
-                    0,
+                    -99.,
                 ),
                 'IP2Derr': ak.fill_none(trkj_jetbased_flat.pf.d0Err, 0),
                 # 'IP': ak.fill_none(trkj_jetbased_flat.IP3D * trkj_jetbased_flat.sign3D, 0), # this also works
                 'IP': ak.fill_none(
                     abs(trkj_jetbased_flat.btagSip3dVal)
                     * trkj_jetbased_flat.sign3D,
-                    0,
+                    -99.,
                 ),
                 'IPsig': ak.fill_none(
                     abs(trkj_jetbased_flat.btagSip3dSig)
                     * trkj_jetbased_flat.sign3D,
-                    0,
+                    -99.,
                 ),
 
                 # hits in tracker
-                'nHitAll': ak.fill_none(trkj_jetbased_flat.pf.numberOfHits, 0),
-                'nHitPixel': ak.fill_none(trkj_jetbased_flat.pf.numberOfPixelHits, 0),
+                'nHitAll': ak.fill_none(trkj_jetbased_flat.pf.numberOfHits, -99),
+                'nHitPixel': ak.fill_none(trkj_jetbased_flat.pf.numberOfPixelHits, -99),
                 'isHitL1': ak.fill_none(trkj_jetbased_flat.isHitL1, 0),
 
                 # category
