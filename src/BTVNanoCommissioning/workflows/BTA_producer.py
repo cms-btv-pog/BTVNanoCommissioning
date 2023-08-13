@@ -525,9 +525,9 @@ class NanoProcessor(processor.ProcessorABC):
         )
 
         if self.addPFMuons:
-            ###############
-            #    Trkj     #
-            ###############
+            ################
+            #    TrkInc    #
+            ################
             trkj = events.JetPFCands[
                 (events.JetPFCands.pf.trkQuality != 0) & (events.JetPFCands.pt > 1.0)
             ]
@@ -747,9 +747,9 @@ class NanoProcessor(processor.ProcessorABC):
                 (trkj.pf.numberOfHits >= 0)
                 & (trkj.pf.numberOfPixelHits >= 1)
                 & (trkj.pf.trkChi2 <= 5)
-                & (trkj.dxyFromPV < 0.2)
-                & (trkj.dzFromPV < 17)
-                & (trkj.btagJetDistVal <= 0.07)
+                & (abs(trkj.dxyFromPV) < 0.2)
+                & (abs(trkj.dzFromPV) < 17)
+                & (abs(trkj.btagJetDistVal) <= 0.07)
                 & (trkj.btagDecayLenVal < 5)
             ]
 
