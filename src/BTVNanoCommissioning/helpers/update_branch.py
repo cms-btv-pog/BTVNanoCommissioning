@@ -108,6 +108,8 @@ def missing_branch(events):
         "Run2022C" in events.metadata["dataset"]
         or "Run2022D" in events.metadata["dataset"]
         or "Run2022E" in events.metadata["dataset"]
+        or "Run2022F" in events.metadata["dataset"]
+        or "Run2022G" in events.metadata["dataset"]
     ):
         events.Jet = update(events.Jet, {"veto": jetveto(events)})
     return events

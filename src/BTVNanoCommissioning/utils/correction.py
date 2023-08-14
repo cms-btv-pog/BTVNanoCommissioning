@@ -349,7 +349,12 @@ def jetveto(events):
             ak.ones_like(events.Jet.eta),
             ak.zeros_like(events.Jet.eta),
         )
-    elif "Run2022E" in events.metadata["dataset"]:
+    elif (
+        "Run2022E" in events.metadata["dataset"]
+        or "Run2022F" in events.metadata["dataset"]
+        or "Run2022G" in events.metadata["dataset"]
+    ):
+        # FIXME: use prompt RunE vetomap for now, but should be updated to RunFG
         return ak.where(
             jetvetomap["RunE"](events.Jet.phi, events.Jet.eta) > 0,
             ak.ones_like(events.Jet.eta),
@@ -402,6 +407,11 @@ def JME_shifts(
             jecname = "FGH"
         elif campaign == "Rereco17_94X":
             jecname = ""
+        elif campaign == 'Summer22EERun3':
+            if "2022F" in dataset:
+                jecname = 'F'
+            elif "2022G" in dataset:
+                jecname = 'G'
         elif "un" in dataset:
             jecname = dataset[dataset.find("un") + 6]
         else:

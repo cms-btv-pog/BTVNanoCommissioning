@@ -75,6 +75,8 @@ class NanoProcessor(processor.ProcessorABC):
 
         if isRealData and self.addAllTracks:
             events = events[events.HLT.PFJet80]
+            if len(events) == 0:
+                return {dataset: len(events)}
 
         # basic variables
         basic_vars = {
