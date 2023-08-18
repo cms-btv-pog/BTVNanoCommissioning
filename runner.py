@@ -19,7 +19,7 @@ def validate(file):
         return fin["Events"].num_entries
     except:
         print("Corrupted file: {}".format(file))
-        return
+        return file
 
 
 def check_port(port):
@@ -115,6 +115,7 @@ def get_main_parser():
             "parsl/condor",
             "parsl/condor/naf_lite",
             "dask/condor",
+            "dask/condor/brux",
             "dask/slurm",
             "dask/lpc",
             "dask/lxplus",
@@ -126,6 +127,7 @@ def get_main_parser():
         "- `parsl/slurm` - tested at DESY/Maxwell"
         "- `parsl/condor` - tested at DESY, RWTH"
         "- `parsl/condor/naf_lite` - tested at DESY"
+        "- `dask/condor/brux` - tested at BRUX (Brown U)"
         "- `dask/slurm` - tested at DESY/Maxwell"
         "- `dask/condor` - tested at DESY, RWTH"
         "- `dask/lpc` - custom lpc/condor setup (due to write access restrictions)"
@@ -279,19 +281,31 @@ if __name__ == "__main__":
                 desc=f"Validating {sample[:20]}...",
             )
             _results = list(_rmap)
-            counts = np.sum([r for r in _results if np.isreal(r)])
-            all_invalid += [r for r in _results if type(r) == str]
+            counts = np.sum([r for r in _results if np.isreal(r) and isinstance(r, int)])
+            all_invalid += [r for r in _results if isinstance(r, str)]
             print("Events:", np.sum(counts))
         print("Bad files:")
         for fi in all_invalid:
             print(f"  {fi}")
         end = time.time()
         print("TIME:", time.strftime("%H:%M:%S", time.gmtime(end - start)))
-        if input("Remove bad files? (y/n)") == "y":
-            print("Removing:")
-            for fi in all_invalid:
-                print(f"Removing: {fi}")
-                os.system(f"rm {fi}")
+        if len(all_invalid) == 0: print("No bad files found!")
+        else:
+          if input("Remove bad files? (y/n): ") == "y":
+            print("Removing...")
+            json = args.samplejson
+            jsonnew = json.replace(".json","")+"_backup.json"
+            os.system("mv %s %s"%(json,jsonnew))
+            inf = open(jsonnew,"r")
+            outf = open(json,"w")
+            for line in inf:
+                foundline = False
+                for fi in all_invalid:
+                    if fi in line:
+                        print(f"Removing: {fi}")
+                        foundline = True
+                        break
+                if not foundline: outf.write(line)
         sys.exit(0)
 
     # load workflow
@@ -353,12 +367,15 @@ if __name__ == "__main__":
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
             f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
         ]
+        pathvar = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea/" in i][0]
         condor_extra = [
             f"cd {os.getcwd()}",
             f'source {os.environ["HOME"]}/.bashrc',
-            f'conda activate {os.environ["CONDA_PREFIX"]}',
         ]
-
+        if "brux" in args.executor:
+            condor_extra.append(f'export PATH={pathvar}:$PATH')
+        else:
+            condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
     #########
     # Execute
     if args.executor in ["futures", "iterative"]:
@@ -670,10 +687,15 @@ if __name__ == "__main__":
                 job_script_prologue=job_script_prologue,
             )
         elif "condor" in args.executor:
+            portopts = {}
+            if "brux" in args.executor:
+                import socket
+                portopts = {"port": 8786, "host": socket.gethostname()} 
             cluster = HTCondorCluster(
                 cores=args.workers,
                 memory=f"{args.memory}GB",
                 disk=f"{args.disk}GB",
+                scheduler_options=portopts,
                 job_script_prologue=job_script_prologue,
             )
 
