@@ -369,12 +369,13 @@ if __name__ == "__main__":
         ]
         pathvar = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea/" in i][0]
         condor_extra = [
-            f"cd {os.getcwd()}",
             f'source {os.environ["HOME"]}/.bashrc',
         ]
         if "brux" in args.executor:
+            job_script_prologue.append(f"cd {os.getcwd()}")
             condor_extra.append(f'export PATH={pathvar}:$PATH')
         else:
+            condor_extra.append(f"cd {os.getcwd()}")
             condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
     #########
     # Execute

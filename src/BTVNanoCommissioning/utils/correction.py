@@ -327,12 +327,11 @@ met_filters = {
 
 import matplotlib.pyplot as plt
 
-cwd = os.getcwd()
 ext_jetvetomap = extractor()
 ext_jetvetomap.add_weight_sets(
     [
-        f"RunCD jetvetomap {cwd}/src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunCD_v1.histo.root",
-        f"RunE jetvetomap {cwd}/src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunE_v1.histo.root",
+        f"RunCD jetvetomap src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunCD_v1.histo.root",
+        f"RunE jetvetomap src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunE_v1.histo.root",
     ]
 )
 
