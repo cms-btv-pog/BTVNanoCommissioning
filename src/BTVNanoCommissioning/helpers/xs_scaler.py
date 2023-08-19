@@ -60,7 +60,7 @@ def scaleSumW(output, lumi):
                             )
                         else:
                             if not (("data" in sample) or ("Run" in sample)):
-                                raise KeyError(sample, "is not founded in xsection.py")
+                                raise KeyError(sample, "is not found in xsection.py")
                             else:
                                 h = h
                         scaled[files][sample][key] = h
@@ -77,7 +77,7 @@ def scaleSumW(output, lumi):
                             if not (("data" in sample) or ("Run" in sample)) or (
                                 "Double" in sample
                             ):
-                                raise KeyError(sample, "is not founded in xsection.py")
+                                raise KeyError(sample, "is not found in xsection.py")
                             else:
                                 h = h
                     scaled[sample][key] = h
