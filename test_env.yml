@@ -13,7 +13,6 @@ dependencies:
   - psutil
   - dask
   - parsl
-  - p_tqdm
   - arrow
   - dask-jobqueue
   

@@ -247,7 +247,7 @@ if __name__ == "__main__":
     # check file dict size - avoid large memory consumption for local machine
     filesize = np.sum(np.array([len(sample_dict[key]) for key in sample_dict.keys()]))
     splitjobs = False
-    if filesize > 200:
+    if filesize > 200 and "brux" not in args.executor:
         splitjobs = True
 
     # For debugging
@@ -691,7 +691,7 @@ if __name__ == "__main__":
             portopts = {}
             if "brux" in args.executor:
                 import socket
-                portopts = {"port": 8786, "host": socket.gethostname()} 
+                portopts = {"host": socket.gethostname()} 
             cluster = HTCondorCluster(
                 cores=args.workers,
                 memory=f"{args.memory}GB",
