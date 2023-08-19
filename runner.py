@@ -281,7 +281,9 @@ if __name__ == "__main__":
                 desc=f"Validating {sample[:20]}...",
             )
             _results = list(_rmap)
-            counts = np.sum([r for r in _results if np.isreal(r) and isinstance(r, int)])
+            counts = np.sum(
+                [r for r in _results if np.isreal(r) and isinstance(r, int)]
+            )
             all_invalid += [r for r in _results if isinstance(r, str)]
             print("Events:", np.sum(counts))
         print("Bad files:")
@@ -289,23 +291,25 @@ if __name__ == "__main__":
             print(f"  {fi}")
         end = time.time()
         print("TIME:", time.strftime("%H:%M:%S", time.gmtime(end - start)))
-        if len(all_invalid) == 0: print("No bad files found!")
+        if len(all_invalid) == 0:
+            print("No bad files found!")
         else:
-          if input("Remove bad files? (y/n): ") == "y":
-            print("Removing...")
-            json = args.samplejson
-            jsonnew = json.replace(".json","")+"_backup.json"
-            os.system("mv %s %s"%(json,jsonnew))
-            inf = open(jsonnew,"r")
-            outf = open(json,"w")
-            for line in inf:
-                foundline = False
-                for fi in all_invalid:
-                    if fi in line:
-                        print(f"Removing: {fi}")
-                        foundline = True
-                        break
-                if not foundline: outf.write(line)
+            if input("Remove bad files? (y/n): ") == "y":
+                print("Removing...")
+                json = args.samplejson
+                jsonnew = json.replace(".json", "") + "_backup.json"
+                os.system("mv %s %s" % (json, jsonnew))
+                inf = open(jsonnew, "r")
+                outf = open(json, "w")
+                for line in inf:
+                    foundline = False
+                    for fi in all_invalid:
+                        if fi in line:
+                            print(f"Removing: {fi}")
+                            foundline = True
+                            break
+                    if not foundline:
+                        outf.write(line)
         sys.exit(0)
 
     # load workflow
@@ -367,13 +371,15 @@ if __name__ == "__main__":
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
             f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
         ]
-        pathvar = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea/" in i][0]
+        pathvar = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea/" in i][
+            0
+        ]
         condor_extra = [
             f'source {os.environ["HOME"]}/.bashrc',
         ]
         if "brux" in args.executor:
             job_script_prologue.append(f"cd {os.getcwd()}")
-            condor_extra.append(f'export PATH={pathvar}:$PATH')
+            condor_extra.append(f"export PATH={pathvar}:$PATH")
         else:
             condor_extra.append(f"cd {os.getcwd()}")
             condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
@@ -691,7 +697,8 @@ if __name__ == "__main__":
             portopts = {}
             if "brux" in args.executor:
                 import socket
-                portopts = {"host": socket.gethostname()} 
+
+                portopts = {"host": socket.gethostname()}
             cluster = HTCondorCluster(
                 cores=args.workers,
                 memory=f"{args.memory}GB",
