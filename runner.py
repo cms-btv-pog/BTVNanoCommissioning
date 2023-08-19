@@ -247,7 +247,7 @@ if __name__ == "__main__":
     # check file dict size - avoid large memory consumption for local machine
     filesize = np.sum(np.array([len(sample_dict[key]) for key in sample_dict.keys()]))
     splitjobs = False
-    if filesize > 200 and "brux" not in args.executor:
+    if filesize > 200 and "lxplus" in args.executor:
         splitjobs = True
 
     # For debugging
@@ -771,7 +771,7 @@ if __name__ == "__main__":
                                     ".coffea", f"_{sindex}_{findex}.coffea"
                                 ),
                             )
-    if not splitjobs:
+    if not "lxplus" in args.executor:
         if args.noHist == False:
             save(output, args.output)
     if args.isArray:
