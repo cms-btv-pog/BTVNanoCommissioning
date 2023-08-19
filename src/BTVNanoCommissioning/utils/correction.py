@@ -218,7 +218,6 @@ def load_SF(campaign, syst=False):
                 correction_map["JMAR"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/JME/{campaign}/jmar.json.gz"
                 )
-
     return correction_map
 
 

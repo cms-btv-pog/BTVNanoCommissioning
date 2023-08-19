@@ -8,7 +8,7 @@ import hist
 
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.workflows import workflows
-from BTVNanoCommissioning.utils.xs_scaler import collate, scaleSumW
+from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
 from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
