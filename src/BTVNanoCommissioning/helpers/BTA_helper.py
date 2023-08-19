@@ -140,27 +140,27 @@ def cumsum(array):
 
 
 def calc_ip_vector(obj, dxy, dz, is_3d=False):
-    '''Calculate the 2D or 3D impact parameter vector, given the track obj (with 4-mom), 
-       and its dxy and dz, taking the standard definition from NanoAOD'''
+    """Calculate the 2D or 3D impact parameter vector, given the track obj (with 4-mom),
+    and its dxy and dz, taking the standard definition from NanoAOD"""
 
     # 2D impact parameter
     pvec = ak.zip(
         {
-            'x': obj.px,
-            'y': obj.py,
-            'z': obj.pz,
+            "x": obj.px,
+            "y": obj.py,
+            "z": obj.pz,
         },
         behavior=vector.behavior,
-        with_name='ThreeVector'
+        with_name="ThreeVector",
     )
     zvec = ak.zip(
         {
-            'x': ak.zeros_like(dxy),
-            'y': ak.zeros_like(dxy),
-            'z': ak.zeros_like(dxy) + 1,
+            "x": ak.zeros_like(dxy),
+            "y": ak.zeros_like(dxy),
+            "z": ak.zeros_like(dxy) + 1,
         },
         behavior=vector.behavior,
-        with_name='ThreeVector'
+        with_name="ThreeVector",
     )
     # 2D impact parameter vector: (-py, px) / pt * dxy
     ipvec_2d = zvec.cross(pvec) * dxy / obj.pt
@@ -172,12 +172,12 @@ def calc_ip_vector(obj, dxy, dz, is_3d=False):
     # first, extend ipvec_2d to 3D space
     ipvec_2d_ext = ak.zip(
         {
-            'x': ipvec_2d.x,
-            'y': ipvec_2d.y,
-            'z': dz,
+            "x": ipvec_2d.x,
+            "y": ipvec_2d.y,
+            "z": dz,
         },
         behavior=vector.behavior,
-        with_name='ThreeVector'
+        with_name="ThreeVector",
     )
     # then, get the closest distance to the track on 3D geometry
     ipvec_3d = ipvec_2d_ext - ipvec_2d_ext.dot(pvec) / pvec.p2 * pvec

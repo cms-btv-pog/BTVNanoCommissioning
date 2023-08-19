@@ -330,8 +330,8 @@ import matplotlib.pyplot as plt
 ext_jetvetomap = extractor()
 ext_jetvetomap.add_weight_sets(
     [
-        f"RunCD jetvetomap src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunCD_v1.histo.root",
-        f"RunE jetvetomap src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunE_v1.histo.root",
+        "RunCD jetvetomap src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunCD_v1.histo.root",
+        "RunE jetvetomap src/BTVNanoCommissioning/data/JME/Winter22Run3/Winter22Run3_RunE_v1.histo.root",
     ]
 )
 
