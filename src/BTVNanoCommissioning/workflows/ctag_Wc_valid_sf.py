@@ -119,6 +119,9 @@ class NanoProcessor(processor.ProcessorABC):
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
         iso_muon = events.Muon[(events.Muon.pt > 30) & mu_idiso(events, self._campaign)]
         req_muon = ak.count(iso_muon.pt, axis=1) == 1
+        jet_sel = jet_id(events, self._campaign) & (
+            ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2)
+        )
         iso_muon = ak.pad_none(iso_muon, 1, axis=1)
         iso_muon = iso_muon[:, 0]
         iso_muindx = ak.mask(
@@ -129,9 +132,6 @@ class NanoProcessor(processor.ProcessorABC):
         iso_muindx = iso_muindx[:, 0]
 
         ## Jet cuts
-        jet_sel = jet_id(events, self._campaign) & (
-            ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2, mask_identity=True)
-        )
         if "DeepJet_nsv" in events.Jet.fields:
             jet_sel = jet_sel & (events.Jet.DeepJet_nsv > 0)
         event_jet = events.Jet[jet_sel]
@@ -140,30 +140,13 @@ class NanoProcessor(processor.ProcessorABC):
         ## Soft Muon cuts
         soft_muon = events.Muon[softmu_mask(events, self._campaign)]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
-        soft_muon = ak.pad_none(soft_muon, 1, axis=1)
-
-        ## Muon-jet cuts
-        mu_jet = event_jet[
-            (
-                ak.all(
-                    event_jet.metric_table(soft_muon) <= 0.4, axis=2, mask_identity=True
-                )
-            )
+        mujetsel = (
+            (ak.all(event_jet.metric_table(soft_muon) <= 0.4, axis=2))
             & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1))
             & ((event_jet.muEF + event_jet.neEmEF) < 0.7)
-        ]
-        req_mujet = ak.num(mu_jet.pt, axis=1) >= 1
-        mu_jet = ak.pad_none(mu_jet, 1, axis=1)
-
-        ## store jet index for PFCands, create mask on the jet index
-        jet_selpf = (
-            jet_id(events, self._campaign)
-            & (
-                ak.all(
-                    events.Jet.metric_table(iso_muon) > 0.5, axis=2, mask_identity=True
-                )
-            )
-            & ((events.Jet.muEF + events.Jet.neEmEF) < 0.7)
+        )
+        mujetsel2 = (
+            ((events.Jet.muEF + events.Jet.neEmEF) < 0.7)
             & (
                 ak.all(
                     events.Jet.metric_table(soft_muon) <= 0.4,
@@ -173,6 +156,16 @@ class NanoProcessor(processor.ProcessorABC):
             )
             & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
         )
+        soft_muon = ak.pad_none(soft_muon, 1, axis=1)
+
+        ## Muon-jet cuts
+        mu_jet = event_jet[mujetsel]
+        otherjets = event_jet[~mujetsel]
+        req_mujet = ak.num(mu_jet.pt, axis=1) >= 1
+        mu_jet = ak.pad_none(mu_jet, 1, axis=1)
+
+        ## store jet index for PFCands, create mask on the jet index
+        jet_selpf = (jet_sel) & (mujetsel2)
         if "DeepJet_nsv" in events.Jet.fields:
             jet_selpf = jet_selpf & (events.Jet.DeepJet_nsv > 0)
         jetindx = ak.mask(ak.local_index(events.Jet.pt), jet_selpf == True)
@@ -260,6 +253,7 @@ class NanoProcessor(processor.ProcessorABC):
         ssmu = soft_muon[event_level]
         smet = MET[event_level]
         smuon_jet = mu_jet[event_level]
+        sotherjets = otherjets[event_level]
         nsoftmu = ak.count(ssmu.pt, axis=1)
         nmujet = ak.count(smuon_jet.pt, axis=1)
         smuon_jet = smuon_jet[:, 0]
@@ -489,10 +483,11 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
-            pruned_ev.Jet = sjets
-            pruned_ev.Muon = shmu
+            pruned_ev["Jet"] = sjets
+            pruned_ev["Muon"] = shmu
             pruned_ev["MuonJet"] = smuon_jet
             pruned_ev["SoftMuon"] = ssmu
+            pruned_ev["OtherJets"] = sotherjets
             pruned_ev["osss"] = osss
             if "PFCands" in events.fields:
                 pruned_ev.PFCands = spfcands
@@ -518,7 +513,7 @@ class NanoProcessor(processor.ProcessorABC):
                 out_branch,
                 np.where(
                     (out_branch == "SoftMuon")
-                    | (out_branch == "MuonJet")
+                    # | (out_branch == "MuonJet")
                     | (out_branch == "dilep")
                 ),
             )
@@ -528,7 +523,7 @@ class NanoProcessor(processor.ProcessorABC):
                     "Muon",
                     "Jet",
                     "SoftMuon",
-                    "MuonJet",
+                    # "MuonJet",
                     "dilep",
                     "charge",
                     "MET",
@@ -544,6 +539,7 @@ class NanoProcessor(processor.ProcessorABC):
                 out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*", "SV_*"]
             )
             # write to root files
+            print("Branches to write:", out_branch)
             with uproot.recreate(
                 f"tmp/{dataset}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
             ) as fout:

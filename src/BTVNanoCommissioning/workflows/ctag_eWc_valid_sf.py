@@ -135,7 +135,7 @@ class NanoProcessor(processor.ProcessorABC):
         iso_eindx = iso_eindx[:, 0]
 
         ## Jet cuts
-        
+
         if "DeepJet_nsv" in events.Jet.fields:
             jet_sel = jet_sel & (events.Jet.DeepJet_nsv > 0)
         event_jet = events.Jet[jet_sel]
@@ -144,12 +144,15 @@ class NanoProcessor(processor.ProcessorABC):
         ## Soft Muon cuts
         soft_muon = events.Muon[softmu_mask(events, self._campaign)]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
-        mujetsel = ((
-                ak.all(
-                    event_jet.metric_table(soft_muon) <= 0.4, axis=2
-                )
+        mujetsel = (ak.all(event_jet.metric_table(soft_muon) <= 0.4, axis=2)) & (
+            (event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1)
+        )
+        mujetsel2 = (
+            ak.all(
+                events.Jet.metric_table(soft_muon) <= 0.4,
+                axis=2,
             )
-            & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1)))
+        ) & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
         soft_muon = ak.pad_none(soft_muon, 1, axis=1)
 
         ## Muon-jet cuts
@@ -159,22 +162,7 @@ class NanoProcessor(processor.ProcessorABC):
         mu_jet = ak.pad_none(mu_jet, 1, axis=1)
 
         ## store jet index for PFCands, create mask on the jet index
-        jet_selpf = (
-            jet_id(events, self._campaign)
-            & (
-                ak.all(
-                    events.Jet.metric_table(iso_ele) > 0.5, axis=2
-                )
-            )
-            & (
-                ak.all(
-                    events.Jet.metric_table(soft_muon) <= 0.4,
-                    axis=2,
-                    mask_identity=True,
-                )
-            )
-            & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
-        )
+        jet_selpf = (jet_sel) & (mujetsel2)
         if "DeepJet_nsv" in events.Jet.fields:
             jet_selpf = jet_selpf & (events.Jet.DeepJet_nsv > 0)
         jetindx = ak.mask(ak.local_index(events.Jet.pt), jet_selpf == True)
@@ -542,7 +530,7 @@ class NanoProcessor(processor.ProcessorABC):
                 out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*", "SV_*"]
             )
             # write to root files
-            print("Branches to write:",out_branch)
+            print("Branches to write:", out_branch)
             with uproot.recreate(
                 f"tmp/{dataset}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
             ) as fout:
