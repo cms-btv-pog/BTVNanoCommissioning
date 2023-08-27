@@ -407,11 +407,11 @@ def JME_shifts(
             jecname = "FGH"
         elif campaign == "Rereco17_94X":
             jecname = ""
-        elif campaign == 'Summer22EERun3':
+        elif campaign == "Summer22EERun3":
             if "2022F" in dataset:
-                jecname = 'F'
+                jecname = "F"
             elif "2022G" in dataset:
-                jecname = 'G'
+                jecname = "G"
         elif "un" in dataset:
             jecname = dataset[dataset.find("un") + 6]
         else:
