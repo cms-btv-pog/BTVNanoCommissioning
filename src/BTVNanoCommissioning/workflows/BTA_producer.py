@@ -133,7 +133,7 @@ class NanoProcessor(processor.ProcessorABC):
             for quark_pdgid in [4, 5]:
                 # finding b or c quarks
                 quark_sel = (abs(events.GenPart.pdgId) == quark_pdgid) & (
-                    (events.GenPart.statusFlags & (1 << 13)) > 0
+                    events.GenPart.hasFlags("isLastCopy")
                 )  # is b/c-quark & is last copy
                 quark_index = ak.local_index(events.GenPart.pdgId)[quark_sel]
                 quarks = events.GenPart[quark_sel]
@@ -161,7 +161,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             # finding D hadrons
             sel = is_heavy_hadron(events.GenPart, 4) & (
-                (events.GenPart.statusFlags & (1 << 13)) > 0
+                events.GenPart.hasFlags("isLastCopy")
             )  # PID match, is last copy
 
             chadrons = events.GenPart[sel]
@@ -181,7 +181,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             # finding B hadrons
             sel = is_heavy_hadron(events.GenPart, 5) & (
-                (events.GenPart.statusFlags & (1 << 13)) > 0
+                events.GenPart.hasFlags("isLastCopy")
             )  # PID match, is last copy
             bhadrons = events.GenPart[sel]
             BHadron = ak.zip(
@@ -286,7 +286,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             sel = (
                 is_lep(events.GenPart)
-                & ((events.GenPart.statusFlags & (1 << 13)) > 0)
+                & (events.GenPart.hasFlags("isLastCopy"))
                 & (events.GenPart.pt > 3.0)
             )  # requires pT > 3 GeV
             genlep = events.GenPart[sel]
@@ -322,7 +322,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             # V0
             is_V0 = lambda p: (abs(p.pdgId) == 310) | (abs(p.pdgId) == 3122)
-            sel = is_V0(events.GenPart) & ((events.GenPart.statusFlags & (1 << 13)) > 0)
+            sel = is_V0(events.GenPart) & (events.GenPart.hasFlags("isLastCopy"))
             genV0 = events.GenPart[sel]
 
             # finding charged daughters with pT > 1

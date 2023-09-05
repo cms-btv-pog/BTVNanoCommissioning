@@ -174,7 +174,7 @@ class NanoProcessor(processor.ProcessorABC):
                 criteria[chn] &= pass_trig_chn[chn]
 
         # finally, assign the channel of each event, in the order of m, e, em, mm, ee (according to BTA TTbarSelectionProducer)
-        # - first, assign channel m or e, if only one lepton is preseneted
+        # - first, assign channel m or e, if only one lepton is presented
         # - then, assign di-lep channels, based on the larger sumPt
         zeros = ak.zeros_like(events.run, dtype=int)
         chsel = zeros
@@ -292,7 +292,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             sel = (
                 is_lep(events.GenPart)
-                & ((events.GenPart.statusFlags & (1 << 13)) > 0)
+                & (events.GenPart.hasFlags("isLastCopy"))
                 & (events.GenPart.pt > 3.0)
             )  # requires pT > 3 GeV
             genlep = events.GenPart[sel]
@@ -302,7 +302,7 @@ class NanoProcessor(processor.ProcessorABC):
             genlep_pa2G = genlep.parent.parent
             genlep_pa3G = genlep.parent.parent.parent
             genlep_pa4G = genlep.parent.parent.parent.parent
-            istau = genlep_pa1G.pdgId == 15
+            istau = abs(genlep_pa1G.pdgId) == 15
             isWZ = is_WZ(genlep_pa1G) | is_WZ(genlep_pa2G)
             isD = is_heavy_hadron(genlep_pa1G, 4) | is_heavy_hadron(genlep_pa2G, 4)
             isB = (
@@ -330,9 +330,7 @@ class NanoProcessor(processor.ProcessorABC):
             #  Gen particles  #
             ###################
             # Gen particles of interest in the BTA ttbar workflow
-            genpart = events.GenPart[
-                (events.GenPart.statusFlags & (1 << 7)) > 0
-            ]  # isHardProcess
+            genpart = events.GenPart[events.GenPart.hasFlags("isHardProcess")]
             gen_channel = ak.prod(
                 genpart[(abs(genpart.pdgId) == 11) | (abs(genpart.pdgId) == 13)].pdgId,
                 axis=1,
@@ -353,7 +351,7 @@ class NanoProcessor(processor.ProcessorABC):
             #################
             # top pT reweighting, according to BTA code
             genttbar = events.GenPart[
-                ((events.GenPart.statusFlags & (1 << 13)) > 0)
+                (events.GenPart.hasFlags("isLastCopy"))
                 & (abs(events.GenPart.pdgId) == 6)
             ]  # is last copy and is t/tbar
             gentop = ak.firsts(genttbar[genttbar.pdgId == 6])
@@ -467,8 +465,12 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         #     MET     #
         ###############
-        basic_vars["ttbar_met_pt"] = events.MET.pt
-        basic_vars["ttbar_met_phi"] = events.MET.phi
+        if "Run3" in self._campaign:
+            basic_vars["ttbar_met_pt"] = events.PuppiMET.pt
+            basic_vars["ttbar_met_phi"] = events.PuppiMET.phi
+        else:
+            basic_vars["ttbar_met_pt"] = events.MET.pt
+            basic_vars["ttbar_met_phi"] = events.MET.phi
 
         ###############
         #  Selection  #
@@ -478,7 +480,7 @@ class NanoProcessor(processor.ProcessorABC):
         passJetSel = (
             ((abs(chsel) == 11) | (abs(chsel) == 13)) & (ak.num(Jet_clean) >= 4)
         ) | ((abs(chsel) > 13) & (ak.num(Jet_clean) >= 1))
-        passMetSel = events.ChsMET.pt > 0
+        passMetSel = events.PuppiMET.pt > 0
 
         # and the channel selection, configured in TTbarSelectionFilter
         # https://github.com/cms-btv-pog/RecoBTag-PerformanceMeasurements/blob/10_6_X/python/TTbarSelectionFilter_cfi.py#L4

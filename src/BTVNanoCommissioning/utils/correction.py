@@ -4,6 +4,7 @@ import pickle
 import contextlib
 import cloudpickle
 import os
+import re
 import numpy as np
 import awkward as ak
 from coffea.lookup_tools import extractor, txt_converters, rochester_lookup
@@ -407,13 +408,8 @@ def JME_shifts(
             jecname = "FGH"
         elif campaign == "Rereco17_94X":
             jecname = ""
-        elif campaign == "Summer22EERun3":
-            if "2022F" in dataset:
-                jecname = "F"
-            elif "2022G" in dataset:
-                jecname = "G"
-        elif "un" in dataset:
-            jecname = dataset[dataset.find("un") + 6]
+        elif re.search(r"[Rr]un20\d{2}([A-Z])", dataset):
+            jecname = re.search(r"[Rr]un20\d{2}([A-Z])", dataset).group(1)
         else:
             print("No valid jec name")
             raise NameError
