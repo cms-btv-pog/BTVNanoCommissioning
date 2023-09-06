@@ -275,6 +275,9 @@ python runner.py --wf ttcom --executor dask/condor
 python runner.py --wf ttcom --executor parsl/slurm
 ```
 
+### Standalone condor@lxplus/cmsconnect
+
+See [Submit standalone condor jobs](#submit-standalone-condor-jobs) section for details.
 
 ## Make the json files
 
@@ -517,6 +520,38 @@ Use `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/T
 
 </p>
 </details>
+
+## Submit standalone condor jobs
+
+You have the option to run the framework through "standalone condor jobs", bypassing the native coffea-supported job submission system. Within each job you submit, a standalone script will execute the following on the worker node:
+
+ - Set up a minimal required Python environment.
+ - Retrieve the BTVNanoCommissioning repository, either from a git link or transferred locally.
+ - Launch the `python runner.py ...` command to execute the coffea framework in the iterative executor mode.
+ 
+This utility is currently adapted for the lxplus and cmsconnect condor systems. To generate jobs for launching, replace `python runner.py` with `python condor/submitter.py`, append the existing arguments, and add the following arguments in addition:
+
+ - `--jobName`: Specify the desired condor job name. A dedicated folder will be generated, including all submission-related files.
+ - `--outputXrootdDir`: Indicate the XRootD directory's path (starting with `root://`) where the produced .coffea (and .root) files from each worker node will be transferred to.
+ - `--condorFileSize`: Define the number of files to process per condor job (default is 50). The input file list will be divided based on this count.
+ - `--remoteRepo` (optional, but recommended): Specify the path and branch of the remote repository to download the BTVNanoCommissioning repository. If not specified, the local directory will be packed and transferred as the condor input, potentially leading to higher loads for condor transfers. Use the format e.g. `--remoteRepo 'https://github.com/cms-btv-pog/BTVNanoCommissioning.git -b master'`.
+
+After executing the command, a new folder will be created, preparing the submission. Follow the on-screen instructions and utilize `condor_submit ...` to submit the jdl file. The output will be transferred to the designated XRootD destination.
+
+<details><summary>Frequent issues for standalone condor jobs submission
+</summary>
+<p>
+
+1. CMS Connect provides a condor interface where one can submit jobs to all resources available in the CMS Global Pool. See [WorkBookCMSConnect Twiki](https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCMSConnect#Requesting_different_Operative_S) for the instructions if you use it for the first time.
+2. The submitted jobs are of the kind which requires a proper setup of the X509 proxy, to use the XRootD service to access and store data. In the generated `.jdl` file, you may see a line configured for this purpose `use_x509userproxy = true`. If you have not submitted jobs of this kind on lxplus condor, we recommend you to add a line
+   ```bash
+   export X509_USER_PROXY=$HOME/.krb5/x509up_u`id -u`
+   ```
+   to `.bashrc` and run it so the proxy file will be stored in your AFS folder instead of in your `/tmp/USERNAME` folder. For submission on cmsconnect, no specific action is required.
+
+</p>
+</details>
+
 
 ## Notes for developers
 The BTV tutorial for coffea part is under `notebooks` and the template to construct new workflow is `src/BTVNanoCommissioning/workflows/example.py`

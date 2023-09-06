@@ -75,6 +75,8 @@ class NanoProcessor(processor.ProcessorABC):
 
         if isRealData and self.addAllTracks:
             events = events[events.HLT.PFJet80]
+            if len(events) == 0:
+                return {dataset: len(events)}
 
         # basic variables
         basic_vars = {
@@ -131,7 +133,7 @@ class NanoProcessor(processor.ProcessorABC):
             for quark_pdgid in [4, 5]:
                 # finding b or c quarks
                 quark_sel = (abs(events.GenPart.pdgId) == quark_pdgid) & (
-                    (events.GenPart.statusFlags & (1 << 13)) > 0
+                    events.GenPart.hasFlags("isLastCopy")
                 )  # is b/c-quark & is last copy
                 quark_index = ak.local_index(events.GenPart.pdgId)[quark_sel]
                 quarks = events.GenPart[quark_sel]
@@ -159,7 +161,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             # finding D hadrons
             sel = is_heavy_hadron(events.GenPart, 4) & (
-                (events.GenPart.statusFlags & (1 << 13)) > 0
+                events.GenPart.hasFlags("isLastCopy")
             )  # PID match, is last copy
 
             chadrons = events.GenPart[sel]
@@ -179,7 +181,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             # finding B hadrons
             sel = is_heavy_hadron(events.GenPart, 5) & (
-                (events.GenPart.statusFlags & (1 << 13)) > 0
+                events.GenPart.hasFlags("isLastCopy")
             )  # PID match, is last copy
             bhadrons = events.GenPart[sel]
             BHadron = ak.zip(
@@ -284,7 +286,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             sel = (
                 is_lep(events.GenPart)
-                & ((events.GenPart.statusFlags & (1 << 13)) > 0)
+                & (events.GenPart.hasFlags("isLastCopy"))
                 & (events.GenPart.pt > 3.0)
             )  # requires pT > 3 GeV
             genlep = events.GenPart[sel]
@@ -320,7 +322,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             # V0
             is_V0 = lambda p: (abs(p.pdgId) == 310) | (abs(p.pdgId) == 3122)
-            sel = is_V0(events.GenPart) & ((events.GenPart.statusFlags & (1 << 13)) > 0)
+            sel = is_V0(events.GenPart) & (events.GenPart.hasFlags("isLastCopy"))
             genV0 = events.GenPart[sel]
 
             # finding charged daughters with pT > 1
@@ -402,63 +404,11 @@ class NanoProcessor(processor.ProcessorABC):
                 "DeepFlavourBDisc": jet.btagDeepFlavB,
                 "DeepFlavourCvsLDisc": jet.btagDeepFlavCvL,
                 "DeepFlavourCvsBDisc": jet.btagDeepFlavCvB,
-                "DeepFlavourBDisc_b": jet.btagDeepFlavB_b,
-                "DeepFlavourBDisc_bb": jet.btagDeepFlavB_bb,
-                "DeepFlavourBDisc_lepb": jet.btagDeepFlavB_lepb,
                 "DeepFlavourCDisc": jet.btagDeepFlavC,
-                "DeepFlavourUDSDisc": jet.btagDeepFlavUDS,
-                "DeepFlavourGDisc": jet.btagDeepFlavG,
                 "DeepFlavourBDiscN": jet.btagNegDeepFlavB,
                 "DeepFlavourCvsLDiscN": jet.btagNegDeepFlavCvL,
                 "DeepFlavourCvsBDiscN": jet.btagNegDeepFlavCvB,
-                "DeepFlavourBDisc_bN": jet.btagNegDeepFlavB_b,
-                "DeepFlavourBDisc_bbN": jet.btagNegDeepFlavB_bb,
-                "DeepFlavourBDisc_lepbN": jet.btagNegDeepFlavB_lepb,
-                "DeepFlavourQGDiscN": jet.btagNegDeepFlavQG,
                 "DeepFlavourCDiscN": jet.btagNegDeepFlavC,
-                "DeepFlavourUDSDiscN": jet.btagNegDeepFlavUDS,
-                "DeepFlavourGDiscN": jet.btagNegDeepFlavG,
-                # Particle net
-                "PNetBDisc": jet.btagPNetB,
-                "PNetCvsLDisc": jet.btagPNetCvL,
-                "PNetCvsBDisc": jet.btagPNetCvB,
-                "PNetQvsGDisc": jet.btagPNetQvG,
-                "PNetTauvsJetDisc": jet.btagPNetTauVJet,
-                "PNetRegPtRawCorr": jet.PNetRegPtRawCorr,
-                "PNetRegPtRawCorrNeutrino": jet.PNetRegPtRawCorrNeutrino,
-                "PNetRegPtRawRes": jet.PNetRegPtRawRes,
-                "PNetBDisc_b": jet.btagPNetProbB,
-                "PNetCDisc": jet.btagPNetProbC,
-                "PNetUDSDisc": jet.btagPNetProbUDS,
-                "PNetGDisc": jet.btagPNetProbG,
-                "PNetBDiscN": jet.btagNegPNetB,
-                "PNetCvsLDiscN": jet.btagNegPNetCvL,
-                "PNetCvsBDiscN": jet.btagNegPNetCvB,
-                "PNetBDisc_bN": jet.btagNegPNetProbB,
-                "PNetCDiscN": jet.btagNegPNetProbC,
-                "PNetUDSDiscN": jet.btagNegPNetProbUDS,
-                "PNetGDiscN": jet.btagNegPNetProbG,
-                # ParT
-                "ParTBDisc": jet.btagRobustParTAK4B,
-                "ParTCvsLDisc": jet.btagRobustParTAK4CvL,
-                "ParTCvsBDisc": jet.btagRobustParTAK4CvB,
-                "ParTQvsGDisc": jet.btagRobustParTAK4QG,
-                "ParTBDisc_b": jet.btagRobustParTAK4B_b,
-                "ParTBDisc_bb": jet.btagRobustParTAK4B_bb,
-                "ParTBDisc_lepb": jet.btagRobustParTAK4B_lepb,
-                "ParTCDisc": jet.btagRobustParTAK4C,
-                "ParTUDSDisc": jet.btagRobustParTAK4UDS,
-                "ParTGDisc": jet.btagRobustParTAK4G,
-                "ParTBDiscN": jet.btagNegRobustParTAK4B,
-                "ParTCvsLDiscN": jet.btagNegRobustParTAK4CvL,
-                "ParTCvsBDiscN": jet.btagNegRobustParTAK4CvB,
-                "ParTQvsGDiscN": jet.btagNegRobustParTAK4QG,
-                "ParTBDisc_bN": jet.btagNegRobustParTAK4B_b,
-                "ParTBDisc_bbN": jet.btagNegRobustParTAK4B_bb,
-                "ParTBDisc_lepbN": jet.btagNegRobustParTAK4B_lepb,
-                "ParTCDiscN": jet.btagNegRobustParTAK4C,
-                "ParTUDSDiscN": jet.btagNegRobustParTAK4UDS,
-                "ParTGDiscN": jet.btagNegRobustParTAK4G,
             }
         )
         if isRealData:
@@ -525,9 +475,9 @@ class NanoProcessor(processor.ProcessorABC):
         )
 
         if self.addPFMuons:
-            ###############
-            #    Trkj     #
-            ###############
+            ################
+            #    TrkInc    #
+            ################
             trkj = events.JetPFCands[
                 (events.JetPFCands.pf.trkQuality != 0) & (events.JetPFCands.pt > 1.0)
             ]
@@ -747,9 +697,9 @@ class NanoProcessor(processor.ProcessorABC):
                 (trkj.pf.numberOfHits >= 0)
                 & (trkj.pf.numberOfPixelHits >= 1)
                 & (trkj.pf.trkChi2 <= 5)
-                & (trkj.dxyFromPV < 0.2)
-                & (trkj.dzFromPV < 17)
-                & (trkj.btagJetDistVal <= 0.07)
+                & (abs(trkj.dxyFromPV) < 0.2)
+                & (abs(trkj.dzFromPV) < 17)
+                & (abs(trkj.btagJetDistVal) <= 0.07)
                 & (trkj.btagDecayLenVal < 5)
             ]
 

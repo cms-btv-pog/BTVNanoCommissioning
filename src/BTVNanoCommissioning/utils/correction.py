@@ -4,6 +4,7 @@ import pickle
 import contextlib
 import cloudpickle
 import os
+import re
 import numpy as np
 import awkward as ak
 from coffea.lookup_tools import extractor, txt_converters, rochester_lookup
@@ -349,7 +350,12 @@ def jetveto(events):
             ak.ones_like(events.Jet.eta),
             ak.zeros_like(events.Jet.eta),
         )
-    elif "Run2022E" in events.metadata["dataset"]:
+    elif (
+        "Run2022E" in events.metadata["dataset"]
+        or "Run2022F" in events.metadata["dataset"]
+        or "Run2022G" in events.metadata["dataset"]
+    ):
+        # FIXME: use prompt RunE vetomap for now, but should be updated to RunFG
         return ak.where(
             jetvetomap["RunE"](events.Jet.phi, events.Jet.eta) > 0,
             ak.ones_like(events.Jet.eta),
@@ -402,8 +408,8 @@ def JME_shifts(
             jecname = "FGH"
         elif campaign == "Rereco17_94X":
             jecname = ""
-        elif "un" in dataset:
-            jecname = dataset[dataset.find("un") + 6]
+        elif re.search(r"[Rr]un20\d{2}([A-Z])", dataset):
+            jecname = re.search(r"[Rr]un20\d{2}([A-Z])", dataset).group(1)
         else:
             print("No valid jec name")
             raise NameError

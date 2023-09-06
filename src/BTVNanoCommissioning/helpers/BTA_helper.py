@@ -5,6 +5,10 @@ import pandas as pd
 import coffea.nanoevents.methods.vector as vector
 import os, psutil
 
+###############
+#  HLT table  #
+###############
+# HLTs for BTA (qcd) and BTA_ttbar workflows
 BTA_HLT = [
     "PFJet40",
     "PFJet60",
@@ -47,6 +51,16 @@ BTA_HLT = [
     "BTagMu_AK8DiJet170_Mu5",
     "BTagMu_AK8Jet300_Mu5",
 ]
+BTA_ttbar_HLT_chns = [
+    ("Ele32_WPTight_Gsf", "e"),
+    ("IsoMu24", "m"),
+    ("Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", "em"),
+    ("Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", "em"),
+]
+
+################
+#  Mass table  #
+################
 # mass table from https://github.com/scikit-hep/particle/blob/master/src/particle/data/particle2022.csv and https://gitlab.cern.ch/lhcb-conddb/DDDB/-/blob/master/param/ParticleTable.txt
 df_main = pd.read_csv(
     "src/BTVNanoCommissioning/helpers/particle2022.csv", delimiter=",", skiprows=1
@@ -60,6 +74,9 @@ backup = dict(zip(df_back.PDGID, df_back["MASS(GeV)"]))
 hadron_mass_table = {**main, **{k: v for k, v in backup.items() if k not in main}}
 
 
+###############
+#  Functions  #
+###############
 def is_from_GSP(GenPart):
     QGP = ak.zeros_like(GenPart.genPartIdxMother)
     QGP = (
