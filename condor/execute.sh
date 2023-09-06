@@ -77,8 +77,14 @@ echo "Now launching: python runner.py $OPTS"
 python runner.py $OPTS
 
 # Transfer output
-xrdcp --silent -p -f *.coffea ${ARGS[outputXrootdDir]}/
-xrdcp --silent -p -f *.root ${ARGS[outputXrootdDir]}/
+if [[ ${ARGS[outputXrootdDir]} == root://* ]]; then
+    xrdcp --silent -p -f *.coffea ${ARGS[outputXrootdDir]}/
+    xrdcp --silent -p -f *.root ${ARGS[outputXrootdDir]}/
+else
+    mkdir -p ${ARGS[outputXrootdDir]}
+    cp -p -f *.coffea ${ARGS[outputXrootdDir]}/
+    cp -p -f *.root ${ARGS[outputXrootdDir]}/
+fi
 
 ### one can also consider origanizing the root files in the subdirectory structure ###
 # for filename in `\ls *.root`; do
