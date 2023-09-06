@@ -350,6 +350,7 @@ class NanoProcessor(processor.ProcessorABC):
             #  Gen weights  #
             #################
             # top pT reweighting, according to BTA code
+            # the numbers are from https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_dat
             genttbar = events.GenPart[
                 (events.GenPart.hasFlags("isLastCopy"))
                 & (abs(events.GenPart.pdgId) == 6)
@@ -358,8 +359,8 @@ class NanoProcessor(processor.ProcessorABC):
             genantitop = ak.firsts(genttbar[genttbar.pdgId == -6])
             basic_vars["ttbar_ptweight"] = ak.fill_none(
                 np.sqrt(
-                    np.exp(0.0615 - 0.0005 * gentop.pt)
-                    * np.exp(0.0615 - 0.0005 * genantitop.pt)
+                    np.exp(0.0615 - 0.0005 * np.minimum(gentop.pt, 500))
+                    * np.exp(0.0615 - 0.0005 * np.minimum(genantitop.pt, 500))
                 ),
                 1.0,
             )
