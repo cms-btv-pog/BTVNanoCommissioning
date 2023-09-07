@@ -71,10 +71,10 @@ def get_main_parser():
         help="JSON file containing dataset and file locations (default: %(default)s)",
     )
     ## Configuations
-    parser.add_argument("--year", default="2017", help="Year")
+    parser.add_argument("--year", default="2022", help="Year")
     parser.add_argument(
         "--campaign",
-        default="Rereco17_94X",
+        default="Summer22Run3",
         choices=[
             "Rereco17_94X",
             "Winter22Run3",
@@ -232,7 +232,6 @@ if __name__ == "__main__":
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
         args.output = f'hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
-
     # load dataset
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
@@ -317,6 +316,7 @@ if __name__ == "__main__":
     processor_instance = workflows[args.workflow](
         args.year,
         args.campaign,
+        f"{args.workflow}_{(sample_json).rstrip('.json')}",
         args.isCorr,
         args.isJERC,
         args.isSyst,
@@ -329,14 +329,9 @@ if __name__ == "__main__":
 
     if path.exists(f"{args.output}") and args.overwrite == False:
         raise Exception(f"{args.output} exists")
-
     if args.isArray:
-        if path.exists("tmp"):
-            os.system("rm -r tmp")
-        os.mkdir("tmp")
-
         if (
-            path.exists(f'{args.output.replace(".coffea", "").replace("hists_","")}/')
+            path.exists(args.output.replace(".coffea", "").replace("hists_", ""))
             and args.overwrite == False
         ):
             raise Exception("Directory exists")
@@ -789,10 +784,6 @@ if __name__ == "__main__":
                 f'rm -r {args.output.replace(".coffea", "").replace("hists_", "")}'
             )
         os.mkdir(args.output.replace(".coffea", "").replace("hists_", ""))
-        os.system(
-            f'mv tmp/*.root {args.output.replace(".coffea", "").replace("hists_","")}/.'
-        )
-        os.system("rm -r tmp")
     if args.noHist == False:
-        print(output)
+        # print(output)
         print(f"Saving output to {args.output}")

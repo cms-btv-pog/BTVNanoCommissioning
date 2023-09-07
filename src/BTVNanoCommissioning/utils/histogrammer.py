@@ -2,7 +2,7 @@ from BTVNanoCommissioning.helpers.definitions import definitions
 import hist as Hist
 
 
-def histogrammer(workflow):
+def histogrammer(events, workflow):
     _hist_dict = {}
     ## Common variables
     flav_axis = Hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour")
@@ -325,6 +325,8 @@ def histogrammer(workflow):
     ### Btag input variables & PFCands
     bininfo = definitions()
     for d in bininfo.keys():
+        if d not in events.Jet.fields:
+            continue
         ranges = bininfo[d]["manual_ranges"]
         binning = bininfo[d]["bins"]
         labels = (
@@ -362,8 +364,62 @@ def histogrammer(workflow):
         "btagDeepFlavB_b",
         "btagDeepFlavB_bb",
         "btagDeepFlavB_lepb",
+        "btagNegDeepFlavB",
+        "btagNegDeepFlavB_b",
+        "btagNegDeepFlavB_bb",
+        "btagNegDeepFlavB_lepb",
+        "btagNegDeepFlavC",
+        "btagNegDeepFlavCvB",
+        "btagNegDeepFlavCvL",
+        "btagNegDeepFlavG",
+        "btagNegDeepFlavQG",
+        "btagNegDeepFlavUDS",
+        "btagNegPNetB",
+        "btagNegPNetCvB",
+        "btagNegPNetCvL",
+        "btagNegPNetProbB",
+        "btagNegPNetProbC",
+        "btagNegPNetProbG",
+        "btagNegPNetProbUDS",
+        "btagNegRobustParTAK4B",
+        "btagNegRobustParTAK4B_b",
+        "btagNegRobustParTAK4B_bb",
+        "btagNegRobustParTAK4B_lepb",
+        "btagNegRobustParTAK4C",
+        "btagNegRobustParTAK4CvB",
+        "btagNegRobustParTAK4CvL",
+        "btagNegRobustParTAK4G",
+        "btagNegRobustParTAK4QG",
+        "btagNegRobustParTAK4UDS",
+        "btagPNetB",
+        "btagPNetCvB",
+        "btagPNetCvL",
+        "btagPNetProbB",
+        "btagPNetProbC",
+        "btagPNetProbG",
+        "btagPNetProbUDS",
+        "btagPNetQvG",
+        "btagPNetTauVJet",
+        "btagRobustParTAK4B",
+        "btagRobustParTAK4B_b",
+        "btagRobustParTAK4B_bb",
+        "btagRobustParTAK4B_lepb",
+        "btagRobustParTAK4C",
+        "btagRobustParTAK4CvB",
+        "btagRobustParTAK4CvL",
+        "btagRobustParTAK4G",
+        "btagRobustParTAK4QG",
+        "btagRobustParTAK4UDS",
+        "PNetRegPtRawCorr",
+        "PNetRegPtRawCorrNeutrino",
+        "PNetRegPtRawRes",
+        "Bprob",
+        "BprobN",
+        "ProbaN",
     ]
     for disc in disc_list:
+        if disc not in events.Jet.fields:
+            continue
         njet = 1
         if "ttdilep_sf" in workflow:
             njet = 2
@@ -371,18 +427,66 @@ def histogrammer(workflow):
             njet = 4
         for i in range(njet):
             if "Wc_sf" in workflow:
-                _hist_dict[f"{disc}_{i}"] = Hist.Hist(
-                    syst_axis,
-                    flav_axis,
-                    osss_axis,
-                    Hist.axis.Regular(30, -0.2, 1, name="discr", label=disc),
-                    Hist.storage.Weight(),
-                )
+                if "btag" in disc or "ProbaN" == disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        osss_axis,
+                        Hist.axis.Regular(30, -0.2, 1, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "Bprob" in disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        osss_axis,
+                        Hist.axis.Regular(50, 0, 10, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "PNetRegPtRawRes" == disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        osss_axis,
+                        Hist.axis.Regular(40, 0, 1, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "PNetRegPtRawCorr" in disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        osss_axis,
+                        Hist.axis.Regular(40, 0, 2, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+
             else:
-                _hist_dict[f"{disc}_{i}"] = Hist.Hist(
-                    syst_axis,
-                    flav_axis,
-                    Hist.axis.Regular(30, -0.2, 1, name="discr", label=disc),
-                    Hist.storage.Weight(),
-                )
+                if "btag" in disc or "ProbaN" == disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(30, -0.2, 1, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "Bprob" in disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(50, 0, 10, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "PNetRegPtRawRes" == disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(40, 0, 1, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "PNetRegPtRawCorr" in disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(40, 0, 2, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
     return _hist_dict

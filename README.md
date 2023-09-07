@@ -9,6 +9,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD samples
+Detailed documentation in [btv-wiki](https://btv-wiki.docs.cern.ch/SoftwareAlgorithms/BTVNanoCommissioning/)
 
 ## Requirements
 ### Setup 
@@ -46,8 +47,7 @@ pip install -e .
 See https://coffeateam.github.io/coffea/installation.html
 
 ## Structure
-Example worfkflow for ttbar is included. 
-
+ 
 Each workflow can be a separate "processor" file, creating the mapping from NanoAOD to
 the histograms we need. Workflow processors can be passed to the `runner.py` script 
 along with the fileset these should run over. Multiple executors can be chosen 
@@ -55,7 +55,7 @@ along with the fileset these should run over. Multiple executors can be chosen
 
 To test a small set of files to see whether the workflows run smoothly, run:
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/test_w_dj_mu.json --campaign Rereco17_94X --year 2017
+python runner.py --workflow ttsemilep_sf --json metadata/test_bta_run3.json --campaign Summer22EERun3 --year 2022
 ```
 
 More options for `runner.py` 
@@ -120,11 +120,13 @@ More options for `runner.py`
 
 4. If selections and output histogram/arrays need to be changed, modify the dedicated `workflows`
 
-5. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz). You can also specify `--isArray` to store the skimmed root files.
+5. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz). You can also specify `--isArray` to store the skimmed root files
 
-6. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add it to `src/BTVNanoCommissioning/helpers/xsection.py`
+6. Fetch the failed files to reprocess and processed events by with the `scripts/dump_processed.py`. Checked luminosity for procssed dataset used in the plot and run through failed jobs (details in [get procssed info](#get-processed-information))
 
-Info for developers can be [found](#notes-for-developers)
+7. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add it to `src/BTVNanoCommissioning/helpers/xsection.py`
+
+Check out [notes for developer](https://btv-wiki.docs.cern.ch/SoftwareAlgorithms/BTVNanoCommissioning/#notes-for-developers) for more info!
 
 ### Commands for different phase space
 
@@ -197,8 +199,6 @@ python runner.py --workflow valid --json metadata/$json file
 </details>
 
 
-
-
 #### BTA - BTagAnalyzer Ntuple producer
 
 Based on Congqiao's [development](notebooks/BTA_array_producer.ipynb) to produce BTA ntuples based on PFNano.
@@ -226,11 +226,26 @@ python runner.py --wf BTA_addAllTracks --json metadata/test_bta_run3.json --camp
 </p>
 </details>
 
-## Scale-out (Sites)
+## Scale-out 
 
 Scale out can be notoriously tricky between different sites. Coffea's integration of `slurm` and `dask`
 makes this quite a bit easier and for some sites the ``native'' implementation is sufficient, e.g Condor@DESY.
-However, some sites have certain restrictions for various reasons, in particular Condor @CERN and @FNAL.
+However, some sites have certain restrictions for various reasons, in particular Condor @CERN and @FNAL. The scaleout scheme named with `$cluster_schedule_system/scheduler/site`.
+
+Check the memory by calling  `memory_usage_psutil()` from `helpers.func.memory_usage_psutil` to optimize job size. Example with `ectag_Wc_sf` summarized below.
+ Type        |Array+Hist |  Hist only| Array Only|
+| :---:   | :---: | :---: | :---: |
+DoubleMuon (BTA,BTV_Comm_v2)| 1243MB |	848MB	|1249MB|
+DoubleMuon (PFCands, BTV_Comm_v1)|1650MB	|1274MB	|1632MB|
+DoubleMuon (Nano_v11)|1183MB|	630MB	|1180MB|
+WJets_inc (BTA,BTV_Comm_v2)| 1243MB	|848MB	|1249MB|
+WJets_inc (PFCands, BTV_Comm_v1)|1650MB	|1274MB	|1632MB
+WJets_inc (Nano_v11)|1183MB	|630MB	|1180MB|
+
+
+### Sites configuration with dask/parsl schedular
+<details><summary>details</summary>
+<p>
 
 ### Condor@FNAL (CMSLPC)
 Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
@@ -267,7 +282,7 @@ Authentication is handled automatically via login auth token instead of a proxy.
 
 ### Condor@DESY 
 ```bash
-python runner.py --wf ttcom --executor dask/condor
+python runner.py --wf ttcom --executor dask/condor(parsl/condor)
 ```
 
 ### Maxwell@DESY 
@@ -275,10 +290,12 @@ python runner.py --wf ttcom --executor dask/condor
 python runner.py --wf ttcom --executor parsl/slurm
 ```
 
+</p>
+</details>
 
-## Make the json files
+## Make the dataset json files
 
-Use `fetch.py` in folder `scripts/` to obtain your samples json files. `$input_DAS_list` is the name of your samples in CMS DAS, and $output_json_name$ is the name of your output samples json file.
+Use `fetch.py` in folder `scripts/` to obtain your samples json files. You can create `$input_list` could be list of dataset name from DAS$output_json_name$` is the name of your output samples json file.
 
 ```
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} --site ${site}
@@ -300,7 +317,16 @@ $dataset
 WW_TuneCP5_13p6TeV-pythia8
 ```
 
-:exclamation: Do not make the file list greater than 4k files to avoid scaleout issues in various site
+
+## Get processed information
+
+Get the processed run & luminosity for the processed events from the coffea. When you use `--skipbadfiles`, the submission will ignore files not accesible(or timeout) by `xrootd`. This script helps you to dump the processed luminosity into json which can be calculated by `brilcalc` tool and provide lists of files failed to processed by comparing to original json inputs from the `.coffea` files.
+
+```bash
+# all is default, dump lumi and failed files, if run -t lumi only case. no json file need to be specified
+python scripts/dump_processed.py -c $COFFEA_FILES -n $OUTPUT_NAME (-j $ORIGINAL_JSON -t [all,lumi,failed])
+```
+
 
 ## Correction files configurations
 :heavy_exclamation_mark:  If the correction files are not supported yet by jsonpog-integration, you can still try with custom input data.
@@ -409,7 +435,6 @@ e.g. python -m BTVNanoCommissioning.utils.compile_jec Winter22Run3 jec_compiled
 ```
 
 
-
 ## Plotting code
 
 - data/MC comparisons
@@ -418,6 +443,9 @@ e.g. python -m BTVNanoCommissioning.utils.compile_jec Winter22Run3 jec_compiled
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 
 :new: non-uniform rebinning is possible, specify the bins with  list of edges `--autorebin 50,80,81,82,83,100.5`
+
+<details><summary>more arguments</summary>
+<p>
 
 ```
 python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p ttdilep_sf -v z_mass,z_pt 
@@ -447,10 +475,17 @@ options:
    --flow FLOW 
                         str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.
 ```
+
+</details>
+</p>
+
 - data/data, MC/MC comparisons
 
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
+
+<details><summary>more arguments</summary>
+<p>
 
 ```
 python comparison.py -i a.coffea,b.coffea -p ttsemilep_sf -r SingleMuon_Run2017B-106X_PFNanov1 -c DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8 -v DeepJet_Cpfcan_BtagPf_trackJetDistVal_0 --shortref Run2017B --shortcomp DYJets (--sepflav True/False)
@@ -484,11 +519,19 @@ options:
                         str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.
 ```
 
-### Store histograms from coffea file
+</details>
+</p>
 
-Use `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/TH2D` with hist. MC histograms can be reweighted to according to luminosity value given via `--lumi`
+## Store histograms from coffea file
 
-`python scripts/make_template.py -i "testfile/*.coffea" --lumi 7650 -o test.root -v mujet_pt -a '{"flav":0,"osss":"sum"}'`
+Use `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/TH2D` with hist. MC histograms can be reweighted to according to luminosity value given via `--lumi`. You can also merge several files 
+
+```python
+python scripts/make_template.py -i "testfile/*.coffea" --lumi 7650 -o test.root -v mujet_pt -a '{"flav":0,"osss":"sum"}'
+```
+
+<details><summary>more arguments</summary>
+<p>
 
 ```
   -i INPUT, --input INPUT
@@ -501,6 +544,11 @@ Use `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/T
                         output root file name
   --mergemap MERGEMAP   Specify mergemap as dict, '{merge1:[dataset1,dataset2]...}' Also works with the json file with dict
 ```
+
+</details>
+</p>
+
+
 
 <details><summary>mergemap example</summary>
 <p>
@@ -517,37 +565,3 @@ Use `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/T
 
 </p>
 </details>
-
-## Notes for developers
-The BTV tutorial for coffea part is under `notebooks` and the template to construct new workflow is `src/BTVNanoCommissioning/workflows/example.py`
-Here are some tips provided for developers working on their forked version of this repository. 
-### Setup CI pipeline for fork branch
-Since the CI pipelines involve reading files via `xrootd` and access gitlab.cern.ch, you need to save some secrets in your forked directory. 
-
-Yout can find the secret configuration in the direcotry : `Settings>>Secrets>>Actions`, and create the following secrets:
-
-- `GIT_CERN_SSH_PRIVATE`: 
-  1. Create a ssh key pair with `ssh-keygen -t rsa -b 4096` (do not overwrite with your local one), add the public key to your CERN gitlab account
-  2. Copy the private key to the entry
-- `GRID_PASSWORD`: Add your grid password to the entry.
-- `GRID_USERCERT` & `GRID_USERKEY`:  Encrypt your grid user certification `base64 -i ~/.globus/userkey.pem` and `base64 -i ~/.globus/usercert.pem` and copy the output to the entry. 
-
-### Running jupyter remotely
-1. On your local machine, edit `.ssh/config`:
-```
-Host lxplus*
-  HostName lxplus7.cern.ch
-  User <your-user-name>
-  ForwardX11 yes
-  ForwardAgent yes
-  ForwardX11Trusted yes
-Host *_f
-  LocalForward localhost:8800 localhost:8800
-  ExitOnForwardFailure yes
-```
-2. Connect to remote with `ssh lxplus_f`
-3. Start a jupyter notebook:
-```
-jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
-```
-4. URL for notebook will be printed, copy and open in local browser
