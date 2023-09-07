@@ -87,9 +87,9 @@ jobs:
   
     - name: BTA workflow test
       run: |
-         python runner.py --wf BTA --json metadata/test_bta_run3.json --campaign Summer22Run3 --executor iterative --isJERC
+         python runner.py --wf BTA --json metadata/test_bta_run3.json --campaign Summer22Run3 --executor iterative 
     
     - name: BTA_ttbar workflow test
       run: |
-         python runner.py --wf BTA_ttbar --json metadata/test_bta_run3.json --campaign Summer22Run3 --executor iterative --isJERC
+         python runner.py --wf BTA_ttbar --json metadata/test_bta_run3.json --campaign Summer22Run3 --executor iterative 
 

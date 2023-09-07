@@ -36,8 +36,6 @@ class NanoProcessor(processor.ProcessorABC):
         year="2017",
         campaign="Rereco17_94X",
         name="",
-        isCorr=True,
-        isJERC=False,
         isSyst=False,
         isArray=False,
         noHist=False,
@@ -46,16 +44,14 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self.name = name
-        self.isCorr = isCorr
-        self.isJERC = isJERC
+
         self.isSyst = isSyst
         self.isArray = isArray
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         ## Load corrections
-        if isCorr:
-            self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._campaign)
 
     @property
     def accumulator(self):
@@ -66,7 +62,7 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         events = missing_branch(events)
         shifts = []
-        if "JME" in self.SF_map.keys() and self.isJERC:
+        if "JME" in self.SF_map.keys():
             syst_JERC = True if self.isSyst != None else False
             if self.isSyst == "JERC_split":
                 syst_JERC = "split"
@@ -122,7 +118,9 @@ class NanoProcessor(processor.ProcessorABC):
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
-        output = dump_lumi(events[req_lumi], output)
+        # only dump for nominal case
+        if shift_name is None:
+            output = dump_lumi(events[req_lumi], output)
 
         ## HLT
         triggers = ["IsoMu27"]
@@ -158,9 +156,6 @@ class NanoProcessor(processor.ProcessorABC):
         iso_muindx = iso_muindx[:, 0]
 
         ## Jet cuts
-        jet_sel = jet_id(events, self._campaign) & (
-            ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2, mask_identity=True)
-        )
         if "DeepJet_nsv" in events.Jet.fields:
             jet_sel = jet_sel & (events.Jet.DeepJet_nsv > 0)
         event_jet = events.Jet[jet_sel]
@@ -193,6 +188,16 @@ class NanoProcessor(processor.ProcessorABC):
             False,
             axis=-1,
         )
+        soft_muon = ak.pad_none(soft_muon, 1, axis=1)
+
+        ## Muon-jet cuts
+        mu_jet = event_jet[mujetsel]
+        otherjets = event_jet[~mujetsel]
+        req_mujet = ak.num(mu_jet.pt, axis=1) >= 1
+        mu_jet = ak.pad_none(mu_jet, 1, axis=1)
+
+        ## store jet index for PFCands, create mask on the jet index
+        jet_selpf = (jet_sel) & (mujetsel2)
         if "DeepJet_nsv" in events.Jet.fields:
             jet_selpf = jet_selpf & (events.Jet.DeepJet_nsv > 0)
         jetindx = ak.mask(ak.local_index(events.Jet.pt), jet_selpf == True)
@@ -280,6 +285,7 @@ class NanoProcessor(processor.ProcessorABC):
         ssmu = soft_muon[event_level]
         smet = MET[event_level]
         smuon_jet = mu_jet[event_level]
+        sotherjets = otherjets[event_level]
         nsoftmu = ak.count(ssmu.pt, axis=1)
         nmujet = ak.count(smuon_jet.pt, axis=1)
         smuon_jet = smuon_jet[:, 0]
@@ -310,7 +316,7 @@ class NanoProcessor(processor.ProcessorABC):
             smflav = smuon_jet.hadronFlavour + 1 * (
                 (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
             )
-            if self.isCorr:
+            if len(self.SF_map.keys()) > 0:
                 syst_wei = True if self.isSyst != None else False
                 if "PU" in self.SF_map.keys():
                     puwei(
@@ -442,11 +448,7 @@ class NanoProcessor(processor.ProcessorABC):
                             ),
                             weight=weights.partial_weight(exclude=exclude_btv),
                         )
-                        if (
-                            not isRealData
-                            and self.isCorr
-                            and "btag" in self.SF_map.keys()
-                        ):
+                        if not isRealData and "btag" in self.SF_map.keys():
                             h.fill(
                                 syst=syst,
                                 flav=smflav,
@@ -509,10 +511,11 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
-            pruned_ev.Jet = sjets
-            pruned_ev.Muon = shmu
+            pruned_ev["Jet"] = sjets
+            pruned_ev["Muon"] = shmu
             pruned_ev["MuonJet"] = smuon_jet
             pruned_ev["SoftMuon"] = ssmu
+            pruned_ev["OtherJets"] = sotherjets
             pruned_ev["osss"] = osss
             if "PFCands" in events.fields:
                 pruned_ev.PFCands = spfcands
@@ -538,7 +541,7 @@ class NanoProcessor(processor.ProcessorABC):
                 out_branch,
                 np.where(
                     (out_branch == "SoftMuon")
-                    | (out_branch == "MuonJet")
+                    # | (out_branch == "MuonJet")
                     | (out_branch == "dilep")
                 ),
             )
@@ -548,7 +551,7 @@ class NanoProcessor(processor.ProcessorABC):
                     "Muon",
                     "Jet",
                     "SoftMuon",
-                    "MuonJet",
+                    # "MuonJet",
                     "dilep",
                     "charge",
                     "MET",

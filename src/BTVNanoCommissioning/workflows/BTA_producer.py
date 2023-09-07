@@ -24,8 +24,6 @@ class NanoProcessor(processor.ProcessorABC):
         year="2022",
         campaign="Summer22Run3",
         name="",
-        isCorr=False,
-        isJERC=True,
         isSyst=False,
         isArray=True,
         noHist=False,
@@ -36,7 +34,7 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self.chunksize = chunksize
-        self.isJERC = isJERC
+
         self.SF_map = load_SF(self._campaign)
         # addPFMuons: if true, include the TrkInc and PFMuon collections, used by QCD based SF methods
         # addAllTracks: if true, include the Track collection used for JP calibration;
@@ -54,7 +52,7 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
         shifts = []
 
-        if "JME" in self.SF_map.keys() and self.isJERC:
+        if "JME" in self.SF_map.keys():
             shifts = JME_shifts(
                 shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )

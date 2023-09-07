@@ -18,8 +18,7 @@ class NanoProcessor(processor.ProcessorABC):
         self,
         year="2022",
         campaign="Summer22Run3",
-        isCorr=False,
-        isJERC=True,
+        name="",
         isSyst=False,
         isArray=True,
         noHist=False,
@@ -28,7 +27,8 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self.chunksize = chunksize
-        self.isJERC = isJERC
+
+        self.name = name
         self.SF_map = load_SF(self._campaign)
 
         ### Custom initialzations for BTA_ttbar workflow ###
@@ -47,7 +47,7 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
         shifts = []
 
-        if "JME" in self.SF_map.keys() and self.isJERC:
+        if "JME" in self.SF_map.keys():
             shifts = JME_shifts(
                 shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )

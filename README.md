@@ -63,7 +63,7 @@ More options for `runner.py`
 <p>
 
 ```
---wf {validation,ttcom,ttdilep_sf,ttsemilep_sf,emctag_ttdilep_sf,ctag_ttdilep_sf,ectag_ttdilep_sf,ctag_ttsemilep_sf,ectag_ttsemilep_sf,ctag_Wc_sf,ectag_Wc_sf,ctag_DY_sf,ectag_DY_sf,BTA,BTA_addPFMuons,BTA_addAllTracks}, --workflow {validation,ttcom,ttdilep_sf,ttsemilep_sf,emctag_ttdilep_sf,ctag_ttdilep_sf,ectag_ttdilep_sf,ctag_ttsemilep_sf,ectag_ttsemilep_sf,ctag_Wc_sf,ectag_Wc_sf,ctag_DY_sf,ectag_DY_sf,BTA,BTA_addPFMuons,BTA_addAllTracks}
+--wf {validation,ttcom,ttdilep_sf,ttsemilep_sf,emctag_ttdilep_sf,ctag_ttdilep_sf,ectag_ttdilep_sf,ctag_ttsemilep_sf,ectag_ttsemilep_sf,ctag_Wc_sf,ectag_Wc_sf,ctag_DY_sf,ectag_DY_sf,BTA,BTA_addPFMuons,BTA_addAllTracks,BTA_ttbar}, --workflow {validation,ttcom,ttdilep_sf,ttsemilep_sf,emctag_ttdilep_sf,ctag_ttdilep_sf,ectag_ttdilep_sf,ctag_ttsemilep_sf,ectag_ttsemilep_sf,ctag_Wc_sf,ectag_Wc_sf,ctag_DY_sf,ectag_DY_sf,BTA,BTA_addPFMuons,BTA_addAllTracks,BTA_ttbar}
                         Which processor to run
   -o OUTPUT, --output OUTPUT
                         Output histogram filename (default: hists.coffea)
@@ -73,14 +73,18 @@ More options for `runner.py`
   --year YEAR           Year
   --campaign CAMPAIGN   Dataset campaign, change the corresponding correction
                         files{ "Rereco17_94X","Winter22Run3","Summer22Run3","Summer22EERun3","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
-  --isCorr              Run with SFs
-  --isJERC              JER/JEC implemented to jet
   --isSyst              Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None(not extract)
   --isArray             Output root files
   --noHist              Not save histogram coffea files
   --overwrite           Overwrite existing files
-  --executor {iterative,futures,parsl/slurm,parsl/condor,parsl/condor/naf_lite,dask/condor,dask/slurm,dask/lpc,dask/lxplus,dask/casa}
-                        The type of executor to use (default: futures). 
+   --executor {iterative,futures,parsl/slurm,parsl/condor,parsl/condor/naf_lite,dask/condor,dask/condor/brux,dask/slurm,dask/lpc,dask/lxplus,dask/casa}
+                        The type of executor to use (default: futures). Other options can be implemented. For
+                        example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html-
+                        `parsl/slurm` - tested at DESY/Maxwell- `parsl/condor` - tested at DESY, RWTH-
+                        `parsl/condor/naf_lite` - tested at DESY- `dask/condor/brux` - tested at BRUX (Brown U)-
+                        `dask/slurm` - tested at DESY/Maxwell- `dask/condor` - tested at DESY, RWTH- `dask/lpc` -
+                        custom lpc/condor setup (due to write access restrictions)- `dask/lxplus` - custom
+                        lxplus/condor setup (due to port restrictions)
   -j WORKERS, --workers WORKERS
                         Number of workers (cores/threads) to use for multi- worker executors (e.g. futures or condor) (default:
                         3)
@@ -140,13 +144,13 @@ After a small test, you can run the full campaign for a dedicated phase space, s
 - Dileptonic ttbar phase space : check performance for btag SFs, emu channel
 
 ```
- python runner.py --workflow ttdilep_sf --json metadata/data_Winter22_emu_BTV_Run3_2022_Comm_v1.json  --campaign Winter22Run3 --year 2022 --isJERC --isCorr  (--executor ${scaleout_site}) 
+ python runner.py --workflow ttdilep_sf --json metadata/data_Winter22_emu_BTV_Run3_2022_Comm_v1.json  --campaign Winter22Run3 --year 2022 (--executor ${scaleout_site}) 
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 --isJERC --isCorr  (--executor ${scaleout_site})
+python runner.py --workflow ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 (--executor ${scaleout_site})
 ```
 
 </p>
@@ -159,26 +163,26 @@ python runner.py --workflow ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Ru
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 --isJERC --isCorr (--executor ${scaleout_site})
+python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 
 - Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 --isJERC --isCorr (--executor ${scaleout_site})
+python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 - W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
 
 ```
-python runner.py --workflow ctag_Wc_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 --isJERC --isCorr (--executor ${scaleout_site})
+python runner.py --workflow ctag_Wc_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_DY_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 --isJERC --isCorr (--executor ${scaleout_site})
+python runner.py --workflow ctag_DY_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 </p>
@@ -612,7 +616,7 @@ python scripts/make_template.py -i "testfile/*.coffea" --lumi 7650 -o test.root 
 
 ## Notes for developers
 The BTV tutorial for coffea part is under `notebooks` and the template to construct new workflow is `src/BTVNanoCommissioning/workflows/example.py`
-Here are some tips provided for developers working on their forked version of this repository. 
+Here are some tips provided for developers working on their forked version of this repository. Also some useful git commands can be found [here](https://codimd.web.cern.ch/wY3IrOBBT3i3GXIQxLMWPA)
 ### Setup CI pipeline for fork branch
 Since the CI pipelines involve reading files via `xrootd` and access gitlab.cern.ch, you need to save some secrets in your forked directory. 
 

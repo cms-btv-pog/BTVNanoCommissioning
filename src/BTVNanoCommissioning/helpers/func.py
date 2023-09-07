@@ -107,7 +107,9 @@ def uproot_writeable(events, include=["events", "run", "luminosityBlock"]):
                     events[bname][n], axis=0
                 ) != len(flatten(events[bname][n])):
                     continue
-
+                # skip IdxG
+                if "IdxG" in n:
+                    continue
                 b_nest[n] = ak.fill_none(
                     ak.packed(ak.without_parameters(events[bname][n])), -99
                 )

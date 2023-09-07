@@ -39,8 +39,6 @@ class NanoProcessor(processor.ProcessorABC):
         year="2017",
         campaign="Rereco17_94X",
         name="",
-        isCorr=True,
-        isJERC=False,
         isSyst=False,
         isArray=False,
         noHist=False,
@@ -49,16 +47,14 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self.name = name
-        self.isCorr = isCorr
-        self.isJERC = isJERC
+
         self.isSyst = isSyst
         self.isArray = isArray
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         ## Load corrections
-        if isCorr:
-            self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._campaign)
 
     @property
     def accumulator(self):
@@ -69,7 +65,7 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         events = missing_branch(events)
         shifts = []
-        if "JME" in self.SF_map.keys() and self.isJERC:
+        if "JME" in self.SF_map.keys():
             syst_JERC = True if self.isSyst != None else False
             if self.isSyst == "JERC_split":
                 syst_JERC = "split"
@@ -123,7 +119,9 @@ class NanoProcessor(processor.ProcessorABC):
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
-        output = dump_lumi(events[req_lumi], output)
+        # only dump for nominal case
+        if shift_name is None:
+            output = dump_lumi(events[req_lumi], output)
 
         ## HLT
         triggers = [
@@ -189,7 +187,7 @@ class NanoProcessor(processor.ProcessorABC):
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
             genflavor = sjets.hadronFlavour + 1 * par_flav
             genweiev = ak.flatten(ak.broadcast_arrays(weights.weight(), sjets["pt"])[0])
-            if self.isCorr:
+            if len(self.SF_map.keys()) > 0:
                 syst_wei = True if self.isSyst != None else False
                 if "PU" in self.SF_map.keys():
                     puwei(
