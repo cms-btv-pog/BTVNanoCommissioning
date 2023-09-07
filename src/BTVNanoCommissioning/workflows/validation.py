@@ -1,4 +1,5 @@
 import collections, awkward as ak, numpy as np
+import os
 import uproot
 
 
@@ -17,7 +18,12 @@ from BTVNanoCommissioning.utils.correction import (
     Roccor_shifts,
 )
 
-from BTVNanoCommissioning.helpers.func import flatten, update, uproot_writeable
+from BTVNanoCommissioning.helpers.func import (
+    flatten,
+    update,
+    uproot_writeable,
+    dump_lumi,
+)
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
@@ -65,9 +71,21 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            shifts = [
-                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
-            ]
+            if "Run3" not in self._campaign:
+                shifts = [
+                    ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
+                ]
+            else:
+                shifts = [
+                    (
+                        {
+                            "Jet": events.Jet,
+                            "MET": events.PuppiMET,
+                            "Muon": events.Muon,
+                        },
+                        None,
+                    )
+                ]
         if "roccor" in self.SF_map.keys():
             shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
         else:
@@ -81,7 +99,9 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        _hist_event_dict = {"": None} if self.noHist else histogrammer("validation")
+        _hist_event_dict = (
+            {"": None} if self.noHist else histogrammer(events, "validation")
+        )
 
         output = {
             "sumw": processor.defaultdict_accumulator(float),
@@ -100,6 +120,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
+        output = dump_lumi(events[req_lumi], output)
 
         ## HLT
         triggers = ["IsoMu24"]
@@ -272,8 +293,9 @@ class NanoProcessor(processor.ProcessorABC):
                 out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*"]
             )
             # write to root files
+            os.system(f"mkdir -p {self.name}/{dataset}")
             with uproot.recreate(
-                f"tmp/{dataset}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+                f"{self.name}/{dataset}/f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
             ) as fout:
                 fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
         return {dataset: output}

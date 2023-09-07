@@ -1,5 +1,6 @@
 import os
 import collections, awkward as ak, numpy as np
+import os
 import uproot
 from coffea import processor
 from coffea.analysis_tools import Weights
@@ -13,7 +14,12 @@ from BTVNanoCommissioning.utils.correction import (
     JME_shifts,
     Roccor_shifts,
 )
-from BTVNanoCommissioning.helpers.func import flatten, update, uproot_writeable
+from BTVNanoCommissioning.helpers.func import (
+    flatten,
+    update,
+    uproot_writeable,
+    dump_lumi,
+)
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 from BTVNanoCommissioning.utils.selection import (
@@ -29,6 +35,7 @@ class NanoProcessor(processor.ProcessorABC):
         self,
         year="2017",
         campaign="Rereco17_94X",
+        name="",
         isCorr=True,
         isJERC=False,
         isSyst=False,
@@ -38,6 +45,7 @@ class NanoProcessor(processor.ProcessorABC):
     ):
         self._year = year
         self._campaign = campaign
+        self.name = name
         self.isCorr = isCorr
         self.isJERC = isJERC
         self.isSyst = isSyst
@@ -66,9 +74,21 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            shifts = [
-                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
-            ]
+            if "Run3" not in self._campaign:
+                shifts = [
+                    ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
+                ]
+            else:
+                shifts = [
+                    (
+                        {
+                            "Jet": events.Jet,
+                            "MET": events.PuppiMET,
+                            "Muon": events.Muon,
+                        },
+                        None,
+                    )
+                ]
         if "roccor" in self.SF_map.keys():
             shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
         else:
@@ -82,7 +102,9 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        _hist_event_dict = {"": None} if self.noHist else histogrammer("ctag_Wc_sf")
+        _hist_event_dict = (
+            {"": None} if self.noHist else histogrammer(events, "ctag_Wc_sf")
+        )
 
         output = {
             "sumw": processor.defaultdict_accumulator(float),
@@ -100,6 +122,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
+        output = dump_lumi(events[req_lumi], output)
 
         ## HLT
         triggers = ["IsoMu27"]
@@ -119,6 +142,12 @@ class NanoProcessor(processor.ProcessorABC):
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
         iso_muon = events.Muon[(events.Muon.pt > 30) & mu_idiso(events, self._campaign)]
         req_muon = ak.count(iso_muon.pt, axis=1) == 1
+        jet_sel = ak.fill_none(
+            jet_id(events, self._campaign)
+            & (ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2)),
+            False,
+            axis=-1,
+        )
         iso_muon = ak.pad_none(iso_muon, 1, axis=1)
         iso_muon = iso_muon[:, 0]
         iso_muindx = ak.mask(
@@ -140,38 +169,29 @@ class NanoProcessor(processor.ProcessorABC):
         ## Soft Muon cuts
         soft_muon = events.Muon[softmu_mask(events, self._campaign)]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
-        soft_muon = ak.pad_none(soft_muon, 1, axis=1)
-
-        ## Muon-jet cuts
-        mu_jet = event_jet[
+        mujetsel = ak.fill_none(
             (
-                ak.all(
-                    event_jet.metric_table(soft_muon) <= 0.4, axis=2, mask_identity=True
+                (ak.all(event_jet.metric_table(soft_muon) <= 0.4, axis=2))
+                & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1))
+                & ((event_jet.muEF + event_jet.neEmEF) < 0.7)
+            ),
+            False,
+            axis=-1,
+        )
+        mujetsel2 = ak.fill_none(
+            (
+                ((events.Jet.muEF + events.Jet.neEmEF) < 0.7)
+                & (
+                    ak.all(
+                        events.Jet.metric_table(soft_muon) <= 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
                 )
-            )
-            & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1))
-            & ((event_jet.muEF + event_jet.neEmEF) < 0.7)
-        ]
-        req_mujet = ak.num(mu_jet.pt, axis=1) >= 1
-        mu_jet = ak.pad_none(mu_jet, 1, axis=1)
-
-        ## store jet index for PFCands, create mask on the jet index
-        jet_selpf = (
-            jet_id(events, self._campaign)
-            & (
-                ak.all(
-                    events.Jet.metric_table(iso_muon) > 0.5, axis=2, mask_identity=True
-                )
-            )
-            & ((events.Jet.muEF + events.Jet.neEmEF) < 0.7)
-            & (
-                ak.all(
-                    events.Jet.metric_table(soft_muon) <= 0.4,
-                    axis=2,
-                    mask_identity=True,
-                )
-            )
-            & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
+                & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
+            ),
+            False,
+            axis=-1,
         )
         if "DeepJet_nsv" in events.Jet.fields:
             jet_selpf = jet_selpf & (events.Jet.DeepJet_nsv > 0)
@@ -404,7 +424,7 @@ class NanoProcessor(processor.ProcessorABC):
                         flatten(smuon_jet[histname.replace("mujet_", "")]),
                         weight=weight,
                     )
-                elif "btagDeep" in histname:
+                elif "btag" in histname:
                     for i in range(2):
                         if (
                             str(i) not in histname
@@ -544,10 +564,12 @@ class NanoProcessor(processor.ProcessorABC):
                 out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*", "SV_*"]
             )
             # write to root files
+            os.system(f"mkdir -p {self.name}/{dataset}")
             with uproot.recreate(
-                f"tmp/{dataset}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+                f"{self.name}/{dataset}/{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
             ) as fout:
                 fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
+
         return {dataset: output}
 
     def postprocess(self, accumulator):

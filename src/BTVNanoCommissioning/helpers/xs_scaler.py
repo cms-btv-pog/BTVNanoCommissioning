@@ -24,6 +24,9 @@ def scaleSumW(output, lumi):
     xs_dict = {}
     for obj in xsection:
         xs_dict[obj["process_name"]] = float(obj["cross_section"])
+        # if k-factor in the xsection: multiply by the k-factor
+        if "kFactor" in obj.keys() and obj["kFactor"] != "":
+            xs_dict[obj["process_name"]] = xs_dict[obj["process_name"]] * obj["kFactor"]
     duplicated_name = False
     sumw = {}
     flist = []
