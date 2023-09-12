@@ -1,4 +1,5 @@
 import numpy as np, awkward as ak
+import os
 import uproot
 from coffea import processor
 from coffea.analysis_tools import Weights
@@ -13,10 +14,13 @@ from BTVNanoCommissioning.utils.correction import (
     JME_shifts,
     Roccor_shifts,
 )
-from BTVNanoCommissioning.helpers.func import flatten, update, uproot_writeable
+from BTVNanoCommissioning.helpers.func import (
+    flatten,
+    update,
+    uproot_writeable,
+    dump_lumi,
+)
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-
-
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 from BTVNanoCommissioning.utils.selection import (
     jet_id,
@@ -30,10 +34,9 @@ class NanoProcessor(processor.ProcessorABC):
     # Define histograms
     def __init__(
         self,
-        year="2017",
-        campaign="Rereco17_94X",
-        isCorr=True,
-        isJERC=False,
+        year="2022",
+        campaign="Summer22Run3",
+        name="",
         isSyst=False,
         isArray=False,
         noHist=False,
@@ -41,16 +44,14 @@ class NanoProcessor(processor.ProcessorABC):
     ):
         self._year = year
         self._campaign = campaign
-        self.isCorr = isCorr
-        self.isJERC = isJERC
+        self.name = name
         self.isSyst = isSyst
         self.isArray = isArray
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         ## Load corrections
-        if isCorr:
-            self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._campaign)
 
     @property
     def accumulator(self):
@@ -61,7 +62,7 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         events = missing_branch(events)
         shifts = []
-        if "JME" in self.SF_map.keys() and self.isJERC:
+        if "JME" in self.SF_map.keys():
             syst_JERC = True if self.isSyst != None else False
             if self.isSyst == "JERC_split":
                 syst_JERC = "split"
@@ -69,9 +70,21 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            shifts = [
-                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
-            ]
+            if "Run3" not in self._campaign:
+                shifts = [
+                    ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
+                ]
+            else:
+                shifts = [
+                    (
+                        {
+                            "Jet": events.Jet,
+                            "MET": events.PuppiMET,
+                            "Muon": events.Muon,
+                        },
+                        None,
+                    )
+                ]
         if "roccor" in self.SF_map.keys():
             shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
         else:
@@ -85,7 +98,7 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         isRealData = not hasattr(events, "genWeight")
         dataset = events.metadata["dataset"]
-        _hist_event_dict = {"": None} if self.noHist else histogrammer("ttcom")
+        _hist_event_dict = {"": None} if self.noHist else histogrammer(events, "ttcom")
 
         output = {
             "sumw": processor.defaultdict_accumulator(float),
@@ -103,6 +116,9 @@ class NanoProcessor(processor.ProcessorABC):
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
+        # only dump for nominal case
+        if shift_name is None:
+            output = dump_lumi(events[req_lumi], output)
 
         ## HLT
         triggers = [
@@ -168,7 +184,7 @@ class NanoProcessor(processor.ProcessorABC):
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
             genflavor = sjets.hadronFlavour + 1 * par_flav
             genweiev = ak.flatten(ak.broadcast_arrays(weights.weight(), sjets["pt"])[0])
-            if self.isCorr:
+            if len(self.SF_map.keys()) > 0:
                 syst_wei = True if self.isSyst != None else False
                 if "PU" in self.SF_map.keys():
                     puwei(
@@ -299,8 +315,9 @@ class NanoProcessor(processor.ProcessorABC):
                 out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*"]
             )
             # write to root files
+            os.system(f"mkdir -p {self.name}/{dataset}")
             with uproot.recreate(
-                f"tmp/{dataset}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+                f"{self.name}/{dataset}/f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
             ) as fout:
                 fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
         return {dataset: output}

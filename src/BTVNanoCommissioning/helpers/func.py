@@ -1,5 +1,14 @@
 import awkward as ak
 import numpy as np
+from coffea import processor
+import psutil, os
+
+
+def memory_usage_psutil():
+    # return the memory usage in MB
+    process = psutil.Process(os.getpid())
+    mem = psutil.Process(os.getpid()).memory_info().rss / 1024**2
+    return mem
 
 
 def flatten(ar):  # flatten awkward into a 1d array to hist
@@ -21,6 +30,20 @@ def update(events, collections):
     for name, value in collections.items():
         out = ak.with_field(out, value, name)
     return out
+
+
+# return run & lumiblock in pairs
+def dump_lumi(events, output):
+    pairs = np.vstack((events.run.to_numpy(), events.luminosityBlock.to_numpy()))
+    # remove replicas
+    pairs = np.unique(np.transpose(pairs), axis=0)
+    pairs = pairs[
+        np.lexsort(([pairs[:, i] for i in range(pairs.shape[1] - 1, -1, -1)]))
+    ]
+    output["fname"] = processor.list_accumulator([events.metadata["filename"]])
+    output["run"] = processor.column_accumulator(pairs[:, 0])
+    output["lumi"] = processor.column_accumulator(pairs[:, 1])
+    return output
 
 
 def num(ar):
@@ -45,7 +68,6 @@ def uproot_writeable(events, include=["events", "run", "luminosityBlock"]):
     ev = {}
     include = np.array(include)
     no_filter = False
-
     if len(include) == 1 and include[0] == "*":
         no_filter = False
     for bname in events.fields:
@@ -85,7 +107,9 @@ def uproot_writeable(events, include=["events", "run", "luminosityBlock"]):
                     events[bname][n], axis=0
                 ) != len(flatten(events[bname][n])):
                     continue
-
+                # skip IdxG
+                if "IdxG" in n:
+                    continue
                 b_nest[n] = ak.fill_none(
                     ak.packed(ak.without_parameters(events[bname][n])), -99
                 )

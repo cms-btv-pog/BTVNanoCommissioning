@@ -84,16 +84,12 @@ jobs:
       run: |
         pip install -e .
     
-    - name: Compile JEC
-      run: |
-        python -m BTVNanoCommissioning.utils.compile_jec 2017_UL jec_compiled
-        
-    
+
     - name: ctag muon DY workflows with correctionlib
       run: |
-        python runner.py --workflow ctag_DY_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6 --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray  --year 2017 --max 5 --chunk 50000
+        python runner.py --workflow ctag_DY_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --isSyst all --isArray  --year 2022 --overwrite
     
 
     - name: ctag electron DY workflows with correctionlib
       run: |
-        python runner.py --workflow ectag_DY_sf --json metadata/nano_UL17_test.json  --limit 1 --executor futures -j 6 --campaign 2017_UL --isCorr --isJERC --isSyst all --isArray --year 2017 --max 5 --chunk 50000
+        python runner.py --workflow ectag_DY_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --isSyst all --isArray --year 2022 --overwrite

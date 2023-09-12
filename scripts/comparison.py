@@ -60,7 +60,7 @@ parser.add_argument(
 parser.add_argument(
     "--flow",
     type=str,
-    default=None,
+    default="show",
     help="str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
 )
 parser.add_argument("--ext", type=str, default="", help="prefix name/btv name tag")
@@ -124,7 +124,6 @@ else:
         for f in output.keys():
             comparelist.extend([m for m in output[f].keys() if c == m])
         mergemap[c] = comparelist
-print(output.keys(), mergemap.keys())
 collated = collate(output, mergemap)
 ### style settings
 if "Run" in args.ref:
@@ -179,6 +178,16 @@ else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
     allaxis = {}
+
+    if (
+        discr not in collated[args.ref].keys()
+        or (collated[args.ref][discr].values() == 0).all()
+    ):
+        print(discr, "not in file or empty")
+    for c in args.compared.split(","):
+        if discr not in collated[c].keys() or (collated[c][discr].values() == 0).all():
+            print(discr, "not in file or empty")
+        continue
     if "flav" in collated[args.ref][discr].axes.name:
         allaxis["flav"] = sum
     if "syst" in collated[args.ref][discr].axes.name:
@@ -211,12 +220,7 @@ for index, discr in enumerate(var_set):
         collated["data"][discr] = rebin_hist(
             collated["data"][discr], collated["data"][discr].axes[-1].name, rebin
         )
-    # FIXME: add wildcard option for xlabel
-    # xlabel = (
-    #     args.xlabel
-    #     if args.xlabel is not None
-    #     else collated["data"][discr].axes[-1].label
-    # )  # Use label from stored hists
+
     ## FIXME: Set temporary fix for the x-axis
     if args.xlabel is not None:
         args.xlabel.split(",")[index]

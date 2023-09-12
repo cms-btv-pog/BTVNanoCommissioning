@@ -420,7 +420,10 @@ def JME_shifts(
         add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
         lazy_cache=events.caches[0],
     )
-    met = correct_map["JME"]["met_factory"].build(events.MET, jets, {})
+    if "Run3" not in campaign:
+        met = correct_map["JME"]["met_factory"].build(events.MET, jets, {})
+    else:
+        met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
     ## HEM 18 issue
     if isRealData:
         if "2018" in events.metadata["dataset"]:

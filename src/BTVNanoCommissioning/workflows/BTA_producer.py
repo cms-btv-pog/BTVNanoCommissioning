@@ -23,8 +23,7 @@ class NanoProcessor(processor.ProcessorABC):
         self,
         year="2022",
         campaign="Summer22Run3",
-        isCorr=False,
-        isJERC=True,
+        name="",
         isSyst=False,
         isArray=True,
         noHist=False,
@@ -35,9 +34,8 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self.chunksize = chunksize
-        self.isJERC = isJERC
-        self.SF_map = load_SF(self._campaign)
 
+        self.SF_map = load_SF(self._campaign)
         # addPFMuons: if true, include the TrkInc and PFMuon collections, used by QCD based SF methods
         # addAllTracks: if true, include the Track collection used for JP calibration;
         #               when running on data, requires events passing HLT_PFJet80
@@ -54,14 +52,26 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
         shifts = []
 
-        if "JME" in self.SF_map.keys() and self.isJERC:
+        if "JME" in self.SF_map.keys():
             shifts = JME_shifts(
                 shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )
         else:
-            shifts = [
-                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
-            ]
+            if "Run3" not in self._campaign:
+                shifts = [
+                    ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
+                ]
+            else:
+                shifts = [
+                    (
+                        {
+                            "Jet": events.Jet,
+                            "MET": events.PuppiMET,
+                            "Muon": events.Muon,
+                        },
+                        None,
+                    )
+                ]
 
         return processor.accumulate(
             self.process_shift(update(events, collections), name)

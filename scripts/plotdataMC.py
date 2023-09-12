@@ -73,7 +73,7 @@ parser.add_argument(
 parser.add_argument(
     "--flow",
     type=str,
-    default=None,
+    default="show",
     help="str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
 )
 parser.add_argument(
@@ -97,6 +97,7 @@ else:
     output = {arg.input: load(arg.input)}
 output = scaleSumW(output, arg.lumi)
 mergemap = {}
+
 if not any(".coffea" in o for o in output.keys()):
     mergemap["data"] = [m for m in output.keys() if "Run" in m]
     mergemap["mc"] = [m for m in output.keys() if "Run" not in m]
@@ -154,6 +155,15 @@ else:
 for index, discr in enumerate(var_set):
     if "sumw" == discr:
         continue
+    if (
+        discr not in collated["mc"].keys()
+        or discr not in collated["data"].keys()
+        or (collated["mc"][discr].values() == 0).all()
+        or (collated["data"][discr].values() == 0).all()
+    ):
+        print(discr, "not in file or empty")
+        continue
+
     allaxis = {}
     if "Wc" in arg.phase:
         if arg.splitOSSS is None:  # OS-SS

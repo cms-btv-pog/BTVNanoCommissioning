@@ -71,10 +71,10 @@ def get_main_parser():
         help="JSON file containing dataset and file locations (default: %(default)s)",
     )
     ## Configuations
-    parser.add_argument("--year", default="2017", help="Year")
+    parser.add_argument("--year", default="2022", help="Year")
     parser.add_argument(
         "--campaign",
-        default="Rereco17_94X",
+        default="Summer22Run3",
         choices=[
             "Rereco17_94X",
             "Winter22Run3",
@@ -87,16 +87,12 @@ def get_main_parser():
         ],
         help="Dataset campaign, change the corresponding correction files",
     )
-    parser.add_argument("--isCorr", action="store_true", help="Run with SFs")
     parser.add_argument(
         "--isSyst",
         default=None,
         type=str,
         choices=[None, "all", "weight_only", "JERC_split"],
         help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
-    )
-    parser.add_argument(
-        "--isJERC", action="store_true", help="JER/JEC implemented to jet"
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
     parser.add_argument(
@@ -232,7 +228,6 @@ if __name__ == "__main__":
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
         args.output = f'hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
-
     # load dataset
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
@@ -313,33 +308,44 @@ if __name__ == "__main__":
         sys.exit(0)
 
     # load workflow
-
     processor_instance = workflows[args.workflow](
         args.year,
         args.campaign,
-        args.isCorr,
-        args.isJERC,
+        args.output.replace(".coffea", "").replace("hists_", ""),
         args.isSyst,
         args.isArray,
         args.noHist,
         args.chunk,
     )
+
     ## create tmp directory and check file exist or not
     from os import path
 
     if path.exists(f"{args.output}") and args.overwrite == False:
         raise Exception(f"{args.output} exists")
-
     if args.isArray:
-        if path.exists("tmp"):
-            os.system("rm -r tmp")
-        os.mkdir("tmp")
-
+        ## create the directory
         if (
-            path.exists(f'{args.output.replace(".coffea", "").replace("hists_","")}/')
+            path.exists(args.output.replace(".coffea", "").replace("hists_", ""))
             and args.overwrite == False
         ):
             raise Exception("Directory exists")
+        else:
+            if path.exists(
+                path.exists(args.output.replace(".coffea", "").replace("hists_", ""))
+            ):
+                os.system(
+                    f'rm -r {args.output.replace(".coffea", "").replace("hists_", "")}'
+                )
+            else:
+                os.system(
+                    f'mkdir -p {args.output.replace(".coffea", "").replace("hists_", "")}'
+                )
+                for dataset in sample_dict.keys():
+                    os.system(
+                        f"mkdir -p {args.workflow}_{(sample_json).rstrip('.json')}/{dataset}"
+                    )
+
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """
         dask/parsl needs to export x509 to read over xrootd
@@ -781,18 +787,6 @@ if __name__ == "__main__":
     if not "lxplus" in args.executor:
         if args.noHist == False:
             save(output, args.output)
-    if args.isArray:
-        if args.overwrite and path.exists(
-            args.output.replace(".coffea", "").replace("hists_", "")
-        ):
-            os.system(
-                f'rm -r {args.output.replace(".coffea", "").replace("hists_", "")}'
-            )
-        os.mkdir(args.output.replace(".coffea", "").replace("hists_", ""))
-        os.system(
-            f'mv tmp/*.root {args.output.replace(".coffea", "").replace("hists_","")}/.'
-        )
-        os.system("rm -r tmp")
     if args.noHist == False:
-        print(output)
+        # print(output)
         print(f"Saving output to {args.output}")
