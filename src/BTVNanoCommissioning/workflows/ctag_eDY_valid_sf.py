@@ -20,8 +20,6 @@ from BTVNanoCommissioning.helpers.func import (
     dump_lumi,
 )
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-
-
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
 from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_mvatightid
 
@@ -29,8 +27,8 @@ from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_mvatighti
 class NanoProcessor(processor.ProcessorABC):
     def __init__(
         self,
-        year="2017",
-        campaign="Rereco17_94X",
+        year="2022",
+        campaign="Summer22Run3",
         name="",
         isSyst=False,
         isArray=False,
@@ -40,7 +38,6 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self.name = name
-
         self.isSyst = isSyst
         self.isArray = isArray
         self.noHist = noHist

@@ -126,7 +126,7 @@ More options for `runner.py`
 
 5. Run the workflow with dedicated input and campaign name. Example commands for Run 3 can be found [here](#commands-for-different-phase-space). For first usage, the JERC file needs to be recompiled first, see [Create compiled JERC file](#create-compiled-jerc-filepklgz). You can also specify `--isArray` to store the skimmed root files
 
-6. Fetch the failed files to reprocess and processed events by with the `scripts/dump_processed.py`. Checked luminosity for procssed dataset used in the plot and run through failed jobs (details in [get procssed info](#get-processed-information))
+6. Fetch the failed files to obtain events that have been processed and events that have to be resubmitted using `scripts/dump_processed.py`. Check the luminosity of the processed dataset used for the plotting script and re-run failed jobs if needed (details in [get procssed info](#get-processed-information))
 
 7. Once you obtain the `.coffea` file(s), you can make plots using the [plotting scripts](#plotting-code), if the xsection for your sample is missing, please add it to `src/BTVNanoCommissioning/helpers/xsection.py`
 
@@ -144,13 +144,13 @@ After a small test, you can run the full campaign for a dedicated phase space, s
 - Dileptonic ttbar phase space : check performance for btag SFs, emu channel
 
 ```
- python runner.py --workflow ttdilep_sf --json metadata/data_Winter22_emu_BTV_Run3_2022_Comm_v1.json  --campaign Winter22Run3 --year 2022 (--executor ${scaleout_site}) 
+ python runner.py --workflow ttdilep_sf --json metadata/data_Summer22_emu_BTV_Run3_2022_Comm_v1.json  --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site}) 
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022 (--executor ${scaleout_site})
+python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_mu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site})
 ```
 
 </p>
@@ -163,26 +163,26 @@ python runner.py --workflow ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Ru
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 
 - Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Summer22_mu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 - W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
 
 ```
-python runner.py --workflow ctag_Wc_sf --json metadata/data_Winter22_mu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_Wc_sf --json metadata/data_Summer22_mu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_DY_sf --json metadata/data_Winter22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Winter22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_DY_sf --json metadata/data_Summer22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 </p>
@@ -234,7 +234,7 @@ python runner.py --wf BTA_addAllTracks --json metadata/test_bta_run3.json --camp
 
 Scale out can be notoriously tricky between different sites. Coffea's integration of `slurm` and `dask`
 makes this quite a bit easier and for some sites the ``native'' implementation is sufficient, e.g Condor@DESY.
-However, some sites have certain restrictions for various reasons, in particular Condor @CERN and @FNAL. The scaleout scheme named with `$cluster_schedule_system/scheduler/site`. The existing sites are documented in [sites configuration](#sites-configuration-with-daskparsl-schedular) while [standalone condor submission](#standalone-condor-jobslxpluscmsconnect) are possible and strongly suggest used in lxplus. 
+However, some sites have certain restrictions for various reasons, in particular Condor @CERN and @FNAL. The scaleout scheme is named as follows: `$cluster_schedule_system/scheduler/site`. The existing sites are documented in [sites configuration](#sites-configuration-with-daskparsl-schedular) while [standalone condor submission](#standalone-condor-jobslxpluscmsconnect) is possible and strongly suggested when working on lxplus. 
 
 
 Memory usage is also useful to adapt to cluster. Check the memory by calling  `memory_usage_psutil()` from `helpers.func.memory_usage_psutil` to optimize job size. Example with `ectag_Wc_sf` summarized below.
@@ -334,7 +334,7 @@ After executing the command, a new folder will be created, preparing the submiss
 
 ## Make the dataset json files
 
-Use `fetch.py` in folder `scripts/` to obtain your samples json files. You can create `$input_list` could be list of dataset name from DAS, and create the json contains `dataset_name:[filelist]`. For samples not publish in DAS could also access by specifying the path in the input list.
+Use `fetch.py` in folder `scripts/` to obtain your samples json files. You can create `$input_list` ,which can be a list of datasets taken from CMS DAS , and create the json contains `dataset_name:[filelist]`. One can specify the local path in that input list for samples not published in CMS DAS.
 `$output_json_name$` is the name of your output samples json file.
 
 ```
@@ -366,7 +366,8 @@ WW_TuneCP5_13p6TeV-pythia8
 
 ## Get processed information
 
-Get the processed run & luminosity for the processed events from the coffea. When you use `--skipbadfiles`, the submission will ignore files not accesible(or timeout) by `xrootd`. This script helps you to dump the processed luminosity into json which can be calculated by `brilcalc` tool and provide lists of files failed to processed by comparing to original json inputs from the `.coffea` files.
+Get the run & luminosity information for the processed events from the coffea output files. When you use `--skipbadfiles`, the submission will ignore files not accesible(or time out) by `xrootd`. This script helps you to dump the processed luminosity into a json file which can be calculated by `brilcalc` tool and provide a list of failed lumi sections by comparing the original json input to the one from the `.coffea` files.
+
 
 ```bash
 # all is default, dump lumi and failed files, if run -t lumi only case. no json file need to be specified
@@ -477,7 +478,7 @@ Compile correction pickle files for a specific JEC campaign by changing the dict
 
 ```
 python -m BTVNanoCommissioning.utils.compile_jec ${campaign} jec_compiled
-e.g. python -m BTVNanoCommissioning.utils.compile_jec Winter22Run3 jec_compiled
+e.g. python -m BTVNanoCommissioning.utils.compile_jec Summer22Run3 jec_compiled
 ```
 
 

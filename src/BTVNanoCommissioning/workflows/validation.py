@@ -34,8 +34,8 @@ class NanoProcessor(processor.ProcessorABC):
     # Define histograms
     def __init__(
         self,
-        year="2017",
-        campaign="Rereco17_94X",
+        year="2022",
+        campaign="Summer22Run3",
         isSyst=False,
         isArray=False,
         noHist=False,
@@ -43,10 +43,8 @@ class NanoProcessor(processor.ProcessorABC):
     ):
         self._year = year
         self._campaign = campaign
-
         self.isSyst = isSyst
         self.lumiMask = load_lumi(self._campaign)
-
         ## Load corrections
         self.SF_map = load_SF(self._campaign)
 
