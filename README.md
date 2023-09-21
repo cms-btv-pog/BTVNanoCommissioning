@@ -41,6 +41,7 @@ conda activate btv_coffea
 Once the environment is set up, compile the python package:
 ```
 pip install -e .
+pip install -e .[dev] # for developer
 ```
 
 ### Other installation options for coffea

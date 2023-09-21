@@ -41,10 +41,12 @@ correction_config = {
     },
     "Summer22Run3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
+        "PU": "puweight_Winter22Run3.histo.root",  # use same 69.2mb for Summer22
         "JME": "winter_jec_compiled.pkl.gz",  # not this is from Winter22Run3 since this is not yet finished
     },
     "Summer22EERun3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
+        "PU": "puweight_Summer22EERun3.histo.root",  # 80mb
         "JME": "jec_compiled.pkl.gz",
     },
 }
