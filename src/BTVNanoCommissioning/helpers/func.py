@@ -40,7 +40,7 @@ def dump_lumi(events, output):
     pairs = pairs[
         np.lexsort(([pairs[:, i] for i in range(pairs.shape[1] - 1, -1, -1)]))
     ]
-    output["fname"] = processor.list_accumulator([events.metadata["filename"]])
+    output["fname"] = processor.set_accumulator([events.metadata["filename"]])
     output["run"] = processor.column_accumulator(pairs[:, 0])
     output["lumi"] = processor.column_accumulator(pairs[:, 1])
     return output
