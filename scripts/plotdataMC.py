@@ -16,6 +16,8 @@ from BTVNanoCommissioning.utils.plot_utils import (
     MCerrorband,
     autoranger,
     rebin_hist,
+    sample_mergemap,
+    color_map,
 )
 
 bininfo = definitions()
@@ -77,6 +79,13 @@ parser.add_argument(
     help="str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
 )
 parser.add_argument(
+    "--split",
+    type=str,
+    default="flavor",
+    choices=["flavor", "sample", "sample_flav"],
+    help="Decomposition of MC samples. Default is split to jet flavor, possible to split by group of MC samples. Combination of jetflavor+ sample split is also possible",
+)
+parser.add_argument(
     "--splitOSSS",
     type=int,
     default=None,
@@ -84,21 +93,23 @@ parser.add_argument(
 )
 
 
-arg = parser.parse_args()
+args = parser.parse_args()
 time = arrow.now().format("YY_MM_DD")
-if not os.path.isdir(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/"):
-    os.makedirs(f"plot/BTV/{arg.phase}_{arg.ext}_{time}/")
-if len(arg.input.split(",")) > 1:
-    output = {i: load(i) for i in arg.input.split(",")}
-elif "*" in arg.input:
-    files = glob.glob(arg.input)
+if not os.path.isdir(f"plot/BTV/{args.phase}_{args.ext}_{time}/"):
+    os.makedirs(f"plot/BTV/{args.phase}_{args.ext}_{time}/")
+if len(args.input.split(",")) > 1:
+    output = {i: load(i) for i in args.input.split(",")}
+elif "*" in args.input:
+    files = glob.glob(args.input)
     output = {i: load(i) for i in files}
 else:
-    output = {arg.input: load(arg.input)}
-output = scaleSumW(output, arg.lumi)
+    output = {args.input: load(args.input)}
+output = scaleSumW(output, args.lumi)
 mergemap = {}
-
+## create merge map from sample set/data MC
 if not any(".coffea" in o for o in output.keys()):
+    if "sample" in args.split:
+        mergemap = sample_mergemap
     mergemap["data"] = [m for m in output.keys() if "Run" in m]
     mergemap["mc"] = [m for m in output.keys() if "Run" not in m]
 else:
@@ -107,54 +118,61 @@ else:
     for f in output.keys():
         datalist.extend([m for m in output[f].keys() if "Run" in m])
         mclist.extend([m for m in output[f].keys() if "Run" not in m])
+    if "sample" in args.split:
+        mergemap = sample_mergemap
     mergemap["mc"] = mclist
     mergemap["data"] = datalist
 collated = collate(output, mergemap)
+
+for sample in mergemap.keys():
+    if type(collated[sample]) is not dict:
+        del collated[sample]
 ### input text settings
-if "Wc" in arg.phase:
+if "Wc" in args.phase:
     input_txt = "W+c"
-    if arg.splitOSSS == 1:
+    if args.splitOSSS == 1:
         input_txt = input_txt + " OS"
-    elif arg.splitOSSS == -1:
+    elif args.splitOSSS == -1:
         input_txt = input_txt + " SS"
     else:
         input_txt = input_txt + " OS-SS"
-elif "DY" in arg.phase:
+elif "DY" in args.phase:
     input_txt = "DY+jets"
-elif "semilep" in arg.phase:
+elif "semilep" in args.phase:
     input_txt = r"t$\bar{t}$ semileptonic"
     nj = 4
-elif "dilep" in arg.phase:
+elif "dilep" in args.phase:
     input_txt = r"t$\bar{t}$ dileptonic"
     nj = 2
 if (
-    "njet" in arg.variable.split(",")
-    or "nbjet" in arg.variable.split(",")
-    or "mu" in arg.variable.split(",")
+    "njet" in args.variable.split(",")
+    or "nbjet" in args.variable.split(",")
+    or "mu" in args.variable.split(",")
 ):
     nj = 1
-if "emctag" in arg.phase:
+if "emctag" in args.phase:
     input_txt = input_txt + " (e$\mu$)"
-elif "ectag" in arg.phase:
+elif "ectag" in args.phase:
     input_txt = input_txt + " (e)"
-elif "ttdilep_sf" == arg.phase:
+elif "ttdilep_sf" == args.phase:
     input_txt = input_txt + " (e$\mu$)"
 else:
     input_txt = input_txt + " ($\mu$)"
-if "ctag" in arg.phase and "DY" not in arg.phase:
+if "ctag" in args.phase and "DY" not in args.phase:
     input_txt = input_txt + "\nw/ soft-$\mu$"
-if arg.variable == "all":
+if args.variable == "all":
     var_set = collated["mc"].keys()
-elif "*" in arg.variable:
+elif "*" in args.variable:
     var_set = [
-        var for var in collated["mc"].keys() if arg.variable.replace("*", "") in var
+        var for var in collated["data"].keys() if args.variable.replace("*", "") in var
     ]
 else:
-    var_set = arg.variable.split(",")
+    var_set = args.variable.split(",")
 
 for index, discr in enumerate(var_set):
     if "sumw" == discr:
         continue
+    ## remove empty
     if (
         discr not in collated["mc"].keys()
         or discr not in collated["data"].keys()
@@ -164,20 +182,20 @@ for index, discr in enumerate(var_set):
         print(discr, "not in file or empty")
         continue
 
+    ## axis info
     allaxis = {}
-    if "Wc" in arg.phase:
-        if arg.splitOSSS is None:  # OS-SS
-            collated["mc"][discr] = (
-                collated["mc"][discr][{"osss": 0}]
-                + collated["mc"][discr][{"osss": 1}] * -1
-            )
-            collated["data"][discr] = (
-                collated["data"][discr][{"osss": 0}]
-                + collated["data"][discr][{"osss": 1}] * -1
-            )
-        elif arg.splitOSSS == 1:
+    if "Wc" in args.phase:
+        if args.splitOSSS is None:  # OS-SS
+            for sample in collated.keys():
+                if discr not in collated[sample].keys():
+                    continue
+                collated[sample][discr] = (
+                    collated[sample][discr][{"osss": 0}]
+                    + collated[sample][discr][{"osss": 1}] * -1
+                )
+        elif args.splitOSSS == 1:
             allaxis["osss"] = 0  # opposite sign
-        elif arg.splitOSSS == -1:
+        elif args.splitOSSS == -1:
             allaxis["osss"] = 1  # same sign
     if "flav" in collated["mc"][discr].axes.name:
         allaxis["flav"] = sum
@@ -191,12 +209,13 @@ for index, discr in enumerate(var_set):
         if "noSF" in systlist:
             noSF_axis["syst"] = "noSF"
 
+    ## rebin config, add xerr
     do_xerr = False
-    if arg.autorebin is not None:
-        if arg.autorebin.isdigit():
-            rebin = int(arg.autorebin)
+    if args.autorebin is not None:
+        if args.autorebin.isdigit():
+            rebin = int(args.autorebin)
         else:
-            rebin = np.array([float(i) for i in arg.autorebin.split(",")])
+            rebin = np.array([float(i) for i in args.autorebin.split(",")])
             do_xerr = True
         collated["mc"][discr] = rebin_hist(
             collated["mc"][discr], collated["mc"][discr].axes[-1].name, rebin
@@ -205,10 +224,11 @@ for index, discr in enumerate(var_set):
             collated["data"][discr], collated["data"][discr].axes[-1].name, rebin
         )
 
+    ## Rescale noSF & SF to same MC yields
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
-        and arg.SF
+        and args.SF
     ):
         scale_sf = np.sum(collated["mc"][discr][SF_axis].values()) / np.sum(
             collated["mc"][discr][noSF_axis].values()
@@ -218,7 +238,7 @@ for index, discr in enumerate(var_set):
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
-        and arg.SF
+        and args.SF
     ):
         print("============> fraction of each flavor in MC")
         print(
@@ -247,29 +267,48 @@ for index, discr in enumerate(var_set):
     )
     fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
     hep.cms.label(
-        "Preliminary", data=True, lumi=arg.lumi / 1000.0, com=arg.com, loc=0, ax=ax
+        "Preliminary", data=True, lumi=args.lumi / 1000.0, com=args.com, loc=0, ax=ax
     )
 
+    ## w/ & w/o btag SF
     if (
         "flav" in collated["mc"][discr].axes.name
         and "syst" in collated["mc"][discr].axes.name
-        and arg.SF
+        and args.SF
+        and args.split != "sample"
     ):
-        splitflav_stack = []
+        splitflav_stack, labels, color_config = [], [], {}
+        color_config["color"], color_config["alpha"] = [], []
         splitflav_axis = SF_axis
-        for i in range(4):
-            splitflav_axis["flav"] = i
-            splitflav_stack += [[collated["mc"][discr][splitflav_axis]]]
+        for sample in collated.keys():
+            if sample == "data":
+                continue
+            if args.split == "flavor" and sample != "mc":
+                continue
+            elif args.split == "sample_flav" and sample == "mc":
+                continue
+            for i, t in enumerate(["udsg", "pu", "c", "b"]):
+                splitflav_axis["flav"] = i
+                splitflav_stack.append(collated[sample][discr][splitflav_axis])
+                if args.split == "flavor":
+                    labels.append(t)
+                    color_config["color"].append(color_map[t])
+                    color_config["alpha"].append(1.0)
+                else:
+                    labels.append(f"{sample} ({t})")
+                    color_config["color"].append(color_map[sample])
+                    color_config["alpha"].append(1.0 - 0.2 * i)
 
         SF_axis["flav"] = sum
         hep.histplot(
             splitflav_stack,
             stack=True,
-            label=["udsg", "pileup", "c", "b"],
+            label=labels,
             histtype="fill",
             yerr=True,
             ax=ax,
-            # flow=arg.flow
+            flow=args.flow,
+            **color_config,
         )
         hep.histplot(
             collated["mc"][discr][noSF_axis],
@@ -278,7 +317,7 @@ for index, discr in enumerate(var_set):
             width=2,
             yerr=True,
             ax=ax,
-            # flow=arg.flow
+            flow=args.flow,
         )
         hep.histplot(
             collated["data"][discr][noSF_axis],
@@ -287,17 +326,17 @@ for index, discr in enumerate(var_set):
             label="Data",
             yerr=True,
             ax=ax,
-            xerr=do_xerr
-            # flow=arg.flow
+            xerr=do_xerr,
+            flow=args.flow,
         )
         hmc = collated["mc"][discr][SF_axis]
-        MCerrorband(hmc, ax=ax, flow=arg.flow)  # stat. unc. errorband
-        SFerror = SFerror(collated, discr, flow=arg.flow)
+        MCerrorband(hmc, ax=ax, flow=args.flow)  # stat. unc. errorband
+        SFerror = SFerror(collated, discr, flow=args.flow)
         other = {"hatch": "\\\\", "lw": 0, "color": "r", "alpha": 0.4}
         MCerrorband(
             hmc,
             ax=ax,
-            flow=arg.flow,
+            flow=args.flow,
             ext_error=SFerror,
             label="SF unc.",
             fill_opts=other,
@@ -306,7 +345,7 @@ for index, discr in enumerate(var_set):
             collated["data"][discr][noSF_axis],
             collated["mc"][discr][noSF_axis],
             ax=rax,
-            flow=arg.flow,
+            flow=args.flow,
             xerr=do_xerr,
         )
         plotratio(
@@ -318,27 +357,47 @@ for index, discr in enumerate(var_set):
             denom_fill_opts=other,
             clear=False,
             label="SF unc.",
-            flow=arg.flow,
+            flow=args.flow,
             xerr=do_xerr,
         )
 
     elif (
-        "syst" in collated["mc"][discr].axes.name and not arg.SF and "noSF" in systlist
+        "syst" in collated["mc"][discr].axes.name
+        and not args.SF
+        and "noSF" in systlist
+        and args.split != "sample"
     ):
-        splitflav_stack = []
+        splitflav_stack, labels, color_config = [], [], {}
+        color_config["color"], color_config["alpha"] = [], []
         splitflav_axis = noSF_axis
-        for i in range(4):
-            splitflav_axis["flav"] = i
-            splitflav_stack += [collated["mc"][discr][splitflav_axis]]
+        for sample in collated.keys():
+            if sample == "data":
+                continue
+            if args.split == "flavor" and sample != "mc":
+                continue
+            elif args.split == "sample_flav" and sample == "mc":
+                continue
+            for i, t in enumerate(["udsg", "pu", "c", "b"]):
+                splitflav_axis["flav"] = i
+                splitflav_stack.append(collated[sample][discr][splitflav_axis])
+                if args.split == "flavor":
+                    labels.append(t)
+                    color_config["color"].append(color_map[t])
+                    color_config["alpha"].append(1.0)
+                else:
+                    labels.append(f"{sample} ({t})")
+                    color_config["color"].append(color_map[sample])
+                    color_config["alpha"].append(1.0 - 0.2 * i)
         noSF_axis["flav"] = sum
         hep.histplot(
             splitflav_stack,
             stack=True,
             histtype="fill",
-            label=["udsg", "pileup", "c", "b"],
+            label=labels,
             yerr=True,
             ax=ax,
-            # flow=arg.flow
+            flow=args.flow,
+            **color_config,
         )
         hep.histplot(
             collated["data"][discr][noSF_axis],
@@ -347,30 +406,52 @@ for index, discr in enumerate(var_set):
             label="Data",
             yerr=True,
             ax=ax,
-            xerr=do_xerr
-            # flow=arg.flow
+            xerr=do_xerr,
+            flow=args.flow,
         )
         hmc = collated["mc"][discr][noSF_axis]
-        MCerrorband(hmc, ax=ax, flow=arg.flow)  # stat. unc. errorband
+        MCerrorband(hmc, ax=ax, flow=args.flow)  # stat. unc. errorband
         rax = plotratio(
-            collated["data"][discr][noSF_axis], hmc, ax=rax, flow=arg.flow, xerr=do_xerr
+            collated["data"][discr][noSF_axis],
+            hmc,
+            ax=rax,
+            flow=args.flow,
+            xerr=do_xerr,
         )
-    elif "flav" in collated["mc"][discr].axes.name:
-        splitflav_stack = []
+    elif "flav" in collated["mc"][discr].axes.name and args.split != "sample":
+        splitflav_stack, labels, color_config = [], [], {}
+        color_config["color"], color_config["alpha"] = [], []
         splitflav_axis = allaxis
-        for i in range(4):
-            splitflav_axis["flav"] = i
-            splitflav_stack += [collated["mc"][discr][splitflav_axis]]
+        for sample in collated.keys():
+            if sample == "data":
+                continue
+            if args.split == "flavor" and sample != "mc":
+                continue
+            elif args.split == "sample_flav" and sample == "mc":
+                continue
+            for i, t in enumerate(["udsg", "pu", "c", "b"]):
+                splitflav_axis["flav"] = i
+                splitflav_stack.append(collated[sample][discr][splitflav_axis])
 
+                if args.split == "flavor":
+                    labels.append(t)
+                    color_config["color"].append(color_map[t])
+                    color_config["alpha"].append(1.0)
+                else:
+                    labels.append(f"{sample} ({t})")
+                    color_config["color"].append(color_map[sample])
+
+                    color_config["alpha"].append(1.0 - 0.2 * i)
         allaxis["flav"] = sum
         hep.histplot(
             splitflav_stack,
             stack=True,
             histtype="fill",
-            label=["udsg", "pileup", "c", "b"],
+            label=labels,
             yerr=True,
             ax=ax,
-            # flow=arg.flow
+            flow=args.flow,
+            **color_config,
         )
         hep.histplot(
             collated["data"][discr][allaxis],
@@ -379,25 +460,43 @@ for index, discr in enumerate(var_set):
             label="Data",
             yerr=True,
             ax=ax,
-            xerr=do_xerr
-            # flow=arg.flow
+            xerr=do_xerr,
+            flow=args.flow,
         )
         hmc = collated["mc"][discr][allaxis]
         MCerrorband(hmc, ax=ax)
         rax = plotratio(
-            collated["data"][discr][allaxis], hmc, ax=rax, flow=arg.flow, xerr=do_xerr
+            collated["data"][discr][allaxis], hmc, ax=rax, flow=args.flow, xerr=do_xerr
         )
     else:
         hmc = collated["mc"][discr][allaxis]
-        hep.histplot(
-            hmc,
-            color="tab:orange",
-            histtype="fill",
-            label=["MC"],
-            yerr=True,
-            ax=ax,
-            # flow=arg.flow
-        )
+        if "sample" in args.split:
+            hep.histplot(
+                [
+                    collated[s][discr][allaxis]
+                    for s in collated.keys()
+                    if s != "mc" and s != "data"
+                ],
+                histtype="fill",
+                stack=True,
+                label=[s for s in collated.keys() if s != "mc" and s != "data"],
+                yerr=True,
+                ax=ax,
+                color=[
+                    color_map[s] for s in collated.keys() if s != "mc" and s != "data"
+                ],
+                flow=args.flow,
+            )
+        else:
+            hep.histplot(
+                hmc,
+                color="tab:orange",
+                histtype="fill",
+                label=["MC"],
+                yerr=True,
+                ax=ax,
+                flow=args.flow,
+            )
         hep.histplot(
             collated["data"][discr][allaxis],
             histtype="errorbar",
@@ -405,12 +504,12 @@ for index, discr in enumerate(var_set):
             label="Data",
             yerr=True,
             ax=ax,
-            xerr=do_xerr
-            # flow=arg.flow
+            xerr=do_xerr,
+            flow=args.flow,
         )
-        MCerrorband(hmc, ax=ax, flow=arg.flow)  # stat. unc. errorband
+        MCerrorband(hmc, ax=ax, flow=args.flow)  # stat. unc. errorband
         rax = plotratio(
-            collated["data"][discr][allaxis], hmc, ax=rax, flow=arg.flow, xerr=do_xerr
+            collated["data"][discr][allaxis], hmc, ax=rax, flow=args.flow, xerr=do_xerr
         )
 
     ax.set_xlabel(None)
@@ -420,11 +519,13 @@ for index, discr in enumerate(var_set):
     ax.get_yaxis().get_offset_text().set_position((-0.065, 1.05))
     # FIXME: add wildcard option for xlabel
     xlabel = (
-        arg.xlabel if arg.xlabel is not None else collated["data"][discr].axes[-1].label
+        args.xlabel
+        if args.xlabel is not None
+        else collated["data"][discr].axes[-1].label
     )  # Use label from stored hists
     ## FIXME: Set temporary fix for the x-axis
-    if arg.xlabel is not None:
-        arg.xlabel.split(",")[index]
+    if args.xlabel is not None:
+        args.xlabel.split(",")[index]
     elif "DeepJet" in discr or "DeepCSV" in discr or "PFCands" in discr:
         xlabel = (
             bininfo[discr]["displayname"]
@@ -439,47 +540,51 @@ for index, discr in enumerate(var_set):
         xlabel = axes_name(discr)
 
     rax.set_xlabel(xlabel)
-    ax.legend()
+    if "sample" in args.split:
+        ax.legend(ncols=2, prop={"size": 16})
+    else:
+        ax.legend()
     rax.set_ylim(0, 2.0)
     ax.set_ylim(bottom=0.0)
 
     rax.autoscale(True, axis="x", tight=True)
     xmin, xmax = autoranger(
-        collated["data"][discr][allaxis] + collated["mc"][discr][allaxis], flow=arg.flow
+        collated["data"][discr][allaxis] + collated["mc"][discr][allaxis],
+        flow=args.flow,
     )
-    if arg.xrange is not None:
-        xmin, xmax = float(arg.xrange.split(",")[0]), float(arg.xrange.split(",")[1])
+    if args.xrange is not None:
+        xmin, xmax = float(args.xrange.split(",")[0]), float(args.xrange.split(",")[1])
     rax.set_xlim(xmin, xmax)
-    at = AnchoredText(input_txt + "\n" + arg.ext, loc=2, frameon=False)
+    at = AnchoredText(input_txt + "\n" + args.ext, loc=2, frameon=False)
     ax.add_artist(at)
     scale = ""
-    if arg.norm:
+    if args.norm:
         scale = "_norm"
     name = "all"
     hep.mpl_magic(ax=ax)
-    if arg.log:
+    if args.log:
         print(
             "creating:",
-            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png",
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         ax.set_yscale("log")
         name = "log"
         ax.set_ylim(bottom=0.1)
         hep.mpl_magic(ax=ax)
         fig.savefig(
-            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"
         )
         fig.savefig(
-            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png"
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png"
         )
     else:
         print(
             "creating:",
-            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png",
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         fig.savefig(
-            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"
         )
         fig.savefig(
-            f"plot/BTV/{arg.phase}_{arg.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png"
+            f"plot/BTV/{args.phase}_{args.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.png"
         )

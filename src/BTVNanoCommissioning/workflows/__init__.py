@@ -51,9 +51,9 @@ from BTVNanoCommissioning.workflows.BTA_ttbar_producer import (
     NanoProcessor as BTA_ttbar_processor,
 )
 
-# from BTVNanoCommissioning.workflows.example import (
-#     NanoProcessor as ExampleProcessor,
-# )
+from BTVNanoCommissioning.workflows.example import (
+    NanoProcessor as ExampleProcessor,
+)
 
 # FIXME - make names more systematic?
 workflows = {}
@@ -79,7 +79,7 @@ workflows["ctag_DY_sf"] = CTAGDYValidSFProcessor
 workflows["ectag_DY_sf"] = CTAGeDYValidSFProcessor
 
 # Tutorial
-# workflows["example"] = ExampleProcessor
+workflows["example"] = ExampleProcessor
 # BTA producers
 workflows["BTA"] = BTA_processor
 workflows["BTA_addPFMuons"] = partial(BTA_processor, addPFMuons=True)

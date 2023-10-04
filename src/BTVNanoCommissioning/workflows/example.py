@@ -147,16 +147,28 @@ class NanoProcessor(processor.ProcessorABC):
         ## Muon cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
 
-        ## Electron cuts
-        # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
+        muon_sel = (events.Muon.pt > 15) & (mu_idiso(events, self._campaign))
+        event_mu = events.Muon[muon_sel]
+        req_muon = ak.num(event_mu.pt) == 1
+
+        # Electron cut
+        ele_sel = (events.Electron.pt > 15) & (ele_cuttightid(events, self._campaign))
+        event_e = events.Electron[ele_sel]
+        req_ele = ak.num(event_e.pt) == 1
+
+        req_leadlep_pt = ak.any(event_e.pt > 25, axis=-1) | ak.any(
+            event_mu.pt > 25, axis=-1
+        )
 
         ## Jet cuts
-
+        jet_sel = (events.Jet.pt > 30) & (jet_id(events, self._campaign))
+        event_jet = events.Jet[jet_sel]
+        req_jet = ak.num(event_jet) >= 1
         ## Other cuts
 
         ## Apply all selections
         event_level = (
-            req_trig & req_lumi  # & req_muon & req_ele & req_jets & req_opposite_charge
+            req_trig & req_lumi & req_jet & req_muon & req_ele & req_leadlep_pt
         )
         event_level = ak.fill_none(event_level, False)
         # Skip empty events
@@ -166,9 +178,9 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         # Selected objects # : Pruned objects with reduced event_level
         ####################
-        smu = events.Muon[event_level]
-        sele = events.Electron[event_level]
-        sjets = events.Jet[event_level]
+        smu = event_mu[event_level]
+        sjets = event_jet[event_level]
+        sele = event_e[event_level]
         ####################
         # Weight & Geninfo # : Add weight to selected events
         ####################
@@ -230,17 +242,25 @@ class NanoProcessor(processor.ProcessorABC):
                 if syst == "nominal" or syst == shift_name
                 else weights.weight(modifier=syst)
             )  # shift up/down for weight systematics
-            output["$VAR"].fill()
 
+            # fill the histogram (check axis defintion in histogrammer and following the order)
+            output["jet_pt"].fill(
+                syst, flatten(genflavor[:, 0]), flatten(sjets[:, 0].pt), weight=weight
+            )
+            output["mu_pt"].fill(syst, flatten(smu[:, 0].pt), weight=weight)
+            output["dr_mujet"].fill(
+                syst,
+                flatten(genflavor[:, 0]),  # the fill content should always flat arrays
+                flatten(sjets[:, 0].delta_r(smu[:, 0])),
+                weight=weight,
+            )
         #######################
         #  Create root files  # : Save arrays in to root file, keep axis structure
         #######################
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]  # pruned events
-            pruned_ev.Electron = (
-                sele  # replace electron collections with selected electron
-            )
+            pruned_ev.Muon = smu  # replace muon collections with selected muon
             # Add custom variables
             if not isRealData:
                 pruned_ev["weight"] = weights.weight()
@@ -252,7 +272,7 @@ class NanoProcessor(processor.ProcessorABC):
             out_branch = np.setdiff1d(
                 np.array(pruned_ev.fields), np.array(events.fields)
             )  # stored customed variables
-            out_branch = np.append(out_branch, ["Jet_btagDeep*", "Electron_pt"])
+            out_branch = np.append(out_branch, ["Jet_btagDeep*", "Muon_pt"])
             # write to root files
             os.system(f"mkdir -p {self.name}/{dataset}")
             with uproot.recreate(

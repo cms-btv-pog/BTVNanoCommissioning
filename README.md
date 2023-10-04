@@ -164,7 +164,7 @@ python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_mu_BTV_Ru
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer22_mu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 
@@ -183,7 +183,7 @@ python runner.py --workflow ctag_Wc_sf --json metadata/data_Summer22_mu_BTV_Run3
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_DY_sf --json metadata/data_Summer22_mumu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_DY_sf --json metadata/data_Summer22_mu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 </p>
@@ -337,6 +337,8 @@ After executing the command, a new folder will be created, preparing the submiss
 
 Use `fetch.py` in folder `scripts/` to obtain your samples json files. You can create `$input_list` ,which can be a list of datasets taken from CMS DAS , and create the json contains `dataset_name:[filelist]`. One can specify the local path in that input list for samples not published in CMS DAS.
 `$output_json_name$` is the name of your output samples json file.
+
+The `--whitelist_sites, --blacklist_sites` are considered for fetch dataset if multiple sites are available
 
 ```
 ## File publish in DAS
@@ -522,6 +524,9 @@ options:
    --xrange XRANGE      custom x-range, --xrange xmin,xmax
    --flow FLOW 
                         str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.
+   --split {flavor,sample,sample_flav}
+                        Decomposition of MC samples. Default is split to jet flavor(udsg, pu, c, b), possible to split by group of MC
+                        samples. Combination of jetflavor+ sample split is also possible 
 ```
 
 </details>

@@ -28,7 +28,15 @@ def histogrammer(events, workflow):
     n_axis = Hist.axis.Integer(0, 10, name="n", label="N obj")
     osss_axis = Hist.axis.IntCategory([1, -1], name="osss", label="OS(+)/SS(-)")
     ### Workflow specific
-    if "validation" == workflow:
+    if "example" == workflow:
+        obj_list = [
+            "jet",
+            "mu",
+        ]  # store basic 4-vector, pt,eta, phi, mass for the object
+        _hist_dict[f"dr_mujet"] = Hist.Hist(
+            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+        )  # create cutstomize histogram
+    elif "validation" == workflow:
         obj_list = ["jet0", "jet1"]
     elif "ttcom" == workflow:
         obj_list = ["mu", "ele"]
@@ -116,7 +124,6 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
-
     elif "ctag_ttsemilep_sf" in workflow:
         obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
         _hist_dict["z_mass"] = Hist.Hist(
@@ -163,7 +170,6 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
-
     elif "Wc_sf" in workflow:
         obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
         _hist_dict["SV_charge"] = Hist.Hist(
@@ -224,7 +230,6 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 syst_axis, flav_axis, osss_axis, ptratio_axis, Hist.storage.Weight()
             )
-
     elif "DY_sf" in workflow:
         obj_list = ["posl", "negl", "z", "jet"]
         _hist_dict["z_mass"] = Hist.Hist(
@@ -241,7 +246,8 @@ def histogrammer(events, workflow):
                 syst_axis, dxy_axis, Hist.storage.Weight()
             )
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
-    ### Common kinematic variables
+
+    ### Common kinematic variables histogram creation
     if "Wc_sf" not in workflow:
         _hist_dict["njet"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
         if "ctag_tt" in workflow:

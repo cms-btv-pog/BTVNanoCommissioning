@@ -42,13 +42,36 @@ def load_SF(campaign, syst=False):
                             correction_map["PU"] = cloudpickle.load(fin)[
                                 "2017_pileupweight"
                             ]
+                    elif str(filename).endswith(".json.gz"):
+                        correction_map["PU"] = correctionlib.CorrectionSet.from_file(
+                            importlib.resources.path(
+                                f"BTVNanoCommissioning.data.PU.{campaign}", filename
+                            )
+                        )
                     elif str(filename).endswith(".histo.root"):
                         ext = extractor()
                         ext.add_weight_sets([f"* * {filename}"])
                         ext.finalize()
                         correction_map["PU"] = ext.make_evaluator()["PU"]
+
         ## btag weight
         elif SF == "BTV":
+            if "btag" in config[campaign]["BTV"].keys() and config[campaign]["BTV"][
+                "btag"
+            ].endswith(".json.gz"):
+                correction_map["btag"] = correctionlib.CorrectionSet.from_file(
+                    importlib.resources.path(
+                        f"BTVNanoCommissioning.data.BTV.{campaign}", filename
+                    )
+                )
+            if "ctag" in config[campaign]["BTV"].keys() and config[campaign]["BTV"][
+                "btag"
+            ].endswith(".json.gz"):
+                correction_map["btag"] = correctionlib.CorrectionSet.from_file(
+                    importlib.resources.path(
+                        f"BTVNanoCommissioning.data.BTV.{campaign}", filename
+                    )
+                )
             if os.path.exists(
                 f"src/BTVNanoCommissioning/jsonpog-integration/POG/BTV/{campaign}"
             ):
@@ -67,19 +90,21 @@ def load_SF(campaign, syst=False):
                         _btag_path, config[campaign]["BTV"][tagger]
                     ) as filename:
                         if "B" in tagger:
-                            correction_map["btag"][tagger] = BTagScaleFactor(
-                                filename,
-                                BTagScaleFactor.RESHAPE,
-                                methods="iterativefit,iterativefit,iterativefit",
-                            )
-                        else:
-                            if campaign == "Rereco17_94X":
-                                correction_map["ctag"][tagger] = (
-                                    "BTVNanoCommissioning/data/BTV/"
-                                    + campaign
-                                    + "/"
-                                    + config[campaign]["BTV"][tagger]
+                            if filename.endswith(".json.gz"):
+                                correction_map[
+                                    "btag"
+                                ] = correctionlib.CorrectionSet.from_file(filename)
+                            else:
+                                correction_map["btag"][tagger] = BTagScaleFactor(
+                                    filename,
+                                    BTagScaleFactor.RESHAPE,
+                                    methods="iterativefit,iterativefit,iterativefit",
                                 )
+                        else:
+                            if filename.endswith(".json.gz"):
+                                correction_map[
+                                    "ctag"
+                                ] = correctionlib.CorrectionSet.from_file(filename)
                             else:
                                 correction_map["ctag"][tagger] = BTagScaleFactor(
                                     filename,
@@ -109,7 +134,6 @@ def load_SF(campaign, syst=False):
                 )
             ### Check if any custom corrections needed
             # FIXME: (some low pT muons not supported in jsonpog-integration at the moment)
-
             if (
                 ".json" in "\t".join(list(config[campaign]["LSF"].values()))
                 or ".txt" in "\t".join(list(config[campaign]["LSF"].values()))
@@ -191,6 +215,7 @@ def load_SF(campaign, syst=False):
                         )
                 ext.finalize()
                 correction_map["EGM_custom"] = ext.make_evaluator()
+
         ## rochester muon momentum correction
         elif SF == "roccor":
             if "2016postVFP_UL" == campaign:
@@ -332,7 +357,7 @@ with contextlib.ExitStack() as stack:
     ext_jetvetomap.add_weight_sets(
         [
             f"RunCD jetvetomap {stack.enter_context(importlib.resources.path('BTVNanoCommissioning.data.JME.Winter22Run3','Winter22Run3_RunCD_v1.histo.root'))}",
-            f"RunE jetvetomap {stack.enter_context(importlib.resources.path('BTVNanoCommissioning.data.JME.Winter22Run3','Winter22Run3_RunE_v1.histo.root'))}",
+            f"RunE jetvetomap_eep {stack.enter_context(importlib.resources.path('BTVNanoCommissioning.data.JME.Winter22Run3','Winter22Run3_RunE_v1.histo.root'))}",
         ]
     )
 
