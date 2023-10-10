@@ -24,8 +24,8 @@ correction_config = {
         "JME": "jec_compiled.pkl.gz",
         "BTV": {"deepCSV": "shape", "deepJet": "shape"},
         "LSF": {
-            "ele_ID 2017": "wp90iso",
-            "ele_Reco 2017": "RecoAbove20",
+            "ele_ID 2017 UL-Electron-ID-SF": "wp90iso",
+            "ele_Reco 2017 UL-Electron-ID-SF": "RecoAbove20",
             "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
             "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
             "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
@@ -43,10 +43,25 @@ correction_config = {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
         "PU": "puweight_Winter22Run3.histo.root",  # use same 69.2mb for Summer22
         "JME": "winter_jec_compiled.pkl.gz",  # not this is from Winter22Run3 since this is not yet finished
+        "LSF": {
+            "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022_Prompt_ID_ISO_schemaV2.json",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        },
     },
     "Summer22EERun3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
         "PU": "puweight_Summer22EERun3.histo.root",  # 80mb
         "JME": "jec_compiled.pkl.gz",
+        "LSF": {
+            "ele_json": "electron.json.gz",
+            "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022EE_Prompt_ID_ISO_schemaV2.json",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+            "ele_ID 2022FG 2022FG-Electron-ID-SF": "Tight",
+            "ele_Reco_low 2022FG 2022FG-Electron-ID-SF": "RecoBelow20",
+            "ele_Reco_med 2022FG 2022FG-Electron-ID-SF": "Reco20to75",
+            "ele_Reco_high 2022FG 2022FG-Electron-ID-SF": "RecoAbove75",
+        },
     },
 }

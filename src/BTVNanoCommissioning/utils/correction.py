@@ -18,7 +18,7 @@ from BTVNanoCommissioning.utils.AK4_parameters import correction_config as confi
 
 
 def load_SF(campaign, syst=False):
-    correction_map = {}
+    correction_map = {"campaign": campaign}
     for SF in config[campaign].keys():
         if SF == "lumiMask":
             continue
@@ -114,10 +114,14 @@ def load_SF(campaign, syst=False):
         ## lepton SFs
         elif SF == "LSF":
             correction_map["MUO_cfg"] = {
-                mu: f for mu, f in config[campaign]["LSF"].items() if "mu" in mu
+                mu: f
+                for mu, f in config[campaign]["LSF"].items()
+                if "mu" in mu and "_json" not in mu
             }
             correction_map["EGM_cfg"] = {
-                e: f for e, f in config[campaign]["LSF"].items() if "ele" in e
+                e: f
+                for e, f in config[campaign]["LSF"].items()
+                if "ele" in e and "_json" not in e
             }
             ## Muon
             if os.path.exists(
@@ -132,12 +136,27 @@ def load_SF(campaign, syst=False):
                 correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
                 )
+            if any(
+                np.char.find(np.array(list(config[campaign]["LSF"].keys())), "mu_json")
+                != -1
+            ):
+                correction_map["MUO"] = correctionlib.CorrectionSet.from_file(
+                    f"src/BTVNanoCommissioning/data/LSF/{campaign}/{config[campaign]['LSF']['mu_json']}"
+                )
+            if any(
+                np.char.find(np.array(list(config[campaign]["LSF"].keys())), "ele_json")
+                != -1
+            ):
+                correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
+                    f"src/BTVNanoCommissioning/data/LSF/{campaign}/{config[campaign]['LSF']['ele_json']}"
+                )
+
             ### Check if any custom corrections needed
             # FIXME: (some low pT muons not supported in jsonpog-integration at the moment)
             if (
-                ".json" in "\t".join(list(config[campaign]["LSF"].values()))
-                or ".txt" in "\t".join(list(config[campaign]["LSF"].values()))
-                or ".root" in "\t".join(list(config[campaign]["LSF"].values()))
+                "histo.json" in "\t".join(list(config[campaign]["LSF"].values()))
+                or "histo.txt" in "\t".join(list(config[campaign]["LSF"].values()))
+                or "histo.root" in "\t".join(list(config[campaign]["LSF"].values()))
             ):
                 _mu_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
                 ext = extractor()
@@ -145,9 +164,9 @@ def load_SF(campaign, syst=False):
                     inputs, real_paths = [
                         k
                         for k in correction_map["MUO_cfg"].keys()
-                        if ".json" in correction_map["MUO_cfg"][k]
-                        or ".txt" in correction_map["MUO_cfg"][k]
-                        or ".root" in correction_map["MUO_cfg"][k]
+                        if "histo.json" in correction_map["MUO_cfg"][k]
+                        or "histo.txt" in correction_map["MUO_cfg"][k]
+                        or "histo.root" in correction_map["MUO_cfg"][k]
                     ], [
                         stack.enter_context(importlib.resources.path(_mu_path, f))
                         for f in correction_map["MUO_cfg"].values()
@@ -162,9 +181,9 @@ def load_SF(campaign, syst=False):
                         [
                             f"{paths} {file}"
                             for paths, file in zip(inputs, real_paths)
-                            if ".json" in str(file)
-                            or ".txt" in str(file)
-                            or ".root" in str(file)
+                            if "histo.json" in str(file)
+                            or "histo.txt" in str(file)
+                            or "histo.root" in str(file)
                         ]
                     )
                     if syst:
@@ -186,21 +205,21 @@ def load_SF(campaign, syst=False):
                     inputs, real_paths = [
                         k
                         for k in correction_map["EGM_cfg"].keys()
-                        if ".json" in correction_map["EGM_cfg"][k]
-                        or ".txt" in correction_map["EGM_cfg"][k]
-                        or ".root" in correction_map["EGM_cfg"][k]
+                        if "histo.json" in correction_map["EGM_cfg"][k]
+                        or "histo.txt" in correction_map["EGM_cfg"][k]
+                        or "histo.root" in correction_map["EGM_cfg"][k]
                     ], [
                         stack.enter_context(importlib.resources.path(_ele_path, f))
                         for f in correction_map["EGM_cfg"].values()
-                        if ".json" in f or ".txt" in f or ".root" in f
+                        if "histo.json" in f or ".txt" in f or ".root" in f
                     ]
                     ext.add_weight_sets(
                         [
                             f"{paths} {file}"
                             for paths, file in zip(inputs, real_paths)
-                            if ".json" in str(file)
-                            or ".txt" in str(file)
-                            or ".root" in str(file)
+                            if "histo.json" in str(file)
+                            or "histo.txt" in str(file)
+                            or "histo.root" in str(file)
                         ]
                     )
                     if syst:
@@ -875,12 +894,13 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
 ### Lepton SFs
 def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
     allele = ele if ele.ndim > 1 else ak.singletons(ele)
+
     for sf in correct_map["EGM_cfg"].keys():
         ## Only apply SFs for lepton pass HLT filter
         if not isHLT and "HLT" in sf:
             continue
         sf_type = sf[: sf.find(" ")]
-        if "low" in sf:
+        if "low" in sf or "high" in sf:
             continue
         for nele in range(ak.num(allele.pt)[0]):
             ele = allele[:, nele]
@@ -897,92 +917,192 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             if "correctionlib" in str(type(correct_map["EGM"])):
                 ## Reco SF -splitted pT
                 if "Reco" in sf:
-                    ele_pt = np.where(ele.pt < 20.0, 20.0, ele.pt)
-                    ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
-
-                    sfs_low = np.where(
-                        (~mask) & (~masknone),
-                        correct_map["EGM"][list(correct_map["EGM"].keys())[0]].evaluate(
-                            sf[sf.find(" ") + 1 :],
-                            "sf",
-                            "RecoBelow20",
-                            ele_eta,
-                            ele_pt_low,
-                        ),
-                        1.0,
-                    )
-                    sfs = np.where(
-                        mask & (~masknone),
-                        correct_map["EGM"][list(correct_map["EGM"].keys())[0]].evaluate(
-                            sf[sf.find(" ") + 1 :], "sf", "RecoAbove20", ele_eta, ele_pt
-                        ),
-                        sfs_low,
-                    )
-                    sfs = np.where(masknone, 1.0, sfs)
-
-                    if syst:
-                        sfs_up_low = np.where(
-                            ~mask & ~masknone,
-                            correct_map["EGM"][
-                                list(correct_map["EGM"].keys())[0]
-                            ].evaluate(
-                                sf[sf.find(" ") + 1 :],
-                                "sfup",
+                    if "Summer22" not in correct_map["campaign"]:
+                        ele_pt = np.where(ele.pt < 20.0, 20.0, ele.pt)
+                        ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
+                        sfs_low = np.where(
+                            (~mask) & (~masknone),
+                            correct_map["EGM"][correct_map["EGM_cfg"][sf]].evaluate(
+                                sf.split(" ")[1],
+                                "sf",
                                 "RecoBelow20",
                                 ele_eta,
                                 ele_pt_low,
                             ),
-                            0.0,
+                            1.0,
                         )
-                        sfs_down_low = np.where(
-                            ~mask & ~masknone,
-                            correct_map["EGM"][
-                                list(correct_map["EGM"].keys())[0]
-                            ].evaluate(
-                                sf[sf.find(" ") + 1 :],
-                                "sfdown",
+                        sfs = np.where(
+                            mask & (~masknone),
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1], "sf", "RecoAbove20", ele_eta, ele_pt
+                            ),
+                            sfs_low,
+                        )
+                        sfs = np.where(masknone, 1.0, sfs)
+
+                        if syst:
+                            sfs_up_low = np.where(
+                                ~mask & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "RecoBelow20",
+                                    ele_eta,
+                                    ele_pt_low,
+                                ),
+                                0.0,
+                            )
+                            sfs_down_low = np.where(
+                                ~mask & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "RecoBelow20",
+                                    ele_eta,
+                                    ele_pt_low,
+                                ),
+                                0.0,
+                            )
+                            sfs_up = np.where(
+                                mask & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "RecoAbove20",
+                                    ele_eta,
+                                    ele_pt,
+                                ),
+                                sfs_up_low,
+                            )
+                            sfs_down = np.where(
+                                mask & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "RecoAbove20",
+                                    ele_eta,
+                                    ele_pt,
+                                ),
+                                sfs_down_low,
+                            )
+                            sfs_up, sfs_down = np.where(
+                                masknone, 1.0, sfs_up
+                            ), np.where(masknone, 1.0, sfs_down)
+                    else:
+                        ele_pt = np.clip(ele.pt, 20.1, 74.9)
+                        ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
+                        ele_pt_high = np.clip(ele.pt, 75.0, 500.0)
+
+                        sfs_low = np.where(
+                            (ele.pt <= 20.0) & (~masknone),
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1],
+                                "sf",
                                 "RecoBelow20",
                                 ele_eta,
                                 ele_pt_low,
                             ),
-                            0.0,
+                            1.0,
                         )
-                        sfs_up = np.where(
-                            mask & ~masknone,
-                            correct_map["EGM"][
-                                list(correct_map["EGM"].keys())[0]
-                            ].evaluate(
-                                sf[sf.find(" ") + 1 :],
-                                "sfup",
-                                "RecoAbove20",
+                        sfs_high = np.where(
+                            (ele.pt > 75.0) & (~masknone),
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1],
+                                "sf",
+                                "RecoAbove75",
                                 ele_eta,
-                                ele_pt,
+                                ele_pt_high,
                             ),
-                            sfs_up_low,
+                            sfs_low,
                         )
-                        sfs_down = np.where(
-                            mask & ~masknone,
-                            correct_map["EGM"][
-                                list(correct_map["EGM"].keys())[0]
-                            ].evaluate(
-                                sf[sf.find(" ") + 1 :],
-                                "sfdown",
-                                "RecoAbove20",
-                                ele_eta,
-                                ele_pt,
+                        sfs = np.where(
+                            (ele.pt > 20.0) & (ele.pt <= 75.0) & (~masknone),
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1], "sf", "Reco20to75", ele_eta, ele_pt
                             ),
-                            sfs_down_low,
+                            sfs_high,
                         )
-                        sfs_up, sfs_down = np.where(masknone, 1.0, sfs_up), np.where(
-                            masknone, 1.0, sfs_down
-                        )
+
+                        sfs = np.where(masknone, 1.0, sfs)
+
+                        if syst:
+                            sfs_up_low = np.where(
+                                (ele.pt <= 20.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "RecoBelow20",
+                                    ele_eta,
+                                    ele_pt_low,
+                                ),
+                                0.0,
+                            )
+                            sfs_down_low = np.where(
+                                (ele.pt <= 20.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "RecoBelow20",
+                                    ele_eta,
+                                    ele_pt_low,
+                                ),
+                                0.0,
+                            )
+                            sfs_up_high = np.where(
+                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "RecoAbove75",
+                                    ele_eta,
+                                    ele_pt_high,
+                                ),
+                                sfs_up_low,
+                            )
+                            sfs_down_high = np.where(
+                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "RecoAbove75",
+                                    ele_eta,
+                                    ele_pt_high,
+                                ),
+                                sfs_down_low,
+                            )
+                            sfs_up = np.where(
+                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "Reco20to75",
+                                    ele_eta,
+                                    ele_pt,
+                                ),
+                                sfs_up_high,
+                            )
+                            sfs_down = np.where(
+                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "Reco20to75",
+                                    ele_eta,
+                                    ele_pt,
+                                ),
+                                sfs_down_high,
+                            )
+
+                            sfs_up, sfs_down = np.where(
+                                masknone, 1.0, sfs_up
+                            ), np.where(masknone, 1.0, sfs_down)
                 ## Other files
                 else:
                     sfs = np.where(
                         masknone,
                         1.0,
-                        correct_map["EGM"][list(correct_map["EGM"].keys())[0]].evaluate(
-                            sf[sf.find(" ") + 1 :],
+                        correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                            sf.split(" ")[1],
                             "sf",
                             correct_map["EGM_cfg"][sf],
                             ele_eta,
@@ -994,10 +1114,8 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         sfs_up = np.where(
                             masknone,
                             1.0,
-                            correct_map["EGM"][
-                                list(correct_map["EGM"].keys())[0]
-                            ].evaluate(
-                                sf[sf.find(" ") + 1 :],
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1],
                                 "sfup",
                                 correct_map["EGM_cfg"][sf],
                                 ele_eta,
@@ -1007,10 +1125,8 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         sfs_down = np.where(
                             masknone,
                             1.0,
-                            correct_map["EGM"][
-                                list(correct_map["EGM"].keys())[0]
-                            ].evaluate(
-                                sf[sf.find(" ") + 1 :],
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1],
                                 "sfdown",
                                 correct_map["EGM_cfg"][sf],
                                 ele_eta,
@@ -1088,12 +1204,14 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
             mu = allmu[:, nmu]
             masknone = ak.is_none(mu.pt)
 
-            mu_pt = np.where(mu.pt < 15, 15, mu.pt)
-            mu_eta = np.where(np.abs(mu.eta) >= 2.4, 2.39, np.abs(mu.eta))
+            mu_pt = np.clip(mu.pt, 15.0, 199.9)
+            mu_eta = np.clip(np.abs(mu.eta), 0.0, 2.4)
             mask = mu_pt > 30
             sfs = 1.0
             if "correctionlib" in str(type(correct_map["MUO"])):
-                if "ID" in sf or "Reco" in sf:
+                if ("ID" in sf or "Reco" in sf) and "Summer22" not in correct_map[
+                    "campaign"
+                ]:
                     mu_pt = ak.fill_none(np.where(mu.pt < 30, 30, mu.pt), 30)
                     mu_pt_low = ak.fill_none(np.where(mu.pt >= 30, 30, mu.pt), 30)
                     sfs_low = np.where(
@@ -1141,29 +1259,56 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
                         )
 
                 else:
-                    sfs = np.where(
-                        masknone,
-                        1.0,
-                        correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
-                            sf[sf.find(" ") + 1 :], mu_eta, mu_pt, "sf"
-                        ),
-                    )
-
+                    if "Summer22" not in correct_map["campaign"]:
+                        sfs = np.where(
+                            masknone,
+                            1.0,
+                            correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
+                                correct_map["MUO_cfg"][sf.split(" ")[1]],
+                                mu_eta,
+                                mu_pt,
+                                "sf",
+                            ),
+                        )
+                    else:
+                        sfs = np.where(
+                            masknone,
+                            1.0,
+                            correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
+                                mu_eta, mu_pt, "nominal"
+                            ),
+                        )
                     if syst:
-                        sfs_up = np.where(
-                            masknone,
-                            1.0,
-                            correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
-                                sf[sf.find(" ") + 1 :], mu_eta, mu_pt, "systup"
-                            ),
-                        )
-                        sfs_down = np.where(
-                            masknone,
-                            1.0,
-                            correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
-                                sf[sf.find(" ") + 1 :], mu_eta, mu_pt, "systdown"
-                            ),
-                        )
+                        if "Summer22" not in correct_map["campaign"]:
+                            sfs_up = np.where(
+                                masknone,
+                                1.0,
+                                correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
+                                    correct_map["MUO_cfg"][sf.split(" ")[1]],
+                                    mu_eta,
+                                    mu_pt,
+                                    "systup",
+                                ),
+                            )
+                            sfs_down = np.where(
+                                masknone,
+                                1.0,
+                                correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
+                                    correct_map["MUO_cfg"][sf.split(" ")[1]],
+                                    mu_eta,
+                                    mu_pt,
+                                    "systdown",
+                                ),
+                            )
+                        else:
+                            sf_unc = np.where(
+                                masknone,
+                                0.0,
+                                correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
+                                    mu_eta, mu_pt, "syst"
+                                ),
+                            )
+                            sfs_up, sfs_down = 1.0 + sf_unc, 1.0 - sf_unc
             else:
                 if "mu" in sf:
                     sfs = np.where(

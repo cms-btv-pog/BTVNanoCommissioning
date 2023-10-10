@@ -145,13 +145,13 @@ After a small test, you can run the full campaign for a dedicated phase space, s
 - Dileptonic ttbar phase space : check performance for btag SFs, emu channel
 
 ```
- python runner.py --workflow ttdilep_sf --json metadata/data_Summer22_emu_BTV_Run3_2022_Comm_v1.json  --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site}) 
+ python runner.py --workflow ttdilep_sf --json metadata/data_Summer22_Run3_2022_em_BTV_Comm_v2_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site}) 
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_mu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site})
+python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v2_NanoV12_noPF.json --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site})
 ```
 
 </p>
@@ -164,26 +164,26 @@ python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_mu_BTV_Ru
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer22_mu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v2_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 
 - Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Summer22_mu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v2_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 - W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
 
 ```
-python runner.py --workflow ctag_Wc_sf --json metadata/data_Summer22_mu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_Wc_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v2_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_DY_sf --json metadata/data_Summer22_mu_BTV_Run3_2022_Comm_v1.json --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_DY_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v2_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 </p>
@@ -452,10 +452,10 @@ The official correction files collected in [jsonpog-integration](https://gitlab.
          # JMAR, IDs from JME- Following the scheme: "${SF_name}": "${WP}"
         "JMAR": {"PUJetID_eff": "L"},
         "LSF": {
-        # Electron SF - Following the scheme: "${SF_name} ${year}": "${WP}"
+        # Electron SF - Following the scheme: "${SF_name} ${SF_map} ${year}": "${WP}"
         # https://github.com/cms-egamma/cms-egamma-docs/blob/master/docs/EgammaSFJSON.md
-            "ele_ID 2017": "wp90iso",
-            "ele_Reco 2017": "RecoAbove20",
+            "ele_ID 2017 UL-Electron-ID-SF": "wp90iso",
+            "ele_Reco 2017 UL-Electron-ID-SF": "RecoAbove20",
 
         # Muon SF - Following the scheme: "${SF_name} ${year}": "${WP}"
         # WPs : ['NUM_GlobalMuons_DEN_genTracks', 'NUM_HighPtID_DEN_TrackerMuons', 'NUM_HighPtID_DEN_genTracks', 'NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight', 'NUM_LooseID_DEN_TrackerMuons', 'NUM_LooseID_DEN_genTracks', 'NUM_LooseRelIso_DEN_LooseID', 'NUM_LooseRelIso_DEN_MediumID', 'NUM_LooseRelIso_DEN_MediumPromptID', 'NUM_LooseRelIso_DEN_TightIDandIPCut', 'NUM_LooseRelTkIso_DEN_HighPtIDandIPCut', 'NUM_LooseRelTkIso_DEN_TrkHighPtIDandIPCut', 'NUM_MediumID_DEN_TrackerMuons', 'NUM_MediumID_DEN_genTracks', 'NUM_MediumPromptID_DEN_TrackerMuons', 'NUM_MediumPromptID_DEN_genTracks', 'NUM_Mu50_or_OldMu100_or_TkMu100_DEN_CutBasedIdGlobalHighPt_and_TkIsoLoose', 'NUM_SoftID_DEN_TrackerMuons', 'NUM_SoftID_DEN_genTracks', 'NUM_TightID_DEN_TrackerMuons', 'NUM_TightID_DEN_genTracks', 'NUM_TightRelIso_DEN_MediumID', 'NUM_TightRelIso_DEN_MediumPromptID', 'NUM_TightRelIso_DEN_TightIDandIPCut', 'NUM_TightRelTkIso_DEN_HighPtIDandIPCut', 'NUM_TightRelTkIso_DEN_TrkHighPtIDandIPCut', 'NUM_TrackerMuons_DEN_genTracks', 'NUM_TrkHighPtID_DEN_TrackerMuons', 'NUM_TrkHighPtID_DEN_genTracks']
