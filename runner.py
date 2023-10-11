@@ -687,7 +687,6 @@ if __name__ == "__main__":
                 worker_extra_args=["--worker-port 10000:10100"],
                 job_script_prologue=job_script_prologue,
             )
-            print("setting here is correct")
         elif "slurm" in args.executor:
             cluster = SLURMCluster(
                 queue="all",

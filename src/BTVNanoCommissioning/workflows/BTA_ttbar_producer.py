@@ -423,10 +423,10 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
             # genJet pT
-            genJetIdx = jet.genJetIdx.mask[
-                (jet.genJetIdx >= ak.num(events.GenJet)) & (jet.genJetIdx < 0)
-            ]  # in case the genJet index out of range
-            Jet["genpt"] = ak.fill_none(events.GenJet[genJetIdx].pt, -1)
+            genJetIdx = ak.where(
+                jet.genJetIdx < ak.num(events.GenJet), jet.genJetIdx, zeros
+            )  # in case the genJet index out of range
+            Jet["genpt"] = ak.where(genJetIdx != -1, events.GenJet[genJetIdx].pt, -99)
 
             # gen-level jet cleaning aginst prompt leptons
             genlep_prompt = genlep[(Genlep.mother != 0) & (Genlep.mother % 10 == 0)]

@@ -12,7 +12,120 @@ errband_opts = {
     "alpha": 0.4,
 }
 markers = [".", "o", "^", "s", "+", "x", "D", "*"]
-
+color_map = {
+    "$t\\bar{t}$": "#008695",
+    "Single top": "#3969ac",
+    "VV": "#7f3c8d",
+    "Z+jets": "#e68310",
+    "W+jets": "#80ba5a",
+    "QCD": "#e73f74",
+    "QCD($\\mu$)": "#a5aa99",
+    "udsg": "tab:blue",
+    "pu": "tab:orange",
+    "c": "tab:green",
+    "b": "tab:red",
+}
+sample_mergemap = {
+    # ttbar
+    "$t\\bar{t}$": [
+        "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+        "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8",
+    ],
+    # single top
+    "Single top": [
+        "TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8",
+        "TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8",
+        "TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8",
+        "TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8",
+        "TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8",
+        # decay
+        "TWminusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+        "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+        "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+        "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+    ],
+    # diboson
+    "VV": [
+        "WW_TuneCP5_13p6TeV-pythia8",
+        "WZ_TuneCP5_13p6TeV-pythia8",
+        "ZZ_TuneCP5_13p6TeV-pythia8"
+        # decay
+        "ZZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "ZZto2Nu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "ZZto4L_TuneCP5_13p6TeV_powheg-pythia8",
+        "ZZto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+        "WZtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "WZto3LNu_TuneCP5_13p6TeV_powheg-pythia8",
+        "WWto4Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "WWtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "WWto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+    ],
+    "Z+jets": [
+        "DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
+        "DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
+    ],
+    "W+jets": [
+        "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8",
+        "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        # jet binned sample
+        "WtoLNu-4Jets_1J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "WtoLNu-4Jets_2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "WtoLNu-4Jets_3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+    ],
+    # QCD
+    "QCD": [
+        "QCD_PT-15to30_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-30to50_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-50to80_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-50to80_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-80to120_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-120to170_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-170to300_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-170to300_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-300to470_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-300to470_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-470to600_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-470to600_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-600to800_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-600to800_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-800to1000_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-800to1000_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-1000to1400_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-1000to1400_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-1400to1800_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-1400to1800_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-1800to2400_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-1800to2400_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-2400to3200_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-2400to3200_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-3200_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-3200_TuneCP5_13p6TeV_pythia8",
+    ],
+    # QCD muon enriched
+    "QCD($\\mu$)": [
+        "QCD_PT-15to20_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-20to30_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-30to50_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-50to80_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-80to120_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-120to170_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-170to300_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-300to470_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-470to600_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-600to800_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-800to1000_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "QCD_PT-1000_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+    ],
+}
 ### copy functions coffea.hist.plotratio https://github.com/CoffeaTeam/coffea/blob/master/coffea/hist/plot.py to boost-hist
 ################
 ## ratio plot ##

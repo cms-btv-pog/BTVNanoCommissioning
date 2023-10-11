@@ -1,7 +1,8 @@
 import sys
-from os import popen, listdir, makedirs, path, system
+import os
 import json
 import argparse
+from collections import defaultdict
 
 # Adapt some developments from Andrey Pozdnyakov in CoffeaRunner https://github.com/cms-rwth/CoffeaRunner/blob/master/filefetcher/fetch.py
 parser = argparse.ArgumentParser(
@@ -23,9 +24,9 @@ parser.add_argument(
 )
 parser.add_argument(
     "--xrd",
-    default="root://xrootd-cms.infn.it//",
+    default=None,
     type=str,
-    help="xrootd prefix string (default: %(default)s)",
+    help="xrootd prefix string otherwise get from available sites",
 )
 
 parser.add_argument(
@@ -34,11 +35,60 @@ parser.add_argument(
     help="For samples that are not published on DAS. If this option is set then the format of the --input file must be adjusted. It should be: \n dataset_name path_to_files.",
     default=False,
 )
+parser.add_argument(
+    "--whitelist_sites",
+    help="White list fot sites",
+    default=None,
+)
+parser.add_argument(
+    "--blacklist_sites",
+    help="Black list for sites",
+    default=None,
+)
+
 
 args = parser.parse_args()
 
 
-# Adapt
+# Based on https://github.com/PocketCoffea/PocketCoffea/blob/main/pocket_coffea/utils/rucio.py
+def get_xrootd_sites_map():
+    sites_xrootd_access = defaultdict(dict)
+    if not os.path.exists(".sites_map.json"):
+        print("Loading SITECONF info")
+        sites = [
+            (s, "/cvmfs/cms.cern.ch/SITECONF/" + s + "/storage.json")
+            for s in os.listdir("/cvmfs/cms.cern.ch/SITECONF/")
+            if s.startswith("T")
+        ]
+        for site_name, conf in sites:
+            if not os.path.exists(conf):
+                continue
+            try:
+                data = json.load(open(conf))
+            except:
+                continue
+            for site in data:
+                if site["type"] != "DISK":
+                    continue
+                if site["rse"] == None:
+                    continue
+                for proc in site["protocols"]:
+                    if proc["protocol"] == "XRootD":
+                        if proc["access"] not in ["global-ro", "global-rw"]:
+                            continue
+                        if "prefix" not in proc:
+                            if "rules" in proc:
+                                for rule in proc["rules"]:
+                                    sites_xrootd_access[site["rse"]][
+                                        rule["lfn"]
+                                    ] = rule["pfn"]
+                        else:
+                            sites_xrootd_access[site["rse"]] = proc["prefix"]
+        json.dump(sites_xrootd_access, open(".sites_map.json", "w"))
+
+    return json.load(open(".sites_map.json"))
+
+
 def getFilesFromDas(args):
     fset = []
     with open(args.input) as fp:
@@ -47,25 +97,38 @@ def getFilesFromDas(args):
             fset.append(line)
 
     fdict = {}
-
+    if args.blacklist_sites is not None:
+        args.blacklist_sites = args.blacklist_sites.split(",")
+        print("blacklist sites:", args.blacklist_sites)
+    if args.whitelist_sites is not None:
+        args.whitelist_sites = args.whitelist_sites.split(",")
+        print("whitelist sites:", args.whitelist_sites)
     for dataset in fset:
         if dataset.startswith("#") or dataset.strip() == "":
-            # print("we skip this line:", line)
             continue
 
         dsname = dataset.strip().split("/")[1]  # Dataset first name
 
-        Tier = dataset.strip().split("/")[
-            3
-        ]  # NANOAODSIM for regular samples, USER for private
-        if "SIM" not in Tier:
-            dsname = dataset.strip().split("/")[1] + "_" + dataset.split("/")[2]
+        Tier = dataset.strip().split("/")[3]
+        # NANOAODSIM for regular samples, USER for private
+        if "Run" in dataset and "mc" not in dataset:
+            dsname = (
+                dataset.strip().split("/")[1]
+                + dataset.strip().split("/")[2][
+                    dataset.strip()
+                    .split("/")[2]
+                    .find("Run") : dataset.strip()
+                    .split("/")[2]
+                    .rfind("-")
+                ]
+            )
+            # +dataset.strip().split("/")[2].find("Run")
         instance = "prod/global"
         if Tier == "USER":
             instance = "prod/phys03"
         print("Creating list of files for dataset", dsname, Tier, instance)
         flist = (
-            popen(
+            os.popen(
                 (
                     "/cvmfs/cms.cern.ch/common/dasgoclient -query='instance={} file dataset={}'"
                 ).format(instance, fset[fset.index(dataset)].rstrip())
@@ -73,13 +136,62 @@ def getFilesFromDas(args):
             .read()
             .split("\n")
         )
+        import json
+
+        dataset = dataset[:-1] if "\n" in dataset else dataset
+        fetchsite = json.loads(
+            (
+                os.popen(
+                    f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance={instance}  dataset={dataset} site' -json"
+                ).read()
+            )
+        )
+
+        if instance == "prod/phys03":
+            possible_sites = [fetchsite[0]["site"][0]["name"]]
+            print(fetchsite[0]["site"])
+        else:
+            possible_sites = [
+                s["site"][0]["name"]
+                for s in fetchsite
+                if (s["site"][0]["replica_fraction"] == "100.00%")
+                & (s["site"][0]["block_completion"] == "100.00%")
+                & (s["site"][0]["kind"] == "DISK")
+            ]
+
+        sites_xrootd_prefix = get_xrootd_sites_map()
+        xrd = None
+
+        if args.xrd == None:
+            if args.whitelist_sites is not None:
+                # get first site in whitelist_site
+                for w_site in args.whitelist_sites:
+                    if xrd is not None:
+                        break
+                    for site in possible_sites:
+                        if site == w_site and type(sites_xrootd_prefix[site]) == str:
+                            xrd = sites_xrootd_prefix[site]
+            else:
+                for site in possible_sites:
+                    if (
+                        args.blacklist_sites is not None
+                        and site in args.blacklist_sites
+                    ):
+                        continue
+                    # get first site in possible_sites
+                    elif type(sites_xrootd_prefix[site]) == str:
+                        xrd = sites_xrootd_prefix[site]
+        else:
+            xrd = args.xrd
+
+        if xrd is None:
+            raise Exception(f"No SITE available in the whitelist for file {dsname}")
 
         if dsname not in fdict:
-            fdict[dsname] = [args.xrd + f for f in flist if len(f) > 1]
+            fdict[dsname] = [xrd + f for f in flist if len(f) > 1]
         else:  # needed to collect all data samples into one common key "Data" (using append() would introduce a new element for the key)
-            fdict[dsname].extend([args.xrd + f for f in flist if len(f) > 1])
+            fdict[dsname].extend([xrd + f for f in flist if len(f) > 1])
 
-    # pprint.pprint(fdict, depth=1)
     return fdict
 
 
@@ -116,18 +228,17 @@ def getRootFilesFromPath(d, lim=None):
         allfiles = str(
             subprocess.check_output(["xrdfs", siteIP, "ls", pathToFiles]), "utf-8"
         ).split("\n")
-        # rootfiles = [siteIP+'/'+f for i,f in enumerate(allfiles) if f.endswith(".root") and (lim==None or i<lim)]
     else:
         siteIP = ""
         pathToFiles = d
         allfiles = [
-            path.join(d, f) for i, f in enumerate(listdir(d)) if f.endswith(".root")
+            os.path.join(d, f)
+            for i, f in enumerate(os.listdir(d))
+            if f.endswith(".root")
         ]
 
-    # print(siteIP, pathToFiles)
     rootfiles = []
     for file_or_dir in allfiles:
-        # print(file_or_dir)
         if file_or_dir == "" or file_or_dir == pathToFiles:
             continue
         file_or_dir = siteIP + file_or_dir
@@ -144,9 +255,6 @@ def getRootFilesFromPath(d, lim=None):
                 rootfiles.extend(
                     getRootFilesFromPath(file_or_dir, lim - len(rootfiles))
                 )
-
-    # print("Input path:", d)
-    # print("List of root files to be processed:\n",rootfiles)
 
     return rootfiles
 
