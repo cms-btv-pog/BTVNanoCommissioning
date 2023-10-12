@@ -1,5 +1,5 @@
 {
-    "BTagMuRun2022C-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "BTagMuRun2022C-27Jun2023-v2": [
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022C-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12/230927_120154/0000/nano_data2022CDE_121.root",
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022C-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12/230927_120154/0000/nano_data2022CDE_417.root",
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022C-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12/230927_120154/0000/nano_data2022CDE_424.root",
@@ -542,7 +542,7 @@
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022C-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12/230927_120154/0000/nano_data2022CDE_480.root",
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022C-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12/230927_120154/0000/nano_data2022CDE_493.root"
     ],
-    "BTagMuRun2022D-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "BTagMuRun2022D-27Jun2023-v1": [
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022D-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_120206/0000/nano_data2022CDE_59.root",
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022D-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_120206/0000/nano_data2022CDE_34.root",
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022D-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_120206/0000/nano_data2022CDE_38.root",

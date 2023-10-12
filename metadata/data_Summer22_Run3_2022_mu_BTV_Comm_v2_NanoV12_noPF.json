@@ -1,5 +1,5 @@
 {
-    "SingleMuonRun2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "SingleMuonRun2022C-27Jun2023-v1": [
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/SingleMuon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144025/0000/nano_data2022CDE_102.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/SingleMuon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144025/0000/nano_data2022CDE_80.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/SingleMuon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144025/0000/nano_data2022CDE_99.root",
@@ -144,7 +144,7 @@
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/SingleMuon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144025/0000/nano_data2022CDE_132.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/SingleMuon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144025/0000/nano_data2022CDE_142.root"
     ],
-    "DoubleMuonRun2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "DoubleMuonRun2022C-27Jun2023-v1": [
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/DoubleMuon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144049/0000/nano_data2022CDE_75.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/DoubleMuon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144049/0000/nano_data2022CDE_73.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/DoubleMuon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144049/0000/nano_data2022CDE_69.root",
@@ -284,7 +284,7 @@
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/DoubleMuon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144049/0000/nano_data2022CDE_131.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/DoubleMuon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144049/0000/nano_data2022CDE_132.root"
     ],
-    "MuonRun2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "MuonRun2022C-27Jun2023-v1": [
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144112/0000/nano_data2022CDE_174.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144112/0000/nano_data2022CDE_170.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144112/0000/nano_data2022CDE_171.root",
@@ -677,7 +677,7 @@
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144112/0000/nano_data2022CDE_188.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022C-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/231009_085602/0000/nano_data2022CDE_1.root"
     ],
-    "MuonRun2022D-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "MuonRun2022D-27Jun2023-v2": [
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022D-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12/230927_144133/0000/nano_data2022CDE_18.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022D-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12/230927_144133/0000/nano_data2022CDE_35.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022D-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12/230927_144133/0000/nano_data2022CDE_227.root",

@@ -161,17 +161,18 @@ else:
 if "ctag" in args.phase and "DY" not in args.phase:
     input_txt = input_txt + "\nw/ soft-$\mu$"
 if args.variable == "all":
-    var_set = collated["mc"].keys()
+    var_set = [
+        var
+        for var in collated["mc"].keys()
+        if var not in ["fname", "run", "lumi", "sumw"]
+    ]
 elif "*" in args.variable:
     var_set = [
         var for var in collated["data"].keys() if args.variable.replace("*", "") in var
     ]
 else:
     var_set = args.variable.split(",")
-
 for index, discr in enumerate(var_set):
-    if "sumw" == discr:
-        continue
     ## remove empty
     if (
         discr not in collated["mc"].keys()
@@ -205,7 +206,10 @@ for index, discr in enumerate(var_set):
         allaxis["syst"] = "nominal"
         SF_axis = allaxis
         noSF_axis = allaxis
-        systlist = [i for i in range(collated["mc"][discr].axes[0].size)]
+        systlist = [
+            collated["mc"][discr].axes[0].value(i)
+            for i in range(collated["mc"][discr].axes[0].size)
+        ]
         if "noSF" in systlist:
             noSF_axis["syst"] = "noSF"
 

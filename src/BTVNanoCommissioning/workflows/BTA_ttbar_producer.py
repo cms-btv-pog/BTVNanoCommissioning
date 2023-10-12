@@ -72,6 +72,8 @@ class NanoProcessor(processor.ProcessorABC):
             "Evt": events.event,
             "LumiBlock": events.luminosityBlock,
             "rho": events.fixedGridRhoFastjetAll,
+            "npvs": events.PV.npvs,
+            "npvsGood": events.PV.npvsGood,
         }
         if not isRealData:
             basic_vars["nPU"] = events.Pileup.nPU
@@ -383,7 +385,7 @@ class NanoProcessor(processor.ProcessorABC):
         Jet = ak.zip(
             {
                 # basic kinematics
-                "pT": jet.pt,
+                "pt": jet.pt,
                 "eta": jet.eta,
                 "phi": jet.phi,
                 "mass": jet.mass,
@@ -523,7 +525,21 @@ class NanoProcessor(processor.ProcessorABC):
                         b_nest[n] = ak.packed(ak.without_parameters(output[bname][n]))
                     output_root[bname] = ak.zip(b_nest)
             fout["btagana/ttree"] = output_root
-
+            if isRealData:
+                fout["sumw"] = {"total_events": ak.Array([len(events)])}
+            else:
+                fout["sumw"] = {
+                    "total_events": ak.Array([len(events)]),
+                    "total_pos_events": ak.Array([ak.sum(events.genWeight > 0)]),
+                    "total_neg_events": ak.Array([-1.0 * ak.sum(events.genWeight < 0)]),
+                    "total_wei_events": ak.Array([ak.sum(events.genWeight)]),
+                    "total_poswei_events": ak.Array(
+                        [ak.sum(events.genWeight[events.genWeight > 0.0])]
+                    ),
+                    "total_negwei_events": ak.Array(
+                        [ak.sum(events.genWeight[events.genWeight < 0.0])]
+                    ),
+                }
         return {dataset: len(events)}
 
     def postprocess(self, accumulator):

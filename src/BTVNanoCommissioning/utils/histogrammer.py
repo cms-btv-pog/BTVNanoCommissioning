@@ -421,6 +421,7 @@ def histogrammer(events, workflow):
         "PNetRegPtRawRes",
         "Bprob",
         "BprobN",
+        "Proba",
         "ProbaN",
     ]
     for disc in disc_list:
