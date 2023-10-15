@@ -2,8 +2,11 @@ import awkward as ak
 import numba as nb
 import numpy as np
 import pandas as pd
+import uproot
 import coffea.nanoevents.methods.vector as vector
 import os, psutil
+
+from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
 
 ###############
 #  HLT table  #
@@ -199,3 +202,130 @@ def calc_ip_vector(obj, dxy, dz, is_3d=False):
     # then, get the closest distance to the track on 3D geometry
     ipvec_3d = ipvec_2d_ext - ipvec_2d_ext.dot(pvec) / pvec.p2 * pvec
     return ipvec_3d
+
+
+###############
+#   Classes   #
+###############
+
+
+class JPCalibHandler(object):
+    def __init__(self, campaign, isRealData, dataset):
+        r"""
+        Initialize the JPCalibHandler, used for calculating the track probability and jet probability
+            campaign: campaign name
+            isRealData: whether the dataset is real data
+            dataset: dataset name from events.metadata["dataset"]
+        """
+        if isRealData:
+            for key in config[campaign]["JPCalib"]:
+                if key in dataset:
+                    filename = config[campaign]["JPCalib"][key]
+                    break
+            else:
+                raise ValueError(f"No JPCalib file found for dataset {dataset}")
+        else:
+            filename = config[campaign]["JPCalib"]["MC"]
+
+        # print(f'Using JPCalib file {filename}')
+
+        templates = uproot.open(f"src/BTVNanoCommissioning/data/JPCalib/{filename}")
+        self.ipsig_histo_val = np.array(
+            [templates[f"histoCat{i}"].values() for i in range(10)]
+        )
+        self.ipsig_histo_tot = np.sum(self.ipsig_histo_val, axis=1)
+        self.values_cumsum = np.cumsum(self.ipsig_histo_val[:, ::-1], axis=1)[:, ::-1]
+        self.edges = templates["histoCat0"].axes[0].edges()
+
+    def calc_track_proba(self, ipsig: ak.Array, cat: ak.Array):
+        r"""
+        Calculate the track probability from the integral of the track IPsig templates, given the IPsig and category
+            ipsig: IP significance array
+            cat: category array (0-9)
+        """
+
+        if ak.any(cat < 0) or ak.any(cat > 9):
+            raise ValueError("Category out of range [0, 9]")
+
+        # get the fully flattened array of the input while storing its layouts for later recovery
+        layouts = []
+        _array = ipsig
+        while str(ak.type(_array)).count("*") > 1:
+            layouts.append(ak.num(_array))
+            _array = ak.flatten(_array)
+        ipsig_fl = _array
+        cat_fl = ak.flatten(cat, axis=None)
+
+        # index of the IPsig bins
+        ipsig_fl = abs(ipsig_fl)
+        ipsig_fl_index = np.minimum(
+            np.searchsorted(self.edges, ipsig_fl), self.ipsig_histo_val.shape[1] - 1
+        )
+
+        # retrieve the cumsum value (\int_{ipsig}^{inf} p(ipsig') d(ipsig')) from the correct template
+        ipsig_cumsum_fl = self.values_cumsum[cat_fl, ipsig_fl_index]
+
+        # calculate the track probability as (\int_{ipsig}^{inf} ..) / (\int_{0}^{inf} ..) * sign(IPsig)
+        proba_fl = (ipsig_cumsum_fl / self.ipsig_histo_tot[cat_fl]) * np.sign(ipsig_fl)
+
+        # recover the original layout
+        proba = proba_fl
+        for layout in layouts[::-1]:
+            proba = ak.unflatten(proba, layout)
+        return proba
+
+    def calc_jet_proba(self, proba):
+        # Calculate jet probability (JP)
+        # according to jetProbability func in https://github.com/cms-sw/cmssw/blob/CMSSW_13_0_X/RecoBTag/ImpactParameter/interface/TemplatedJetProbabilityComputer.h
+
+        # minium proba = 0.5%
+        proba = np.maximum(proba, 0.005)  # dim: (evt, jet, trk)
+
+        ntrk = ak.num(proba, axis=-1)  # dim: (evt, jet), the number of tracks in a jet
+        prodproba_log = ak.sum(
+            np.log(proba), axis=-1
+        )  # dim: (evt, jet), the log(Π(proba)) of all tracks in a jet
+        prodproba_log_m_log = ak.where(
+            (ak.num(proba, axis=-1) >= 2) & (prodproba_log < 0),
+            np.log(-prodproba_log),
+            0,
+        )  # log(-logΠ), if >=2 tracks in a jet
+
+        @nb.njit
+        def calc_jet_proba_interm_track_loop(x_list, ntrk_list, builder):
+            r"""
+            To calculate Σ_tr{0..N-1} ((-logΠ)^tr / tr!), we have to run the track loop in a numba function
+                x_list: the log(-logΠ) arrays, dim: (evt, jet)
+                ntrk_list: N(trk) array, dim: (evt, jet)
+            """
+
+            # loop over event
+            for x_i, ntrk_i in zip(x_list, ntrk_list):
+                builder.begin_list()
+
+                # loop over jet
+                for x, ntrk in zip(x_i, ntrk_i):
+                    # start calculation, following the logic in cmssw jetProbability func
+                    prob = 1.0
+                    lfact = 1.0
+                    # loop over track
+                    for l in range(1, ntrk):
+                        lfact *= l
+                        prob += np.exp(l * x - np.log(lfact))
+                    builder.real(prob)
+                builder.end_list()
+            return builder
+
+        prob = calc_jet_proba_interm_track_loop(
+            prodproba_log_m_log, ntrk, ak.ArrayBuilder()
+        ).snapshot()  # dim: (evt, jet), calculating Σ_tr{0..N-1} ((-logΠ)^tr / tr!)
+
+        prob_jet = np.minimum(
+            np.exp(np.maximum(np.log(np.maximum(prob, 1e-30)) + prodproba_log, -30.0)),
+            1.0,
+        )  # dim: (evt, jet), calculating Π * Σ_tr{0..N-1} ((-logΠ)^tr / tr!)
+
+        prob_jet = ak.where(prodproba_log < 0, prob_jet, 1.0)
+        prob_jet = np.maximum(prob_jet, 1e-30)
+
+        return prob_jet
