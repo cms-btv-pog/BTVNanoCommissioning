@@ -708,7 +708,6 @@ class NanoProcessor(processor.ProcessorABC):
             trkj_jetbased.btagSip3dSig,
             ak.where(trkj_jetbased.category >= 0, trkj_jetbased.category, 0),
         )
-        print(trkj_jetbased["category"], trkj_jetbased["proba"])
 
         # then calculate JP/JBP
 
