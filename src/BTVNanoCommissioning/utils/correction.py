@@ -7,6 +7,7 @@ import os
 import re
 import numpy as np
 import awkward as ak
+import uproot
 from coffea.lookup_tools import extractor, txt_converters, rochester_lookup
 
 from coffea.lumi_tools import LumiMask
@@ -1522,3 +1523,130 @@ def add_scalevar_3pt(weights, lhe_weights):
         down = np.ones(len(weights.weight()))
 
     weights.add("scalevar_3pt", nom, up, down)
+
+
+# JP calibration utility
+class JPCalibHandler(object):
+    def __init__(self, campaign, isRealData, dataset):
+        r"""
+        A tool for calculating the track probability and jet probability
+            campaign: campaign name
+            isRealData: whether the dataset is real data
+            dataset: dataset name from events.metadata["dataset"]
+        """
+        if isRealData:
+            for key in config[campaign]["JPCalib"]:
+                if key in dataset:
+                    filename = config[campaign]["JPCalib"][key]
+                    break
+            else:
+                raise ValueError(f"No JPCalib file found for dataset {dataset}")
+        else:
+            filename = config[campaign]["JPCalib"]["MC"]
+
+        # print(f'Using JPCalib file {filename}')
+
+        templates = uproot.open(
+            f"src/BTVNanoCommissioning/data/JPCalib/{campaign}/{filename}"
+        )
+        self.ipsig_histo_val = np.array(
+            [templates[f"histoCat{i}"].values() for i in range(10)]
+        )
+        self.ipsig_histo_tot = np.sum(self.ipsig_histo_val, axis=1)
+        self.values_cumsum = np.cumsum(self.ipsig_histo_val[:, ::-1], axis=1)[:, ::-1]
+        self.edges = templates["histoCat0"].axes[0].edges()
+
+    def flatten(self, array):
+        r"""
+        Get the fully flattened array and its layout for each layer
+        """
+        layouts = []
+        array_fl = array
+        while str(ak.type(array_fl)).count("*") > 1:
+            layouts.append(ak.num(array_fl))
+            array_fl = ak.flatten(array_fl)
+        return array_fl, layouts
+
+    def unflatten(self, array_fl, layouts):
+        r"""
+        Recover a flattened array using the original layouts
+        """
+        array = array_fl
+        for layout in layouts[::-1]:
+            array = ak.unflatten(array, layout)
+        return array
+
+    def calc_track_proba(self, ipsig: ak.Array, cat: ak.Array):
+        r"""
+        Calculate the track probability from the integral of the track IPsig templates, given the IPsig and category.
+        Reference code: https://github.com/cms-sw/cmssw/blob/CMSSW_13_0_X/RecoBTag/TrackProbability/src/HistogramProbabilityEstimator.cc
+            ipsig: IP significance array
+            cat: category array (0-9)
+        """
+
+        if ak.any(cat < 0) or ak.any(cat > 9):
+            raise ValueError("Category out of range [0, 9]")
+
+        # get the fully flattened array of the input while storing its layouts for later recovery
+        ipsig_fl, layouts = self.flatten(ipsig)
+        cat_fl = ak.flatten(cat, axis=None)
+
+        # index of the IPsig bins
+        ipsig_fl = abs(ipsig_fl)
+        ipsig_fl_index = np.minimum(
+            np.searchsorted(self.edges, ipsig_fl), self.ipsig_histo_val.shape[1] - 1
+        )
+
+        # retrieve the cumsum value (\int_{ipsig}^{inf} p(ipsig') d(ipsig')) from the correct template
+        ipsig_cumsum_fl = self.values_cumsum[cat_fl, ipsig_fl_index]
+
+        # calculate the track probability as (\int_{ipsig}^{inf} ..) / (\int_{0}^{inf} ..) * sign(IPsig)
+        proba_fl = (ipsig_cumsum_fl / self.ipsig_histo_tot[cat_fl]) * np.sign(ipsig_fl)
+
+        # recover the original layout
+        proba = self.unflatten(proba_fl, layouts)
+        return proba
+
+    def calc_jet_proba(self, proba):
+        # Calculate jet probability (JP)
+        # according to jetProbability func in https://github.com/cms-sw/cmssw/blob/CMSSW_13_0_X/RecoBTag/ImpactParameter/interface/TemplatedJetProbabilityComputer.h
+
+        # minium proba = 0.5%
+        proba = np.maximum(proba, 0.005)  # dim: (evt, jet, trk)
+
+        ntrk = ak.num(proba, axis=-1)  # dim: (evt, jet), the number of tracks in a jet
+        prodproba_log = ak.sum(
+            np.log(proba), axis=-1
+        )  # dim: (evt, jet), the log(Π(proba)) of all tracks in a jet
+        prodproba_log_m_log = ak.where(
+            (ak.num(proba, axis=-1) >= 2) & (prodproba_log < 0),
+            np.log(-prodproba_log),
+            0,
+        )  # log(-logΠ), if >=2 tracks in a jet
+
+        # now calculating Σ_tr{0..N-1} ((-logΠ)^tr / tr!)
+        trk_index = ak.local_index(proba)
+        fact_array = ak.concatenate(
+            [
+                [1.0],
+                np.arange(1, max(5, ak.max(trk_index) + 1), dtype=np.float64).cumprod(),
+            ]
+        )  # construct a factorial array
+        trk_index_fl, _layouts = self.flatten(trk_index)
+        lfact = self.unflatten(
+            fact_array[trk_index_fl], _layouts
+        )  # dim: (evt, jet, trk), nested factorial array given the track index
+
+        prob = ak.sum(
+            np.exp(trk_index * prodproba_log_m_log - np.log(lfact)), axis=-1
+        )  # dim: (evt, jet), Σ_tr{0..N-1} ((-logΠ)^tr / tr!)
+
+        prob_jet = np.minimum(
+            np.exp(np.maximum(np.log(np.maximum(prob, 1e-30)) + prodproba_log, -30.0)),
+            1.0,
+        )  # dim: (evt, jet), calculating Π * Σ_tr{0..N-1} ((-logΠ)^tr / tr!)
+
+        prob_jet = ak.where(prodproba_log < 0, prob_jet, 1.0)
+        prob_jet = np.maximum(prob_jet, 1e-30)
+
+        return prob_jet

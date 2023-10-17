@@ -7,7 +7,6 @@ from coffea.nanoevents.methods import vector
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.helpers.BTA_helper import (
     BTA_HLT,
-    JPCalibHandler,
     to_bitwise_trigger,
     get_hadron_mass,
     cumsum,
@@ -15,7 +14,7 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     calc_ip_vector,
 )
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts
+from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts, JPCalibHandler
 
 
 ## Based on coffea_array_producer.ipynb from Congqiao
