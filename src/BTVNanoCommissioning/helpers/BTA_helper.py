@@ -5,8 +5,6 @@ import pandas as pd
 import coffea.nanoevents.methods.vector as vector
 import os, psutil
 
-from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
-
 ###############
 #  HLT table  #
 ###############
