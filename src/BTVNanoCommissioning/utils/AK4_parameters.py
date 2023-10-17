@@ -49,9 +49,9 @@ correction_config = {
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
         },
         "JPCalib": {
-            "Run2022C": "calibeHistoWrite_Data2022F_NANO130X_v1.root",  # to be updated
-            "Run2022D": "calibeHistoWrite_Data2022F_NANO130X_v1.root",  # to be updated
-            "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",  # to be updated
+            "Run2022C": "calibeHistoWrite_Data2022C_NANO130X_v1.root",
+            "Run2022D": "calibeHistoWrite_Data2022D_NANO130X_v1.root",
+            "MC": "calibeHistoWrite_MC2022_NANO130X_v2.root",
         },
     },
     "Summer22EERun3": {

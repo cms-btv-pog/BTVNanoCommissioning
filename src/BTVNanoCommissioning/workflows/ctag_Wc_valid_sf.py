@@ -429,7 +429,7 @@ class NanoProcessor(processor.ProcessorABC):
                         flatten(smuon_jet[histname.replace("mujet_", "")]),
                         weight=weight,
                     )
-                elif "btag" in histname:
+                elif "btag" in histname and "Trans" not in histname:
                     for i in range(2):
                         if (
                             str(i) not in histname
@@ -459,6 +459,16 @@ class NanoProcessor(processor.ProcessorABC):
                                 ),
                                 weight=weight,
                             )
+                elif "btag" in histname and "Trans" in histname:
+                    for i in range(2):
+                        histname = histname.replace("Trans", "").replace(f"_{i}", "")
+                        h.fill(
+                            syst="noSF",
+                            flav=smflav,
+                            osss=osss,
+                            discr=np.tanh(smuon_jet[histname]),
+                            weight=weights.partial_weight(exclude=exclude_btv),
+                        )
 
             output["njet"].fill(syst, osss, njet, weight=weight)
             output["nmujet"].fill(syst, osss, nmujet, weight=weight)

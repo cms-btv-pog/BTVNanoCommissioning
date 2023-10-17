@@ -81,16 +81,12 @@ def get_main_parser():
         ],
         help="Dataset campaign, change the corresponding correction files",
     )
-    parser.add_argument("--isCorr", action="store_true", help="Run with SFs")
     parser.add_argument(
         "--isSyst",
         default=None,
         type=str,
         choices=[None, "all", "weight_only", "JERC_split"],
         help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
-    )
-    parser.add_argument(
-        "--isJERC", action="store_true", help="JER/JEC implemented to jet"
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
     parser.add_argument(
@@ -114,13 +110,7 @@ def get_main_parser():
         metavar="N",
         help="Number of events per process chunk",
     )
-    parser.add_argument(
-        "--retries",
-        type=int,
-        default=25,
-        metavar="N",
-        help="Number of retries for coffea processor",
-    )
+    parser.add_argument("--skipbadfiles", action="store_true", help="Skip bad files.")
     parser = get_condor_submitter_parser(parser)
     return parser
 

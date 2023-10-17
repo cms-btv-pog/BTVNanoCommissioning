@@ -1,5 +1,5 @@
 import numpy as np
-import argparse, os, arrow, glob
+import argparse, os, arrow, glob, re
 from coffea.util import load
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
@@ -23,7 +23,7 @@ from BTVNanoCommissioning.utils.plot_utils import (
 bininfo = definitions()
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
-parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
+parser.add_argument("--com", default="13.6", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
     "-p",
     "--phase",
@@ -161,17 +161,38 @@ else:
 if "ctag" in args.phase and "DY" not in args.phase:
     input_txt = input_txt + "\nw/ soft-$\mu$"
 if args.variable == "all":
-    var_set = collated["mc"].keys()
-elif "*" in args.variable:
     var_set = [
-        var for var in collated["data"].keys() if args.variable.replace("*", "") in var
+        var
+        for var in collated["mc"].keys()
+        if var not in ["fname", "run", "lumi", "sumw"]
     ]
+elif "*" in args.variable:
+    if args.variable.count("*") > 1:
+        var_set = [
+            var
+            for var in collated[args.ref].keys()
+            if args.variable.replace("*", "") in var
+        ]
+    elif args.variable.startswith("*") or args.variable.endswith("*"):
+        var_set = [
+            var
+            for var in collated[args.ref].keys()
+            if var.startswith(args.variable.replace("*", ""))
+            or var.endswith(args.variable.replace("*", ""))
+        ]
+    else:
+        var_set = [
+            var
+            for var in collated[args.ref].keys()
+            if re.match(
+                f"^{args.variable.split('*')[0]}.*{args.variable.split('*')[1]}$", var
+            )
+            != None
+        ]
+
 else:
     var_set = args.variable.split(",")
-
 for index, discr in enumerate(var_set):
-    if "sumw" == discr:
-        continue
     ## remove empty
     if (
         discr not in collated["mc"].keys()
@@ -205,7 +226,10 @@ for index, discr in enumerate(var_set):
         allaxis["syst"] = "nominal"
         SF_axis = allaxis
         noSF_axis = allaxis
-        systlist = [i for i in range(collated["mc"][discr].axes[0].size)]
+        systlist = [
+            collated["mc"][discr].axes[0].value(i)
+            for i in range(collated["mc"][discr].axes[0].size)
+        ]
         if "noSF" in systlist:
             noSF_axis["syst"] = "noSF"
 

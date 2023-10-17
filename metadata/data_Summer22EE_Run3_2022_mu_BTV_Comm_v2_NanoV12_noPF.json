@@ -1,5 +1,5 @@
 {
-    "MuonRun2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "MuonRun2022E-27Jun2023-v1": [
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144157/0000/nano_data2022CDE_352.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144157/0000/nano_data2022CDE_212.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144157/0000/nano_data2022CDE_45.root",
@@ -462,7 +462,7 @@
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144157/0000/nano_data2022CDE_405.root",
         "root://maite.iihe.ac.be:1095//store/user/vanderli/PFNano_Run3/data_2022CDE_rereco/Muon/Run2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_144157/0000/nano_data2022CDE_210.root"
     ],
-    "MuonRun2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "MuonRun2022F-PromptReco-v1": [
         "root://maite.iihe.ac.be:1095//store/user/mullerd/PFNano_Run3/data_2022FG_prompt/Muon/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_115140/0000/nano_data2022FG_184.root",
         "root://maite.iihe.ac.be:1095//store/user/mullerd/PFNano_Run3/data_2022FG_prompt/Muon/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_115140/0000/nano_data2022FG_176.root",
         "root://maite.iihe.ac.be:1095//store/user/mullerd/PFNano_Run3/data_2022FG_prompt/Muon/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_115140/0000/nano_data2022FG_473.root",
@@ -1500,7 +1500,7 @@
         "root://maite.iihe.ac.be:1095//store/user/mullerd/PFNano_Run3/data_2022FG_prompt/Muon/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_115140/0000/nano_data2022FG_710.root",
         "root://maite.iihe.ac.be:1095//store/user/mullerd/PFNano_Run3/data_2022FG_prompt/Muon/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_115140/0000/nano_data2022FG_737.root"
     ],
-    "MuonRun2022G-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "MuonRun2022G-PromptReco-v1": [
         "root://maite.iihe.ac.be:1095//store/user/mullerd/PFNano_Run3/data_2022FG_prompt/Muon/Run2022G-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_115146/0000/nano_data2022FG_32.root",
         "root://maite.iihe.ac.be:1095//store/user/mullerd/PFNano_Run3/data_2022FG_prompt/Muon/Run2022G-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_115146/0000/nano_data2022FG_17.root",
         "root://maite.iihe.ac.be:1095//store/user/mullerd/PFNano_Run3/data_2022FG_prompt/Muon/Run2022G-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_115146/0000/nano_data2022FG_171.root",
