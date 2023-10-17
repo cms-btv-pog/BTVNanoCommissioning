@@ -48,6 +48,11 @@ correction_config = {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
         },
+        "JPCalib": {
+            "Run2022C": "calibeHistoWrite_Data2022F_NANO130X_v1.root",  # to be updated
+            "Run2022D": "calibeHistoWrite_Data2022F_NANO130X_v1.root",  # to be updated
+            "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",  # to be updated
+        },
     },
     "Summer22EERun3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
@@ -62,6 +67,12 @@ correction_config = {
             "ele_Reco_low 2022FG 2022FG-Electron-ID-SF": "RecoBelow20",
             "ele_Reco_med 2022FG 2022FG-Electron-ID-SF": "Reco20to75",
             "ele_Reco_high 2022FG 2022FG-Electron-ID-SF": "RecoAbove75",
+        },
+        "JPCalib": {
+            "Run2022E": "calibeHistoWrite_Data2022F_NANO130X_v1.root",  # to be updated
+            "Run2022F": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
+            "Run2022G": "calibeHistoWrite_Data2022G_NANO130X_v1.root",
+            "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",
         },
     },
 }

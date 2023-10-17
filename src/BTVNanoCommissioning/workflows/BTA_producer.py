@@ -14,7 +14,7 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     calc_ip_vector,
 )
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts
+from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts, JPCalibHandler
 
 
 ## Based on coffea_array_producer.ipynb from Congqiao
@@ -404,21 +404,69 @@ class NanoProcessor(processor.ProcessorABC):
                 # 'pileup_tightID':ak.values_astype((jet.puId & (1 << 0) > 0) | (jet.pt > 50.), int)  ,
                 # 'pileup_mediumID': ak.values_astype((jet.puId & (1 << 1) > 0) | (jet.pt > 50.), int) ,
                 # 'pileup_looseID': ak.values_astype((jet.puId & (1 << 2) > 0) | (jet.pt > 50.), int) ,
-                # taggers/vars // JP/JBP to be calibrated.. !!!
+                # taggers/vars
                 "area": jet.area,
-                "Proba": jet.Proba,
-                "ProbaN": jet.ProbaN,
-                "Bprob": jet.Bprob,
-                "BprobN": jet.BprobN,
-                # Deep Jet
+                # DeepJet
                 "DeepFlavourBDisc": jet.btagDeepFlavB,
                 "DeepFlavourCvsLDisc": jet.btagDeepFlavCvL,
                 "DeepFlavourCvsBDisc": jet.btagDeepFlavCvB,
+                "DeepFlavourBDisc_b": jet.btagDeepFlavB_b,
+                "DeepFlavourBDisc_bb": jet.btagDeepFlavB_bb,
+                "DeepFlavourBDisc_lepb": jet.btagDeepFlavB_lepb,
                 "DeepFlavourCDisc": jet.btagDeepFlavC,
+                "DeepFlavourUDSDisc": jet.btagDeepFlavUDS,
+                "DeepFlavourGDisc": jet.btagDeepFlavG,
                 "DeepFlavourBDiscN": jet.btagNegDeepFlavB,
                 "DeepFlavourCvsLDiscN": jet.btagNegDeepFlavCvL,
                 "DeepFlavourCvsBDiscN": jet.btagNegDeepFlavCvB,
+                "DeepFlavourBDisc_bN": jet.btagNegDeepFlavB_b,
+                "DeepFlavourBDisc_bbN": jet.btagNegDeepFlavB_bb,
+                "DeepFlavourBDisc_lepbN": jet.btagNegDeepFlavB_lepb,
+                "DeepFlavourQGDiscN": jet.btagNegDeepFlavQG,
                 "DeepFlavourCDiscN": jet.btagNegDeepFlavC,
+                "DeepFlavourUDSDiscN": jet.btagNegDeepFlavUDS,
+                "DeepFlavourGDiscN": jet.btagNegDeepFlavG,
+                # ParticleNet
+                "PNetBDisc": jet.btagPNetB,
+                "PNetCvsLDisc": jet.btagPNetCvL,
+                "PNetCvsBDisc": jet.btagPNetCvB,
+                "PNetQvsGDisc": jet.btagPNetQvG,
+                "PNetTauvsJetDisc": jet.btagPNetTauVJet,
+                "PNetRegPtRawCorr": jet.PNetRegPtRawCorr,
+                "PNetRegPtRawCorrNeutrino": jet.PNetRegPtRawCorrNeutrino,
+                "PNetRegPtRawRes": jet.PNetRegPtRawRes,
+                "PNetBDisc_b": jet.btagPNetProbB,
+                "PNetCDisc": jet.btagPNetProbC,
+                "PNetUDSDisc": jet.btagPNetProbUDS,
+                "PNetGDisc": jet.btagPNetProbG,
+                "PNetBDiscN": jet.btagNegPNetB,
+                "PNetCvsLDiscN": jet.btagNegPNetCvL,
+                "PNetCvsBDiscN": jet.btagNegPNetCvB,
+                "PNetBDisc_bN": jet.btagNegPNetProbB,
+                "PNetCDiscN": jet.btagNegPNetProbC,
+                "PNetUDSDiscN": jet.btagNegPNetProbUDS,
+                "PNetGDiscN": jet.btagNegPNetProbG,
+                # ParticleTransformer
+                "ParTBDisc": jet.btagRobustParTAK4B,
+                "ParTCvsLDisc": jet.btagRobustParTAK4CvL,
+                "ParTCvsBDisc": jet.btagRobustParTAK4CvB,
+                "ParTQvsGDisc": jet.btagRobustParTAK4QG,
+                "ParTBDisc_b": jet.btagRobustParTAK4B_b,
+                "ParTBDisc_bb": jet.btagRobustParTAK4B_bb,
+                "ParTBDisc_lepb": jet.btagRobustParTAK4B_lepb,
+                "ParTCDisc": jet.btagRobustParTAK4C,
+                "ParTUDSDisc": jet.btagRobustParTAK4UDS,
+                "ParTGDisc": jet.btagRobustParTAK4G,
+                "ParTBDiscN": jet.btagNegRobustParTAK4B,
+                "ParTCvsLDiscN": jet.btagNegRobustParTAK4CvL,
+                "ParTCvsBDiscN": jet.btagNegRobustParTAK4CvB,
+                "ParTQvsGDiscN": jet.btagNegRobustParTAK4QG,
+                "ParTBDisc_bN": jet.btagNegRobustParTAK4B_b,
+                "ParTBDisc_bbN": jet.btagNegRobustParTAK4B_bb,
+                "ParTBDisc_lepbN": jet.btagNegRobustParTAK4B_lepb,
+                "ParTCDiscN": jet.btagNegRobustParTAK4C,
+                "ParTUDSDiscN": jet.btagNegRobustParTAK4UDS,
+                "ParTGDiscN": jet.btagNegRobustParTAK4G,
             }
         )
         if isRealData:
@@ -469,6 +517,250 @@ class NanoProcessor(processor.ProcessorABC):
                 Jet["genpt"] < 8.0, zeros, Jet["flavourCleaned"]
             )
 
+        # Re-calculate jet probability (JP) and jet B probability (JBP) taggers
+
+        # select full track collection based on CandIPProducer
+        # reference code https://github.com/cms-sw/cmssw/blob/master/RecoBTag/ImpactParameter/plugins/IPProducer.h
+        trkj = events.JetPFCands[
+            (events.JetPFCands.pf.trkQuality != 0) & (events.JetPFCands.pt > 1.0)
+        ]
+
+        # selection based on CandIPProducer & BTA
+        trkj = trkj[
+            (trkj.pf.numberOfHits >= 0)
+            & (trkj.pf.numberOfPixelHits >= 1)
+            & (trkj.pf.trkChi2 <= 5)
+            & (abs(trkj.dxyFromPV) < 0.2)
+            & (abs(trkj.dzFromPV) < 17)
+            & (abs(trkj.btagJetDistVal) <= 0.07)
+            & (trkj.btagDecayLenVal < 5)
+        ]
+
+        pair = ak.cartesian(
+            [jet, trkj], axis=1, nested=True
+        )  # dim: (event, jet, pfcand)
+
+        # first loosely matches tracks with jets with deltaR < 0.4
+        # for calculating JP, deltaR < 0.3 is further required
+        matched = (pair["0"].pt_orig == pair["1"].jet.pt) & (
+            pair["0"].delta_r(pair["1"].pf) < 0.4
+        )
+
+        trkj_jetbased = pair["1"][matched]  # dim: (event, jet, pfcand)
+
+        # calculate basic kinematics
+        trkj_jetbased["pvec"] = ak.zip(
+            {
+                "pt": trkj_jetbased.pf.trkPt,
+                "eta": trkj_jetbased.pf.trkEta,
+                "phi": trkj_jetbased.pf.trkPhi,
+                "mass": trkj_jetbased.pf.mass,
+            },
+            behavior=vector.behavior,
+            with_name="PtEtaPhiMLorentzVector",
+        )
+        # deltaR(jet, track) used for further selection
+        trkj_jetbased["dr_jet"] = trkj_jetbased.pf.delta_r(jet)
+
+        # calculate IP variables
+        # (same with PFMuon, use the jet direction as reference to determine the IP signs)
+        ip2dvec = calc_ip_vector(
+            trkj_jetbased.pf,
+            trkj_jetbased.dxyFromPV,
+            trkj_jetbased.dzFromPV,
+            is_3d=False,
+        )
+        ip3dvec = calc_ip_vector(
+            trkj_jetbased.pf,
+            trkj_jetbased.dxyFromPV,
+            trkj_jetbased.dzFromPV,
+            is_3d=True,
+        )
+        trkj_jetbased["sign2D"] = ak.values_astype(np.sign(ip2dvec.dot(jet)), int)
+        trkj_jetbased["sign3D"] = ak.values_astype(np.sign(ip3dvec.dot(jet)), int)
+        trkj_jetbased["IP3D"] = ip3dvec.p
+
+        trkj_jetbased["isHitL1"] = ak.values_astype(
+            trkj_jetbased.pf.lostInnerHits == -1, int
+        )  # according to definition of lostInnerHits
+
+        # assign categories (findCat in BTA)
+        cats = {
+            0: dict(
+                withFirstPixel=-1,
+                nPixelHitsRange=(1, 99),
+                etaRange=(0.0, 4.5),
+                pRange=(1.0, 999.0),
+                nHitsRange=(1, 50),
+                chiRange=(0, 5),
+            ),
+            1: dict(
+                withFirstPixel=1,
+                nPixelHitsRange=(1, 3),
+                etaRange=(0.0, 4.5),
+                pRange=(1.0, 999.0),
+                nHitsRange=(1, 50),
+                chiRange=(0, 5),
+            ),
+            2: dict(
+                withFirstPixel=1,
+                nPixelHitsRange=(4, 99),
+                etaRange=(0.0, 1.0),
+                pRange=(1.0, 3.0),
+                nHitsRange=(1, 50),
+                chiRange=(0, 5),
+            ),
+            3: dict(
+                withFirstPixel=1,
+                nPixelHitsRange=(4, 99),
+                etaRange=(0.0, 1.0),
+                pRange=(3.0, 6.0),
+                nHitsRange=(1, 50),
+                chiRange=(0, 5),
+            ),
+            4: dict(
+                withFirstPixel=1,
+                nPixelHitsRange=(4, 99),
+                etaRange=(0.0, 1.0),
+                pRange=(6.0, 999.0),
+                nHitsRange=(1, 50),
+                chiRange=(0, 5),
+            ),
+            5: dict(
+                withFirstPixel=1,
+                nPixelHitsRange=(4, 99),
+                etaRange=(1.0, 2.0),
+                pRange=(1.0, 6.0),
+                nHitsRange=(1, 50),
+                chiRange=(0, 5),
+            ),
+            6: dict(
+                withFirstPixel=1,
+                nPixelHitsRange=(4, 99),
+                etaRange=(1.0, 2.0),
+                pRange=(6.0, 12.0),
+                nHitsRange=(1, 50),
+                chiRange=(0, 5),
+            ),
+            7: dict(
+                withFirstPixel=1,
+                nPixelHitsRange=(4, 99),
+                etaRange=(1.0, 2.0),
+                pRange=(12.0, 999.0),
+                nHitsRange=(1, 50),
+                chiRange=(0, 5),
+            ),
+            8: dict(
+                withFirstPixel=1,
+                nPixelHitsRange=(4, 99),
+                etaRange=(2.0, 4.5),
+                pRange=(1.0, 18.0),
+                nHitsRange=(1, 50),
+                chiRange=(0, 5),
+            ),
+            9: dict(
+                withFirstPixel=1,
+                nPixelHitsRange=(4, 99),
+                etaRange=(2.0, 4.5),
+                pRange=(18.0, 999.0),
+                nHitsRange=(1, 50),
+                chiRange=(0, 5),
+            ),
+        }
+        pass_cat = lambda t, i: (
+            (
+                ((cats[i]["withFirstPixel"] == 1) & (t.isHitL1 == 1))
+                | ((cats[i]["withFirstPixel"] == -1) & (t.isHitL1 == 0))
+                | (cats[i]["withFirstPixel"] == 0)
+            )
+            & (
+                (t.pf.numberOfPixelHits >= cats[i]["nPixelHitsRange"][0])
+                & (t.pf.numberOfPixelHits <= cats[i]["nPixelHitsRange"][1])
+            )
+            & (
+                (abs(t.pf.trkEta) >= cats[i]["etaRange"][0])
+                & (abs(t.pf.trkEta) <= cats[i]["etaRange"][1])
+            )
+            & ((t.pvec.p >= cats[i]["pRange"][0]) & (t.pvec.p <= cats[i]["pRange"][1]))
+            & (
+                (t.pf.numberOfHits >= cats[i]["nHitsRange"][0])
+                & (t.pf.numberOfHits <= cats[i]["nHitsRange"][1])
+            )
+            & (
+                (t.pf.trkChi2 >= cats[i]["chiRange"][0])
+                & (t.pf.trkChi2 <= cats[i]["chiRange"][1])
+            )
+        )
+
+        zeros = ak.zeros_like(trkj_jetbased.pt, dtype=int)
+        trkj_jetbased["category"] = zeros - 1  # initial category index: -1
+        for idx in range(0, 10):
+            trkj_jetbased["category"] = ak.where(
+                (trkj_jetbased["category"] == -1) & pass_cat(trkj_jetbased, idx),
+                zeros + idx,
+                trkj_jetbased["category"],
+            )
+
+        # calculate track probability, based on IPsig and category
+        jpc = JPCalibHandler(self._campaign, isRealData, dataset)
+        trkj_jetbased["proba"] = jpc.calc_track_proba(
+            trkj_jetbased.btagSip3dSig,
+            ak.where(trkj_jetbased.category >= 0, trkj_jetbased.category, 0),
+        )
+
+        # then calculate JP/JBP
+
+        # (a) obtain track probabilities used to calculate JP
+        # only select positive/negative IP tracks for positive/negative JP tagger
+        # also requiring dR < 0.3
+        # reference code: https://github.com/cms-sw/cmssw/blob/CMSSW_13_0_X/RecoBTag/ImpactParameter/interface/TemplatedJetProbabilityComputer.h
+        trk_proba_pos = abs(trkj_jetbased["proba"])[
+            (trkj_jetbased.btagSip3dSig > 0)
+            & (trkj_jetbased.dr_jet < 0.3)
+            & ((trkj_jetbased.category >= 0) & (trkj_jetbased.category < 10))
+        ]
+        trk_proba_neg = abs(trkj_jetbased["proba"])[
+            (trkj_jetbased.btagSip3dSig < 0)
+            & (trkj_jetbased.dr_jet < 0.3)
+            & ((trkj_jetbased.category >= 0) & (trkj_jetbased.category < 10))
+        ]
+        Jet["Proba"] = -np.log10(jpc.calc_jet_proba(trk_proba_pos)) / 4.0
+        Jet["ProbaN"] = -np.log10(jpc.calc_jet_proba(trk_proba_neg)) / 4.0
+
+        # (b) obtain track probabilities used to calculate positive JBP tagger
+        # use two sets: probabilities and probabilitiesB (select 4 highest IPsig tracks)
+        # reference code: https://github.com/cms-sw/cmssw/blob/CMSSW_13_0_X/RecoBTag/ImpactParameter/interface/TemplatedJetBProbabilityComputer.h
+        trk_proba_jbp_all = abs(trkj_jetbased["proba"])[
+            ((trkj_jetbased.category >= 0) & (trkj_jetbased.category < 10))
+        ]
+        trk_proba_jbp_pos = abs(trkj_jetbased["proba"])[
+            (trkj_jetbased.btagSip3dSig > 0)
+            & ((trkj_jetbased.category >= 0) & (trkj_jetbased.category < 10))
+        ]
+        trk_proba_jbp_neg = abs(trkj_jetbased["proba"])[
+            (trkj_jetbased.btagSip3dSig < 0)
+            & ((trkj_jetbased.category >= 0) & (trkj_jetbased.category < 10))
+        ]
+        trk_Bproba_jbp_pos = ak.sort(trk_proba_jbp_pos)[
+            ak.local_index(trk_proba_jbp_pos) < 4
+        ]  # select up to 4 tracks
+        trk_Bproba_jbp_neg = ak.sort(trk_proba_jbp_neg)[
+            ak.local_index(trk_proba_jbp_neg) < 4
+        ]  # select up to 4 tracks
+
+        # for positive JBP tagger: probabilities include both pos+neg IP tracks; for negative JBP: use neg IP tracks only
+        Jet["Bprob"] = (
+            -np.log(jpc.calc_jet_proba(trk_Bproba_jbp_pos)) / 4.0
+            - np.log(jpc.calc_jet_proba(trk_proba_jbp_all)) / 4.0
+        )
+        Jet["BprobN"] = (
+            -np.log(jpc.calc_jet_proba(trk_Bproba_jbp_neg)) / 4.0
+            - np.log(jpc.calc_jet_proba(trk_proba_jbp_neg)) / 4.0
+        )
+
+        #################
+        #   TagVarCSV   #
+        #################
         # CSV inputs per jets: retreived from the DeepCSV input given they are the same
         TagVarCSV = ak.zip(
             {
@@ -695,192 +987,14 @@ class NanoProcessor(processor.ProcessorABC):
             #    Track    #
             ###############
 
-            # select full track collection based on CandIPProducer
-            # reference code https://github.com/cms-sw/cmssw/blob/master/RecoBTag/ImpactParameter/plugins/IPProducer.h
-
-            trkj = events.JetPFCands[
-                (events.JetPFCands.pf.trkQuality != 0) & (events.JetPFCands.pt > 1.0)
-            ]
-
-            # selection based on CandIPProducer & BTA
-            trkj = trkj[
-                (trkj.pf.numberOfHits >= 0)
-                & (trkj.pf.numberOfPixelHits >= 1)
-                & (trkj.pf.trkChi2 <= 5)
-                & (abs(trkj.dxyFromPV) < 0.2)
-                & (abs(trkj.dzFromPV) < 17)
-                & (abs(trkj.btagJetDistVal) <= 0.07)
-                & (trkj.btagDecayLenVal < 5)
-            ]
-
-            pair = ak.cartesian(
-                [jet, trkj], axis=1, nested=True
-            )  # dim: (event, jet, pfcand)
-            matched = (pair["0"].pt_orig == pair["1"].jet.pt) & (
-                pair["0"].delta_r(pair["1"].pf) < 0.3
-            )  # use deltaR < 0.3 according to BTA
-
-            trkj_jetbased = pair["1"][matched]  # dim: (event, jet, pfcand)
-
-            # calculate basic kinematics
-            trkj_jetbased["pvec"] = ak.zip(
-                {
-                    "pt": trkj_jetbased.pf.trkPt,
-                    "eta": trkj_jetbased.pf.trkEta,
-                    "phi": trkj_jetbased.pf.trkPhi,
-                    "mass": trkj_jetbased.pf.mass,
-                },
-                behavior=vector.behavior,
-                with_name="PtEtaPhiMLorentzVector",
-            )
-
-            # calculate IP variables
-            # (same with PFMuon, use the jet direction as reference to determine the IP signs)
-            ip2dvec = calc_ip_vector(
-                trkj_jetbased.pf,
-                trkj_jetbased.dxyFromPV,
-                trkj_jetbased.dzFromPV,
-                is_3d=False,
-            )
-            ip3dvec = calc_ip_vector(
-                trkj_jetbased.pf,
-                trkj_jetbased.dxyFromPV,
-                trkj_jetbased.dzFromPV,
-                is_3d=True,
-            )
-            trkj_jetbased["sign2D"] = ak.values_astype(np.sign(ip2dvec.dot(jet)), int)
-            trkj_jetbased["sign3D"] = ak.values_astype(np.sign(ip3dvec.dot(jet)), int)
-            trkj_jetbased["IP3D"] = ip3dvec.p
-
-            trkj_jetbased["isHitL1"] = ak.values_astype(
-                trkj_jetbased.pf.lostInnerHits == -1, int
-            )  # according to definition of lostInnerHits
-
-            # assign categories (findCat in BTA)
-            cats = {
-                0: dict(
-                    withFirstPixel=-1,
-                    nPixelHitsRange=(1, 99),
-                    etaRange=(0.0, 4.5),
-                    pRange=(1.0, 999.0),
-                    nHitsRange=(1, 50),
-                    chiRange=(0, 5),
-                ),
-                1: dict(
-                    withFirstPixel=1,
-                    nPixelHitsRange=(1, 3),
-                    etaRange=(0.0, 4.5),
-                    pRange=(1.0, 999.0),
-                    nHitsRange=(1, 50),
-                    chiRange=(0, 5),
-                ),
-                2: dict(
-                    withFirstPixel=1,
-                    nPixelHitsRange=(4, 99),
-                    etaRange=(0.0, 1.0),
-                    pRange=(1.0, 3.0),
-                    nHitsRange=(1, 50),
-                    chiRange=(0, 5),
-                ),
-                3: dict(
-                    withFirstPixel=1,
-                    nPixelHitsRange=(4, 99),
-                    etaRange=(0.0, 1.0),
-                    pRange=(3.0, 6.0),
-                    nHitsRange=(1, 50),
-                    chiRange=(0, 5),
-                ),
-                4: dict(
-                    withFirstPixel=1,
-                    nPixelHitsRange=(4, 99),
-                    etaRange=(0.0, 1.0),
-                    pRange=(6.0, 999.0),
-                    nHitsRange=(1, 50),
-                    chiRange=(0, 5),
-                ),
-                5: dict(
-                    withFirstPixel=1,
-                    nPixelHitsRange=(4, 99),
-                    etaRange=(1.0, 2.0),
-                    pRange=(1.0, 6.0),
-                    nHitsRange=(1, 50),
-                    chiRange=(0, 5),
-                ),
-                6: dict(
-                    withFirstPixel=1,
-                    nPixelHitsRange=(4, 99),
-                    etaRange=(1.0, 2.0),
-                    pRange=(6.0, 12.0),
-                    nHitsRange=(1, 50),
-                    chiRange=(0, 5),
-                ),
-                7: dict(
-                    withFirstPixel=1,
-                    nPixelHitsRange=(4, 99),
-                    etaRange=(1.0, 2.0),
-                    pRange=(12.0, 999.0),
-                    nHitsRange=(1, 50),
-                    chiRange=(0, 5),
-                ),
-                8: dict(
-                    withFirstPixel=1,
-                    nPixelHitsRange=(4, 99),
-                    etaRange=(2.0, 4.5),
-                    pRange=(1.0, 18.0),
-                    nHitsRange=(1, 50),
-                    chiRange=(0, 5),
-                ),
-                9: dict(
-                    withFirstPixel=1,
-                    nPixelHitsRange=(4, 99),
-                    etaRange=(2.0, 4.5),
-                    pRange=(18.0, 999.0),
-                    nHitsRange=(1, 50),
-                    chiRange=(0, 5),
-                ),
-            }
-            pass_cat = lambda t, i: (
-                (
-                    ((cats[i]["withFirstPixel"] == 1) & (t.isHitL1 == 1))
-                    | ((cats[i]["withFirstPixel"] == -1) & (t.isHitL1 == 0))
-                    | (cats[i]["withFirstPixel"] == 0)
-                )
-                & (
-                    (t.pf.numberOfPixelHits >= cats[i]["nPixelHitsRange"][0])
-                    & (t.pf.numberOfPixelHits <= cats[i]["nPixelHitsRange"][1])
-                )
-                & (
-                    (abs(t.pf.trkEta) >= cats[i]["etaRange"][0])
-                    & (abs(t.pf.trkEta) <= cats[i]["etaRange"][1])
-                )
-                & (
-                    (t.pvec.p >= cats[i]["pRange"][0])
-                    & (t.pvec.p <= cats[i]["pRange"][1])
-                )
-                & (
-                    (t.pf.numberOfHits >= cats[i]["nHitsRange"][0])
-                    & (t.pf.numberOfHits <= cats[i]["nHitsRange"][1])
-                )
-                & (
-                    (t.pf.trkChi2 >= cats[i]["chiRange"][0])
-                    & (t.pf.trkChi2 <= cats[i]["chiRange"][1])
-                )
-            )
-
-            zeros = ak.zeros_like(trkj_jetbased.pt, dtype=int)
-            trkj_jetbased["category"] = zeros - 1  # initial category index: -1
-            for idx in range(0, 10):
-                trkj_jetbased["category"] = ak.where(
-                    (trkj_jetbased["category"] == -1) & pass_cat(trkj_jetbased, idx),
-                    zeros + idx,
-                    trkj_jetbased["category"],
-                )
+            # stored tracks: requring dR < 0.3
+            trkj_jetbased_store = trkj_jetbased[trkj_jetbased.dr_jet < 0.3]
 
             # flatten jet-based track arrays
             trkj_jetbased_flat = ak.flatten(
-                trkj_jetbased, axis=2
+                trkj_jetbased_store, axis=2
             )  # dim: (event, pfcand)
-            trkj_jetbased_num = ak.num(trkj_jetbased, axis=2)
+            trkj_jetbased_num = ak.num(trkj_jetbased_store, axis=2)
 
             Track = ak.zip(
                 {
@@ -920,6 +1034,8 @@ class NanoProcessor(processor.ProcessorABC):
                         * trkj_jetbased_flat.sign3D,
                         -99.0,
                     ),
+                    # track probability from IPsig and category
+                    "Proba": ak.fill_none(trkj_jetbased_flat.proba, -99),
                     # hits in tracker
                     "nHitAll": ak.fill_none(trkj_jetbased_flat.pf.numberOfHits, -99),
                     "nHitPixel": ak.fill_none(
