@@ -540,10 +540,7 @@ You can specify `-v all` to plot all the variables in the `coffea` file, or use 
 <details><summary>more arguments</summary>
 <p>
 
-```
-python comparison.py -i a.coffea,b.coffea -p ttsemilep_sf -r SingleMuon_Run2017B-106X_PFNanov1 -c DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8 -v DeepJet_Cpfcan_BtagPf_trackJetDistVal_0 --shortref Run2017B --shortcomp DYJets (--sepflav True/False)
-python comparison.py -i "test*.coffea" -p ttsemilep_sf -r SingleMuon_Run2017B-106X_PFNanov1 -c DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8 -v DeepJet_Cpfcan_BtagPf_trackJetDistVal_0 --shortref Run2017B --shortcomp DYJets (--sepflav True/False)
-
+ 
 options:
   -h, --help            show this help message and exit
   -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
@@ -559,9 +556,8 @@ options:
                         variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.
   --ext EXT             prefix name
   --com COM             sqrt(s) in TeV
-  --shortref SHORTREF   short name for reference dataset for legend
-  --shortcomp SHORTCOMP
-                        short names for compared datasets for legend, split by ','
+  --mergemap MERGEMAP
+                        Group list of sample(keys in coffea) as reference/compare set as dictionary format. Keys would be the new lables of the group
    --autorebin AUTOREBIN
                         Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)
    --xlabel XLABEL      rename the label for x-axis
@@ -654,4 +650,3 @@ Host *_f
 jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
 ```
 4. URL for notebook will be printed, copy and open in local browser
-

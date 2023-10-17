@@ -1,5 +1,5 @@
 import numpy as np
-import argparse, os, arrow, glob
+import argparse, os, arrow, glob, re
 from coffea.util import load
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
@@ -23,7 +23,7 @@ from BTVNanoCommissioning.utils.plot_utils import (
 bininfo = definitions()
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
-parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
+parser.add_argument("--com", default="13.6", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
     "-p",
     "--phase",
@@ -167,9 +167,29 @@ if args.variable == "all":
         if var not in ["fname", "run", "lumi", "sumw"]
     ]
 elif "*" in args.variable:
-    var_set = [
-        var for var in collated["data"].keys() if args.variable.replace("*", "") in var
-    ]
+    if args.variable.count("*") > 1:
+        var_set = [
+            var
+            for var in collated[args.ref].keys()
+            if args.variable.replace("*", "") in var
+        ]
+    elif args.variable.startswith("*") or args.variable.endswith("*"):
+        var_set = [
+            var
+            for var in collated[args.ref].keys()
+            if var.startswith(args.variable.replace("*", ""))
+            or var.endswith(args.variable.replace("*", ""))
+        ]
+    else:
+        var_set = [
+            var
+            for var in collated[args.ref].keys()
+            if re.match(
+                f"^{args.variable.split('*')[0]}.*{args.variable.split('*')[1]}$", var
+            )
+            != None
+        ]
+
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):

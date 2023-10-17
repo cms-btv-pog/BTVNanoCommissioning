@@ -441,7 +441,7 @@ def definitions():
             "ylabel_text": "Jets",
             "format_unit": "2f",
             "format_unit_digits": 1,
-            "bins": 50,
+            "bins": 100,
             "inputVar_units": None,
         },
         "DeepCSV_jetNSecondaryVertices": {
@@ -6149,7 +6149,9 @@ def axes_name(var):
         unit = "Jet"
         ## Negative tagger
         if "Neg" in var:
-            unit = "Neg " + unit
+            unit = "Neg. " + unit
+        if "tanh" in var:
+            unit = "Trans. " + unit
         ## Different taggers
         if "DeepFlav" in var:
             unit = unit + " DeepJet"
@@ -6172,14 +6174,14 @@ def axes_name(var):
             unit = unit + " Prob(lepb)"
         elif "B_lepb" in var:
             unit = unit + " Prob(lepb)"
-        elif "QvG" or "QG" in var:
+        elif "QvG" in var or "QG" in var:
             unit = unit + " QvG"
         elif "G" in var:
             unit = unit + " Prob(g)"
         elif "UDS" in var:
             unit = unit + " Prob(uds)"
         elif "TauVJet" in var:
-            unit = unit + " $\\tau$vJet"
+            unit = unit + " $\\tau$vJ"
         elif "B" in var:
             unit = unit + " BvAll"
         elif "C" in var:

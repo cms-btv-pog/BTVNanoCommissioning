@@ -118,7 +118,7 @@ def getFilesFromDas(args):
 
         Tier = dataset.strip().split("/")[3]
         # NANOAODSIM for regular samples, USER for private
-        if "Run" in dataset and "mc" not in dataset:
+        if "Run" in dataset and "pythia8" not in dataset:
             dsname = (
                 dataset.strip().split("/")[1]
                 + dataset.strip().split("/")[2][
@@ -129,6 +129,7 @@ def getFilesFromDas(args):
                     .rfind("-")
                 ]
             )
+            dsname = dsname[: dsname.find("_BTV")]
             # +dataset.strip().split("/")[2].find("Run")
         instance = "prod/global"
         if Tier == "USER":
@@ -283,8 +284,6 @@ def validate(file):
         return f"FailedRetries: {file}"
 
 
-## remove bad files not in place/broken
-# -> store summary of total events & bad files
 def remove_bad_files(sample_dict, outname, remove_bad=True):
     from p_tqdm import p_map
 
@@ -317,7 +316,8 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
             for sample in bad_sample_dict.keys():
                 for bad_file in bad_sample_dict[sample]:
                     f.write(bad_file)
-                    sample_dict[sample].remove(bad_file[bad_file.find("root://") :])
+                    if bad_file[bad_file.find("root://") :] in sample_dict[sample]:
+                        sample_dict[sample].remove(bad_file[bad_file.find("root://") :])
 
     return sample_dict
 
