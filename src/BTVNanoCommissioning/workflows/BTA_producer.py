@@ -731,32 +731,32 @@ class NanoProcessor(processor.ProcessorABC):
         # (b) obtain track probabilities used to calculate positive JBP tagger
         # use two sets: probabilities and probabilitiesB (select 4 highest IPsig tracks)
         # reference code: https://github.com/cms-sw/cmssw/blob/CMSSW_13_0_X/RecoBTag/ImpactParameter/interface/TemplatedJetBProbabilityComputer.h
-        trk_proba_all = abs(trkj_jetbased["proba"])[
+        trk_proba_jbp_all = abs(trkj_jetbased["proba"])[
             ((trkj_jetbased.category >= 0) & (trkj_jetbased.category < 10))
         ]
-        trk_proba_pos = abs(trkj_jetbased["proba"])[
+        trk_proba_jbp_pos = abs(trkj_jetbased["proba"])[
             (trkj_jetbased.btagSip3dSig > 0)
             & ((trkj_jetbased.category >= 0) & (trkj_jetbased.category < 10))
         ]
-        trk_proba_neg = abs(trkj_jetbased["proba"])[
+        trk_proba_jbp_neg = abs(trkj_jetbased["proba"])[
             (trkj_jetbased.btagSip3dSig < 0)
             & ((trkj_jetbased.category >= 0) & (trkj_jetbased.category < 10))
         ]
-        trk_Bproba_pos = ak.sort(trk_proba_pos)[
-            ak.local_index(trk_proba_pos) < 4
+        trk_Bproba_jbp_pos = ak.sort(trk_proba_jbp_pos)[
+            ak.local_index(trk_proba_jbp_pos) < 4
         ]  # select up to 4 tracks
-        trk_Bproba_neg = ak.sort(trk_proba_neg)[
-            ak.local_index(trk_proba_neg) < 4
+        trk_Bproba_jbp_neg = ak.sort(trk_proba_jbp_neg)[
+            ak.local_index(trk_proba_jbp_neg) < 4
         ]  # select up to 4 tracks
 
         # for positive JBP tagger: probabilities include both pos+neg IP tracks; for negative JBP: use neg IP tracks only
         Jet["Bprob"] = (
-            -np.log(jpc.calc_jet_proba(trk_Bproba_pos)) / 4.0
-            - np.log(jpc.calc_jet_proba(trk_proba_all)) / 4.0
+            -np.log(jpc.calc_jet_proba(trk_Bproba_jbp_pos)) / 4.0
+            - np.log(jpc.calc_jet_proba(trk_proba_jbp_all)) / 4.0
         )
         Jet["BprobN"] = (
-            -np.log(jpc.calc_jet_proba(trk_Bproba_neg)) / 4.0
-            - np.log(jpc.calc_jet_proba(trk_proba_neg)) / 4.0
+            -np.log(jpc.calc_jet_proba(trk_Bproba_jbp_neg)) / 4.0
+            - np.log(jpc.calc_jet_proba(trk_proba_jbp_neg)) / 4.0
         )
 
         #################
