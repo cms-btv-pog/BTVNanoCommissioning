@@ -205,7 +205,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Other cuts
         req_pTratio = (soft_muon[:, 0].pt / mu_jet[:, 0].pt) < 0.4
-
+        idx = np.where(iso_muon.jetIdx == -1, 0, iso_muon.jetIdx)
         req_QCDveto = (
             (iso_muon.pfRelIso04_all < 0.05)
             & (abs(iso_muon.dz) < 0.01)
@@ -550,8 +550,9 @@ class NanoProcessor(processor.ProcessorABC):
                 out_branch,
                 np.where(
                     (out_branch == "SoftMuon")
-                    # | (out_branch == "MuonJet")
+                    | (out_branch == "MuonJet")
                     | (out_branch == "dilep")
+                    | (out_branch == "OtherJets")
                 ),
             )
 
@@ -560,7 +561,7 @@ class NanoProcessor(processor.ProcessorABC):
                     "Muon",
                     "Jet",
                     "SoftMuon",
-                    # "MuonJet",
+                    "MuonJet",
                     "dilep",
                     "charge",
                     "MET",
@@ -578,7 +579,7 @@ class NanoProcessor(processor.ProcessorABC):
             # write to root files
             os.system(f"mkdir -p {self.name}/{dataset}")
             with uproot.recreate(
-                f"{self.name}/{dataset}/{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+                f"{self.name}/{dataset}/{systematics[0]}_{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
             ) as fout:
                 fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
 

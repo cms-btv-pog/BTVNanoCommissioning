@@ -241,12 +241,10 @@ for index, discr in enumerate(var_set):
         else:
             rebin = np.array([float(i) for i in args.autorebin.split(",")])
             do_xerr = True
-        collated["mc"][discr] = rebin_hist(
-            collated["mc"][discr], collated["mc"][discr].axes[-1].name, rebin
-        )
-        collated["data"][discr] = rebin_hist(
-            collated["data"][discr], collated["data"][discr].axes[-1].name, rebin
-        )
+        for s in collated.keys():
+            collated[s][discr] = rebin_hist(
+                collated[s][discr], collated[s][discr].axes[-1].name, rebin
+            )
 
     ## Rescale noSF & SF to same MC yields
     if (
