@@ -3,13 +3,24 @@ name: ttbar semileptonic Workflows
 on:
   push:
     branches: [ master ]
+    paths:
+    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/utils/*'
+    - '.github/workflows/ttbar_SL_workflow.yml'
   pull_request_target:
     branches: [ master ]
+    paths:
+    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/utils/*'
+    - '.github/workflows/ttbar_SL_workflow.yml'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       max-parallel: 4
       matrix:
@@ -87,13 +98,55 @@ jobs:
 
     - name:  btag semileptonic ttbar workflows with correctionlib
       run: |
-        python runner.py --workflow ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --isSyst all --isArray  --overwrite
+        string=$(git log -1 --pretty=format:'%s')
+        opts="--overwrite"
+        if [[ $string == *"[run array]"* ]]; then
+          opts="$opts --isArray"
+        fi
+        if [[ $string == *"[run syst all]"* ]]; then
+          opts="$opts --isSyst all"
+        fi 
+        if [[ $string == *"[run syst jerc]"* ]]; then
+          opts="$opts --isSyst JERC_split"
+        fi 
+        if [[ $string == *"[run syst wei]"* ]]; then
+          opts="$opts --isSyst weight_only"
+        fi 
+        python runner.py --workflow ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
     
     - name: ctag semileptonic muon ttbar workflows with correctionlib
       run: |
-        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --isSyst all --isArray --overwrite 
+        string=$(git log -1 --pretty=format:'%s')
+        opts="--overwrite"
+        if [[ $string == *"[run array]"* ]]; then
+          opts="$opts --isArray"
+        fi
+        if [[ $string == *"[run syst all]"* ]]; then
+          opts="$opts --isSyst all"
+        fi 
+        if [[ $string == *"[run syst jerc]"* ]]; then
+          opts="$opts --isSyst JERC_split"
+        fi 
+        if [[ $string == *"[run syst wei]"* ]]; then
+          opts="$opts --isSyst weight_only"
+        fi 
+        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
     
     - name: ctag semileptonic electron ttbar workflows with correctionlib
       run: |
-        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --isSyst all --isArray  --overwrite
+        string=$(git log -1 --pretty=format:'%s')
+        opts="--overwrite"
+        if [[ $string == *"[run array]"* ]]; then
+          opts="$opts --isArray"
+        fi
+        if [[ $string == *"[run syst all]"* ]]; then
+          opts="$opts --isSyst all"
+        fi 
+        if [[ $string == *"[run syst jerc]"* ]]; then
+          opts="$opts --isSyst JERC_split"
+        fi 
+        if [[ $string == *"[run syst wei]"* ]]; then
+          opts="$opts --isSyst weight_only"
+        fi 
+        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
 
