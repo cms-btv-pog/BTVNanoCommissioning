@@ -452,7 +452,15 @@ def histogrammer(events, workflow):
             njet = 4
         for i in range(njet):
             if "Wc_sf" in workflow:
-                if "btag" in disc or "ProbaN" == disc:
+                if "Trans" in disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        osss_axis,
+                        Hist.axis.Regular(40, 0, 8, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "btag" in disc or "ProbaN" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,
@@ -486,6 +494,13 @@ def histogrammer(events, workflow):
                     )
 
             else:
+                if "Trans" in disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(40, 0, 8, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
                 if "btag" in disc or "ProbaN" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,

@@ -3,13 +3,26 @@ name: ctag W+c Workflow
 on:
   push:
     branches: [ master ]
+    paths:
+    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/utils/*'
+    - '.github/workflows/ctag_Wc_workflow.yml'
+    
   pull_request_target:
     branches: [ master ]
+    paths:
+    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/utils/*'
+    - '.github/workflows/ctag_Wc_workflow.yml'
+   
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       max-parallel: 4
       matrix:
@@ -52,7 +65,7 @@ jobs:
         conda info
         conda env list
         conda list
-        
+    
     - name: Set up proxy
       # https://awesome-workshop.github.io/gitlab-cms/03-vomsproxy/index.html
       # continue-on-error: true
@@ -89,8 +102,30 @@ jobs:
 
     - name: ctag muon W+c workflows with correctionlib
       run: |
-        python runner.py --workflow ctag_Wc_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative  --campaign Summer22Run3  --isSyst all --isArray  --overwrite
+        string=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi
+        python runner.py --workflow ctag_Wc_sf --json metadata/test_bta_run3.json   --campaign Summer22Run3 --executor iterative  $opts
     
     - name: ctag electron W+c workflows with correctionlib
       run: |
-        python runner.py --workflow ectag_Wc_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative  --campaign Summer22Run3  --isSyst all --isArray --overwrite
+        message=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi
+        python runner.py --workflow ectag_Wc_sf --json metadata/test_bta_run3.json --executor iterative  --campaign Summer22Run3   --overwrite $opts

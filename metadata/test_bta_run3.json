@@ -1,6 +1,6 @@
 {
-    "JetMET_Run2022F-PromptReco-v1":[
-        "root://cceos.ihep.ac.cn:1094//eos/ihep/cms/store/user/coli/PFNano_Run3/data_2022FG_prompt/JetMET/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2/230808_133855/0000/nano_data2022FG_687.root"
+    "JetMETRun2022D-27Jun2023-v2": [
+        "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_JetMET/JetMET/Run2022D-27Jun2023-v2_BTV_Run3_2022_Comm_v2_NanoV12/230927_120318/0000/nano_data2022CDE_135.root"
     ],
     "QCD_PT-120to170_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8":[
         "root://eoscms.cern.ch//store/group/phys_btag/PFNano_Run3/mc_summer22EE/QCD_PT-120to170_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8/Run3Summer22EEMiniAODv3-124X_mcRun3_2022_realistic_postEE_v1-v1_BTV_Run3_2022_Comm_v2_NanoV12/231001_184438/0000/nano_mcRun3_EE_1-1.root"

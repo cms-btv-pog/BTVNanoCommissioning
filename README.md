@@ -551,7 +551,7 @@ python scripts/comparison.py -i datac.coffea,datad.coffea -r MuonRun2022C-27Jun2
 <details><summary>more arguments</summary>
 <p>
 
- 
+ ```
 options:
   -h, --help            show this help message and exit
   -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
@@ -640,8 +640,16 @@ Yout can find the secret configuration in the direcotry : `Settings>>Secrets>>Ac
   1. Create a ssh key pair with `ssh-keygen -t rsa -b 4096` (do not overwrite with your local one), add the public key to your CERN gitlab account
   2. Copy the private key to the entry
 - `GRID_PASSWORD`: Add your grid password to the entry.
-- `GRID_USERCERT` & `GRID_USERKEY`:  Encrypt your grid user certification `base64 -i ~/.globus/userkey.pem` and `base64 -i ~/.globus/usercert.pem` and copy the output to the entry. 
+- `GRID_USERCERT` & `GRID_USERKEY`:  Encrypt your grid user certification `base64 -i ~/.globus/userkey.pem | awk NF=NF RS= OFS=` and `base64 -i ~/.globus/usercert.pem | awk NF=NF RS= OFS=` and copy the output to the entry. 
 
+Special commit head messages could run different commands in actions (add the flag in front of your commit)
+
+- `[skip ci]`: not running ci at all in the commit message
+- `[run array]` : add `--isArray` option
+- `[run syst all]` : add `--isSyst all`
+- `[run syst jerc]` : add `--isSyst JERC_split`
+- `[run syst wei]` : add `--isSyst weight_only`
+ 
 ### Running jupyter remotely
 1. On your local machine, edit `.ssh/config`:
 ```

@@ -41,7 +41,7 @@ correction_config = {
     },
     "Summer22Run3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puweight_Winter22Run3.histo.root",  # use same 69.2mb for Summer22
+        "PU": "puweight_Winter22Run3-69p2mb.histo.root",  # use same 80.0mb for Summer22
         "JME": "winter_jec_compiled.pkl.gz",  # not this is from Winter22Run3 since this is not yet finished
         "LSF": {
             "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022_Prompt_ID_ISO_schemaV2.json",
@@ -56,8 +56,8 @@ correction_config = {
     },
     "Summer22EERun3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puweight_Summer22EERun3.histo.root",  # 80mb
-        "JME": "jec_compiled.pkl.gz",
+        "PU": "puweight_Summer22EERun3-80p0mb.histo.root",  # 69.2mb
+        # "JME": "jec_compiled.pkl.gz",
         "LSF": {
             "ele_json": "electron.json.gz",
             "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022EE_Prompt_ID_ISO_schemaV2.json",
@@ -69,7 +69,7 @@ correction_config = {
             "ele_Reco_high 2022FG 2022FG-Electron-ID-SF": "RecoAbove75",
         },
         "JPCalib": {
-            "Run2022E": "calibeHistoWrite_Data2022F_NANO130X_v1.root",  # to be updated
+            "Run2022E": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
             "Run2022F": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
             "Run2022G": "calibeHistoWrite_Data2022G_NANO130X_v1.root",
             "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",

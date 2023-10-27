@@ -1,15 +1,26 @@
-name: ttbar dileptonic Workflows
+name: ttbar bSF semileptonic/dileptonic Workflows
 
 on:
   push:
     branches: [ master ]
+    paths:
+    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/utils/*'
+    - '.github/workflows/ttbar_SL_workflow.yml'
   pull_request_target:
     branches: [ master ]
+    paths:
+    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/utils/*'
+    - '.github/workflows/ttbar_SL_workflow.yml'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       max-parallel: 4
       matrix:
@@ -28,7 +39,7 @@ jobs:
         mkdir  $HOME/.ssh
         echo "$SSHKEY" > $HOME/.ssh/id_rsa
         chmod 600  $HOME/.ssh/id_rsa
-        echo "HOST *" > ~/.ssh/config        
+        echo "HOST *" > ~/.ssh/config
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
         git submodule update --init --recursive 
     - uses: cvmfs-contrib/github-action-cvmfs@v2
@@ -85,17 +96,34 @@ jobs:
       run: |
         pip install -e .
 
+    - name:  btag semileptonic ttbar workflows with correctionlib
+      run: |
+        string=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi
+        python runner.py --workflow ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+    
+    
     - name: btag dileptonic ttbar workflows with correctionlib
       run: |
-        python runner.py --workflow ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --isSyst all --isArray --overwrite 
-    
-    - name: ctag dileptonic muon ttbar workflows with correctionlib
-      run: |
-        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --isSyst all --isArray  --overwrite
-    - name: ctag dileptonic electron ttbar workflows with correctionlib 
-      run: |
-        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --isSyst all --isArray  --overwrite 
-    - name: ctag dileptonic emu ttbar workflows with correctionlib
-      run: |
-        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --isSyst all --isArray --overwrite  
-        
+        string=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi
+        python runner.py --workflow ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+
