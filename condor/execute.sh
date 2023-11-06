@@ -79,11 +79,15 @@ python runner.py $OPTS
 # Transfer output
 if [[ ${ARGS[outputXrootdDir]} == root://* ]]; then
     xrdcp --silent -p -f *.coffea ${ARGS[outputXrootdDir]}/
-    xrdcp --silent -p -f *.root ${ARGS[outputXrootdDir]}/
+    if [[ "$OPTS" == *"isArray"* ]]; then
+	xrdcp --silent -p -f "`ls -tr | tail -n2`" ${ARGS[outputXrootdDir]}/
+    fi
 else
     mkdir -p ${ARGS[outputXrootdDir]}
     cp -p -f *.coffea ${ARGS[outputXrootdDir]}/
-    cp -p -f *.root ${ARGS[outputXrootdDir]}/
+    if [[ "$OPTS" == *"isArray"* ]]; then
+	cp -p -f "`ls -tr | tail -n2`" ${ARGS[outputXrootdDir]}/
+    fi
 fi
 
 ### one can also consider origanizing the root files in the subdirectory structure ###

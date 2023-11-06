@@ -551,7 +551,7 @@ python scripts/comparison.py -i datac.coffea,datad.coffea -r MuonRun2022C-27Jun2
 <details><summary>more arguments</summary>
 <p>
 
- 
+ ```
 options:
   -h, --help            show this help message and exit
   -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
