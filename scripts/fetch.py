@@ -26,7 +26,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--xrd",
-    default=None,
+    default="root://cmsxrootd.fnal.gov//",
     type=str,
     help="xrootd prefix string otherwise get from available sites",
 )
@@ -303,11 +303,13 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
         all_invalid += [r for r in _results if isinstance(r, str)]
         if len(all_invalid) > 0:
             bad_sample_dict[sample] = all_invalid
-        f.write(f"{sample} Events: {np.sum(counts)}")
+        f.write(f"{sample} Events: {np.sum(counts)}\n")
 
     if len(all_invalid) == 0:
         f.write("No bad files found!")
     else:
+        print(f"Found {len(all_invalid)} bad files.")
+        f.write(f"Found {len(all_invalid)} bad files.")
         if remove_bad == True:
             f.write(
                 "\n==========================BAD FILES==========================\n "
@@ -315,7 +317,7 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
 
             for sample in bad_sample_dict.keys():
                 for bad_file in bad_sample_dict[sample]:
-                    f.write(bad_file)
+                    f.write(bad_file + "\n")
                     if bad_file[bad_file.find("root://") :] in sample_dict[sample]:
                         sample_dict[sample].remove(bad_file[bad_file.find("root://") :])
 

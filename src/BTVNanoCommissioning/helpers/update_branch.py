@@ -10,19 +10,28 @@ def missing_branch(events):
         else events.Rho.fixedGridRhoFastjetAll
     )
 
-    if not hasattr(events.Jet, "btagDeepFlavC"):
+    if hasattr(events.Jet, "btagDeepFlavCvL") and not hasattr(
+        events.Jet, "btagDeepFlavC"
+    ):
         jets = events.Jet
         jets["btagDeepFlavC"] = (
             events.Jet.btagDeepFlavCvL / (1.0 - events.Jet.btagDeepFlavCvL)
         ) * events.Jet.btagDeepFlavB
+        events.Jet = update(
+            events.Jet,
+            {"btagDeepFlavC": jets.btagDeepFlavC},
+        )
+    if hasattr(events.Jet, "btagDeepCvL") and not hasattr(events.Jet, "btagDeepC"):
         jets["btagDeepC"] = (
             events.Jet.btagDeepCvL / (1.0 - events.Jet.btagDeepCvL)
         ) * events.Jet.btagDeepB
         events.Jet = update(
             events.Jet,
-            {"btagDeepFlavC": jets.btagDeepFlavC, "btagDeepC": jets.btagDeepC},
+            {"btagDeepC": jets.btagDeepC},
         )
-    if not hasattr(events.Jet, "btagDeepFlavCvL"):
+    if hasattr(events.Jet, "btagDeepFlavC") and not hasattr(
+        events.Jet, "btagDeepFlavCvL"
+    ):
         jets = events.Jet
         jets["btagDeepFlavCvL"] = np.maximum(
             np.minimum(
@@ -57,6 +66,14 @@ def missing_branch(events):
             ),
             -1,
         )
+        events.Jet = update(
+            events.Jet,
+            {
+                "btagDeepFlavCvL": jets.btagDeepFlavCvL,
+                "btagDeepFlavCvB": jets.btagDeepFlavCvB,
+            },
+        )
+    if hasattr(events.Jet, "btagDeepC") and not hasattr(events.Jet, "btagDeepCvL"):
         jets["btagDeepCvL"] = np.maximum(
             np.minimum(
                 np.where(
@@ -85,8 +102,6 @@ def missing_branch(events):
         events.Jet = update(
             events.Jet,
             {
-                "btagDeepFlavCvL": jets.btagDeepFlavCvL,
-                "btagDeepFlavCvB": jets.btagDeepFlavCvB,
                 "btagDeepCvL": jets.btagDeepCvL,
                 "btagDeepCvB": jets.btagDeepCvB,
             },
