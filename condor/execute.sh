@@ -79,7 +79,9 @@ python runner.py $OPTS
 # Transfer output
 if [[ ${ARGS[outputXrootdDir]} == root://* ]]; then
     xrdcp --silent -p -f *.coffea ${ARGS[outputXrootdDir]}/
-    xrdcp --silent -p -f *.root ${ARGS[outputXrootdDir]}/
+    if [[ "$OPTS" == *"isArray"* ]]; then
+	xrdcp --silent -p -f "`ls -tr | tail -n2`" ${ARGS[outputXrootdDir]}/
+    fi
 else
     mkdir -p ${ARGS[outputXrootdDir]}
     cp -p -f -r hists_* ${ARGS[outputXrootdDir]}/
