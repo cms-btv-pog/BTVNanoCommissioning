@@ -227,11 +227,13 @@ if __name__ == "__main__":
     ogoutput = args.output
     histoutdir = ogoutput.split(".")[0]
     coffeaoutput = f"{histoutdir}/{ogoutput}"
+    outdir = histoutdir
     basename = ogoutput.replace(".coffea", "").replace("hists_", "")
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
         histoutdir = f"hists_{args.workflow}_{sample_json.rstrip('.json')}"
+        outdir = f"arrays_{args.workflow}_{sample_json.rstrip('.json')}"
         coffeaoutput = (
             f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
         )
@@ -345,8 +347,6 @@ if __name__ == "__main__":
         raise Exception(f"{coffeaoutput} exists")
 
     if args.isArray:
-        outdir = f"arrays_{args.workflow}_{sample_json.rstrip('.json')}"
-
         if path.exists(outdir) and args.overwrite == False and args.only is None:
             raise Exception("Directory exists")
         else:
