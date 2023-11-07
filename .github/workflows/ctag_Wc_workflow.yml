@@ -4,7 +4,7 @@ on:
   push:
     branches: [ master ]
     paths:
-    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/workflows/ctag_*Wc*'
     - 'src/BTVNanoCommissioning/helpers/*'
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/ctag_Wc_workflow.yml'
@@ -12,7 +12,7 @@ on:
   pull_request_target:
     branches: [ master ]
     paths:
-    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/workflows/ctag_*Wc*'
     - 'src/BTVNanoCommissioning/helpers/*'
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/ctag_Wc_workflow.yml'

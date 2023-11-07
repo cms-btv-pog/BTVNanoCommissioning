@@ -4,17 +4,17 @@ on:
   push:
     branches: [ master ]
     paths:
-    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/workflows/tt*'
     - 'src/BTVNanoCommissioning/helpers/*'
     - 'src/BTVNanoCommissioning/utils/*'
-    - '.github/workflows/ttbar_SL_workflow.yml'
+    - '.github/workflows/ttbar_workflow.yml'
   pull_request_target:
     branches: [ master ]
     paths:
-    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/workflows/tt*'
     - 'src/BTVNanoCommissioning/helpers/*'
     - 'src/BTVNanoCommissioning/utils/*'
-    - '.github/workflows/ttbar_SL_workflow.yml'
+    - '.github/workflows/ttbar_workflow.yml'
   workflow_dispatch:
 
 jobs:

@@ -1,20 +1,20 @@
-name: ttbar ctag Workflows
+name: ctag ttbar workflows
 
 on:
   push:
     branches: [ master ]
     paths:
-    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/workflows/ctag*tt*'
     - 'src/BTVNanoCommissioning/helpers/*'
     - 'src/BTVNanoCommissioning/utils/*'
-    - '.github/workflows/ttbar_ctag_workflow.yml'
+    - '.github/workflows/ctag_ttbar_workflow.yml'
   pull_request_target:
     branches: [ master ]
     paths:
-    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/workflows/ctag*tt*'
     - 'src/BTVNanoCommissioning/helpers/*'
     - 'src/BTVNanoCommissioning/utils/*'
-    - '.github/workflows/ttbar_ctag_workflow.yml'
+    - '.github/workflows/ctag_ttbar_workflow.yml'
   workflow_dispatch:
 
 jobs:
