@@ -41,7 +41,7 @@ correction_config = {
     },
     "Summer22Run3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puweight_Winter22Run3-80p0mb.histo.root",  # use same 80.0mb for Summer22
+        "PU": "puweight_Winter22Run3-69p2mb.histo.root",  # use same 80.0mb for Summer22
         "JME": "winter_jec_compiled.pkl.gz",  # not this is from Winter22Run3 since this is not yet finished
         "LSF": {
             "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022_Prompt_ID_ISO_schemaV2.json",
@@ -56,7 +56,7 @@ correction_config = {
     },
     "Summer22EERun3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puweight_Summer22EERun3-69p2mb.histo.root",  # 69.2mb
+        "PU": "puweight_Summer22EERun3-80p0mb.histo.root",  # 69.2mb
         # "JME": "jec_compiled.pkl.gz",
         "LSF": {
             "ele_json": "electron.json.gz",
