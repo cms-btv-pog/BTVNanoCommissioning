@@ -257,7 +257,12 @@ class NanoProcessor(processor.ProcessorABC):
                 with_name="PtEtaPhiMLorentzVector",
             )
         Wmass = MET + iso_muon
-        req_Wmass = Wmass.mass > 55
+        # modified to transverse mass
+        req_mtw = (
+            np.sqrt(2 * iso_muon.pt * MET.pt * (1 - np.cos(iso_muon.delta_phi(MET))))
+            > 55
+        )
+        # Wmass.mass > 55
 
         event_level = (
             req_trig
@@ -267,9 +272,9 @@ class NanoProcessor(processor.ProcessorABC):
             & req_softmu
             & req_dilepmass
             & req_mujet
-            & req_Wmass
+            & req_mtw
             & req_dilepveto
-            & req_QCDveto
+            # & req_QCDveto
             & req_pTratio
         )
         event_level = ak.fill_none(event_level, False)
@@ -466,7 +471,7 @@ class NanoProcessor(processor.ProcessorABC):
                             syst="noSF",
                             flav=smflav,
                             osss=osss,
-                            discr=np.tanh(smuon_jet[histname]),
+                            discr=1.0 / np.tanh(smuon_jet[histname]),
                             weight=weights.partial_weight(exclude=exclude_btv),
                         )
 

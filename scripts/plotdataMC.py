@@ -122,6 +122,7 @@ else:
         mergemap = sample_mergemap
     mergemap["mc"] = mclist
     mergemap["data"] = datalist
+
 collated = collate(output, mergemap)
 
 for sample in mergemap.keys():
@@ -170,20 +171,20 @@ elif "*" in args.variable:
     if args.variable.count("*") > 1:
         var_set = [
             var
-            for var in collated[args.ref].keys()
+            for var in collated["mc"].keys()
             if args.variable.replace("*", "") in var
         ]
     elif args.variable.startswith("*") or args.variable.endswith("*"):
         var_set = [
             var
-            for var in collated[args.ref].keys()
+            for var in collated["mc"].keys()
             if var.startswith(args.variable.replace("*", ""))
             or var.endswith(args.variable.replace("*", ""))
         ]
     else:
         var_set = [
             var
-            for var in collated[args.ref].keys()
+            for var in collated["mc"].keys()
             if re.match(
                 f"^{args.variable.split('*')[0]}.*{args.variable.split('*')[1]}$", var
             )
@@ -566,7 +567,7 @@ for index, discr in enumerate(var_set):
         ax.legend(ncols=2, prop={"size": 16})
     else:
         ax.legend()
-    rax.set_ylim(0, 2.0)
+    rax.set_ylim(0.5, 1.5)
     ax.set_ylim(bottom=0.0)
 
     rax.autoscale(True, axis="x", tight=True)
