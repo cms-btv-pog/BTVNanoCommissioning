@@ -331,7 +331,7 @@ if __name__ == "__main__":
     processor_instance = workflows[args.workflow](
         args.year,
         args.campaign,
-        basename,
+        outdir,
         args.isSyst,
         args.isArray,
         args.noHist,
@@ -346,12 +346,11 @@ if __name__ == "__main__":
 
     if args.isArray:
         outdir = f"arrays_{args.workflow}_{sample_json.rstrip('.json')}"
-        if path.exists("tmp"):
-            os.system("rm -r tmp")
-        os.mkdir("tmp")
 
         if path.exists(outdir) and args.overwrite == False and args.only is None:
             raise Exception("Directory exists")
+        else:
+            os.system(f"mkdir -p {outdir}")
 
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """
@@ -793,12 +792,6 @@ if __name__ == "__main__":
     if not "lxplus" in args.executor:
         if args.noHist == False:
             save(output, coffeaoutput)
-    if args.isArray:
-        if args.overwrite and path.exists(outdir):
-            os.system(f"rm -r {outdir}")
-        os.system(f"mkdir -p {outdir}")
-        os.system(f"cp -r tmp/* {outdir}/")
-        os.system("rm -rf tmp")
     if args.noHist == False:
         # print(output)
         print(f"Saving output to {coffeaoutput}")

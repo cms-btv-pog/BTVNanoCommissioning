@@ -26,7 +26,7 @@ parser.add_argument(
 )
 parser.add_argument(
     "--xrd",
-    default="root://cmsxrootd.fnal.gov//",
+    default=None,
     type=str,
     help="xrootd prefix string otherwise get from available sites",
 )
