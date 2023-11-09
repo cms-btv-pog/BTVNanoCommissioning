@@ -3,6 +3,7 @@ import hist
 from coffea.processor import accumulate
 import os
 from BTVNanoCommissioning.helpers.xsection import xsection
+#from BTVNanoCommissioning.helpers.xsection_13TeV import xsection_13TeV
 import numpy as np
 
 
@@ -44,7 +45,7 @@ def scaleSumW(output, lumi):
                     if ("data" in sample) or ("Run" in sample) or ("Double" in sample):
                         h = h
                     else:
-                        raise KeyError(sample, "is not found in xsection.py")
+                        raise KeyError(sample, "is not found in xsection.py. If you're using 13TeV samples, please use xsection_13TeV.py")
 
                 scaled[sample][key] = h
     return scaled
