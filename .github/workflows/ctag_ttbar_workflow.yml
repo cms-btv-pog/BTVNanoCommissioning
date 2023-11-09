@@ -1,22 +1,20 @@
-name: ctag W+c Workflow
+name: ctag ttbar workflows
 
 on:
   push:
     branches: [ master ]
     paths:
-    - 'src/BTVNanoCommissioning/workflows/ctag_*Wc*'
+    - 'src/BTVNanoCommissioning/workflows/ctag*tt*'
     - 'src/BTVNanoCommissioning/helpers/*'
     - 'src/BTVNanoCommissioning/utils/*'
-    - '.github/workflows/ctag_Wc_workflow.yml'
-    
+    - '.github/workflows/ctag_ttbar_workflow.yml'
   pull_request_target:
     branches: [ master ]
     paths:
-    - 'src/BTVNanoCommissioning/workflows/ctag_*Wc*'
+    - 'src/BTVNanoCommissioning/workflows/ctag*tt*'
     - 'src/BTVNanoCommissioning/helpers/*'
     - 'src/BTVNanoCommissioning/utils/*'
-    - '.github/workflows/ctag_Wc_workflow.yml'
-   
+    - '.github/workflows/ctag_ttbar_workflow.yml'
   workflow_dispatch:
 
 jobs:
@@ -40,7 +38,6 @@ jobs:
       run: |
         mkdir  $HOME/.ssh
         echo "$SSHKEY" > $HOME/.ssh/id_rsa
-        ls -lrt $HOME/.ssh
         chmod 600  $HOME/.ssh/id_rsa
         echo "HOST *" > ~/.ssh/config
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
@@ -65,7 +62,7 @@ jobs:
         conda info
         conda env list
         conda list
-    
+        
     - name: Set up proxy
       # https://awesome-workshop.github.io/gitlab-cms/03-vomsproxy/index.html
       # continue-on-error: true
@@ -98,9 +95,9 @@ jobs:
     - name: Install Repo
       run: |
         pip install -e .
-    
 
-    - name: ctag muon W+c workflows with correctionlib
+    
+    - name: ctag semileptonic muon ttbar workflows with correctionlib
       run: |
         string=$(git log -1 --pretty=format:'%s')
         if [[ $string == *"ci:skip array"* ]]; then
@@ -113,11 +110,40 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ctag_Wc_sf --json metadata/test_bta_run3.json   --campaign Summer22Run3 --executor iterative  $opts
+        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
     
-    - name: ctag electron W+c workflows with correctionlib
+    - name: ctag semileptonic electron ttbar workflows with correctionlib
       run: |
-        message=$(git log -1 --pretty=format:'%s')
+        string=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi 
+        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+    
+    - name: ctag dileptonic muon ttbar workflows with correctionlib
+      run: |
+        string=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi 
+        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+    - name: ctag dileptonic electron ttbar workflows with correctionlib 
+      run: |
+        string=$(git log -1 --pretty=format:'%s')
         if [[ $string == *"ci:skip array"* ]]; then
         opts=$(echo "$opts" | sed 's/--isArray //g')
         fi
@@ -128,4 +154,19 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ectag_Wc_sf --json metadata/test_bta_run3.json --executor iterative  --campaign Summer22Run3   --overwrite $opts
+        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+    - name: ctag dileptonic emu ttbar workflows with correctionlib
+      run: |
+        string=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi
+        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+

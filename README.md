@@ -494,12 +494,15 @@ You can specify `-v all` to plot all the variables in the `coffea` file, or use 
 
 :new: non-uniform rebinning is possible, specify the bins with  list of edges `--autorebin 50,80,81,82,83,100.5`
 
+```bash
+python scripts/plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p ttdilep_sf -v z_mass,z_pt  
+python scripts/plotdataMC.py -i "test*.coffea" --lumi 41500 -p ttdilep_sf -v z_mass,z_pt # with wildcard option need ""
+```
+
 <details><summary>more arguments</summary>
 <p>
 
 ```
-python plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p ttdilep_sf -v z_mass,z_pt 
-python plotdataMC.py -i "test*.coffea" --lumi 41500 -p ttdilep_sf -v z_mass,z_pt 
 
 options:
   -h, --help            show this help message and exit
@@ -537,13 +540,18 @@ options:
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
 
+```bash
+# with merge map, compare ttbar with data
+python scripts/comparison.py -i "*.coffea" --mergemap '{"ttbar": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8","TTto4Q_TuneCP5_13p6TeV_powheg-pythia8","TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8],"data":["MuonRun2022C-27Jun2023-v1","MuonRun2022D-27Jun2023-v1"]}' -r ttbar -c data -v mu_pt  -p ttdilep_sf
+# if no  mergemap, take the key name directly
+python scripts/comparison.py -i datac.coffea,datad.coffea -r MuonRun2022C-27Jun2023-v1 -c MuonRun2022D-27Jun2023-v1 -v mu_pt  -p ttdilep_sf
+
+```
+
 <details><summary>more arguments</summary>
 <p>
 
-```
-python comparison.py -i a.coffea,b.coffea -p ttsemilep_sf -r SingleMuon_Run2017B-106X_PFNanov1 -c DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8 -v DeepJet_Cpfcan_BtagPf_trackJetDistVal_0 --shortref Run2017B --shortcomp DYJets (--sepflav True/False)
-python comparison.py -i "test*.coffea" -p ttsemilep_sf -r SingleMuon_Run2017B-106X_PFNanov1 -c DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8 -v DeepJet_Cpfcan_BtagPf_trackJetDistVal_0 --shortref Run2017B --shortcomp DYJets (--sepflav True/False)
-
+ ```
 options:
   -h, --help            show this help message and exit
   -p {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
@@ -559,9 +567,8 @@ options:
                         variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.
   --ext EXT             prefix name
   --com COM             sqrt(s) in TeV
-  --shortref SHORTREF   short name for reference dataset for legend
-  --shortcomp SHORTCOMP
-                        short names for compared datasets for legend, split by ','
+  --mergemap MERGEMAP
+                        Group list of sample(keys in coffea) as reference/compare set as dictionary format. Keys would be the new lables of the group
    --autorebin AUTOREBIN
                         Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)
    --xlabel XLABEL      rename the label for x-axis
@@ -633,8 +640,20 @@ Yout can find the secret configuration in the direcotry : `Settings>>Secrets>>Ac
   1. Create a ssh key pair with `ssh-keygen -t rsa -b 4096` (do not overwrite with your local one), add the public key to your CERN gitlab account
   2. Copy the private key to the entry
 - `GRID_PASSWORD`: Add your grid password to the entry.
-- `GRID_USERCERT` & `GRID_USERKEY`:  Encrypt your grid user certification `base64 -i ~/.globus/userkey.pem` and `base64 -i ~/.globus/usercert.pem` and copy the output to the entry. 
+- `GRID_USERCERT` & `GRID_USERKEY`:  Encrypt your grid user certification `base64 -i ~/.globus/userkey.pem | awk NF=NF RS= OFS=` and `base64 -i ~/.globus/usercert.pem | awk NF=NF RS= OFS=` and copy the output to the entry. 
 
+Special commit head messages could run different commands in actions (add the flag in front of your commit)
+The default configureation is doing 
+```
+python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 --isArray --isSyst all
+```
+
+- `[skip ci]`: not running ci at all in the commit message
+- `ci:skip array` : remove `--isArray` option
+- `ci:skip syst` : remove `--isSyst all` option
+- `ci:JERC_split` : change systematic option to split JERC uncertainty sources `--isSyst JERC_split`
+- `ci:weight_only` : change systematic option to weight only variations `--isSyst weight_only`
+ 
 ### Running jupyter remotely
 1. On your local machine, edit `.ssh/config`:
 ```
@@ -654,4 +673,3 @@ Host *_f
 jupyter notebook --ip=127.0.0.1 --port 8800 --no-browser
 ```
 4. URL for notebook will be printed, copy and open in local browser
-

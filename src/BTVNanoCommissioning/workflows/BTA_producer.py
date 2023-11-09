@@ -1,4 +1,4 @@
-import collections
+import collections, os
 import awkward as ak
 import numpy as np
 import uproot
@@ -490,9 +490,14 @@ class NanoProcessor(processor.ProcessorABC):
 
             # genJet pT
             genJetIdx = ak.where(
-                jet.genJetIdx < ak.num(events.GenJet), jet.genJetIdx, zeros
+                (jet.genJetIdx < ak.num(events.GenJet)) & (jet.genJetIdx != -1),
+                jet.genJetIdx,
+                zeros,
             )  # in case the genJet index out of range
-            Jet["genpt"] = ak.where(genJetIdx != -1, events.GenJet[genJetIdx].pt, -99)
+
+            Jet["genpt"] = ak.where(
+                jet.genJetIdx != -1, events.GenJet[genJetIdx].pt, -99
+            )
 
             # gen-level jet cleaning aginst prompt leptons
             genlep_prompt = genlep[(Genlep.mother != 0) & (Genlep.mother % 10 == 0)]
@@ -514,7 +519,9 @@ class NanoProcessor(processor.ProcessorABC):
 
             # jet cleaning aginst pileup
             Jet["flavourCleaned"] = ak.where(
-                Jet["genpt"] < 8.0, zeros, Jet["flavourCleaned"]
+                (Jet["genpt"] < 8.0) & (Jet["genpt"] > 0.0),
+                zeros,
+                Jet["flavourCleaned"],
             )
 
         # Re-calculate jet probability (JP) and jet B probability (JBP) taggers
@@ -757,6 +764,8 @@ class NanoProcessor(processor.ProcessorABC):
             -np.log(jpc.calc_jet_proba(trk_Bproba_jbp_neg)) / 4.0
             - np.log(jpc.calc_jet_proba(trk_proba_jbp_neg)) / 4.0
         )
+
+        # Jet["ProbaN"] = -np.log10(jpc.calc_jet_proba(trk_proba_neg)) / 4.0
 
         #################
         #   TagVarCSV   #
@@ -1079,7 +1088,8 @@ class NanoProcessor(processor.ProcessorABC):
             output["DHadron"] = DHadron
             output["Genlep"] = Genlep
             output["GenV0"] = GenV0
-        fname = f"{dataset}_f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        os.system(f"mkdir -p {dataset}")
+        fname = f"{dataset}/f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
         with uproot.recreate(fname) as fout:
             output_root = {}
             for bname in output.keys():
@@ -1091,7 +1101,6 @@ class NanoProcessor(processor.ProcessorABC):
                         b_nest[n] = ak.packed(ak.without_parameters(output[bname][n]))
                     output_root[bname] = ak.zip(b_nest)
             fout["btagana/ttree"] = output_root
-
         return {dataset: len(events)}
 
     def postprocess(self, accumulator):

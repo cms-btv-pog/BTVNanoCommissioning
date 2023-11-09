@@ -268,7 +268,7 @@ class NanoProcessor(processor.ProcessorABC):
                     btagSFs(sel_jet, self.SF_map, weights, "DeepCSVB", syst_wei)
                     btagSFs(sel_jet, self.SF_map, weights, "DeepCSVC", syst_wei)
         else:
-            genflavor = ak.zeros_like(sel_jet.pt)
+            genflavor = ak.zeros_like(sel_jet.pt, dtype=int)
 
         # Systematics information
         if shift_name is None:

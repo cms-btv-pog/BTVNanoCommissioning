@@ -1,5 +1,5 @@
 {
-    "BTagMuRun2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "BTagMuRun2022E-27Jun2023-v1": [
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_120218/0000/nano_data2022CDE_123.root",
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_120218/0000/nano_data2022CDE_158.root",
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_120218/0000/nano_data2022CDE_130.root",
@@ -454,7 +454,7 @@
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_120218/0000/nano_data2022CDE_418.root",
         "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet/PFNano_Run3_v12/data_2022CDE_rereco_BTagMu/BTagMu/Run2022E-27Jun2023-v1_BTV_Run3_2022_Comm_v2_NanoV12/230927_120218/0000/nano_data2022CDE_422.root"
     ],
-    "BTagMuRun2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "BTagMuRun2022F-PromptReco-v1": [
         "root://cceos.ihep.ac.cn:1094//eos/ihep/cms/store/user/coli/PFNano_Run3/data_2022FG_prompt/BTagMu/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230928_044221/0000/nano_data2022FG_360.root",
         "root://cceos.ihep.ac.cn:1094//eos/ihep/cms/store/user/coli/PFNano_Run3/data_2022FG_prompt/BTagMu/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230928_044221/0000/nano_data2022FG_359.root",
         "root://cceos.ihep.ac.cn:1094//eos/ihep/cms/store/user/coli/PFNano_Run3/data_2022FG_prompt/BTagMu/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230928_044221/0000/nano_data2022FG_354.root",
@@ -1494,7 +1494,7 @@
         "root://cceos.ihep.ac.cn:1094//eos/ihep/cms/store/user/coli/PFNano_Run3/data_2022FG_prompt/BTagMu/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230928_044221/0000/nano_data2022FG_803.root",
         "root://cceos.ihep.ac.cn:1094//eos/ihep/cms/store/user/coli/PFNano_Run3/data_2022FG_prompt/BTagMu/Run2022F-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230928_044221/0000/nano_data2022FG_892.root"
     ],
-    "BTagMuRun2022G-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12": [
+    "BTagMuRun2022G-PromptReco-v1": [
         "root://cceos.ihep.ac.cn:1094//eos/ihep/cms/store/user/coli/PFNano_Run3/data_2022FG_prompt/BTagMu/Run2022G-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230928_044232/0000/nano_data2022FG_34.root",
         "root://cceos.ihep.ac.cn:1094//eos/ihep/cms/store/user/coli/PFNano_Run3/data_2022FG_prompt/BTagMu/Run2022G-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230928_044232/0000/nano_data2022FG_14.root",
         "root://cceos.ihep.ac.cn:1094//eos/ihep/cms/store/user/coli/PFNano_Run3/data_2022FG_prompt/BTagMu/Run2022G-PromptReco-v1_BTV_Run3_2022_Comm_v2_NanoV12/230928_044232/0000/nano_data2022FG_20.root",

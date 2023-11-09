@@ -3,6 +3,8 @@ import os
 import json
 import argparse
 from collections import defaultdict
+import uproot
+import numpy as np
 
 # Adapt some developments from Andrey Pozdnyakov in CoffeaRunner https://github.com/cms-rwth/CoffeaRunner/blob/master/filefetcher/fetch.py
 parser = argparse.ArgumentParser(
@@ -42,6 +44,11 @@ parser.add_argument(
 )
 parser.add_argument(
     "--blacklist_sites",
+    help="Black list for sites",
+    default=None,
+)
+parser.add_argument(
+    "--save_",
     help="Black list for sites",
     default=None,
 )
@@ -111,7 +118,7 @@ def getFilesFromDas(args):
 
         Tier = dataset.strip().split("/")[3]
         # NANOAODSIM for regular samples, USER for private
-        if "Run" in dataset and "mc" not in dataset:
+        if "Run" in dataset and "pythia8" not in dataset:
             dsname = (
                 dataset.strip().split("/")[1]
                 + dataset.strip().split("/")[2][
@@ -122,6 +129,7 @@ def getFilesFromDas(args):
                     .rfind("-")
                 ]
             )
+            dsname = dsname[: dsname.find("_BTV")]
             # +dataset.strip().split("/")[2].find("Run")
         instance = "prod/global"
         if Tier == "USER":
@@ -149,7 +157,6 @@ def getFilesFromDas(args):
 
         if instance == "prod/phys03":
             possible_sites = [fetchsite[0]["site"][0]["name"]]
-            print(fetchsite[0]["site"])
         else:
             possible_sites = [
                 s["site"][0]["name"]
@@ -259,6 +266,64 @@ def getRootFilesFromPath(d, lim=None):
     return rootfiles
 
 
+def validate(file):
+    n_tries = 0
+    check_path = os.popen(f"gfal-ls {file}").read()
+    if check_path == "":
+        return f"NotFound: {file}"
+    not_able_open = True
+    while n_tries <= 5:
+        try:
+            fin = uproot.open(file)
+            not_able_open = False
+            return fin["Events"].num_entries
+        except:
+            print("retries", n_tries, file)
+            n_tries += n_tries
+    if not_able_open:
+        return f"FailedRetries: {file}"
+
+
+def remove_bad_files(sample_dict, outname, remove_bad=True):
+    from p_tqdm import p_map
+
+    all_invalid = []
+    bad_sample_dict = {}
+    f = open(f"{outname.replace('.json','')}_file_status.txt", "w")
+    for sample in sample_dict.keys():
+        _rmap = p_map(
+            validate,
+            sample_dict[sample],
+            num_cpus=8,
+            desc=f"Validating {sample[:20]}...",
+        )
+
+        _results = list(_rmap)
+        counts = np.sum([r for r in _results if np.isreal(r) and isinstance(r, int)])
+        all_invalid += [r for r in _results if isinstance(r, str)]
+        if len(all_invalid) > 0:
+            bad_sample_dict[sample] = all_invalid
+        f.write(f"{sample} Events: {np.sum(counts)}\n")
+
+    if len(all_invalid) == 0:
+        f.write("No bad files found!")
+    else:
+        print(f"Found {len(all_invalid)} bad files.")
+        f.write(f"Found {len(all_invalid)} bad files.")
+        if remove_bad == True:
+            f.write(
+                "\n==========================BAD FILES==========================\n "
+            )
+
+            for sample in bad_sample_dict.keys():
+                for bad_file in bad_sample_dict[sample]:
+                    f.write(bad_file + "\n")
+                    if bad_file[bad_file.find("root://") :] in sample_dict[sample]:
+                        sample_dict[sample].remove(bad_file[bad_file.find("root://") :])
+
+    return sample_dict
+
+
 def main(args):
     if args.from_path:
         print("do it from path: ")
@@ -276,6 +341,7 @@ def main(args):
             empty = False
     assert empty, "you have empty lists"
     output_file = "./%s" % (args.output)
+    fdict = remove_bad_files(fdict, args.output, True)  # remove bad files
     with open(output_file, "w") as fp:
         json.dump(fdict, fp, indent=4)
         print("The file is saved at: ", output_file)

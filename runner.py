@@ -224,10 +224,20 @@ if __name__ == "__main__":
     args = parser.parse_args()
     print("Running with the following options:")
     print(args)
+    ogoutput = args.output
+    histoutdir = ogoutput.split(".")[0]
+    coffeaoutput = f"{histoutdir}/{ogoutput}"
+    outdir = histoutdir
+    basename = ogoutput.replace(".coffea", "").replace("hists_", "")
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
-        args.output = f'hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
+        histoutdir = f"hists_{args.workflow}_{sample_json.rstrip('.json')}"
+        outdir = f"arrays_{args.workflow}_{sample_json.rstrip('.json')}"
+        coffeaoutput = (
+            f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
+        )
+    os.system(f"mkdir -p {histoutdir}")
     # load dataset
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
@@ -249,7 +259,19 @@ if __name__ == "__main__":
     if args.only is not None:
         if args.only in sample_dict.keys():  # is dataset
             sample_dict = dict([(args.only, sample_dict[args.only])])
-        if "*" in args.only:  # wildcard for datasets
+            coffeaoutput = coffeaoutput.replace(".coffea", f"_{key}.coffea")
+        elif args.only.isdigit():
+            isamp = int(args.only)
+            nsamp = len(sample_dict.keys())
+            if isamp >= nsamp:
+                print(
+                    f"There are {nsamp} datasets, please use --only n with n<{nsamp}."
+                )
+            key = list(sample_dict.keys())[isamp]
+            print(f"Will process only {key} instead of all {nsamp} datasets.")
+            sample_dict = dict([(key, sample_dict[key])])
+            coffeaoutput = coffeaoutput.replace(".coffea", f"_{key}.coffea")
+        elif "*" in args.only:  # wildcard for datasets
             _new_dict = {}
             print("Will only proces the following datasets:")
             for k, v in sample_dict.items():
@@ -311,7 +333,7 @@ if __name__ == "__main__":
     processor_instance = workflows[args.workflow](
         args.year,
         args.campaign,
-        args.output.replace(".coffea", "").replace("hists_", ""),
+        outdir,
         args.isSyst,
         args.isArray,
         args.noHist,
@@ -321,30 +343,14 @@ if __name__ == "__main__":
     ## create tmp directory and check file exist or not
     from os import path
 
-    if path.exists(f"{args.output}") and args.overwrite == False:
-        raise Exception(f"{args.output} exists")
+    if path.exists(f"{coffeaoutput}") and args.overwrite == False:
+        raise Exception(f"{coffeaoutput} exists")
+
     if args.isArray:
-        ## create the directory
-        if (
-            path.exists(args.output.replace(".coffea", "").replace("hists_", ""))
-            and args.overwrite == False
-        ):
+        if path.exists(outdir) and args.overwrite == False and args.only is None:
             raise Exception("Directory exists")
         else:
-            if path.exists(
-                path.exists(args.output.replace(".coffea", "").replace("hists_", ""))
-            ):
-                os.system(
-                    f'rm -r {args.output.replace(".coffea", "").replace("hists_", "")}'
-                )
-            else:
-                os.system(
-                    f'mkdir -p {args.output.replace(".coffea", "").replace("hists_", "")}'
-                )
-                for dataset in sample_dict.keys():
-                    os.system(
-                        f"mkdir -p {args.workflow}_{(sample_json).rstrip('.json')}/{dataset}"
-                    )
+            os.system(f"mkdir -p {outdir}")
 
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """
@@ -779,13 +785,13 @@ if __name__ == "__main__":
                         if args.noHist == False:
                             save(
                                 output,
-                                args.output.replace(
+                                coffeaoutput.replace(
                                     ".coffea", f"_{sindex}_{findex}.coffea"
                                 ),
                             )
     if not "lxplus" in args.executor:
         if args.noHist == False:
-            save(output, args.output)
+            save(output, coffeaoutput)
     if args.noHist == False:
         # print(output)
-        print(f"Saving output to {args.output}")
+        print(f"Saving output to {coffeaoutput}")

@@ -6092,264 +6092,142 @@ def definitions():
     return definitions_dict
 
 
-def axes_name(var_input):
-    discname = [
-        "MET_phi",
-        "MET_pt",
-        "btagDeepB_0",
-        "btagDeepB_1",
-        "btagDeepB_2",
-        "btagDeepB_3",
-        "btagDeepB_b_0",
-        "btagDeepB_b_1",
-        "btagDeepB_b_2",
-        "btagDeepB_b_3",
-        "btagDeepB_bb_0",
-        "btagDeepB_bb_1",
-        "btagDeepB_bb_2",
-        "btagDeepB_bb_3",
-        "btagDeepC_0",
-        "btagDeepC_1",
-        "btagDeepC_2",
-        "btagDeepC_3",
-        "btagDeepCvB_0",
-        "btagDeepCvB_1",
-        "btagDeepCvB_2",
-        "btagDeepCvB_3",
-        "btagDeepCvL_0",
-        "btagDeepCvL_1",
-        "btagDeepCvL_2",
-        "btagDeepCvL_3",
-        "btagDeepFlavB_0",
-        "btagDeepFlavB_1",
-        "btagDeepFlavB_2",
-        "btagDeepFlavB_3",
-        "btagDeepFlavB_b_0",
-        "btagDeepFlavB_b_1",
-        "btagDeepFlavB_b_2",
-        "btagDeepFlavB_b_3",
-        "btagDeepFlavB_bb_0",
-        "btagDeepFlavB_bb_1",
-        "btagDeepFlavB_bb_2",
-        "btagDeepFlavB_bb_3",
-        "btagDeepFlavB_lepb_0",
-        "btagDeepFlavB_lepb_1",
-        "btagDeepFlavB_lepb_2",
-        "btagDeepFlavB_lepb_3",
-        "btagDeepFlavC_0",
-        "btagDeepFlavC_1",
-        "btagDeepFlavC_2",
-        "btagDeepFlavC_3",
-        "btagDeepFlavCvB_0",
-        "btagDeepFlavCvB_1",
-        "btagDeepFlavCvB_2",
-        "btagDeepFlavCvB_3",
-        "btagDeepFlavCvL_0",
-        "btagDeepFlavCvL_1",
-        "btagDeepFlavCvL_2",
-        "btagDeepFlavCvL_3",
-        "dr_lmujethmu",
-        "dr_lmujetsmu",
-        "dr_lmusmu",
-        "dr_mujet0",
-        "dr_mujet1",
-        "dr_mujet2",
-        "dr_mujet3",
-        "dr_mumu",
-        "ele_dxy",
-        "ele_dz",
-        "ele_eta",
-        "ele_pfRelIso03_all",
-        "ele_phi",
-        "ele_pt",
-        "hl_dxy",
-        "hl_dz",
-        "hl_eta",
-        "hl_pfRelIso04_all",
-        "hl_phi",
-        "hl_pt",
-        "hl_ptratio",
-        "jet0_eta",
-        "jet0_mass",
-        "jet0_phi",
-        "jet0_pt",
-        "jet1_eta",
-        "jet1_mass",
-        "jet1_phi",
-        "jet1_pt",
-        "jet2_eta",
-        "jet2_mass",
-        "jet2_phi",
-        "jet2_pt",
-        "jet3_eta",
-        "jet3_mass",
-        "jet3_phi",
-        "jet3_pt",
-        "jet_eta",
-        "jet_mass",
-        "jet_phi",
-        "jet_pt",
-        "lmujet_eta",
-        "lmujet_mass",
-        "lmujet_phi",
-        "lmujet_pt",
-        "mu_dxy",
-        "mu_dz",
-        "mu_eta",
-        "mu_pfRelIso04_all",
-        "mu_phi",
-        "mu_pt",
-        "mujet_eta",
-        "mujet_mass",
-        "mujet_phi",
-        "mujet_pt",
-        "negl_dxy",
-        "negl_dz",
-        "negl_eta",
-        "negl_pfRelIso04_all",
-        "negl_phi",
-        "negl_pt",
-        "njet",
-        "posl_dxy",
-        "posl_dz",
-        "posl_eta",
-        "posl_pfRelIso04_all",
-        "posl_phi",
-        "posl_pt",
-        "sl_dxy",
-        "sl_dz",
-        "sl_eta",
-        "sl_pfRelIso04_all",
-        "sl_phi",
-        "sl_pt",
-        "sl_ptratio",
-        "soft_l_dxy",
-        "soft_l_mass",
-        "soft_l_dz",
-        "soft_l_eta",
-        "soft_l_pfRelIso04_all",
-        "soft_l_phi",
-        "soft_l_pt",
-        "soft_l_ptratio",
-        "w_eta",
-        "w_mass",
-        "w_phi",
-        "w_pt",
-        "z_eta",
-        "z_mass",
-        "z_phi",
-        "z_pt",
-    ]
+def axes_name(var):
     output = {}
 
-    for var in discname:
-        unit = ""
-        obj = ""
-        if "dr" in var:
-            obj = "$\\Delta$R"
-            if "lmujethmu" in var:
-                unit = "($\\mu$-Jet,$\\mu$)"
-            elif "lmujetsmu" in var:
-                unit = "($\\mu$-Jet,soft-$\\mu$)"
-            elif "lmusmu" in var:
-                unit = "($\\mu$,soft-$\\mu$)"
-            elif "mujet" in var:
-                unit = "($\\mu$,Jet)"
-        elif "MET_" in var:
-            obj = "MET"
-        elif "ele_" in var:
-            obj = "e"
-        elif "posl_" in var:
-            obj = "$\\ell^+$"
-        elif "negl_" in var:
-            obj = "$\\ell^-$"
-        elif "mu_" in var:
-            obj = "$\\mu$"
-        elif "hl_" in var:
-            obj = "$\\ell_1$"
-        elif "sl_" in var:
-            obj = "$\\ell_2$"
-        elif "soft_l" in var:
-            obj = "soft-$\\mu$"
+    unit = ""
+    obj = ""
+    if "dr" in var:
+        obj = "$\\Delta$R"
+        if "lmujethmu" in var:
+            unit = "($\\mu$-Jet,$\\mu$)"
+        elif "lmujetsmu" in var:
+            unit = "($\\mu$-Jet,soft-$\\mu$)"
+        elif "lmusmu" in var:
+            unit = "($\\mu$,soft-$\\mu$)"
         elif "mujet" in var:
-            obj = "$\\mu$-Jet"
-        elif "jet" in var:
-            obj = "Jet"
-        elif "w_" in var:
-            obj = "W"
-        elif "z_" in var:
-            obj = "Z"
-
-        if "pt" in var:
-            unit = " $p_T$ [GeV]"
-        elif "mass" in var:
-            unit = " mass [GeV]"
-        elif "eta" in var:
-            unit = " $\\eta$"
-        elif "phi" in var:
-            unit = " $\\phi$"
-        elif "dxy" in var:
-            unit = " $d_{xy}$ [cm]"
-        elif "dz" in var:
-            unit = " $d_{z}$ [cm]"
-        elif "pfRelIso" in var:
-            unit = " Rel. Iso"
-        elif "btagDeepCvL" in var:
-            unit = "Jet DeepCSV CvL"
-        elif "btagDeepCvB" in var:
-            unit = "Jet DeepCSV CvB"
-        elif "btagDeepB" in var:
-            if "_b_" in var:
-                unit = "Jet DeepCSV P(b)"
-            elif "_bb" in var:
-                unit = "Jet DeepCSV P(bb)"
-            else:
-                unit = "Jet DeepCSV b discriminator"
-        elif "btagDeepC" in var:
-            unit = "Jet DeepCSV CvsAll"
-        elif "btagDeepFlavCvL" in var:
-            unit = "Jet DeepJet CvL"
-        elif "btagDeepFlavCvB" in var:
-            unit = "Jet DeepJet CvB"
-        elif "btagDeepFlavB" in var:
-            if "_b_" in var:
-                unit = "Jet DeepJet P(b)"
-            elif "_bb" in var:
-                unit = "Jet DeepJet P(bb)"
-            elif "_lepb" in var:
-                unit = "Jet DeepJet P(lepb)"
-            else:
-                unit = "Jet DeepJet b discriminator"
-        elif "btagDeepFlavC" in var:
-            unit = "Jet DeepJet CvsAll"
-
-        label = obj + unit
-        if var.endswith("0") or "jet0" in var:
-            if "btagDeepFlav" not in var:
-                label = label.replace("Jet", "$1^{st}$-Jet")
-            else:
-                label = label.replace("Jet", "$1^{st}$-Jet", 1)
-        elif var.endswith("1") or "jet1" in var:
-            if "btagDeepFlav" not in var:
-                label = label.replace("Jet", "$2^{nd}$-Jet")
-            else:
-                label = label.replace("Jet", "$2^{nd}$-Jet", 1)
-        elif var.endswith("2") or "jet2" in var:
-            if "btagDeepFlav" not in var:
-                label = label.replace("Jet", "$3^{rd}$-Jet")
-            else:
-                label = label.replace("Jet", "$3^{rd}$-Jet", 1)
-        elif var.endswith("3") or "jet3" in var:
-            if "btagDeepFlav" not in var:
-                label = label.replace("Jet", "$4^{th}$-Jet")
-            else:
-                label = label.replace("Jet", "$4^{th}$-Jet", 1)
-        if "ptratio" in var:
-            if var == "hl_ptratio":
-                label = "$p_T^{\\ell_1}/p_T^{Jet}$"
-            if var == "sl_ptratio":
-                label = "$p_T^{\\ell_2}/p_T^{Jet}$"
-            if var == "soft_l_ptratio":
-                label = "$p_T^{soft-\\mu}/p_T^{Jet}$"
-        output[var] = label
-    return output[var_input]
+            unit = "($\\mu$,Jet)"
+    elif "MET_" in var:
+        obj = "MET"
+    elif "ele_" in var:
+        obj = "e"
+    elif "posl_" in var:
+        obj = "$\\ell^+$"
+    elif "negl_" in var:
+        obj = "$\\ell^-$"
+    elif "mu_" in var:
+        obj = "$\\mu$"
+    elif "hl_" in var:
+        obj = "$\\ell_1$"
+    elif "sl_" in var:
+        obj = "$\\ell_2$"
+    elif "soft_l" in var:
+        obj = "soft-$\\mu$"
+    elif "mujet" in var:
+        obj = "$\\mu$-Jet"
+    elif "jet" in var:
+        obj = "Jet"
+    elif "w_" in var:
+        obj = "W"
+    elif "z_" in var:
+        obj = "Z"
+    if "pt" in var:
+        unit = " $p_T$ [GeV]"
+    elif "mass" in var:
+        unit = " mass [GeV]"
+    elif "eta" in var:
+        unit = " $\\eta$"
+    elif "phi" in var:
+        unit = " $\\phi$"
+    elif "dxy" in var:
+        unit = " $d_{xy}$ [cm]"
+    elif "dz" in var:
+        unit = " $d_{z}$ [cm]"
+    elif "pfRelIso" in var:
+        unit = " Rel. Iso"
+    elif "btag" in var:
+        unit = "Jet"
+        ## Negative tagger
+        if "Neg" in var:
+            unit = "Neg. " + unit
+        if "tanh" in var:
+            unit = "Trans. " + unit
+        ## Different taggers
+        if "DeepFlav" in var:
+            unit = unit + " DeepJet"
+        elif "RobustParTAK4" in var:
+            unit = unit + " RobustParTAK4"
+        elif "PNet" in var:
+            unit = unit + " PNet"
+        else:
+            unit = unit + " DeepCSV"
+        # output node
+        if "CvL" in var:
+            unit = unit + " CvL"
+        elif "CvB" in var:
+            unit = unit + " CvB"
+        elif "B_b" in var or "ProbB" in var:
+            unit = unit + " Prob(b)"
+        elif "B_bb" in var:
+            unit = unit + " Prob(bb)"
+        elif "B_lepb" in var:
+            unit = unit + " Prob(lepb)"
+        elif "B_lepb" in var:
+            unit = unit + " Prob(lepb)"
+        elif "QvG" in var or "QG" in var:
+            unit = unit + " QvG"
+        elif "G" in var:
+            unit = unit + " Prob(g)"
+        elif "UDS" in var:
+            unit = unit + " Prob(uds)"
+        elif "TauVJet" in var:
+            unit = unit + " $\\tau$vJ"
+        elif "B" in var:
+            unit = unit + " BvAll"
+        elif "C" in var:
+            unit = unit + " Prob(c)"
+    elif "PNetReg" in var:
+        unit = "Jet PNet Reg."
+        if "Corr" in var:
+            unit = " Corr"
+        elif "CorrNeutrino" in var:
+            unit = " Corr (w/$\\nu$)"
+        elif "RegPtRawRes" in var:
+            unit = " Resoultion"
+    elif "ProbaN" in var:
+        unit = "Neg. Jet Probability"
+    elif "Proba" in var:
+        unit = "Jet Probability"
+    elif "BprobN" in var:
+        unit = "Neg. b-Jet Probability"
+    elif "Bprob" in var:
+        unit = "b-Jet Probability"
+    label = obj + unit
+    if var.endswith("0") or "jet0" in var:
+        if "btagDeepFlav" not in var:
+            label = label.replace("Jet", "$1^{st}$-Jet")
+        else:
+            label = label.replace("Jet", "$1^{st}$-Jet", 1)
+    elif var.endswith("1") or "jet1" in var:
+        if "btagDeepFlav" not in var:
+            label = label.replace("Jet", "$2^{nd}$-Jet")
+        else:
+            label = label.replace("Jet", "$2^{nd}$-Jet", 1)
+    elif var.endswith("2") or "jet2" in var:
+        if "btagDeepFlav" not in var:
+            label = label.replace("Jet", "$3^{rd}$-Jet")
+        else:
+            label = label.replace("Jet", "$3^{rd}$-Jet", 1)
+    elif var.endswith("3") or "jet3" in var:
+        if "btagDeepFlav" not in var:
+            label = label.replace("Jet", "$4^{th}$-Jet")
+        else:
+            label = label.replace("Jet", "$4^{th}$-Jet", 1)
+    if "ptratio" in var:
+        if var == "hl_ptratio":
+            label = "$p_T^{\\ell_1}/p_T^{Jet}$"
+        if var == "sl_ptratio":
+            label = "$p_T^{\\ell_2}/p_T^{Jet}$"
+        if var == "soft_l_ptratio":
+            label = "$p_T^{soft-\\mu}/p_T^{Jet}$"
+    return label
