@@ -1322,4 +1322,143 @@ xsection = [
         "energy": "13.6",
         "comment": "from TOP-22-012",
     },
+        {
+        "id": "14196364",
+        "process_name": "QCD_Pt_3200toInf_TuneCP5_13TeV_pythia8",
+        "cross_section": "1.352e-04",
+        "total_uncertainty": "7.938e-08",
+        "DAS": "/QCD_Pt_3200toInf_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+        {
+        "id": "14196367",
+        "process_name": "QCD_Pt_2400to3200_TuneCP5_13TeV_pythia8",
+        "cross_section": "5.248e-03",
+        "total_uncertainty": "2.619e-06",
+        "DAS": "/QCD_Pt_2400to3200_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+        {
+        "id": "14195663",
+        "process_name": "QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8",
+        "cross_section": "8.730e-02",
+        "total_uncertainty": "4.312e-05",
+        "DAS": "/QCD_Pt_1800to2400_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+    {
+        "id": "14197171",
+        "process_name": "QCD_Pt_1400to1800_TuneCP5_13TeV_pythia8",
+        "cross_section": "6.485e-01",
+        "total_uncertainty": "3.088e-04",
+        "DAS": "/QCD_Pt_1400to1800_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+        {
+        "id": "14196227",
+        "process_name": "QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8",
+        "cross_section": "7.488e+00",
+        "total_uncertainty": "3.554e-03",
+        "DAS": "/QCD_Pt_1000to1400_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+    {
+        "id": "14196309",
+        "process_name": "QCD_Pt_800to1000_TuneCP5_13TeV_pythia8",
+
+        "cross_section": "2.627e+01",
+        "total_uncertainty": "5.621e-02",
+        "DAS": "/QCD_Pt_800to1000_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+    {
+        "id": "14195621",
+        "process_name": "QCD_Pt_600to800_TuneCP5_13TeV_pythia8",
+        "cross_section": "1.568e+02",
+        "total_uncertainty": "3.401e-01",
+        "DAS": "/QCD_Pt_600to800_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+    
+    {
+        "id": "14196230",
+        "process_name": "QCD_Pt_470to600_TuneCP5_13TeV_pythia8",
+        "cross_section": "5.544e+02",
+        "total_uncertainty": "2.150e+0",
+        "DAS": "/QCD_Pt_470to600_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+    {
+        "id": "14196200",
+        "process_name": "QCD_Pt_300to470_TuneCP5_13TeV_pythia8",
+        "cross_section": "6.890e+03",
+        "total_uncertainty": "6.188e+01",
+        "DAS": "/QCD_Pt_300to470_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+        {
+        "id": "14196240",
+        "process_name": "QCD_Pt_170to300_TuneCP5_13TeV_pythia8",
+        "cross_section": "1.039e+05",
+        "total_uncertainty": "2.318e+02",
+        "DAS": "/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+        {
+        "id": "14203338",
+        "process_name": "QCD_Pt_120to170_TuneCP5_13TeV_pythia8",
+        "cross_section": "4.060e+05",
+        "total_uncertainty": "9.128e+02",
+        "DAS": "/QCD_Pt_120to170_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+        {
+        "id": "14195638",
+        "process_name": "QCD_Pt_80to120_TuneCP5_13TeV_pythia8",
+        "cross_section": "2.340e+06",
+        "total_uncertainty": "4.452e+03",
+        "DAS": "/QCD_Pt_80to120_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+        {
+        "dataset_id": "14196314",
+        "process_name": "QCD_Pt_50to80_TuneCP5_13TeV_pythia8",
+        "cross_section": "1.571e+07",
+        "total_uncertainty": "2.593e+04",
+        "DAS": "/QCD_Pt_50to80_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+        {
+        "dataset_id": "14196217",
+        "process_name": "QCD_Pt_30to50_TuneCP5_13TeV_pythia8",
+        "cross_section": "1.066e+08",
+        "total_uncertainty": "1.782e+05",
+        "DAS": "/QCD_Pt_30to50_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    },
+     {
+        "dataset_id": "14196198",
+        "process_name": "QCD_Pt_15to30_TuneCP5_13TeV_pythia8",
+        "status": "new",
+        "cross_section": "1.246e+09",
+        "total_uncertainty": "1.875e+06.",
+        "accuracy": "unknown",
+        "DAS": "/QCD_Pt_15to30_TuneCP5_13TeV_pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v1/MINIAODSIM",
+        "shower": "Pythia8",
+        "energy": "13"
+    }
 ]
