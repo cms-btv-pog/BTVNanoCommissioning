@@ -49,4 +49,10 @@ correction_config = {
         "PU": "puweight_Summer22EERun3.histo.root",  # 80mb
         "JME": "jec_compiled.pkl.gz",
     },
+    "2018_UL": {#for QCD workflow
+        "lumiMask": "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt",
+        "PU": "puweight_2018_UL.HLTPFJet140.histo.root", #PU weights for HLT_Jet140 path
+        "JME": "jec_compiled.pkl.gz",
+        "BTV": {"deepCSV": "shape"},
+    },
 }
