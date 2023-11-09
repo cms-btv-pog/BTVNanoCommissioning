@@ -8,7 +8,7 @@ xsection = [
     },
     {
         "process_name": "DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
-        "cross_section": "6221.3",
+        "cross_section": "6346",
         "DAS": "/DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8/Run3Winter22NanoAOD-122X_mcRun3_2021_realistic_v9_ext1-v1/NANOAODSIM",
         "energy": "13.6",
         "comment": "from TOP-22-012",
@@ -127,14 +127,14 @@ xsection = [
     },
     {
         "process_name": "TTToSemiLeptonic_TuneCP5_13p6TeV-powheg-pythia8",
-        "cross_section": "761.9",
+        "cross_section": "422.3",
         "DAS": "/TTToSemiLeptonic_TuneCP5_13p6TeV-powheg-pythia8/Run3Winter22NanoAOD-FlatPU0to70_pilot_122X_mcRun3_2021_realistic_v9-v1/NANOAODSIM",
         "energy": "13.6",
         "comment": "from GenXSecAnalyzer",
     },
     {
         "process_name": "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "cross_section": "761.9",
+        "cross_section": "422.3",
         "DAS": "/TTToSemiLeptonic_TuneCP5_13p6TeV-powheg-pythia8/Run3Winter22NanoAOD-FlatPU0to70_pilot_122X_mcRun3_2021_realistic_v9-v1/NANOAODSIM",
         "energy": "13.6",
         "comment": "from GenXSecAnalyzer",
@@ -142,7 +142,7 @@ xsection = [
     {
         "id": "6420506329461764a903c1c9",
         "process_name": "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "cross_section": "762.1",
+        "cross_section": "404.4",
         "total_uncertainty": "0.1345",
         "accuracy": "NLO",
         "DAS": "/TTto4Q_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv3-124X_mcRun3_2022_realistic_v12-v4/MINIAODSIM",
@@ -525,6 +525,16 @@ xsection = [
         "matrix_generator": "none",
         "shower": "Pythia8",
         "MCM": "BTV-Run3Summer22MiniAODv3-00007",
+    },
+     {
+        "id": "64204f9b29461764a903c08e",
+        "process_name": "QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+        "cross_section": "22980.0",
+        "total_uncertainty": "215.1",
+        "accuracy": "unknown",
+        "DAS": "/QCD_Pt-120To170_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8/Run3Summer22MiniAODv3-124X_mcRun3_2022_realistic_v12-v1/MINIAODSIM",
+        "equivalent_lumi": "0.04352",
+        "fraction_negative_weight": "0.0"
     },
     {
         "DAS": "/QCD_PT-170to300_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8/Run3Summer22MiniAODv3-124X_mcRun3_2022_realistic_v12-v1/MINIAODSIM",
