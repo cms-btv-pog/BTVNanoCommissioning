@@ -83,3 +83,11 @@ def btag_mu_idiso(events, campaign):
         & (events.Muon.pfRelIso04_all < 0.12)
     )
     return mumask
+
+def jet_cut(events, campaign):
+    multijetmask = (
+        (abs(events.Jet.eta) < 2.4)
+        & (events.Jet.pt > 180)
+        & (events.Jet.jetId >= 5)
+    )
+    return multijetmask
