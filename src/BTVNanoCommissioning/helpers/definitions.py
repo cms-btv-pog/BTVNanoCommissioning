@@ -6091,6 +6091,128 @@ def definitions():
 
     return definitions_dict
 
+def SV_definitions():
+    SV_definitions_dict = {
+      "JetSVs_chi2": {
+            "displayname": "SV $\\chi^2$",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 22,
+            "manual_ranges": [-1, 10],
+            "inputVar_units": None,
+        },
+        "JetSVs_costhetasvpv": {
+            "displayname": "Cosine of the angle cos(θ) between the SV and the PV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 40,
+            "manual_ranges": [-2., 2.],
+            "inputVar_units": None,
+        },
+        "JetSVs_d3d": {
+            "displayname": "3D distance between SV and PV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 2000,
+            "manual_ranges": [0., 200.],
+            "inputVar_units": "mm",
+        },
+        "JetSVs_d3dsig": {
+            "displayname": "3D flight distance significance of the SV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 200,
+            "manual_ranges": [0., 200.],
+            "inputVar_units": None,
+        },
+        "JetSVs_dxy": {
+            "displayname": "Transverse (2D) flight distance of the SV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 1000,
+            "manual_ranges": [0.,100.],
+            "inputVar_units": "mm",
+        },
+        "JetSVs_dxysig": {
+            "displayname": "Transverse (2D) flight distance significance of the SV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 200,
+            "manual_ranges": [0.,200.],
+            "inputVar_units": None,
+        },
+        "JetSVs_enration": {
+            "displayname": "energy relative to parent jet [GeV]",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 100,
+            "manual_ranges": [0.,10.],
+            "inputVar_units": None,
+        },
+        "JetSVs_mass": {
+            "displayname": "invariant mass of the secondary vertex [GeV]",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 100,
+            "manual_ranges": [0.,10.],
+            "inputVar_units": None,
+        },
+        "JetSVs_normchi2": {
+            "displayname": "Normalized $\\chi^2$ of the SV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 30,
+            "manual_ranges": [0.,30.],
+            "inputVar_units": None,
+        },
+        "JetSVs_ntracks": {
+            "displayname": "Number of tracks associated to SV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 30,
+            "manual_ranges": [0.,30.],
+            "inputVar_units": None,
+        },
+        "JetSVs_phirel": {
+            "displayname": "DeltaPhi(SV, Jet)",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 200,
+            "manual_ranges": [-1.,1.],
+            "inputVar_units": None,
+        },
+        "JetSVs_pt": {
+            "displayname": "SV $p_T$",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 200,
+            "manual_ranges": [0.,200.],
+            "inputVar_units": "[GeV]",
+        },
+        "JetSVs_ptrel": {
+            "displayname": "SV $p_T$ relative to parent jet",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 10,
+            "manual_ranges": [0.,10.],
+            "inputVar_units": None,
+        },
+    }
+    return SV_definitions_dict
+
 
 def axes_name(var_input):
     discname = [
@@ -6156,6 +6278,7 @@ def axes_name(var_input):
         "dr_mujet2",
         "dr_mujet3",
         "dr_mumu",
+        "dr_SVjet0",
         "ele_dxy",
         "ele_dz",
         "ele_eta",
@@ -6210,6 +6333,7 @@ def axes_name(var_input):
         "negl_phi",
         "negl_pt",
         "njet",
+        "nJetSVs",
         "posl_dxy",
         "posl_dz",
         "posl_eta",
@@ -6255,6 +6379,8 @@ def axes_name(var_input):
                 unit = "($\\mu$,soft-$\\mu$)"
             elif "mujet" in var:
                 unit = "($\\mu$,Jet)"
+            elif "SVjet0" in var:
+                unit = "(SV,Jet)"
         elif "MET_" in var:
             obj = "MET"
         elif "ele_" in var:
