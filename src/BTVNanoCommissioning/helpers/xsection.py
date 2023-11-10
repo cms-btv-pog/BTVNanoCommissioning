@@ -121,20 +121,20 @@ xsection = [
     },
     {
         "process_name": "TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8",
-        "cross_section": "404.0",
+        "cross_section": "422.3",
         "DAS": "/TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22NanoAOD-122X_mcRun3_2021_realistic_v9-v1/NANOAODSIM",
         "energy": "13.6",
     },
     {
         "process_name": "TTToSemiLeptonic_TuneCP5_13p6TeV-powheg-pythia8",
-        "cross_section": "422.3",
+        "cross_section": "404.0",
         "DAS": "/TTToSemiLeptonic_TuneCP5_13p6TeV-powheg-pythia8/Run3Winter22NanoAOD-FlatPU0to70_pilot_122X_mcRun3_2021_realistic_v9-v1/NANOAODSIM",
         "energy": "13.6",
         "comment": "from GenXSecAnalyzer",
     },
     {
         "process_name": "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "cross_section": "422.3",
+        "cross_section": "404.0",
         "DAS": "/TTToSemiLeptonic_TuneCP5_13p6TeV-powheg-pythia8/Run3Winter22NanoAOD-FlatPU0to70_pilot_122X_mcRun3_2021_realistic_v9-v1/NANOAODSIM",
         "energy": "13.6",
         "comment": "from GenXSecAnalyzer",
@@ -142,7 +142,7 @@ xsection = [
     {
         "id": "6420506329461764a903c1c9",
         "process_name": "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "cross_section": "404.4",
+        "cross_section": "422.3",
         "total_uncertainty": "0.1345",
         "accuracy": "NLO",
         "DAS": "/TTto4Q_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv3-124X_mcRun3_2022_realistic_v12-v4/MINIAODSIM",
