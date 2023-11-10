@@ -9,7 +9,7 @@ import hist
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
-from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
+from BTVNanoCommissioning.helpers.definitions import definitions, axes_name,SV_definitions
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
     SFerror,
@@ -19,6 +19,7 @@ from BTVNanoCommissioning.utils.plot_utils import (
 )
 
 bininfo = definitions()
+SV_bininfo = SV_definitions()
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
 parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
@@ -121,6 +122,8 @@ if "Wc" in arg.phase:
         input_txt = input_txt + " OS-SS"
 elif "DY" in arg.phase:
     input_txt = "DY+jets"
+elif "QCD" in arg.phase:
+    input_txt = "QCD"
 elif "semilep" in arg.phase:
     input_txt = r"t$\bar{t}$ semileptonic"
     nj = 4
@@ -137,6 +140,8 @@ if "emctag" in arg.phase:
     input_txt = input_txt + " (e$\mu$)"
 elif "ectag" in arg.phase:
     input_txt = input_txt + " (e)"
+elif "QCD" == arg.phase:
+    input_txt = input_txt + " (multijets)"
 elif "ttdilep_sf" == arg.phase:
     input_txt = input_txt + " (e$\mu$)"
 else:
@@ -434,6 +439,16 @@ for index, discr in enumerate(var_set):
             if (bininfo[discr]["inputVar_units"] is not None)
             and (bininfo[discr]["inputVar_units"] == "")
             else bininfo[discr]["displayname"]
+        )
+    elif "JetSVs_" in discr:
+        xlabel = (
+            SV_bininfo[discr]["displayname"]
+            + " ["
+            + SV_bininfo[discr]["inputVar_units"]
+            + "]"
+            if (SV_bininfo[discr]["inputVar_units"] is not None)
+            and (SV_bininfo[discr]["inputVar_units"] == "")
+            else SV_bininfo[discr]["displayname"]
         )
     else:
         xlabel = axes_name(discr)
