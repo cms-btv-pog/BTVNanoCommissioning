@@ -6091,20 +6091,312 @@ def definitions():
 
     return definitions_dict
 
+def SV_definitions():
+    SV_definitions_dict = {
+      "JetSVs_chi2": {
+            "displayname": "SV $\\chi^2$",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 22,
+            "manual_ranges": [-1, 10],
+            "inputVar_units": None,
+        },
+        "JetSVs_costhetasvpv": {
+            "displayname": "Cosine of the angle cos(θ) between the SV and the PV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 40,
+            "manual_ranges": [-2., 2.],
+            "inputVar_units": None,
+        },
+        "JetSVs_d3d": {
+            "displayname": "3D distance between SV and PV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 2000,
+            "manual_ranges": [0., 200.],
+            "inputVar_units": "mm",
+        },
+        "JetSVs_d3dsig": {
+            "displayname": "3D flight distance significance of the SV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 200,
+            "manual_ranges": [0., 200.],
+            "inputVar_units": None,
+        },
+        "JetSVs_dxy": {
+            "displayname": "Transverse (2D) flight distance of the SV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 1000,
+            "manual_ranges": [0.,100.],
+            "inputVar_units": "mm",
+        },
+        "JetSVs_dxysig": {
+            "displayname": "Transverse (2D) flight distance significance of the SV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 200,
+            "manual_ranges": [0.,200.],
+            "inputVar_units": None,
+        },
+        "JetSVs_enration": {
+            "displayname": "energy relative to parent jet [GeV]",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 100,
+            "manual_ranges": [0.,10.],
+            "inputVar_units": None,
+        },
+        "JetSVs_mass": {
+            "displayname": "invariant mass of the secondary vertex [GeV]",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 100,
+            "manual_ranges": [0.,10.],
+            "inputVar_units": None,
+        },
+        "JetSVs_normchi2": {
+            "displayname": "Normalized $\\chi^2$ of the SV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 30,
+            "manual_ranges": [0.,30.],
+            "inputVar_units": None,
+        },
+        "JetSVs_ntracks": {
+            "displayname": "Number of tracks associated to SV",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 30,
+            "manual_ranges": [0.,30.],
+            "inputVar_units": None,
+        },
+        "JetSVs_phirel": {
+            "displayname": "DeltaPhi(SV, Jet)",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 200,
+            "manual_ranges": [-1.,1.],
+            "inputVar_units": None,
+        },
+        "JetSVs_pt": {
+            "displayname": "SV $p_T$",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 200,
+            "manual_ranges": [0.,200.],
+            "inputVar_units": "[GeV]",
+        },
+        "JetSVs_ptrel": {
+            "displayname": "SV $p_T$ relative to parent jet",
+            "ylabel_text": "entries",
+            "format_unit": "2f",
+            "format_unit_digits": 2,
+            "bins": 10,
+            "manual_ranges": [0.,10.],
+            "inputVar_units": None,
+        },
+    }
+    return SV_definitions_dict
 
-def axes_name(var):
+
+def axes_name(var_input):
+    discname = [
+        "MET_phi",
+        "MET_pt",
+        "btagDeepB_0",
+        "btagDeepB_1",
+        "btagDeepB_2",
+        "btagDeepB_3",
+        "btagDeepB_b_0",
+        "btagDeepB_b_1",
+        "btagDeepB_b_2",
+        "btagDeepB_b_3",
+        "btagDeepB_bb_0",
+        "btagDeepB_bb_1",
+        "btagDeepB_bb_2",
+        "btagDeepB_bb_3",
+        "btagDeepC_0",
+        "btagDeepC_1",
+        "btagDeepC_2",
+        "btagDeepC_3",
+        "btagDeepCvB_0",
+        "btagDeepCvB_1",
+        "btagDeepCvB_2",
+        "btagDeepCvB_3",
+        "btagDeepCvL_0",
+        "btagDeepCvL_1",
+        "btagDeepCvL_2",
+        "btagDeepCvL_3",
+        "btagDeepFlavB_0",
+        "btagDeepFlavB_1",
+        "btagDeepFlavB_2",
+        "btagDeepFlavB_3",
+        "btagDeepFlavB_b_0",
+        "btagDeepFlavB_b_1",
+        "btagDeepFlavB_b_2",
+        "btagDeepFlavB_b_3",
+        "btagDeepFlavB_bb_0",
+        "btagDeepFlavB_bb_1",
+        "btagDeepFlavB_bb_2",
+        "btagDeepFlavB_bb_3",
+        "btagDeepFlavB_lepb_0",
+        "btagDeepFlavB_lepb_1",
+        "btagDeepFlavB_lepb_2",
+        "btagDeepFlavB_lepb_3",
+        "btagDeepFlavC_0",
+        "btagDeepFlavC_1",
+        "btagDeepFlavC_2",
+        "btagDeepFlavC_3",
+        "btagDeepFlavCvB_0",
+        "btagDeepFlavCvB_1",
+        "btagDeepFlavCvB_2",
+        "btagDeepFlavCvB_3",
+        "btagDeepFlavCvL_0",
+        "btagDeepFlavCvL_1",
+        "btagDeepFlavCvL_2",
+        "btagDeepFlavCvL_3",
+        "dr_lmujethmu",
+        "dr_lmujetsmu",
+        "dr_lmusmu",
+        "dr_mujet0",
+        "dr_mujet1",
+        "dr_mujet2",
+        "dr_mujet3",
+        "dr_mumu",
+        "dr_SVjet0",
+        "ele_dxy",
+        "ele_dz",
+        "ele_eta",
+        "ele_pfRelIso03_all",
+        "ele_phi",
+        "ele_pt",
+        "hl_dxy",
+        "hl_dz",
+        "hl_eta",
+        "hl_pfRelIso04_all",
+        "hl_phi",
+        "hl_pt",
+        "hl_ptratio",
+        "jet0_eta",
+        "jet0_mass",
+        "jet0_phi",
+        "jet0_pt",
+        "jet1_eta",
+        "jet1_mass",
+        "jet1_phi",
+        "jet1_pt",
+        "jet2_eta",
+        "jet2_mass",
+        "jet2_phi",
+        "jet2_pt",
+        "jet3_eta",
+        "jet3_mass",
+        "jet3_phi",
+        "jet3_pt",
+        "jet_eta",
+        "jet_mass",
+        "jet_phi",
+        "jet_pt",
+        "lmujet_eta",
+        "lmujet_mass",
+        "lmujet_phi",
+        "lmujet_pt",
+        "mu_dxy",
+        "mu_dz",
+        "mu_eta",
+        "mu_pfRelIso04_all",
+        "mu_phi",
+        "mu_pt",
+        "mujet_eta",
+        "mujet_mass",
+        "mujet_phi",
+        "mujet_pt",
+        "negl_dxy",
+        "negl_dz",
+        "negl_eta",
+        "negl_pfRelIso04_all",
+        "negl_phi",
+        "negl_pt",
+        "njet",
+        "nJetSVs",
+        "posl_dxy",
+        "posl_dz",
+        "posl_eta",
+        "posl_pfRelIso04_all",
+        "posl_phi",
+        "posl_pt",
+        "sl_dxy",
+        "sl_dz",
+        "sl_eta",
+        "sl_pfRelIso04_all",
+        "sl_phi",
+        "sl_pt",
+        "sl_ptratio",
+        "soft_l_dxy",
+        "soft_l_mass",
+        "soft_l_dz",
+        "soft_l_eta",
+        "soft_l_pfRelIso04_all",
+        "soft_l_phi",
+        "soft_l_pt",
+        "soft_l_ptratio",
+        "w_eta",
+        "w_mass",
+        "w_phi",
+        "w_pt",
+        "z_eta",
+        "z_mass",
+        "z_phi",
+        "z_pt",
+    ]
     output = {}
 
-    unit = ""
-    obj = ""
-    if "dr" in var:
-        obj = "$\\Delta$R"
-        if "lmujethmu" in var:
-            unit = "($\\mu$-Jet,$\\mu$)"
-        elif "lmujetsmu" in var:
-            unit = "($\\mu$-Jet,soft-$\\mu$)"
-        elif "lmusmu" in var:
-            unit = "($\\mu$,soft-$\\mu$)"
+    for var in discname:
+        unit = ""
+        obj = ""
+        if "dr" in var:
+            obj = "$\\Delta$R"
+            if "lmujethmu" in var:
+                unit = "($\\mu$-Jet,$\\mu$)"
+            elif "lmujetsmu" in var:
+                unit = "($\\mu$-Jet,soft-$\\mu$)"
+            elif "lmusmu" in var:
+                unit = "($\\mu$,soft-$\\mu$)"
+            elif "mujet" in var:
+                unit = "($\\mu$,Jet)"
+            elif "SVjet0" in var:
+                unit = "(SV,Jet)"
+        elif "MET_" in var:
+            obj = "MET"
+        elif "ele_" in var:
+            obj = "e"
+        elif "posl_" in var:
+            obj = "$\\ell^+$"
+        elif "negl_" in var:
+            obj = "$\\ell^-$"
+        elif "mu_" in var:
+            obj = "$\\mu$"
+        elif "hl_" in var:
+            obj = "$\\ell_1$"
+        elif "sl_" in var:
+            obj = "$\\ell_2$"
+        elif "soft_l" in var:
+            obj = "soft-$\\mu$"
         elif "mujet" in var:
             unit = "($\\mu$,Jet)"
     elif "MET_" in var:

@@ -75,4 +75,10 @@ correction_config = {
             "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",
         },
     },
+    "2018_UL": {#for QCD workflow
+        "lumiMask": "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt",
+        "PU": "puweight_2018_UL.HLTPFJet140.histo.root", #PU weights for HLT_Jet140 path
+        "JME": "jec_compiled.pkl.gz",
+        "BTV": {"deepCSV": "shape"},
+    },
 }
