@@ -321,7 +321,7 @@ class NanoProcessor(processor.ProcessorABC):
         Wcand = MET + iso_lep_trans  # transverse mass
         Wmass = Wcand.mass
         Wpt = Wcand.pt
-        req_Wmass = Wmass > wmasscut
+        req_mtw = Wmass > wmasscut
 
         # ==This is the manual calculation for transverse mass==
         # dphi = iso_lep.phi-events.PuppiMET.phi
