@@ -124,52 +124,6 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
-    elif "ctag_ttsemilep_sf" in workflow:
-        obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
-        _hist_dict["z_mass"] = Hist.Hist(
-            syst_axis,
-            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\ell}$ [GeV]"),
-            Hist.storage.Weight(),
-        )
-        _hist_dict["w_mass"] = Hist.Hist(
-            syst_axis,
-            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\nu}$ [GeV]"),
-            Hist.storage.Weight(),
-        )
-        # delta R between soft muon and mu-jet
-        _hist_dict["dr_lmujetsmu"] = Hist.Hist(
-            syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
-        )
-        # delta R between hard muon and mu-jet
-        _hist_dict["dr_lmujethmu"] = Hist.Hist(
-            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
-        )
-        # delta R between hard muon and soft-muon
-        _hist_dict["dr_lmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
-        for i in ["hl", "soft_l"]:
-            if i == "soft_l":
-                _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
-                    syst_axis, flav_axis, softliso_axis, Hist.storage.Weight()
-                )
-                _hist_dict[f"{i}_dxy"] = Hist.Hist(
-                    syst_axis, flav_axis, dxy_axis, Hist.storage.Weight()
-                )
-                _hist_dict[f"{i}_dz"] = Hist.Hist(
-                    syst_axis, flav_axis, dz_axis, Hist.storage.Weight()
-                )
-            else:
-                _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                    syst_axis, iso_axis, Hist.storage.Weight()
-                )
-                _hist_dict[f"{i}_dxy"] = Hist.Hist(
-                    syst_axis, dxy_axis, Hist.storage.Weight()
-                )
-                _hist_dict[f"{i}_dz"] = Hist.Hist(
-                    syst_axis, dz_axis, Hist.storage.Weight()
-                )
-            _hist_dict[f"{i}_ptratio"] = Hist.Hist(
-                syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
-            )
     elif "Wc_sf" in workflow:
         obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
         _hist_dict["SV_charge"] = Hist.Hist(

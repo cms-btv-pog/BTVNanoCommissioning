@@ -232,8 +232,8 @@ if __name__ == "__main__":
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
-        histoutdir = f"hists_{args.workflow}_{sample_json.rstrip('.json')}"
-        outdir = f"arrays_{args.workflow}_{sample_json.rstrip('.json')}"
+        histoutdir = f"hists_{args.workflow}"
+        outdir = f"arrays_{args.workflow}"
         coffeaoutput = (
             f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
         )
@@ -347,10 +347,7 @@ if __name__ == "__main__":
         raise Exception(f"{coffeaoutput} exists")
 
     if args.isArray:
-        if path.exists(outdir) and args.overwrite == False and args.only is None:
-            raise Exception("Directory exists")
-        else:
-            os.system(f"mkdir -p {outdir}")
+        os.system(f"mkdir -p {outdir}")
 
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """

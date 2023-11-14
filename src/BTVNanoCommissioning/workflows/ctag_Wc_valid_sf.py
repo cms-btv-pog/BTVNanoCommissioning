@@ -1,6 +1,5 @@
 import os
 import collections, awkward as ak, numpy as np
-import os
 import uproot
 from coffea import processor
 from coffea.analysis_tools import Weights
@@ -9,6 +8,7 @@ from BTVNanoCommissioning.utils.correction import (
     load_lumi,
     load_SF,
     muSFs,
+    eleSFs,
     puwei,
     btagSFs,
     JME_shifts,
@@ -17,7 +17,7 @@ from BTVNanoCommissioning.utils.correction import (
 from BTVNanoCommissioning.helpers.func import (
     flatten,
     update,
-    uproot_writeable,
+    array_writer,
     dump_lumi,
 )
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
@@ -40,6 +40,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
+        selectionModifier="WcM",
     ):
         self._year = year
         self._campaign = campaign
@@ -51,6 +52,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.chunksize = chunksize
         ## Load corrections
         self.SF_map = load_SF(self._campaign)
+        self.selMod = selectionModifier
 
     @property
     def accumulator(self):
@@ -97,8 +99,34 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
+
+        isMu = False
+        isEle = False
+        if "WcM" in self.selMod or "semittM" in self.selMod:
+            triggers = ["IsoMu27"]
+            isMu = True
+            dxySigcut = 1
+            muNeEmSum = 0.7
+            muonpTratioCut = 0.4
+            isolepdz, isolepdxy, isolepsip3d = 0.01, 0.002, 2
+        elif "WcE" in self.selMod or "semittE" in self.selMod:
+            triggers = ["Ele32_WPTight_Gsf_L1DoubleEG"]
+            isEle = True
+            dxySigcut = 0
+            muNeEmSum = 1
+            muonpTratioCut = 0.6
+            isolepdz, isolepdxy, isolepsip3d = 0.02, 0.01, 2.5
+        else:
+            raise ValueError(self.selMod, "is not a valid selection modifier.")
+
+        histoname = {
+            "WcM": "ctag_Wc_sf",
+            "WcE": "ectag_Wc_sf",
+            "semittM": "ctag_Wc_sf",  # same histogram representation as W+c
+            "semittE": "ectag_Wc_sf",  # same histogram representation as W+c
+        }
         _hist_event_dict = (
-            {"": None} if self.noHist else histogrammer(events, "ctag_Wc_sf")
+            {"": None} if self.noHist else histogrammer(events, histoname[self.selMod])
         )
 
         output = {
@@ -122,7 +150,6 @@ class NanoProcessor(processor.ProcessorABC):
             output = dump_lumi(events[req_lumi], output)
 
         ## HLT
-        triggers = ["IsoMu27"]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -135,46 +162,63 @@ class NanoProcessor(processor.ProcessorABC):
         for t in trig_arrs:
             req_trig = req_trig | t
 
-        ## Muon cuts
-        # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
-        iso_muon = events.Muon[(events.Muon.pt > 30) & mu_idiso(events, self._campaign)]
-        req_muon = ak.count(iso_muon.pt, axis=1) == 1
+        ## Lepton cuts
+        if isMu:
+            # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
+            iso_lep = events.Muon[
+                (events.Muon.pt > 30) & mu_idiso(events, self._campaign)
+            ]
+        elif isEle:
+            iso_lep = events.Electron[
+                (events.Electron.pt > 34) & ele_mvatightid(events, self._campaign)
+            ]
+        req_lep = ak.count(iso_lep.pt, axis=1) == 1
         jet_sel = ak.fill_none(
             jet_id(events, self._campaign)
-            & (ak.all(events.Jet.metric_table(iso_muon) > 0.5, axis=2)),
+            & (ak.all(events.Jet.metric_table(iso_lep) > 0.5, axis=2)),
             False,
             axis=-1,
         )
-        iso_muon = ak.pad_none(iso_muon, 1, axis=1)
-        iso_muon = iso_muon[:, 0]
-        iso_muindx = ak.mask(
-            ak.local_index(events.Muon.pt),
-            ((events.Muon.pt > 30) & mu_idiso(events, self._campaign)) == 1,
-        )
-        iso_muindx = ak.pad_none(iso_muindx, 1)
-        iso_muindx = iso_muindx[:, 0]
+        iso_lep = ak.pad_none(iso_lep, 1, axis=1)
+        iso_lep = iso_lep[:, 0]
+        if isMu:
+            iso_lepindx = ak.mask(
+                ak.local_index(events.Muon.pt),
+                ((events.Muon.pt > 30) & mu_idiso(events, self._campaign)) == 1,
+            )
+        elif isEle:
+            iso_lepindx = ak.mask(
+                ak.local_index(events.Electron.pt),
+                ((events.Electron.pt > 34) & ele_mvatightid(events, self._campaign))
+                == 1,
+            )
+        iso_lepindx = ak.pad_none(iso_lepindx, 1)
+        iso_lepindx = iso_lepindx[:, 0]
 
         ## Jet cuts
         if "DeepJet_nsv" in events.Jet.fields:
             jet_sel = jet_sel & (events.Jet.DeepJet_nsv > 0)
         event_jet = events.Jet[jet_sel]
-        req_jets = (ak.num(event_jet.pt) >= 1) & (ak.num(event_jet.pt) <= 3)
+        if "Wc" in self.selMod:
+            req_jets = (ak.num(event_jet.pt) >= 1) & (ak.num(event_jet.pt) <= 3)
+        else:
+            req_jets = ak.num(event_jet.pt) >= 4
 
         ## Soft Muon cuts
-        soft_muon = events.Muon[softmu_mask(events, self._campaign)]
+        soft_muon = events.Muon[softmu_mask(events, self._campaign, dxySigcut)]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
         mujetsel = ak.fill_none(
             (
                 (ak.all(event_jet.metric_table(soft_muon) <= 0.4, axis=2))
                 & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1))
-                & ((event_jet.muEF + event_jet.neEmEF) < 0.7)
+                & ((event_jet.muEF + event_jet.neEmEF) < muNeEmSum)
             ),
             False,
             axis=-1,
         )
         mujetsel2 = ak.fill_none(
             (
-                ((events.Jet.muEF + events.Jet.neEmEF) < 0.7)
+                ((events.Jet.muEF + events.Jet.neEmEF) < muNeEmSum)
                 & (
                     ak.all(
                         events.Jet.metric_table(soft_muon) <= 0.4,
@@ -188,8 +232,10 @@ class NanoProcessor(processor.ProcessorABC):
             axis=-1,
         )
         soft_muon = ak.pad_none(soft_muon, 1, axis=1)
+        soft_muon["dxySig"] = soft_muon.dxy / soft_muon.dxyErr
 
         ## Muon-jet cuts
+        event_jet["isMuonJet"] = mujetsel
         mu_jet = event_jet[mujetsel]
         otherjets = event_jet[~mujetsel]
         req_mujet = ak.num(mu_jet.pt, axis=1) >= 1
@@ -204,24 +250,24 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = jetindx[:, 0]
 
         # Other cuts
-        req_pTratio = (soft_muon[:, 0].pt / mu_jet[:, 0].pt) < 0.4
-        idx = np.where(iso_muon.jetIdx == -1, 0, iso_muon.jetIdx)
-        req_QCDveto = (
-            (iso_muon.pfRelIso04_all < 0.05)
-            & (abs(iso_muon.dz) < 0.01)
-            & (abs(iso_muon.dxy) < 0.002)
-            & (iso_muon.sip3d < 2)
-            & (
-                iso_muon.pt
-                / ak.firsts(
-                    events.Jet[
-                        (events.Jet.muonIdx1 == iso_muindx)
-                        | ((events.Jet.muonIdx2 == iso_muindx))
-                    ].pt
-                )
-                > 0.75
-            )
-        )
+        req_pTratio = (soft_muon[:, 0].pt / mu_jet[:, 0].pt) < muonpTratioCut
+        idx = np.where(iso_lep.jetIdx == -1, 0, iso_lep.jetIdx)
+        # req_QCDveto = (
+        #     (iso_lep.pfRelIso04_all < 0.05)
+        # & (abs(iso_lep.dz) < isolepdz)
+        # & (abs(iso_lep.dxy) < isolepdxy)
+        # & (iso_lep.sip3d < isolepsip3d)
+        # & (
+        #     iso_lep.pt
+        #     / ak.firsts(
+        #         events.Jet[
+        #             (events.Jet.muonIdx1 == iso_lepindx)
+        #             | ((events.Jet.muonIdx2 == iso_lepindx))
+        #         ].pt
+        #     )
+        #     > 0.75
+        # )
+        # )
 
         dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
         dilep_ele = events.Electron[
@@ -231,11 +277,23 @@ class NanoProcessor(processor.ProcessorABC):
             ak.count(dilep_mu.pt, axis=1) + ak.count(dilep_ele.pt, axis=1) != 2
         )
 
-        dilep_mass = iso_muon + soft_muon[:, 0]
-        req_dilepmass = (dilep_mass.mass > 12.0) & (
-            (dilep_mass.mass < 80) | (dilep_mass.mass > 100)
-        )
+        if isMu:
+            dilep_mass = iso_lep + soft_muon[:, 0]
+            req_dilepmass = (dilep_mass.mass > 12.0) & (
+                (dilep_mass.mass < 80) | (dilep_mass.mass > 100)
+            )
+        elif isEle:
+            req_dilepmass = iso_lep.pt > 0
 
+        iso_lep_trans = ak.zip(
+            {
+                "pt": iso_lep.pt,
+                "eta": ak.zeros_like(iso_lep.pt),
+                "phi": iso_lep.phi,
+                "mass": iso_lep.mass,
+            },
+            with_name="PtEtaPhiMLorentzVector",
+        )
         if "Run3" not in self._campaign:
             MET = ak.zip(
                 {
@@ -256,20 +314,32 @@ class NanoProcessor(processor.ProcessorABC):
                 },
                 with_name="PtEtaPhiMLorentzVector",
             )
-        Wmass = MET + iso_muon
-        req_Wmass = Wmass.mass > 55
+
+        wmasscut = 55
+        if "semitt" in self.selMod:
+            wmasscut = 0
+        Wcand = MET + iso_lep_trans  # transverse mass
+        Wmass = Wcand.mass
+        Wpt = Wcand.pt
+        req_Wmass = Wmass > wmasscut
+
+        # ==This is the manual calculation for transverse mass==
+        # dphi = iso_lep.phi-events.PuppiMET.phi
+        # dphi = np.where(dphi<np.pi,dphi+2*np.pi,dphi)
+        # dphi = np.where(dphi>np.pi,dphi-2*np.pi,dphi)
+        # trans = np.sqrt(2*iso_lep.pt*events.PuppiMET.pt*(1-np.cos(dphi)))
 
         event_level = (
             req_trig
             & req_lumi
-            & req_muon
+            & req_lep
             & req_jets
             & req_softmu
             & req_dilepmass
             & req_mujet
             & req_Wmass
             & req_dilepveto
-            & req_QCDveto
+            # & req_QCDveto
             & req_pTratio
         )
         event_level = ak.fill_none(event_level, False)
@@ -279,7 +349,9 @@ class NanoProcessor(processor.ProcessorABC):
         # Selected objects #
         ####################
 
-        shmu = iso_muon[event_level]
+        shmu = iso_lep[event_level]
+        wm = Wmass[event_level]
+        wp = Wpt[event_level]
         sjets = event_jet[event_level]
         ssmu = soft_muon[event_level]
         smet = MET[event_level]
@@ -291,7 +363,9 @@ class NanoProcessor(processor.ProcessorABC):
         ssmu = ssmu[:, 0]
         sz = shmu + ssmu
         sw = shmu + smet
-        osss = shmu.charge * ssmu.charge * -1
+        osss = 1
+        if "Wc" in self.selMod:
+            osss = shmu.charge * ssmu.charge * -1
         njet = ak.count(sjets.pt, axis=1)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
@@ -324,8 +398,10 @@ class NanoProcessor(processor.ProcessorABC):
                         weights,
                         syst_wei,
                     )
-                if "MUO" in self.SF_map.keys():
+                if isMu and "MUO" in self.SF_map.keys():
                     muSFs(shmu, self.SF_map, weights, syst_wei, False)
+                if isEle and "EGM" in self.SF_map.keys():
+                    eleSFs(shmu, self.SF_map, weights, syst_wei, False)
                 if "BTV" in self.SF_map.keys():
                     btagSFs(smuon_jet, self.SF_map, weights, "DeepJetC", syst_wei)
                     btagSFs(smuon_jet, self.SF_map, weights, "DeepJetB", syst_wei)
@@ -460,6 +536,8 @@ class NanoProcessor(processor.ProcessorABC):
                                 weight=weight,
                             )
                 elif "btag" in histname and "Trans" in histname:
+                    if histname not in smuon_jet:
+                        continue
                     for i in range(2):
                         histname = histname.replace("Trans", "").replace(f"_{i}", "")
                         h.fill(
@@ -526,6 +604,9 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["SoftMuon"] = ssmu
             pruned_ev["OtherJets"] = sotherjets
             pruned_ev["osss"] = osss
+            pruned_ev["njet"] = njet
+            pruned_ev["W_transmass"] = wm
+            pruned_ev["W_pt"] = wp
             if "PFCands" in events.fields:
                 pruned_ev.PFCands = spfcands
             # Add custom variables
@@ -542,46 +623,7 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["soft_l_ptratio"] = ssmu.pt / smuon_jet.pt
             pruned_ev["l1_ptratio"] = shmu.pt / smuon_jet.pt
 
-            # Create a list of variables want to store. For objects from the PFNano file, specify as {object}_{variable}, wildcard option only accepted at the end of the string
-            out_branch = np.setdiff1d(
-                np.array(pruned_ev.fields), np.array(events.fields)
-            )
-            out_branch = np.delete(
-                out_branch,
-                np.where(
-                    (out_branch == "SoftMuon")
-                    | (out_branch == "MuonJet")
-                    | (out_branch == "dilep")
-                    | (out_branch == "OtherJets")
-                ),
-            )
-
-            for kin in ["pt", "eta", "phi", "mass", "pfRelIso04_all", "dxy", "dz"]:
-                for obj in [
-                    "Muon",
-                    "Jet",
-                    "SoftMuon",
-                    "MuonJet",
-                    "dilep",
-                    "charge",
-                    "MET",
-                ]:
-                    if "MET" in obj and ("pt" != kin or "phi" != kin):
-                        continue
-                    if (obj != "Muon" and obj != "SoftMuon") and (
-                        "pfRelIso04_all" == kin or "d" in kin
-                    ):
-                        continue
-                    out_branch = np.append(out_branch, [f"{obj}_{kin}"])
-            out_branch = np.append(
-                out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*", "SV_*"]
-            )
-            # write to root files
-            os.system(f"mkdir -p {self.name}/{dataset}")
-            with uproot.recreate(
-                f"{self.name}/{dataset}/{systematics[0]}_{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
-            ) as fout:
-                fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
+            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
 
         return {dataset: output}
 

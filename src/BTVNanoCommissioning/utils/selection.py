@@ -46,12 +46,12 @@ def ele_mvatightid(events, campaign):
     return elemask
 
 
-def softmu_mask(events, campaign):
+def softmu_mask(events, campaign, dxySigCut=0):
     softmumask = (
         (events.Muon.pt < 25)
         & (abs(events.Muon.eta) < 2.4)
         & (events.Muon.tightId > 0.5)
-        & (events.Muon.pfRelIso04_all > 0.2)
+        & (abs(events.Muon.dxy / events.Muon.dxyErr) > dxySigCut)
         & (events.Muon.jetIdx != -1)
     )
 
