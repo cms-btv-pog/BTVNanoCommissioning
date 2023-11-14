@@ -83,7 +83,7 @@ def missing_branch(events):
                 "btagDeepFlavCvB": jets.btagDeepFlavCvB,
             },
         )
-    if not hasattr(events.Jet, "btagDeepB"):
+    if hasattr(events.Jet, "btagDeepB_b") and not hasattr(events.Jet, "btagDeepB"):
         jets = events.Jet
         jets["btagDeepB"] = events.Jet.btagDeepB_b + events.Jet.btagDeepB_bb
         events.Jet = update(
@@ -125,7 +125,7 @@ def missing_branch(events):
         )
     if hasattr(events, "METFixEE2017"):
         events.MET = events.METFixEE2017
-    if not hasattr(events.PuppiMET, "MetUnclustEnUpDeltaX"):
+    if hasattr(events.PuppiMET, "ptUnclusteredUp") and not hasattr(events.PuppiMET, "MetUnclustEnUpDeltaX"):
         met = events.PuppiMET
         met["MetUnclustEnUpDeltaX"] = met.ptUnclusteredUp * np.cos(met.phiUnclusteredUp)
         met["MetUnclustEnUpDeltaY"] = met.ptUnclusteredUp * np.sin(met.phiUnclusteredUp)
