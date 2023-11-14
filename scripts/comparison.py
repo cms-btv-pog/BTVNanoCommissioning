@@ -1,5 +1,5 @@
 import numpy as np
-import argparse, os, arrow, glob
+import argparse, os, arrow, glob, json, re
 from coffea.util import load
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
@@ -64,18 +64,12 @@ parser.add_argument(
     help="str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
 )
 parser.add_argument("--ext", type=str, default="", help="prefix name/btv name tag")
-parser.add_argument("--com", default="13", type=str, help="sqrt(s) in TeV")
+parser.add_argument("--com", default="13.6", type=str, help="sqrt(s) in TeV")
 parser.add_argument(
-    "--shortref",
-    default="",
+    "--mergemap",
+    default=None,
     type=str,
-    help="short name for reference dataset for legend",
-)
-parser.add_argument(
-    "--shortcomp",
-    default="",
-    type=str,
-    help="short names for compared datasets for legend, split by ','",
+    help="Group list of sample(keys in coffea) as reference/compare set as dictionary format. Keys would be the new lables of the group",
 )
 parser.add_argument(
     "--autorebin",
@@ -109,21 +103,24 @@ mergemap = {}
 time = arrow.now().format("YY_MM_DD")
 if not os.path.isdir(f"plot/BTV/{args.phase}_{args.ext}_{time}/"):
     os.makedirs(f"plot/BTV/{args.phase}_{args.ext}_{time}/")
-if not any(".coffea" in o for o in output.keys()):
-    mergemap[args.ref] = [m for m in output.keys() if args.ref == m]
-    for c in args.compared.split(","):
-        mergemap[c] = [m for m in output.keys() if c == m]
-else:
-    reflist = []
-    for f in output.keys():
-        reflist.extend([m for m in output[f].keys() if args.ref == m])
-    mergemap[args.ref] = reflist
-
-    for c in args.compared.split(","):
-        comparelist = []
+if args.mergemap is None:
+    if not any(".coffea" in o for o in output.keys()):
+        mergemap[args.ref] = [m for m in output.keys() if args.ref == m]
+        for c in args.compared.split(","):
+            mergemap[c] = [m for m in output.keys() if c == m]
+    else:
+        reflist = []
         for f in output.keys():
-            comparelist.extend([m for m in output[f].keys() if c == m])
-        mergemap[c] = comparelist
+            reflist.extend([m for m in output[f].keys() if args.ref == m])
+        mergemap[args.ref] = reflist
+
+        for c in args.compared.split(","):
+            comparelist = []
+            for f in output.keys():
+                comparelist.extend([m for m in output[f].keys() if c == m])
+            mergemap[c] = comparelist
+else:
+    mergemap = json.loads(args.mergemap)
 collated = collate(output, mergemap)
 ### style settings
 if "Run" in args.ref:
@@ -160,20 +157,34 @@ else:
     input_txt = input_txt + " ($\mu$)"
 if "ctag" in args.phase and "DY" not in args.phase:
     input_txt = input_txt + "\nw/ soft-$\mu$"
-if args.shortref == "":
-    args.shortref = args.ref
 
-if args.shortcomp == "":
-    args.shortcomp = args.compared
 
 if args.variable == "all":
     var_set = collated[args.ref].keys()
 elif "*" in args.variable:
-    var_set = [
-        var
-        for var in collated[args.ref].keys()
-        if args.variable.replace("*", "") in var
-    ]
+    if args.variable.count("*") > 1:
+        var_set = [
+            var
+            for var in collated[args.ref].keys()
+            if args.variable.replace("*", "") in var
+        ]
+    elif args.variable.startswith("*") or args.variable.endswith("*"):
+        var_set = [
+            var
+            for var in collated[args.ref].keys()
+            if var.startswith(args.variable.replace("*", ""))
+            or var.endswith(args.variable.replace("*", ""))
+        ]
+    else:
+        var_set = [
+            var
+            for var in collated[args.ref].keys()
+            if re.match(
+                f"^{args.variable.split('*')[0]}.*{args.variable.split('*')[1]}$", var
+            )
+            != None
+        ]
+
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
@@ -269,70 +280,70 @@ for index, discr in enumerate(var_set):
 
         hep.histplot(
             collated[args.ref][discr][laxis] + collated[args.ref][discr][puaxis],
-            label=args.shortref + "-l",
+            label=args.ref + "-l",
             color="b",
             histtype=hist_type,
             yerr=True,
             ax=ax,
-            xerr=do_xerr
-            # flow=args.flow,
+            xerr=do_xerr,
+            flow=args.flow,
         )
         hep.histplot(
             collated[args.ref][discr][caxis],
-            label=args.shortref + "-c",
+            label=args.ref + "-c",
             color="g",
             histtype=hist_type,
             yerr=True,
             ax=ax,
-            xerr=do_xerr
-            # flow=args.flow,
+            xerr=do_xerr,
+            flow=args.flow,
         )
         hep.histplot(
             collated[args.ref][discr][baxis],
-            label=args.shortref + "-b",
+            label=args.ref + "-b",
             yerr=True,
             color="r",
             histtype=hist_type,
             ax=ax,
-            xerr=do_xerr
-            # flow=args.flow,
+            xerr=do_xerr,
+            flow=args.flow,
         )
 
         mindex = 0
         ax.legend(ncol=3, loc=1)
-        for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
+        for c in args.compared.split(","):
             hep.histplot(
                 collated[c][discr][laxis] + collated[c][discr][puaxis],
-                label=s + "-l",
+                label=c + "-l",
                 color="b",
                 marker=markers[mindex + 1],
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
-                xerr=do_xerr
-                # flow=args.flow,
+                xerr=do_xerr,
+                flow=args.flow,
             )
             hep.histplot(
                 collated[c][discr][caxis],
-                label=s + "-c",
+                label=c + "-c",
                 color="g",
                 marker=markers[mindex + 1],
                 histtype="errorbar",
                 yerr=True,
                 ax=ax,
-                xerr=do_xerr
-                # flow=args.flow,
+                xerr=do_xerr,
+                flow=args.flow,
             )
             hep.histplot(
                 collated[c][discr][baxis],
-                label=s + "-b",
+                label=c + "-b",
                 yerr=True,
                 color="r",
                 marker=markers[mindex + 1],
                 histtype="errorbar",
                 ax=ax,
-                xerr=do_xerr
-                # flow=args.flow,
+                xerr=do_xerr,
+                flow=args.flow,
             )
             # comparison splitted by flavor
             rax = plotratio(
@@ -342,8 +353,8 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "b", "marker": markers[mindex + 1]},
                 clear=False,
-                xerr=do_xerr
-                # flow=args.flow,
+                xerr=do_xerr,
+                flow=args.flow,
             )
             rax2 = plotratio(
                 collated[c][discr][caxis],
@@ -352,8 +363,8 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "g", "marker": markers[mindex + 1]},
                 clear=False,
-                xerr=do_xerr
-                # flow=args.flow,
+                xerr=do_xerr,
+                flow=args.flow,
             )
             rax3 = plotratio(
                 collated[c][discr][baxis],
@@ -362,8 +373,8 @@ for index, discr in enumerate(var_set):
                 denom_fill_opts=None,
                 error_opts={"color": "r", "marker": markers[mindex + 1]},
                 clear=False,
-                xerr=do_xerr
-                # flow=args.flow,
+                xerr=do_xerr,
+                flow=args.flow,
             )
             mindex += 1
 
@@ -400,37 +411,36 @@ for index, discr in enumerate(var_set):
         ax.set_xlabel(None)
         hep.histplot(
             collated[args.ref][discr][allaxis],
-            label=args.shortref + " (Ref)",
+            label=args.ref + " (Ref)",
             histtype=hist_type,
             yerr=True,
             ax=ax,
-            xerr=do_xerr
-            # flow=args.flow,
+            xerr=do_xerr,
+            flow=args.flow,
         )
-        for c, s in zip(args.compared.split(","), args.shortcomp.split(",")):
+
+        for i, c in enumerate(args.compared.split(",")):
             hep.histplot(
                 collated[c][discr][allaxis],
-                label=s,
+                label=c,
                 histtype=hist_type,
                 yerr=True,
                 ax=ax,
-                xerr=do_xerr
-                # flow=args.flow,
+                xerr=do_xerr,
+                flow=args.flow,
             )
-        for i, c in enumerate(args.compared.split(",")):
             plotratio(
                 collated[c][discr][allaxis],
                 collated[args.ref][discr][allaxis],
                 ax=rax,
                 denom_fill_opts=None,
-                error_opts={"color": ax.get_lines()[i * 2 + 1].get_color()},
+                error_opts={"color": ax.get_lines()[i + 1].get_color()},
                 clear=False,
-                xerr=do_xerr
-                # flow=args.flow,
+                xerr=do_xerr,
+                flow=args.flow,
             )  ## No error band used
         alls = collated[args.ref][discr][allaxis]
-        for c in args.compared.split(","):
-            alls = collated[c][discr][allaxis] + alls
+
         xmin, xmax = autoranger(alls)
         rax.set_xlim(xmin, xmax)
         if args.xrange is not None:

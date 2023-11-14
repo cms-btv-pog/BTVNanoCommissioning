@@ -3,13 +3,24 @@ name: BTA output Workflows
 on:
   push:
     branches: [ master ]
+    paths:
+    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/utils/*'
+    - '.github/workflows/BTA_workflow.yml'
   pull_request_target:
     branches: [ master ]
+    paths:
+    - 'src/BTVNanoCommissioning/workflows/*BTA*'
+    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/utils/*'
+    - '.github/workflows/BTA_workflow.yml'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     strategy:
       max-parallel: 4
       matrix:

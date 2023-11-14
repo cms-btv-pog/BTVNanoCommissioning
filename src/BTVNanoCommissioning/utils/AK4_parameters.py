@@ -24,8 +24,8 @@ correction_config = {
         "JME": "jec_compiled.pkl.gz",
         "BTV": {"deepCSV": "shape", "deepJet": "shape"},
         "LSF": {
-            "ele_ID 2017": "wp90iso",
-            "ele_Reco 2017": "RecoAbove20",
+            "ele_ID 2017 UL-Electron-ID-SF": "wp90iso",
+            "ele_Reco 2017 UL-Electron-ID-SF": "RecoAbove20",
             "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
             "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
             "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
@@ -41,13 +41,39 @@ correction_config = {
     },
     "Summer22Run3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puweight_Winter22Run3.histo.root",  # use same 69.2mb for Summer22
+        "PU": "puweight_Winter22Run3-69p2mb.histo.root",  # use same 80.0mb for Summer22
         "JME": "winter_jec_compiled.pkl.gz",  # not this is from Winter22Run3 since this is not yet finished
+        "LSF": {
+            "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022_Prompt_ID_ISO_schemaV2.json",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        },
+        "JPCalib": {
+            "Run2022C": "calibeHistoWrite_Data2022C_NANO130X_v1.root",
+            "Run2022D": "calibeHistoWrite_Data2022D_NANO130X_v1.root",
+            "MC": "calibeHistoWrite_MC2022_NANO130X_v2.root",
+        },
     },
     "Summer22EERun3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puweight_Summer22EERun3.histo.root",  # 80mb
-        "JME": "jec_compiled.pkl.gz",
+        "PU": "puweight_Summer22EERun3-80p0mb.histo.root",  # 69.2mb
+        # "JME": "jec_compiled.pkl.gz",
+        "LSF": {
+            "ele_json": "electron.json.gz",
+            "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022EE_Prompt_ID_ISO_schemaV2.json",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+            "ele_ID 2022FG 2022FG-Electron-ID-SF": "Tight",
+            "ele_Reco_low 2022FG 2022FG-Electron-ID-SF": "RecoBelow20",
+            "ele_Reco_med 2022FG 2022FG-Electron-ID-SF": "Reco20to75",
+            "ele_Reco_high 2022FG 2022FG-Electron-ID-SF": "RecoAbove75",
+        },
+        "JPCalib": {
+            "Run2022E": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
+            "Run2022F": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
+            "Run2022G": "calibeHistoWrite_Data2022G_NANO130X_v1.root",
+            "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",
+        },
     },
     "2018_UL": {#for QCD workflow
         "lumiMask": "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt",

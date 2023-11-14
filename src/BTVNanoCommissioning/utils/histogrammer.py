@@ -29,7 +29,15 @@ def histogrammer(events, workflow):
     n_axis = Hist.axis.Integer(0, 10, name="n", label="N obj")
     osss_axis = Hist.axis.IntCategory([1, -1], name="osss", label="OS(+)/SS(-)")
     ### Workflow specific
-    if "validation" == workflow:
+    if "example" == workflow:
+        obj_list = [
+            "jet",
+            "mu",
+        ]  # store basic 4-vector, pt,eta, phi, mass for the object
+        _hist_dict[f"dr_mujet"] = Hist.Hist(
+            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+        )  # create cutstomize histogram
+    elif "validation" == workflow:
         obj_list = ["jet0", "jet1"]
     elif "QCD" == workflow:
         obj_list = ["jet0"]
@@ -123,7 +131,6 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
-
     elif "ctag_ttsemilep_sf" in workflow:
         obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
         _hist_dict["z_mass"] = Hist.Hist(
@@ -170,7 +177,6 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
-
     elif "Wc_sf" in workflow:
         obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
         _hist_dict["SV_charge"] = Hist.Hist(
@@ -231,7 +237,6 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 syst_axis, flav_axis, osss_axis, ptratio_axis, Hist.storage.Weight()
             )
-
     elif "DY_sf" in workflow:
         obj_list = ["posl", "negl", "z", "jet"]
         _hist_dict["z_mass"] = Hist.Hist(
@@ -248,7 +253,8 @@ def histogrammer(events, workflow):
                 syst_axis, dxy_axis, Hist.storage.Weight()
             )
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
-    ### Common kinematic variables
+
+    ### Common kinematic variables histogram creation
     if "Wc_sf" not in workflow:
         _hist_dict["njet"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
         if "ctag_tt" in workflow:
@@ -375,17 +381,54 @@ def histogrammer(events, workflow):
     disc_list = [
         "btagDeepB",
         "btagDeepC",
-        "btagDeepFlavB",
-        "btagDeepFlavC",
-        "btagDeepCvL",
-        "btagDeepCvB",
-        "btagDeepFlavCvL",
-        "btagDeepFlavCvB",
         "btagDeepB_b",
         "btagDeepB_bb",
+        "btagDeepCvL",
+        "btagDeepCvB",
+        "btagDeepFlavB",
+        "btagDeepFlavC",
+        "btagTransDeepFlavB",
+        "btagTransDeepFlavC",
+        "btagDeepFlavCvL",
+        "btagDeepFlavCvB",
         "btagDeepFlavB_b",
         "btagDeepFlavB_bb",
-        "btagDeepFlavB_lepb",
+        "btagTransDeepFlavB_lepb",
+        "btagTransDeepFlavB_b",
+        "btagTransDeepFlavB_bb",
+        "btagTransDeepFlavB_lepb",
+        "btagPNetB",
+        "btagTransPNetB",
+        "btagPNetCvB",
+        "btagPNetCvL",
+        "btagPNetProbB",
+        "btagPNetProbC",
+        "btagPNetProbG",
+        "btagPNetProbUDS",
+        "btagTransPNetProbB",
+        "btagTransPNetProbC",
+        "btagTransPNetProbG",
+        "btagTransPNetProbUDS",
+        "btagPNetQvG",
+        "btagPNetTauVJet",
+        "btagRobustParTAK4B",
+        "btagRobustParTAK4B_b",
+        "btagRobustParTAK4B_bb",
+        "btagRobustParTAK4B_lepb",
+        "btagRobustParTAK4C",
+        "btagRobustParTAK4G",
+        "btagRobustParTAK4UDS",
+        "btagTransRobustParTAK4B",
+        "btagTransRobustParTAK4B_b",
+        "btagTransRobustParTAK4B_bb",
+        "btagTransRobustParTAK4B_lepb",
+        "btagTransRobustParTAK4C",
+        "btagTransRobustParTAK4G",
+        "btagTransRobustParTAK4UDS",
+        "btagRobustParTAK4CvB",
+        "btagRobustParTAK4CvL",
+        "btagRobustParTAK4QG",
+        ## Negative tagger
         "btagNegDeepFlavB",
         "btagNegDeepFlavB_b",
         "btagNegDeepFlavB_bb",
@@ -413,25 +456,7 @@ def histogrammer(events, workflow):
         "btagNegRobustParTAK4G",
         "btagNegRobustParTAK4QG",
         "btagNegRobustParTAK4UDS",
-        "btagPNetB",
-        "btagPNetCvB",
-        "btagPNetCvL",
-        "btagPNetProbB",
-        "btagPNetProbC",
-        "btagPNetProbG",
-        "btagPNetProbUDS",
-        "btagPNetQvG",
-        "btagPNetTauVJet",
-        "btagRobustParTAK4B",
-        "btagRobustParTAK4B_b",
-        "btagRobustParTAK4B_bb",
-        "btagRobustParTAK4B_lepb",
-        "btagRobustParTAK4C",
-        "btagRobustParTAK4CvB",
-        "btagRobustParTAK4CvL",
-        "btagRobustParTAK4G",
-        "btagRobustParTAK4QG",
-        "btagRobustParTAK4UDS",
+        # other prob info
         "PNetRegPtRawCorr",
         "PNetRegPtRawCorrNeutrino",
         "PNetRegPtRawRes",
@@ -440,7 +465,7 @@ def histogrammer(events, workflow):
         "ProbaN",
     ]
     for disc in disc_list:
-        if disc not in events.Jet.fields:
+        if disc not in events.Jet.fields and "Trans" not in disc:
             continue
         njet = 1
         if "ttdilep_sf" in workflow:
@@ -449,12 +474,20 @@ def histogrammer(events, workflow):
             njet = 4
         for i in range(njet):
             if "Wc_sf" in workflow:
-                if "btag" in disc or "ProbaN" == disc:
+                if "Trans" in disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,
                         osss_axis,
-                        Hist.axis.Regular(30, -0.2, 1, name="discr", label=disc),
+                        Hist.axis.Regular(40, 0, 8, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "btag" in disc or "ProbaN" == disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        osss_axis,
+                        Hist.axis.Regular(60, -0.2, 1, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
                 elif "Bprob" in disc:
@@ -483,6 +516,13 @@ def histogrammer(events, workflow):
                     )
 
             else:
+                if "Trans" in disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(40, 0, 8, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
                 if "btag" in disc or "ProbaN" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
