@@ -6166,7 +6166,7 @@ def axes_name(var):
             unit = unit + " CvL"
         elif "CvB" in var:
             unit = unit + " CvB"
-        elif "B_b" in var or "ProbB":
+        elif "B_b" in var or "ProbB" in var:
             unit = unit + " Prob(b)"
         elif "B_bb" in var:
             unit = unit + " Prob(bb)"
