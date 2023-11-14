@@ -337,7 +337,7 @@ class NanoProcessor(processor.ProcessorABC):
             & req_softmu
             & req_dilepmass
             & req_mujet
-            & req_Wmass
+            & req_mtw
             & req_dilepveto
             # & req_QCDveto
             & req_pTratio
@@ -544,7 +544,7 @@ class NanoProcessor(processor.ProcessorABC):
                             syst="noSF",
                             flav=smflav,
                             osss=osss,
-                            discr=np.tanh(smuon_jet[histname]),
+                            discr=1.0 / np.tanh(smuon_jet[histname]),
                             weight=weights.partial_weight(exclude=exclude_btv),
                         )
 
