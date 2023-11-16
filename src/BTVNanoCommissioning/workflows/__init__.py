@@ -81,8 +81,8 @@ workflows["ctag_Wc_sf"] = partial(CTAGWcValidSFProcessor, selectionModifier="WcM
 workflows["ectag_Wc_sf"] = partial(CTAGWcValidSFProcessor, selectionModifier="WcE")
 
 # DY
-workflows["ctag_DY_sf"] = CTAGDYValidSFProcessor
-workflows["ectag_DY_sf"] = CTAGeDYValidSFProcessor
+workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
+workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
 
 # Tutorial
 workflows["example"] = ExampleProcessor
