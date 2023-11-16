@@ -105,8 +105,11 @@ def uproot_writeable(events, include=["events", "run", "luminosityBlock"]):
                 ):
                     continue
                 evnums = ak.num(events[bname][n], axis=0)
-                if not isinstance(evnums,int): continue
-                if not _is_rootcompat(events[bname][n]) and evnums != len(flatten(events[bname][n])):
+                if not isinstance(evnums, int):
+                    continue
+                if not _is_rootcompat(events[bname][n]) and evnums != len(
+                    flatten(events[bname][n])
+                ):
                     continue
                 # skip IdxG
                 if "IdxG" in n:

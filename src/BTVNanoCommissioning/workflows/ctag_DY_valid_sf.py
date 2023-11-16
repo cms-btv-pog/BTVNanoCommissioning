@@ -37,7 +37,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
-        selectionModifier="DYM"
+        selectionModifier="DYM",
     ):
         self._year = year
         self._campaign = campaign
@@ -108,8 +108,7 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
-        histname = {"DYM":"ctag_DY_sf",
-                    "DYE":"ectag_DY_sf"}
+        histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
         _hist_event_dict = (
             {"": None} if self.noHist else histogrammer(events, histname[self.selMod])
         )
@@ -175,24 +174,24 @@ class NanoProcessor(processor.ProcessorABC):
         )
 
         jet_sel = ak.fill_none(
-                jet_id(events, self._campaign)
-                & (
-                    ak.all(
-                        events.Jet.metric_table(pos_dilep) > 0.4,
-                        axis=2,
-                        mask_identity=True,
-                    )
+            jet_id(events, self._campaign)
+            & (
+                ak.all(
+                    events.Jet.metric_table(pos_dilep) > 0.4,
+                    axis=2,
+                    mask_identity=True,
                 )
-                & (
-                    ak.all(
-                        events.Jet.metric_table(neg_dilep) > 0.4,
-                        axis=2,
-                        mask_identity=True,
-                    )
-                ),
-                False,
-                axis=-1,
             )
+            & (
+                ak.all(
+                    events.Jet.metric_table(neg_dilep) > 0.4,
+                    axis=2,
+                    mask_identity=True,
+                )
+            ),
+            False,
+            axis=-1,
+        )
 
         pos_dilep = ak.pad_none(pos_dilep, 1, axis=1)
         neg_dilep = ak.pad_none(neg_dilep, 1, axis=1)
@@ -399,11 +398,11 @@ class NanoProcessor(processor.ProcessorABC):
             if isMu:
                 pruned_ev["MuonPlus"] = sposmu
                 pruned_ev["MuonMinus"] = snegmu
-                kinOnly=["Muon","MuonPlus","MuonMinus"]
+                kinOnly = ["Muon", "MuonPlus", "MuonMinus"]
             else:
                 pruned_ev["ElectronPlus"] = sposmu
                 pruned_ev["ElectronMinus"] = snegmu
-                kinOnly=["Electron","ElectronPlus","ElectronMinus"]
+                kinOnly = ["Electron", "ElectronPlus", "ElectronMinus"]
             pruned_ev["dilep"] = sposmu + snegmu
             pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
             pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta
@@ -422,8 +421,17 @@ class NanoProcessor(processor.ProcessorABC):
 
             pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
             pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)
-            
-            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData, kinOnly=kinOnly,remove=kinOnly)
+
+            array_writer(
+                self,
+                pruned_ev,
+                events,
+                systematics[0],
+                dataset,
+                isRealData,
+                kinOnly=kinOnly,
+                remove=kinOnly,
+            )
 
         return {dataset: output}
 
