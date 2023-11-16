@@ -264,7 +264,7 @@ if __name__ == "__main__":
             isamp = int(args.only)
             nsamp = len(sample_dict.keys())
             if isamp >= nsamp:
-                print(
+                raise RuntimeError(
                     f"There are {nsamp} datasets, please use --only n with n<{nsamp}."
                 )
             key = list(sample_dict.keys())[isamp]
