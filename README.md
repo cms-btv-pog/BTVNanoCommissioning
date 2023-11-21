@@ -239,6 +239,10 @@ However, some sites have certain restrictions for various reasons, in particular
 
 
 Memory usage is also useful to adapt to cluster. Check the memory by calling  `memory_usage_psutil()` from `helpers.func.memory_usage_psutil` to optimize job size. Example with `ectag_Wc_sf` summarized below.
+
+<details><summary>details</summary>
+<p>
+
  Type        |Array+Hist |  Hist only| Array Only|
 | :---:   | :---: | :---: | :---: |
 DoubleMuon (BTA,BTV_Comm_v2)| 1243MB |	848MB	|1249MB|
@@ -248,6 +252,8 @@ WJets_inc (BTA,BTV_Comm_v2)| 1243MB	|848MB	|1249MB|
 WJets_inc (PFCands, BTV_Comm_v1)|1650MB	|1274MB	|1632MB
 WJets_inc (Nano_v11)|1183MB	|630MB	|1180MB|
 
+</p>
+</details>
 
 ### Sites configuration with dask/parsl schedular
 
@@ -318,6 +324,8 @@ This utility is currently adapted for the lxplus and cmsconnect condor systems. 
 
 After executing the command, a new folder will be created, preparing the submission. Follow the on-screen instructions and utilize `condor_submit ...` to submit the jdl file. The output will be transferred to the designated XRootD destination.
 
+The script provided by Pablo to resubmit failure jobs in `script/missingFiles.py` from the original job folder.
+
 <details><summary>Frequent issues for standalone condor jobs submission
 </summary>
 <p>
@@ -331,6 +339,7 @@ After executing the command, a new folder will be created, preparing the submiss
 
 </p>
 </details>
+
 
 
 ## Make the dataset json files
