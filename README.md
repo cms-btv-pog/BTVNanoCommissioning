@@ -74,7 +74,7 @@ More options for `runner.py`
   --year YEAR           Year
   --campaign CAMPAIGN   Dataset campaign, change the corresponding correction
                         files{ "Rereco17_94X","Winter22Run3","Summer22Run3","Summer22EERun3","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
-  --isSyst              Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None(not extract)
+  --isSyst              Run with systematics, all, weight_only(no JERC uncertainties included),JERC_split, None(not extract)
   --isArray             Output root files
   --noHist              Not save histogram coffea files
   --overwrite           Overwrite existing files

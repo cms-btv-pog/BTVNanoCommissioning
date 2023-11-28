@@ -57,7 +57,7 @@ correction_config = {
     "Summer22EERun3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
         "PU": "puweight_Summer22EERun3-80p0mb.histo.root",  # 69.2mb
-        # "JME": "jec_compiled.pkl.gz",
+        "JME": "jec_compiled.pkl.gz",
         "LSF": {
             "ele_json": "electron.json.gz",
             "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022EE_Prompt_ID_ISO_schemaV2.json",
