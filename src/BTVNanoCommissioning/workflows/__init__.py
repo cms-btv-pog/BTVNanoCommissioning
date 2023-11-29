@@ -66,17 +66,23 @@ workflows["ttsemilep_sf"] = TTsemilepValidSFProcessor
 workflows["emctag_ttdilep_sf"] = CTAGEMDilepttValidSFProcessor
 workflows["ctag_ttdilep_sf"] = CTAGDilepttValidSFProcessor
 workflows["ectag_ttdilep_sf"] = CTAGEDilepttValidSFProcessor
-workflows["ctag_ttsemilep_sf"] = CTAGSemilepttValidSFProcessor
-workflows["ectag_ttsemilep_sf"] = CTAGETTSemilepValidSFProcessor
+# workflows["ctag_ttsemilep_sf"] = CTAGSemilepttValidSFProcessor
+workflows["ctag_ttsemilep_sf"] = partial(
+    CTAGWcValidSFProcessor, selectionModifier="semittM"
+)
+# workflows["ectag_ttsemilep_sf"] = CTAGETTSemilepValidSFProcessor
+workflows["ectag_ttsemilep_sf"] = partial(
+    CTAGWcValidSFProcessor, selectionModifier="semittE"
+)
 
 
 # W+c
-workflows["ctag_Wc_sf"] = CTAGWcValidSFProcessor
-workflows["ectag_Wc_sf"] = CTAGeWcValidSFProcessor
+workflows["ctag_Wc_sf"] = partial(CTAGWcValidSFProcessor, selectionModifier="WcM")
+workflows["ectag_Wc_sf"] = partial(CTAGWcValidSFProcessor, selectionModifier="WcE")
 
 # DY
-workflows["ctag_DY_sf"] = CTAGDYValidSFProcessor
-workflows["ectag_DY_sf"] = CTAGeDYValidSFProcessor
+workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
+workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
 
 # Tutorial
 workflows["example"] = ExampleProcessor
