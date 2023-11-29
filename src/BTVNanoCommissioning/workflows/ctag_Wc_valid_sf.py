@@ -212,6 +212,8 @@ class NanoProcessor(processor.ProcessorABC):
                 (ak.all(event_jet.metric_table(soft_muon) <= 0.4, axis=2))
                 & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1))
                 & ((event_jet.muEF + event_jet.neEmEF) < muNeEmSum)
+                & (event_jet.pt > 20)
+                & ((event_jet.pt / event_jet.E) > 0.03)
             ),
             False,
             axis=-1,
@@ -364,6 +366,7 @@ class NanoProcessor(processor.ProcessorABC):
         sz = shmu + ssmu
         sw = shmu + smet
         osss = 1
+        ossswrite = shmu.charge * ssmu.charge * -1
         if "Wc" in self.selMod:
             osss = shmu.charge * ssmu.charge * -1
         njet = ak.count(sjets.pt, axis=1)
@@ -598,12 +601,15 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
-            pruned_ev["Jet"] = sjets
+            pruned_ev["SelJet"] = sjets
             pruned_ev["Muon"] = shmu
             pruned_ev["MuonJet"] = smuon_jet
             pruned_ev["SoftMuon"] = ssmu
             pruned_ev["OtherJets"] = sotherjets
-            pruned_ev["osss"] = osss
+            if "Wc" in self.selMod:
+                pruned_ev["osss"] = osss
+            else:
+                pruned_ev["osss"] = ossswrite
             pruned_ev["njet"] = njet
             pruned_ev["W_transmass"] = wm
             pruned_ev["W_pt"] = wp
@@ -622,6 +628,7 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["dr_lep1_softmu"] = shmu.delta_r(ssmu)
             pruned_ev["soft_l_ptratio"] = ssmu.pt / smuon_jet.pt
             pruned_ev["l1_ptratio"] = shmu.pt / smuon_jet.pt
+            pruned_ev["MuonJet_beta"] = smuon_jet.pt / smuon_jet.E
 
             array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
 

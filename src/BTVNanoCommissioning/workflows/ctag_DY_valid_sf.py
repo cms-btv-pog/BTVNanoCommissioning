@@ -394,15 +394,16 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
+            pruned_ev["SelJet"] = sjets
             pruned_ev["LeadJet"] = sel_jet
             if isMu:
                 pruned_ev["MuonPlus"] = sposmu
                 pruned_ev["MuonMinus"] = snegmu
-                kinOnly = ["Muon", "MuonPlus", "MuonMinus"]
+                kinOnly = ["Muon", "MuonPlus", "MuonMinus", "Jet"]
             else:
                 pruned_ev["ElectronPlus"] = sposmu
                 pruned_ev["ElectronMinus"] = snegmu
-                kinOnly = ["Electron", "ElectronPlus", "ElectronMinus"]
+                kinOnly = ["Electron", "ElectronPlus", "ElectronMinus", "Jet"]
             pruned_ev["dilep"] = sposmu + snegmu
             pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
             pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta

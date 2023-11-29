@@ -128,9 +128,16 @@ def array_writer(
     systname,  # name of systematic shift
     dataset,  # dataset name
     isRealData,  # boolean
-    remove=["SoftMuon", "MuonJet", "dilep", "OtherJets"],  # remove from variable list
+    remove=[
+        "SoftMuon",
+        "MuonJet",
+        "dilep",
+        "OtherJets",
+        "Jet",
+    ],  # remove from variable list
     kinOnly=[
         "Muon",
+        "Jet",
         "SoftMuon",
         "dilep",
         "charge",
@@ -146,7 +153,6 @@ def array_writer(
         "dz",
     ],  # kinematic propoerties for the above variables
     othersData=[
-        "Jet_*",
         "PFCands_*",
         "MuonJet_*",
         "SV_*",
