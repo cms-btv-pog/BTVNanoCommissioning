@@ -38,6 +38,12 @@ parser.add_argument(
     default=False,
 )
 parser.add_argument(
+    "--testfile",
+    action="store_true",
+    help="Construct file list in the test directory. Specify the test directory path, create the json file for individual dataset",
+    default=False,
+)
+parser.add_argument(
     "--whitelist_sites",
     help="White list fot sites",
     default=None,
@@ -48,9 +54,7 @@ parser.add_argument(
     default=None,
 )
 parser.add_argument(
-    "--save_",
-    help="Black list for sites",
-    default=None,
+    "--limit", help="Limit numbers of file to create json", default=None, type=int
 )
 
 
@@ -86,9 +90,9 @@ def get_xrootd_sites_map():
                         if "prefix" not in proc:
                             if "rules" in proc:
                                 for rule in proc["rules"]:
-                                    sites_xrootd_access[site["rse"]][
-                                        rule["lfn"]
-                                    ] = rule["pfn"]
+                                    sites_xrootd_access[site["rse"]][rule["lfn"]] = (
+                                        rule["pfn"]
+                                    )
                         else:
                             sites_xrootd_access[site["rse"]] = proc["prefix"]
         json.dump(sites_xrootd_access, open(".sites_map.json", "w"))
@@ -199,6 +203,8 @@ def getFilesFromDas(args):
 
         if xrd is None:
             raise Exception(f"No SITE available in the whitelist for file {dsname}")
+        if args.limit is not None:
+            flist = flist[: args.limit]
         if dsname not in fdict:
             fdict[dsname] = [xrd + f for f in flist if len(f) > 1]
         else:  # needed to collect all data samples into one common key "Data" (using append() would introduce a new element for the key)
@@ -206,7 +212,7 @@ def getFilesFromDas(args):
     return fdict
 
 
-def getFilesFromPath(args, lim=None):
+def getFilesFromPath(args):
     fdict = {}
     fset = []
     with open(args.input) as fp:
@@ -224,8 +230,29 @@ def getFilesFromPath(args, lim=None):
             ds = line.strip().split()
             print("ds=", ds)
             dataset = ds[0]
-            fdict[ds[0]] = getRootFilesFromPath(ds[1])
+            fdict[ds[0]] = getRootFilesFromPath(ds[1], args.limit)
 
+    return fdict
+
+
+def getTestlist(args):
+    fdict = {}
+    with open(args.input) as fp:
+        lines = fp.readlines()
+        for line in lines:
+            if line.startswith("#") or line.strip() == "":
+                continue
+            if not line.endswith("/"):
+                line = line + "/"
+            if "test" not in line:
+                print("You are not getting files in test directory")
+
+            dirs_in_test = os.popen(f"gfal-ls {line}").read().split("\n")
+            for s in dirs_in_test:
+                if s == "":
+                    continue
+                print("dataset: ", s)
+                fdict[s] = getRootFilesFromPath(line + s, 1)
     return fdict
 
 
@@ -331,12 +358,12 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
 def main(args):
     if args.from_path:
         print("do it from path: ")
-
         fdict = getFilesFromPath(args)
+    elif args.testfile:
 
+        fdict = getTestlist(args)
     else:
         fdict = getFilesFromDas(args)
-
     # Check the any file lists empty
     empty = True
     for dsname, flist in fdict.items():

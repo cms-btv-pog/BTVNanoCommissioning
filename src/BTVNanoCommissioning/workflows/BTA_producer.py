@@ -14,7 +14,12 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     calc_ip_vector,
 )
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts, JPCalibHandler
+from BTVNanoCommissioning.utils.correction import (
+    load_SF,
+    JME_shifts,
+    JPCalibHandler,
+    jetveto,
+)
 
 
 ## Based on coffea_array_producer.ipynb from Congqiao
@@ -41,6 +46,7 @@ class NanoProcessor(processor.ProcessorABC):
         #               when running on data, requires events passing HLT_PFJet80
         self.addPFMuons = addPFMuons
         self.addAllTracks = addAllTracks
+        self.isSyst = True if isSyst != False else False
 
     @property
     def accumulator(self):
@@ -64,7 +70,7 @@ class NanoProcessor(processor.ProcessorABC):
             print("skip ", checkf)
             return {dataset: len(events)}
 
-        if "JME" in self.SF_map.keys():
+        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
             shifts = JME_shifts(
                 shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )
@@ -98,7 +104,8 @@ class NanoProcessor(processor.ProcessorABC):
             events = events[events.HLT.PFJet80]
             if len(events) == 0:
                 return {dataset: len(events)}
-
+        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
+            events.Jet = update(events.Jet, {"veto": jetveto(events, self.SF_map)})
         # basic variables
         basic_vars = {
             "Run": events.run,
@@ -140,7 +147,6 @@ class NanoProcessor(processor.ProcessorABC):
         basic_vars["BitTrigger"] = to_bitwise_trigger(
             pass_trig, ak.ArrayBuilder()
         ).snapshot()
-
         # PV
         PV = ak.zip(
             {
@@ -400,8 +406,13 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         jet = events.Jet[
             (events.Jet.pt > 20.0) & (abs(events.Jet.eta) < 2.5)
-        ]  # basic selection
+        ]  # basic selection & remove jets inside veto map
+        if "veto" in jet.fields:
+            jet = jet[(jet.veto == 0)]
         zeros = ak.zeros_like(jet.pt, dtype=int)
+        if "pt_raw" not in jet.fields:
+            jet["pt_raw"] = jet.pt * (1.0 - jet.rawFactor)
+            jet["pt_orig"] = jet.pt
         Jet = ak.zip(
             {
                 # basic kinematics
@@ -484,8 +495,6 @@ class NanoProcessor(processor.ProcessorABC):
                 "ParTGDiscN": jet.btagNegRobustParTAK4G,
             }
         )
-        if isRealData:
-            Jet["vetomap"] = jet.veto
 
         if not isRealData:
             Jet["nbHadrons"] = jet.nBHadrons
@@ -724,7 +733,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         # calculate track probability, based on IPsig and category
-        jpc = JPCalibHandler(self._campaign, isRealData, dataset)
+        jpc = JPCalibHandler(self._campaign, isRealData, dataset, self.isSyst)
         trkj_jetbased["proba"] = jpc.calc_track_proba(
             trkj_jetbased.btagSip3dSig,
             ak.where(trkj_jetbased.category >= 0, trkj_jetbased.category, 0),

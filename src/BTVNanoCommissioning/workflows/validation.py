@@ -32,6 +32,7 @@ from BTVNanoCommissioning.utils.selection import (
     mu_idiso,
     ele_mvatightid,
     btag_wp,
+    btag_wp_dict,
 )
 
 
@@ -68,7 +69,7 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
         shifts = []
         if "JME" in self.SF_map.keys():
-            syst_JERC = True if self.isSyst != None else False
+            syst_JERC = self.isSyst
             if self.isSyst == "JERC_split":
                 syst_JERC = "split"
             shifts = JME_shifts(
@@ -263,60 +264,80 @@ class NanoProcessor(processor.ProcessorABC):
                     )
                 elif "WP" in histname:
                     jet = sjets[:, 0]
-                    for wp in range(h.axes["WP"].size):
-                        for tagger in range(h.axes["tagger"].size):
-                            wp_weight = weight[
-                                btag_wp(
-                                    jet,
-                                    self._campaign,
-                                    h.axes["tagger"].value(tagger),
-                                    "b",
-                                    h.axes["WP"].value(wp),
-                                )
-                            ]
-                            wp_jet = jet[
-                                btag_wp(
-                                    jet,
-                                    self._campaign,
-                                    h.axes["tagger"].value(tagger),
-                                    "b",
-                                    h.axes["WP"].value(wp),
-                                )
-                            ]
-                            if "bjet" in histname:
+
+                    for tagger in btag_wp_dict[self._campaign].keys():
+                        if "bjet" in histname:
+                            for wp in btag_wp_dict[self._campaign][tagger]["b"].keys():
+                                wp_weight = weight[
+                                    btag_wp(
+                                        jet,
+                                        self._campaign,
+                                        tagger,
+                                        "b",
+                                        wp,
+                                    )
+                                    & (jet.hadronFlavour == 5)
+                                ]
+                                wp_jet = jet[
+                                    btag_wp(
+                                        jet,
+                                        self._campaign,
+                                        tagger,
+                                        "b",
+                                        wp,
+                                    )
+                                    & (jet.hadronFlavour == 5)
+                                ]
+
                                 if "discr" in histname:
                                     h.fill(
-                                        h.axes["WP"].value(wp),
-                                        h.axes["tagger"].value(tagger),
-                                        wp_jet[
-                                            f"btag{h.axes['tagger'].value(tagger)}B"
-                                        ],
+                                        wp,
+                                        tagger,
+                                        wp_jet[f"btag{tagger}B"],
                                         weight=wp_weight,
                                     )
                                 else:
                                     h.fill(
-                                        h.axes["WP"].value(wp),
-                                        h.axes["tagger"].value(tagger),
+                                        wp,
+                                        tagger,
                                         wp_jet[histname.replace("bjet_WP_", "")],
                                         weight=wp_weight,
                                     )
-                            elif "cjet" in histname:
+                        elif "cjet" in histname:
+                            for wp in btag_wp_dict[self._campaign][tagger]["c"].keys():
+                                wp_weight = weight[
+                                    btag_wp(
+                                        jet,
+                                        self._campaign,
+                                        tagger,
+                                        "c",
+                                        wp,
+                                    )
+                                    & (jet.hadronFlavour == 4)
+                                ]
+                                wp_jet = jet[
+                                    btag_wp(
+                                        jet,
+                                        self._campaign,
+                                        tagger,
+                                        "c",
+                                        wp,
+                                    )
+                                    & (jet.hadronFlavour == 4)
+                                ]
+
                                 if "discr" in histname:
                                     h.fill(
-                                        h.axes["WP"].value(wp),
-                                        h.axes["tagger"].value(tagger),
-                                        wp_jet[
-                                            f"btag{h.axes['tagger'].value(tagger)}CvL"
-                                        ],
-                                        wp_jet[
-                                            f"btag{h.axes['tagger'].value(tagger)}CvB"
-                                        ],
+                                        wp,
+                                        tagger,
+                                        wp_jet[f"btag{tagger}CvL"],
+                                        wp_jet[f"btag{tagger}CvB"],
                                         weight=wp_weight,
                                     )
                                 else:
                                     h.fill(
-                                        h.axes["WP"].value(wp),
-                                        h.axes["tagger"].value(tagger),
+                                        wp,
+                                        tagger,
                                         wp_jet[histname.replace("cjet_WP_", "")],
                                         weight=wp_weight,
                                     )

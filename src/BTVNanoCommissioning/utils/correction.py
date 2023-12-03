@@ -93,9 +93,9 @@ def load_SF(campaign, syst=False):
                     ) as filename:
                         if "B" in tagger:
                             if filename.endswith(".json.gz"):
-                                correct_map[
-                                    "btag"
-                                ] = correctionlib.CorrectionSet.from_file(filename)
+                                correct_map["btag"] = (
+                                    correctionlib.CorrectionSet.from_file(filename)
+                                )
                             else:
                                 correct_map["btag"][tagger] = BTagScaleFactor(
                                     filename,
@@ -104,9 +104,9 @@ def load_SF(campaign, syst=False):
                                 )
                         else:
                             if filename.endswith(".json.gz"):
-                                correct_map[
-                                    "ctag"
-                                ] = correctionlib.CorrectionSet.from_file(filename)
+                                correct_map["ctag"] = (
+                                    correctionlib.CorrectionSet.from_file(filename)
+                                )
                             else:
                                 correct_map["ctag"][tagger] = BTagScaleFactor(
                                     filename,
@@ -390,49 +390,14 @@ met_filters = {
 
 
 def jetveto(events, correct_map):
-    if (
-        "Run2022C" in events.metadata["dataset"]
-        or "Run2022D" in events.metadata["dataset"]
-    ):
-        return ak.where(
-            correct_map["jetveto"]["Run2022CD"](events.Jet.phi, events.Jet.eta) > 0,
-            ak.ones_like(events.Jet.eta),
-            ak.zeros_like(events.Jet.eta),
+    return ak.where(
+        correct_map["jetveto"][list(correct_map["jetveto"].keys())[0]](
+            events.Jet.phi, events.Jet.eta
         )
-    elif (
-        "2022E" in events.metadata["dataset"]
-        or "2022F" in events.metadata["dataset"]
-        or "2022G" in events.metadata["dataset"]
-    ):
-        # FIXME: use prompt RunE vetomap for now, but should be updated to RunFG
-        return ak.where(
-            correct_map["jetveto"]["Run2022E"](events.Jet.phi, events.Jet.eta) > 0,
-            ak.ones_like(events.Jet.eta),
-            ak.zeros_like(events.Jet.eta),
-        )
-    elif (
-        "Run2023B" in events.metadata["dataset"]
-        or "Run2023C" in events.metadata["dataset"]
-    ):
-        return ak.where(
-            correct_map["jetveto"]["Run2023BC"](events.Jet.phi, events.Jet.eta) > 0,
-            ak.ones_like(events.Jet.eta),
-            ak.zeros_like(events.Jet.eta),
-        )
-    elif "Run2023D" in events.metadata["dataset"]:
-        return ak.where(
-            correct_map["jetveto"]["Run2023D"](events.Jet.phi, events.Jet.eta) > 0,
-            ak.ones_like(events.Jet.eta),
-            ak.zeros_like(events.Jet.eta),
-        )
-    # if (
-    #     "Run2022C" in events.metadata["dataset"]
-    #     or "Run2022D" in events.metadata["dataset"]
-    #     or "Run2022E" in events.metadata["dataset"]
-    #     or "Run2022F" in events.metadata["dataset"]
-    #     or "Run2022G" in events.metadata["dataset"]
-    # ):
-    #     events.Jet = update(events.Jet, {"veto": jetveto(events)})
+        > 0,
+        ak.ones_like(events.Jet.eta),
+        ak.zeros_like(events.Jet.eta),
+    )
 
 
 ##JEC
@@ -486,21 +451,30 @@ def JME_shifts(
             print("No valid jec name")
             raise NameError
         jecname = "data" + jecname
-        if (
-            "Run2022" in events.metadata["dataset"]
-            or "Run2023" in events.metadata["dataset"]
-        ):
-            events.Jet = update(events.Jet, {"veto": jetveto(events, correct_map)})
     else:
         jecname = "mc"
-    jets = correct_map["JME"]["jet_factory"][jecname].build(
-        add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
-        lazy_cache=events.caches[0],
-    )
-    if "Run3" not in campaign:
-        met = correct_map["JME"]["met_factory"].build(events.MET, jets, {})
+
+    if "JME" in correct_map.keys():
+        jets = correct_map["JME"]["jet_factory"][jecname].build(
+            add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
+            lazy_cache=events.caches[0],
+        )
     else:
-        met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
+        jets = events.Jet
+
+    # perform jet veto
+    if "jetveto" in correct_map.keys():
+        events.Jet = update(events.Jet, {"veto": jetveto(events, correct_map)})
+    if "Run3" not in campaign:
+        if "JME" in correct_map.keys():
+            met = correct_map["JME"]["met_factory"].build(events.MET, jets, {})
+        else:
+            met = events.MET
+    else:
+        if "JME" in correct_map.keys():
+            met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
+        else:
+            met = events.PuppiMET
     ## HEM 18 issue
     if isRealData:
         if "2018" in events.metadata["dataset"]:
@@ -1559,28 +1533,36 @@ def add_scalevar_3pt(weights, lhe_weights):
 
 # JP calibration utility
 class JPCalibHandler(object):
-    def __init__(self, campaign, isRealData, dataset):
-        r"""
+    def __init__(self, campaign, isRealData, dataset, isSyst=False):
+        """
         A tool for calculating the track probability and jet probability
             campaign: campaign name
             isRealData: whether the dataset is real data
             dataset: dataset name from events.metadata["dataset"]
         """
-        if isRealData:
-            for key in config[campaign]["JPCalib"]:
-                if key in dataset:
-                    filename = config[campaign]["JPCalib"][key]
-                    break
-            else:
-                raise ValueError(f"No JPCalib file found for dataset {dataset}")
+        if "JPCalib" not in config[campaign].keys():
+            templates = uproot.open(
+                "src/BTVNanoCommissioning/data/JPCalib/Summer22Run3/calibeHistoWrite_MC2022_NANO130X_v2.root"
+            )
         else:
-            filename = config[campaign]["JPCalib"]["MC"]
+            if isRealData:
+                if isSyst is not False:
+                    filename = config[campaign]["JPCalib"]["MC"]
+                else:
+                    for key in config[campaign]["JPCalib"]:
+                        if key in dataset:
+                            filename = config[campaign]["JPCalib"][key]
+                            break
+                        else:
+                            raise ValueError(
+                                f"No JPCalib file found for dataset {dataset}"
+                            )
+            else:
+                filename = config[campaign]["JPCalib"]["MC"]
 
-        # print(f'Using JPCalib file {filename}')
-
-        templates = uproot.open(
-            f"src/BTVNanoCommissioning/data/JPCalib/{campaign}/{filename}"
-        )
+            templates = uproot.open(
+                f"src/BTVNanoCommissioning/data/JPCalib/{campaign}/{filename}"
+            )
         self.ipsig_histo_val = np.array(
             [templates[f"histoCat{i}"].values() for i in range(10)]
         )

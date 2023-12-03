@@ -40,49 +40,49 @@ def histogrammer(events, workflow):
         obj_list = ["jet0", "jet1"]
 
         _hist_dict["bjet_WP_pt"] = Hist.Hist(
-            Hist.axis.StrCategory(["T", "M", "L"], name="WP"),
+            Hist.axis.StrCategory([], name="WP", growth=True),
             Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
             pt_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["bjet_WP_eta"] = Hist.Hist(
-            Hist.axis.StrCategory(["T", "M", "L"], name="WP"),
+            Hist.axis.StrCategory([], name="WP", growth=True),
             Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
             eta_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["bjet_WP_phi"] = Hist.Hist(
-            Hist.axis.StrCategory(["T", "M", "L"], name="WP"),
+            Hist.axis.StrCategory([], name="WP", growth=True),
             Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
             phi_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["bjet_WP_discr"] = Hist.Hist(
-            Hist.axis.StrCategory(["T", "M", "L"], name="WP"),
+            Hist.axis.StrCategory([], name="WP", growth=True),
             Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
             Hist.axis.Regular(25, 0, 1, name="B"),
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_pt"] = Hist.Hist(
-            Hist.axis.StrCategory(["T", "M", "L"], name="WP"),
+            Hist.axis.StrCategory([], name="WP", growth=True),
             Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
             pt_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_eta"] = Hist.Hist(
-            Hist.axis.StrCategory(["T", "M", "L"], name="WP"),
+            Hist.axis.StrCategory([], name="WP", growth=True),
             Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
             eta_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_phi"] = Hist.Hist(
-            Hist.axis.StrCategory(["T", "M", "L"], name="WP"),
+            Hist.axis.StrCategory([], name="WP", growth=True),
             Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
             phi_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_discr"] = Hist.Hist(
-            Hist.axis.StrCategory(["T", "M", "L"], name="WP"),
+            Hist.axis.StrCategory([], name="WP", growth=True),
             Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
             Hist.axis.Regular(25, 0, 1, name="CvL"),
             Hist.axis.Regular(25, 0, 1, name="CvB"),
@@ -296,8 +296,7 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_dxy"] = Hist.Hist(
                 syst_axis, dxy_axis, Hist.storage.Weight()
             )
-            _hist_dict[f"{i}_dz"] = Hist.Hist(
-                syst_axis, dz_axis, Hist.storage.Weight())
+            _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
         for i in range(2):
             obj_list.append(f"jet{i}")
             _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
@@ -308,16 +307,20 @@ def histogrammer(events, workflow):
         for i in range(2):
             obj_list.append(f"jet{i}")
             _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
-            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+                syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
             _hist_dict["mu_pfRelIso04_all"] = Hist.Hist(
-            syst_axis, iso_axis, Hist.storage.Weight()
+                syst_axis, iso_axis, Hist.storage.Weight()
             )
-            _hist_dict[f"muon_dxy"]   = Hist.Hist(syst_axis, dxy_axis, Hist.storage.Weight())
-            _hist_dict[f"muon_dz"]    = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
+            _hist_dict[f"muon_dxy"] = Hist.Hist(
+                syst_axis, dxy_axis, Hist.storage.Weight()
+            )
+            _hist_dict[f"muon_dz"] = Hist.Hist(
+                syst_axis, dz_axis, Hist.storage.Weight()
+            )
             _hist_dict[f"mu_ptratio"] = Hist.Hist(
-            syst_axis, flav_axis, osss_axis, ptratio_axis, Hist.storage.Weight()
-        )
+                syst_axis, flav_axis, osss_axis, ptratio_axis, Hist.storage.Weight()
+            )
 
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
 
@@ -533,7 +536,7 @@ def histogrammer(events, workflow):
                         syst_axis,
                         flav_axis,
                         osss_axis,
-                        Hist.axis.Regular(60, -0.2, 1, name="discr", label=disc),
+                        Hist.axis.Regular(50, 0.0, 1, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
                 elif "Bprob" in disc:

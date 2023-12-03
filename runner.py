@@ -91,9 +91,9 @@ def get_main_parser():
     )
     parser.add_argument(
         "--isSyst",
-        default=None,
+        default=False,
         type=str,
-        choices=[None, "all", "weight_only", "JERC_split"],
+        choices=[False, "all", "weight_only", "JERC_split"],
         help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     ogoutput = args.output
     histoutdir = ogoutput.split(".")[0]
     coffeaoutput = f"{histoutdir}/{ogoutput}"
-    outdir = histoutdir
+    outdir = "arrays_" + histoutdir
     basename = ogoutput.replace(".coffea", "").replace("hists_", "")
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
