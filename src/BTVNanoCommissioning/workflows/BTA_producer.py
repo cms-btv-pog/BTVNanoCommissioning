@@ -51,6 +51,18 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         events = missing_branch(events)
         shifts = []
+        fname = f"{dataset}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        dirname = "BTA"
+        if self.addAllTracks:
+            dirname += "_addAllTracks"
+        if self.addPFMuons:
+            dirname += "_addPFMuons"
+        checkf = os.popen(
+            f"gfal-ls root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
+        ).read()
+        if len(checkf) > 0:
+            print("skip ", checkf)
+            return {dataset: len(events)}
 
         if "JME" in self.SF_map.keys():
             shifts = JME_shifts(
@@ -81,7 +93,6 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        events = missing_branch(events)
 
         if isRealData and self.addAllTracks:
             events = events[events.HLT.PFJet80]
@@ -94,6 +105,10 @@ class NanoProcessor(processor.ProcessorABC):
             "Evt": events.event,
             "LumiBlock": events.luminosityBlock,
             "rho": events.fixedGridRhoFastjetAll,
+            "fixedGridRhoFastjetCentralCalo": events.Rho.fixedGridRhoFastjetCentralCalo,
+            "fixedGridRhoFastjetCentralChargedPileUp": events.Rho.fixedGridRhoFastjetCentralChargedPileUp,
+            "npvs": ak.values_astype(events.PV.npvs, np.int32),
+            "npvsGood": ak.values_astype(events.PV.npvsGood, np.int32),
         }
         if not isRealData:
             basic_vars["nPU"] = events.Pileup.nPU
@@ -1089,7 +1104,12 @@ class NanoProcessor(processor.ProcessorABC):
             output["Genlep"] = Genlep
             output["GenV0"] = GenV0
         os.system(f"mkdir -p {dataset}")
-        fname = f"{dataset}/f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        fname = f"{dataset}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        dirname = "BTA"
+        if self.addAllTracks:
+            dirname += "_addAllTracks"
+        if self.addPFMuons:
+            dirname += "_addPFMuons"
         with uproot.recreate(fname) as fout:
             output_root = {}
             for bname in output.keys():
@@ -1101,6 +1121,10 @@ class NanoProcessor(processor.ProcessorABC):
                         b_nest[n] = ak.packed(ak.without_parameters(output[bname][n]))
                     output_root[bname] = ak.zip(b_nest)
             fout["btagana/ttree"] = output_root
+        os.system(
+            f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
+        )
+        os.system(f"rm {fname}")
         return {dataset: len(events)}
 
     def postprocess(self, accumulator):

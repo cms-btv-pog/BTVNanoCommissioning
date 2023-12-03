@@ -27,7 +27,12 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
-from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_cuttightid
+from BTVNanoCommissioning.utils.selection import (
+    jet_id,
+    mu_idiso,
+    ele_cuttightid,
+    btag_wp,
+)
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -354,13 +359,7 @@ class NanoProcessor(processor.ProcessorABC):
                             h.fill(
                                 "noSF",
                                 flav=flatten(genflavor[:, i]),
-                                discr=flatten(
-                                    np.where(
-                                        sel_jet[histname.replace(f"_{i}", "")] < 0,
-                                        -0.2,
-                                        sel_jet[histname.replace(f"_{i}", "")],
-                                    )
-                                ),
+                                discr=flatten(sel_jet[histname.replace(f"_{i}", "")]),
                                 weight=weights.partial_weight(exclude=exclude_btv),
                             )
                             if not isRealData and "btag" in self.SF_map.keys():
@@ -368,11 +367,7 @@ class NanoProcessor(processor.ProcessorABC):
                                     syst=syst,
                                     flav=flatten(genflavor[:, i]),
                                     discr=flatten(
-                                        np.where(
-                                            sel_jet[histname.replace(f"_{i}", "")] < 0,
-                                            -0.2,
-                                            sel_jet[histname.replace(f"_{i}", "")],
-                                        )
+                                        sel_jet[histname.replace(f"_{i}", "")]
                                     ),
                                     weight=weight,
                                 )

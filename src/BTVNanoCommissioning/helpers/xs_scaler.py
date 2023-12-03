@@ -31,8 +31,7 @@ def scaleSumW(output, lumi):
             xs_dict[obj["process_name"]] = xs_dict[obj["process_name"]] * float(
                 obj["kFactor"]
             )
-    merged = {}
-    merged_output = accumulate([output[f] for f in output.keys()])
+    merged_output = merge_output(output)
 
     for sample, accu in merged_output.items():
         scaled[sample] = {}
@@ -85,8 +84,22 @@ def additional_scale(output, scale, sample_to_scale):
     return scaled
 
 
+def dict_depth(d):
+    if isinstance(d, dict):
+        return 1 + (max(map(dict_depth, d.values())) if d else 0)
+    return 0
+
+
+def merge_output(output):
+    if dict_depth(output) <= 2:
+        return output
+    else:
+        return accumulate([output[f] for f in output.keys()])
+
+
 def collate(merged_output, mergemap):
     out = {}
+    merged_output = merge_output(merged_output)
     for group, names in mergemap.items():
         out[group] = accumulate(
             [v for k, v in merged_output.items() if k.split("_FNAME_")[0] in names]

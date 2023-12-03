@@ -15,11 +15,12 @@ from coffea.btag_tools import BTagScaleFactor
 import correctionlib
 
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
+from BTVNanoCommissioning.helpers.func import update
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
 
 
 def load_SF(campaign, syst=False):
-    correction_map = {"campaign": campaign}
+    correct_map = {"campaign": campaign}
     for SF in config[campaign].keys():
         if SF == "lumiMask":
             continue
@@ -29,7 +30,7 @@ def load_SF(campaign, syst=False):
             if os.path.exists(
                 f"src/BTVNanoCommissioning/jsonpog-integration/POG/LUM/{campaign}"
             ):
-                correction_map["PU"] = correctionlib.CorrectionSet.from_file(
+                correct_map["PU"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/LUM/{campaign}/puWeights.json.gz"
                 )
             ## Otherwise custom files
@@ -40,11 +41,11 @@ def load_SF(campaign, syst=False):
                 ) as filename:
                     if str(filename).endswith(".pkl.gz"):
                         with gzip.open(filename) as fin:
-                            correction_map["PU"] = cloudpickle.load(fin)[
+                            correct_map["PU"] = cloudpickle.load(fin)[
                                 "2017_pileupweight"
                             ]
                     elif str(filename).endswith(".json.gz"):
-                        correction_map["PU"] = correctionlib.CorrectionSet.from_file(
+                        correct_map["PU"] = correctionlib.CorrectionSet.from_file(
                             importlib.resources.path(
                                 f"BTVNanoCommissioning.data.PU.{campaign}", filename
                             )
@@ -53,14 +54,14 @@ def load_SF(campaign, syst=False):
                         ext = extractor()
                         ext.add_weight_sets([f"* * {filename}"])
                         ext.finalize()
-                        correction_map["PU"] = ext.make_evaluator()["PU"]
+                        correct_map["PU"] = ext.make_evaluator()["PU"]
 
         ## btag weight
         elif SF == "BTV":
             if "btag" in config[campaign]["BTV"].keys() and config[campaign]["BTV"][
                 "btag"
             ].endswith(".json.gz"):
-                correction_map["btag"] = correctionlib.CorrectionSet.from_file(
+                correct_map["btag"] = correctionlib.CorrectionSet.from_file(
                     importlib.resources.path(
                         f"BTVNanoCommissioning.data.BTV.{campaign}", filename
                     )
@@ -68,7 +69,7 @@ def load_SF(campaign, syst=False):
             if "ctag" in config[campaign]["BTV"].keys() and config[campaign]["BTV"][
                 "btag"
             ].endswith(".json.gz"):
-                correction_map["btag"] = correctionlib.CorrectionSet.from_file(
+                correct_map["btag"] = correctionlib.CorrectionSet.from_file(
                     importlib.resources.path(
                         f"BTVNanoCommissioning.data.BTV.{campaign}", filename
                     )
@@ -76,15 +77,15 @@ def load_SF(campaign, syst=False):
             if os.path.exists(
                 f"src/BTVNanoCommissioning/jsonpog-integration/POG/BTV/{campaign}"
             ):
-                correction_map["btag"] = correctionlib.CorrectionSet.from_file(
+                correct_map["btag"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/BTV/{campaign}/btagging.json.gz"
                 )
-                correction_map["ctag"] = correctionlib.CorrectionSet.from_file(
+                correct_map["ctag"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/BTV/{campaign}/ctagging.json.gz"
                 )
             else:
-                correction_map["btag"] = {}
-                correction_map["ctag"] = {}
+                correct_map["btag"] = {}
+                correct_map["ctag"] = {}
                 _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
                 for tagger in config[campaign]["BTV"]:
                     with importlib.resources.path(
@@ -92,34 +93,34 @@ def load_SF(campaign, syst=False):
                     ) as filename:
                         if "B" in tagger:
                             if filename.endswith(".json.gz"):
-                                correction_map[
+                                correct_map[
                                     "btag"
                                 ] = correctionlib.CorrectionSet.from_file(filename)
                             else:
-                                correction_map["btag"][tagger] = BTagScaleFactor(
+                                correct_map["btag"][tagger] = BTagScaleFactor(
                                     filename,
                                     BTagScaleFactor.RESHAPE,
                                     methods="iterativefit,iterativefit,iterativefit",
                                 )
                         else:
                             if filename.endswith(".json.gz"):
-                                correction_map[
+                                correct_map[
                                     "ctag"
                                 ] = correctionlib.CorrectionSet.from_file(filename)
                             else:
-                                correction_map["ctag"][tagger] = BTagScaleFactor(
+                                correct_map["ctag"][tagger] = BTagScaleFactor(
                                     filename,
                                     BTagScaleFactor.RESHAPE,
                                     methods="iterativefit,iterativefit,iterativefit",
                                 )
         ## lepton SFs
         elif SF == "LSF":
-            correction_map["MUO_cfg"] = {
+            correct_map["MUO_cfg"] = {
                 mu: f
                 for mu, f in config[campaign]["LSF"].items()
                 if "mu" in mu and "_json" not in mu
             }
-            correction_map["EGM_cfg"] = {
+            correct_map["EGM_cfg"] = {
                 e: f
                 for e, f in config[campaign]["LSF"].items()
                 if "ele" in e and "_json" not in e
@@ -128,27 +129,27 @@ def load_SF(campaign, syst=False):
             if os.path.exists(
                 f"src/BTVNanoCommissioning/jsonpog-integration/POG/MUO/{campaign}"
             ):
-                correction_map["MUO"] = correctionlib.CorrectionSet.from_file(
+                correct_map["MUO"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/MUO/{campaign}/muon_Z.json.gz"
                 )
             if os.path.exists(
                 f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}"
             ):
-                correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
+                correct_map["EGM"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
                 )
             if any(
                 np.char.find(np.array(list(config[campaign]["LSF"].keys())), "mu_json")
                 != -1
             ):
-                correction_map["MUO"] = correctionlib.CorrectionSet.from_file(
+                correct_map["MUO"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/data/LSF/{campaign}/{config[campaign]['LSF']['mu_json']}"
                 )
             if any(
                 np.char.find(np.array(list(config[campaign]["LSF"].keys())), "ele_json")
                 != -1
             ):
-                correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
+                correct_map["EGM"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/data/LSF/{campaign}/{config[campaign]['LSF']['ele_json']}"
                 )
 
@@ -164,13 +165,13 @@ def load_SF(campaign, syst=False):
                 with contextlib.ExitStack() as stack:
                     inputs, real_paths = [
                         k
-                        for k in correction_map["MUO_cfg"].keys()
-                        if "histo.json" in correction_map["MUO_cfg"][k]
-                        or "histo.txt" in correction_map["MUO_cfg"][k]
-                        or "histo.root" in correction_map["MUO_cfg"][k]
+                        for k in correct_map["MUO_cfg"].keys()
+                        if "histo.json" in correct_map["MUO_cfg"][k]
+                        or "histo.txt" in correct_map["MUO_cfg"][k]
+                        or "histo.root" in correct_map["MUO_cfg"][k]
                     ], [
                         stack.enter_context(importlib.resources.path(_mu_path, f))
-                        for f in correction_map["MUO_cfg"].values()
+                        for f in correct_map["MUO_cfg"].values()
                         if ".json" in f or ".txt" in f or ".root" in f
                     ]
 
@@ -198,20 +199,20 @@ def load_SF(campaign, syst=False):
                             if ".root" in str(file)
                         )
                 ext.finalize()
-                correction_map["MUO_custom"] = ext.make_evaluator()
+                correct_map["MUO_custom"] = ext.make_evaluator()
 
                 _ele_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
                 ext = extractor()
                 with contextlib.ExitStack() as stack:
                     inputs, real_paths = [
                         k
-                        for k in correction_map["EGM_cfg"].keys()
-                        if "histo.json" in correction_map["EGM_cfg"][k]
-                        or "histo.txt" in correction_map["EGM_cfg"][k]
-                        or "histo.root" in correction_map["EGM_cfg"][k]
+                        for k in correct_map["EGM_cfg"].keys()
+                        if "histo.json" in correct_map["EGM_cfg"][k]
+                        or "histo.txt" in correct_map["EGM_cfg"][k]
+                        or "histo.root" in correct_map["EGM_cfg"][k]
                     ], [
                         stack.enter_context(importlib.resources.path(_ele_path, f))
-                        for f in correction_map["EGM_cfg"].values()
+                        for f in correct_map["EGM_cfg"].values()
                         if "histo.json" in f or ".txt" in f or ".root" in f
                     ]
                     ext.add_weight_sets(
@@ -234,7 +235,7 @@ def load_SF(campaign, syst=False):
                             if ".root" in str(file)
                         )
                 ext.finalize()
-                correction_map["EGM_custom"] = ext.make_evaluator()
+                correct_map["EGM_custom"] = ext.make_evaluator()
 
         ## rochester muon momentum correction
         elif SF == "roccor":
@@ -251,20 +252,36 @@ def load_SF(campaign, syst=False):
             rochester_data = txt_converters.convert_rochester_file(
                 full_path, loaduncs=True
             )
-            correction_map["roccor"] = rochester_lookup.rochester_lookup(rochester_data)
+            correct_map["roccor"] = rochester_lookup.rochester_lookup(rochester_data)
         elif SF == "JME":
-            correction_map["JME"] = load_jmefactory(campaign)
+            correct_map["JME"] = load_jmefactory(campaign)
         elif SF == "JMAR":
             if os.path.exists(
                 f"src/BTVNanoCommissioning/jsonpog-integration/POG/JME/{campaign}/jmar.json.gz"
             ):
-                correction_map["JMAR_cfg"] = {
+                correct_map["JMAR_cfg"] = {
                     j: f for j, f in config[campaign]["JMAR"].items()
                 }
-                correction_map["JMAR"] = correctionlib.CorrectionSet.from_file(
+                correct_map["JMAR"] = correctionlib.CorrectionSet.from_file(
                     f"src/BTVNanoCommissioning/jsonpog-integration/POG/JME/{campaign}/jmar.json.gz"
                 )
-    return correction_map
+        elif SF == "jetveto":
+            ext = extractor()
+            with contextlib.ExitStack() as stack:
+                ext.add_weight_sets(
+                    [
+                        f"{run} {stack.enter_context(importlib.resources.path(f'BTVNanoCommissioning.data.JME.{campaign}',file))}"
+                        for run, file in config[campaign]["jetveto"].items()
+                    ]
+                )
+
+            ext.finalize()
+            correct_map["jetveto_cfg"] = {
+                j: f for j, f in config[campaign]["jetveto"].items()
+            }
+            correct_map["jetveto"] = ext.make_evaluator()
+
+    return correct_map
 
 
 def load_lumi(campaign):
@@ -372,40 +389,50 @@ met_filters = {
 }
 
 
-ext_jetvetomap = extractor()
-with contextlib.ExitStack() as stack:
-    ext_jetvetomap.add_weight_sets(
-        [
-            f"RunCD jetvetomap {stack.enter_context(importlib.resources.path('BTVNanoCommissioning.data.JME.Winter22Run3','Winter22Run3_RunCD_v1.histo.root'))}",
-            f"RunE jetvetomap_eep {stack.enter_context(importlib.resources.path('BTVNanoCommissioning.data.JME.Winter22Run3','Winter22Run3_RunE_v1.histo.root'))}",
-        ]
-    )
-
-ext_jetvetomap.finalize()
-jetvetomap = ext_jetvetomap.make_evaluator()
-
-
-def jetveto(events):
+def jetveto(events, correct_map):
     if (
         "Run2022C" in events.metadata["dataset"]
         or "Run2022D" in events.metadata["dataset"]
     ):
         return ak.where(
-            jetvetomap["RunCD"](events.Jet.phi, events.Jet.eta) > 0,
+            correct_map["jetveto"]["Run2022CD"](events.Jet.phi, events.Jet.eta) > 0,
             ak.ones_like(events.Jet.eta),
             ak.zeros_like(events.Jet.eta),
         )
     elif (
-        "Run2022E" in events.metadata["dataset"]
-        or "Run2022F" in events.metadata["dataset"]
-        or "Run2022G" in events.metadata["dataset"]
+        "2022E" in events.metadata["dataset"]
+        or "2022F" in events.metadata["dataset"]
+        or "2022G" in events.metadata["dataset"]
     ):
         # FIXME: use prompt RunE vetomap for now, but should be updated to RunFG
         return ak.where(
-            jetvetomap["RunE"](events.Jet.phi, events.Jet.eta) > 0,
+            correct_map["jetveto"]["Run2022E"](events.Jet.phi, events.Jet.eta) > 0,
             ak.ones_like(events.Jet.eta),
             ak.zeros_like(events.Jet.eta),
         )
+    elif (
+        "Run2023B" in events.metadata["dataset"]
+        or "Run2023C" in events.metadata["dataset"]
+    ):
+        return ak.where(
+            correct_map["jetveto"]["Run2023BC"](events.Jet.phi, events.Jet.eta) > 0,
+            ak.ones_like(events.Jet.eta),
+            ak.zeros_like(events.Jet.eta),
+        )
+    elif "Run2023D" in events.metadata["dataset"]:
+        return ak.where(
+            correct_map["jetveto"]["Run2023D"](events.Jet.phi, events.Jet.eta) > 0,
+            ak.ones_like(events.Jet.eta),
+            ak.zeros_like(events.Jet.eta),
+        )
+    # if (
+    #     "Run2022C" in events.metadata["dataset"]
+    #     or "Run2022D" in events.metadata["dataset"]
+    #     or "Run2022E" in events.metadata["dataset"]
+    #     or "Run2022F" in events.metadata["dataset"]
+    #     or "Run2022G" in events.metadata["dataset"]
+    # ):
+    #     events.Jet = update(events.Jet, {"veto": jetveto(events)})
 
 
 ##JEC
@@ -459,6 +486,11 @@ def JME_shifts(
             print("No valid jec name")
             raise NameError
         jecname = "data" + jecname
+        if (
+            "Run2022" in events.metadata["dataset"]
+            or "Run2023" in events.metadata["dataset"]
+        ):
+            events.Jet = update(events.Jet, {"veto": jetveto(events, correct_map)})
     else:
         jecname = "mc"
     jets = correct_map["JME"]["jet_factory"][jecname].build(

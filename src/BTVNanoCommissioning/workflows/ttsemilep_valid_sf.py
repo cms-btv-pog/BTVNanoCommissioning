@@ -327,11 +327,7 @@ class NanoProcessor(processor.ProcessorABC):
                             h.fill(
                                 syst="noSF",
                                 flav=genflavor[:, i],
-                                discr=np.where(
-                                    sel_jet[histname.replace(f"_{i}", "")] < 0,
-                                    -0.2,
-                                    sel_jet[histname.replace(f"_{i}", "")],
-                                ),
+                                discr=sel_jet[histname.replace(f"_{i}", "")],
                                 weight=weight,
                             )
                             if (
@@ -344,11 +340,7 @@ class NanoProcessor(processor.ProcessorABC):
                                 h.fill(
                                     syst=syst,
                                     flav=genflavor[:, i],
-                                    discr=np.where(
-                                        sel_jet[histname.replace(f"_{i}", "")] < 0,
-                                        -0.2,
-                                        sel_jet[histname.replace(f"_{i}", "")],
-                                    ),
+                                    discr=sel_jet[histname.replace(f"_{i}", "")],
                                     weight=weight,
                                 )
                 elif "mu_" in histname and histname.replace("mu_", "") in smu.fields:

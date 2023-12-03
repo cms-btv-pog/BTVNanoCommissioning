@@ -27,7 +27,12 @@ from BTVNanoCommissioning.helpers.func import (
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
-from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_mvatightid
+from BTVNanoCommissioning.utils.selection import (
+    jet_id,
+    mu_idiso,
+    ele_mvatightid,
+    btag_wp,
+)
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -36,6 +41,7 @@ class NanoProcessor(processor.ProcessorABC):
         self,
         year="2022",
         campaign="Summer22Run3",
+        name="",
         isSyst=False,
         isArray=False,
         noHist=False,
@@ -43,8 +49,12 @@ class NanoProcessor(processor.ProcessorABC):
     ):
         self._year = year
         self._campaign = campaign
-        self.isSyst = isSyst
+        self.name = name
+        self.isSyst = False
+        self.isArray = isArray
+        self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
+        self.chunksize = chunksize
         ## Load corrections
         self.SF_map = load_SF(self._campaign)
 
@@ -194,7 +204,7 @@ class NanoProcessor(processor.ProcessorABC):
                 ak.broadcast_arrays(events[event_level].genWeight, sjets["pt"])[0]
             )
             if len(self.SF_map.keys()) > 0:
-                syst_wei = True if self.isSyst != None else False
+                syst_wei = True if self.isSyst == True else False
                 if "PU" in self.SF_map.keys():
                     puwei(
                         events[event_level].Pileup.nTrueInt,
@@ -226,7 +236,7 @@ class NanoProcessor(processor.ProcessorABC):
         #  Fill histogram  #
         ####################
         for syst in systematics:
-            if self.isSyst == None and syst != "nominal":
+            if self.isSyst == False and syst != "nominal":
                 break
             if self.noHist:
                 break
@@ -251,6 +261,65 @@ class NanoProcessor(processor.ProcessorABC):
                             )[0]
                         ),
                     )
+                elif "WP" in histname:
+                    jet = sjets[:, 0]
+                    for wp in range(h.axes["WP"].size):
+                        for tagger in range(h.axes["tagger"].size):
+                            wp_weight = weight[
+                                btag_wp(
+                                    jet,
+                                    self._campaign,
+                                    h.axes["tagger"].value(tagger),
+                                    "b",
+                                    h.axes["WP"].value(wp),
+                                )
+                            ]
+                            wp_jet = jet[
+                                btag_wp(
+                                    jet,
+                                    self._campaign,
+                                    h.axes["tagger"].value(tagger),
+                                    "b",
+                                    h.axes["WP"].value(wp),
+                                )
+                            ]
+                            if "bjet" in histname:
+                                if "discr" in histname:
+                                    h.fill(
+                                        h.axes["WP"].value(wp),
+                                        h.axes["tagger"].value(tagger),
+                                        wp_jet[
+                                            f"btag{h.axes['tagger'].value(tagger)}B"
+                                        ],
+                                        weight=wp_weight,
+                                    )
+                                else:
+                                    h.fill(
+                                        h.axes["WP"].value(wp),
+                                        h.axes["tagger"].value(tagger),
+                                        wp_jet[histname.replace("bjet_WP_", "")],
+                                        weight=wp_weight,
+                                    )
+                            elif "cjet" in histname:
+                                if "discr" in histname:
+                                    h.fill(
+                                        h.axes["WP"].value(wp),
+                                        h.axes["tagger"].value(tagger),
+                                        wp_jet[
+                                            f"btag{h.axes['tagger'].value(tagger)}CvL"
+                                        ],
+                                        wp_jet[
+                                            f"btag{h.axes['tagger'].value(tagger)}CvB"
+                                        ],
+                                        weight=wp_weight,
+                                    )
+                                else:
+                                    h.fill(
+                                        h.axes["WP"].value(wp),
+                                        h.axes["tagger"].value(tagger),
+                                        wp_jet[histname.replace("cjet_WP_", "")],
+                                        weight=wp_weight,
+                                    )
                 elif "jet" in histname:
                     for i in range(2):
                         if histname.replace(f"jet{i}_", "") not in sjets.fields:
@@ -262,7 +331,18 @@ class NanoProcessor(processor.ProcessorABC):
                             flatten(jet[histname.replace(f"jet{i}_", "")]),
                             weight=weight,
                         )
-
+                elif "btag" in histname:
+                    for i in range(2):
+                        if histname.replace(f"_{i}", "") not in sjets.fields:
+                            continue
+                        # print(histname.replace(f"_{i}", ""))
+                        jet = sjets[:, i]
+                        h.fill(
+                            "noSF",
+                            flav=flatten(genflavor[:, i]),
+                            discr=jet[histname.replace(f"_{i}", "")],
+                            weight=weight,
+                        )
         #######################
         #  Create root files  #
         #######################

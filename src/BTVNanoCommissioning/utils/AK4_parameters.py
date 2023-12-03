@@ -38,6 +38,7 @@ correction_config = {
         "lumiMask": "Cert_Collisions2022_355100_357900_Golden.json",
         "PU": "puweight_Winter22Run3.histo.root",
         "JME": "jec_compiled.pkl.gz",
+        "jetveto": {"Run2022CD jetvetomap": "Winter22Run3_RunCD_v1.histo.root"},
     },
     "Summer22Run3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
@@ -53,6 +54,7 @@ correction_config = {
             "Run2022D": "calibeHistoWrite_Data2022D_NANO130X_v1.root",
             "MC": "calibeHistoWrite_MC2022_NANO130X_v2.root",
         },
+        "jetveto": {"Run2022CD jetvetomap": "Winter22Run3_RunCD_v1.histo.root"},
     },
     "Summer22EERun3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
@@ -68,11 +70,29 @@ correction_config = {
             "ele_Reco_med 2022FG 2022FG-Electron-ID-SF": "Reco20to75",
             "ele_Reco_high 2022FG 2022FG-Electron-ID-SF": "RecoAbove75",
         },
+        "jetveto": {"Run2022E jetvetomap_eep": "Winter22Run3_RunE_v1.histo.root"},
+        # use for BTA production, jet probablity
         "JPCalib": {
             "Run2022E": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
             "Run2022F": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
             "Run2022G": "calibeHistoWrite_Data2022G_NANO130X_v1.root",
             "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",
         },
+    },
+    "Summer23": {
+        "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
+        # "PU": "puweight_Summer22EERun3-80p0mb.histo.root",  # 69.2mb
+        # "JME": "jec_compiled.pkl.gz",
+        "jetveto": {
+            "Run2023BC jetvetomap": "jetveto2023BC.histo.root"
+        },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
+    },
+    "Summer23BPix": {
+        "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
+        # "PU": "puweight_Summer22EERun3-80p0mb.histo.root",  # 69.2mb
+        # "JME": "jec_compiled.pkl.gz",
+        "jetveto": {
+            "Run2023D jetvetomap_bpix": "jetveto2023D.histo.root"
+        },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
     },
 }

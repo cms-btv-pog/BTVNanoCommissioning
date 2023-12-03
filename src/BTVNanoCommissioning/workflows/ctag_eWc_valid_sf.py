@@ -431,11 +431,7 @@ class NanoProcessor(processor.ProcessorABC):
                             syst="noSF",
                             flav=smflav,
                             osss=osss,
-                            discr=np.where(
-                                smuon_jet[histname.replace(f"_{i}", "")] < 0,
-                                -0.2,
-                                smuon_jet[histname.replace(f"_{i}", "")],
-                            ),
+                            discr=smuon_jet[histname.replace(f"_{i}", "")],
                             weight=weights.partial_weight(exclude=exclude_btv),
                         )
                         if not isRealData and "btag" in self.SF_map.keys():
@@ -443,11 +439,7 @@ class NanoProcessor(processor.ProcessorABC):
                                 syst=syst,
                                 flav=smflav,
                                 osss=osss,
-                                discr=np.where(
-                                    smuon_jet[histname.replace(f"_{i}", "")] < 0,
-                                    -0.2,
-                                    smuon_jet[histname.replace(f"_{i}", "")],
-                                ),
+                                discr=smuon_jet[histname.replace(f"_{i}", "")],
                                 weight=weight,
                             )
 

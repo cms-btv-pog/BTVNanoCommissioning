@@ -643,16 +643,12 @@ Yout can find the secret configuration in the direcotry : `Settings>>Secrets>>Ac
 - `GRID_USERCERT` & `GRID_USERKEY`:  Encrypt your grid user certification `base64 -i ~/.globus/userkey.pem | awk NF=NF RS= OFS=` and `base64 -i ~/.globus/usercert.pem | awk NF=NF RS= OFS=` and copy the output to the entry. 
 
 Special commit head messages could run different commands in actions (add the flag in front of your commit)
-The default configureation is doing 
-```
-python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 --isArray --isSyst all
-```
 
 - `[skip ci]`: not running ci at all in the commit message
-- `ci:skip array` : remove `--isArray` option
-- `ci:skip syst` : remove `--isSyst all` option
-- `ci:JERC_split` : change systematic option to split JERC uncertainty sources `--isSyst JERC_split`
-- `ci:weight_only` : change systematic option to weight only variations `--isSyst weight_only`
+- `[run array]` : add `--isArray` option
+- `[run syst all]` : add `--isSyst all`
+- `[run syst jerc]` : add `--isSyst JERC_split`
+- `[run syst wei]` : add `--isSyst weight_only`
  
 ### Running jupyter remotely
 1. On your local machine, edit `.ssh/config`:

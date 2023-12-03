@@ -119,18 +119,15 @@ def getFilesFromDas(args):
         Tier = dataset.strip().split("/")[3]
         # NANOAODSIM for regular samples, USER for private
         if "Run" in dataset and "pythia8" not in dataset:
-            dsname = (
-                dataset.strip().split("/")[1]
-                + dataset.strip().split("/")[2][
-                    dataset.strip()
-                    .split("/")[2]
-                    .find("Run") : dataset.strip()
-                    .split("/")[2]
-                    .rfind("-")
-                ]
-            )
-            dsname = dsname[: dsname.find("_BTV")]
-            # +dataset.strip().split("/")[2].find("Run")
+            dsname = dataset.strip().split("/")[1] + dataset.strip().split("/")[2]
+            if "BTV" in dataset:
+                dsname = (
+                    dataset.strip().split("/")[1]
+                    + dataset.strip().split("/")[2][
+                        dataset.strip().split("/")[2].find("-") + 1 :
+                    ]
+                )
+                dsname = dsname[: dsname.find("_BTV")]
         instance = "prod/global"
         if Tier == "USER":
             instance = "prod/phys03"
@@ -144,6 +141,7 @@ def getFilesFromDas(args):
             .read()
             .split("\n")
         )
+
         import json
 
         dataset = dataset[:-1] if "\n" in dataset else dataset
@@ -180,6 +178,14 @@ def getFilesFromDas(args):
                             xrd = sites_xrootd_prefix[site]
             else:
                 for site in possible_sites:
+                    # skip sites without xrd prefix
+                    if (
+                        site == "T2_IT_Pisa"
+                        or site == "T2_IT_Bari"
+                        or site == "T2_BE_UCL"
+                        or site == "T2_IT_Rome"
+                    ):
+                        continue
                     if (
                         args.blacklist_sites is not None
                         and site in args.blacklist_sites
@@ -193,12 +199,10 @@ def getFilesFromDas(args):
 
         if xrd is None:
             raise Exception(f"No SITE available in the whitelist for file {dsname}")
-
         if dsname not in fdict:
             fdict[dsname] = [xrd + f for f in flist if len(f) > 1]
         else:  # needed to collect all data samples into one common key "Data" (using append() would introduce a new element for the key)
             fdict[dsname].extend([xrd + f for f in flist if len(f) > 1])
-
     return fdict
 
 
@@ -294,7 +298,7 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
         _rmap = p_map(
             validate,
             sample_dict[sample],
-            num_cpus=8,
+            num_cpus=4,
             desc=f"Validating {sample[:20]}...",
         )
 
@@ -341,7 +345,7 @@ def main(args):
             empty = False
     assert empty, "you have empty lists"
     output_file = "./%s" % (args.output)
-    fdict = remove_bad_files(fdict, args.output, True)  # remove bad files
+    # fdict = remove_bad_files(fdict, args.output, True)  # remove bad files
     with open(output_file, "w") as fp:
         json.dump(fdict, fp, indent=4)
         print("The file is saved at: ", output_file)

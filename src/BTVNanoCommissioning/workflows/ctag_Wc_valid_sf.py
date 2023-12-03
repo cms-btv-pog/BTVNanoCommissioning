@@ -122,7 +122,7 @@ class NanoProcessor(processor.ProcessorABC):
             output = dump_lumi(events[req_lumi], output)
 
         ## HLT
-        triggers = ["IsoMu27"]
+        triggers = ["IsoMu24"]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -161,7 +161,10 @@ class NanoProcessor(processor.ProcessorABC):
         req_jets = (ak.num(event_jet.pt) >= 1) & (ak.num(event_jet.pt) <= 3)
 
         ## Soft Muon cuts
-        soft_muon = events.Muon[softmu_mask(events, self._campaign)]
+        soft_muon = events.Muon[
+            softmu_mask(events, self._campaign)
+            & (abs(events.Muon.dxy / events.Muon.dxyErr) > 1.0)
+        ]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
         mujetsel = ak.fill_none(
             (
@@ -262,7 +265,6 @@ class NanoProcessor(processor.ProcessorABC):
             np.sqrt(2 * iso_muon.pt * MET.pt * (1 - np.cos(iso_muon.delta_phi(MET))))
             > 55
         )
-        # Wmass.mass > 55
 
         event_level = (
             req_trig
@@ -274,7 +276,6 @@ class NanoProcessor(processor.ProcessorABC):
             & req_mujet
             & req_mtw
             & req_dilepveto
-            # & req_QCDveto
             & req_pTratio
         )
         event_level = ak.fill_none(event_level, False)
@@ -445,11 +446,7 @@ class NanoProcessor(processor.ProcessorABC):
                             syst="noSF",
                             flav=smflav,
                             osss=osss,
-                            discr=np.where(
-                                smuon_jet[histname.replace(f"_{i}", "")] < 0,
-                                -0.2,
-                                smuon_jet[histname.replace(f"_{i}", "")],
-                            ),
+                            discr=smuon_jet[histname.replace(f"_{i}", "")],
                             weight=weights.partial_weight(exclude=exclude_btv),
                         )
                         if not isRealData and "btag" in self.SF_map.keys():
@@ -457,11 +454,7 @@ class NanoProcessor(processor.ProcessorABC):
                                 syst=syst,
                                 flav=smflav,
                                 osss=osss,
-                                discr=np.where(
-                                    smuon_jet[histname.replace(f"_{i}", "")] < 0,
-                                    -0.2,
-                                    smuon_jet[histname.replace(f"_{i}", "")],
-                                ),
+                                discr=smuon_jet[histname.replace(f"_{i}", "")],
                                 weight=weight,
                             )
                 elif "btag" in histname and "Trans" in histname:

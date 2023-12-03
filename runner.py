@@ -80,6 +80,8 @@ def get_main_parser():
             "Winter22Run3",
             "Summer22Run3",
             "Summer22EERun3",
+            "Summer23",
+            "Summer23BPix",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",
@@ -275,7 +277,7 @@ if __name__ == "__main__":
             _new_dict = {}
             print("Will only proces the following datasets:")
             for k, v in sample_dict.items():
-                if k.lstrip("/").startswith(args.only.rstrip("*")):
+                if args.only.replace("*", "") in k:
                     print("    ", k)
                     _new_dict[k] = v
             sample_dict = _new_dict
