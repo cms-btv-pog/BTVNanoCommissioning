@@ -30,28 +30,19 @@ def jet_id(events, campaign):
 
 ## FIXME: Electron cutbased Id & MVA ID not exist in Winter22Run3 sample
 def ele_cuttightid(events, campaign):
-    if "Run3" not in campaign:
-        elemask = (
-            (abs(events.Electron.eta) < 1.4442)
-            | ((abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566))
-        ) & (events.Electron.cutBased > 3)
-    else:
-        elemask = (abs(events.Electron.eta) < 1.4442) | (
-            (abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566)
-        )
+    elemask = (
+        (abs(events.Electron.eta) < 1.4442)
+        | ((abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566))
+    ) & (events.Electron.cutBased > 3)
     return elemask
 
 
 def ele_mvatightid(events, campaign):
-    if "Run3" not in campaign:
-        elemask = (
-            (abs(events.Electron.eta) < 1.4442)
-            | ((abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566))
-        ) & (events.Electron.mvaFall17V2Iso_WP80 > 0.5)
-    else:
-        elemask = (abs(events.Electron.eta) < 1.4442) | (
-            (abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566)
-        )
+    elemask = (
+        (abs(events.Electron.eta) < 1.4442)
+        | ((abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566))
+    ) & (events.Electron.mvaIso_WP80 > 0.5)
+
     return elemask
 
 

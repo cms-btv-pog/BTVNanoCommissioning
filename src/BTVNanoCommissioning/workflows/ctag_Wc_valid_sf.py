@@ -205,7 +205,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Other cuts
         req_pTratio = (soft_muon[:, 0].pt / mu_jet[:, 0].pt) < 0.4
-
+        idx = np.where(iso_muon.jetIdx == -1, 0, iso_muon.jetIdx)
         req_QCDveto = (
             (iso_muon.pfRelIso04_all < 0.05)
             & (abs(iso_muon.dz) < 0.01)
@@ -257,7 +257,12 @@ class NanoProcessor(processor.ProcessorABC):
                 with_name="PtEtaPhiMLorentzVector",
             )
         Wmass = MET + iso_muon
-        req_Wmass = Wmass.mass > 55
+        # modified to transverse mass
+        req_mtw = (
+            np.sqrt(2 * iso_muon.pt * MET.pt * (1 - np.cos(iso_muon.delta_phi(MET))))
+            > 55
+        )
+        # Wmass.mass > 55
 
         event_level = (
             req_trig
@@ -267,9 +272,9 @@ class NanoProcessor(processor.ProcessorABC):
             & req_softmu
             & req_dilepmass
             & req_mujet
-            & req_Wmass
+            & req_mtw
             & req_dilepveto
-            & req_QCDveto
+            # & req_QCDveto
             & req_pTratio
         )
         event_level = ak.fill_none(event_level, False)
@@ -333,8 +338,8 @@ class NanoProcessor(processor.ProcessorABC):
                     btagSFs(smuon_jet, self.SF_map, weights, "DeepCSVC", syst_wei)
 
         else:
-            genflavor = ak.zeros_like(sjets.pt)
-            smflav = ak.zeros_like(smuon_jet.pt)
+            genflavor = ak.zeros_like(sjets.pt, dtype=int)
+            smflav = ak.zeros_like(smuon_jet.pt, dtype=int)
 
         # Systematics information
         if shift_name is None:
@@ -429,7 +434,7 @@ class NanoProcessor(processor.ProcessorABC):
                         flatten(smuon_jet[histname.replace("mujet_", "")]),
                         weight=weight,
                     )
-                elif "btag" in histname:
+                elif "btag" in histname and "Trans" not in histname:
                     for i in range(2):
                         if (
                             str(i) not in histname
@@ -459,6 +464,16 @@ class NanoProcessor(processor.ProcessorABC):
                                 ),
                                 weight=weight,
                             )
+                elif "btag" in histname and "Trans" in histname:
+                    for i in range(2):
+                        histname = histname.replace("Trans", "").replace(f"_{i}", "")
+                        h.fill(
+                            syst="noSF",
+                            flav=smflav,
+                            osss=osss,
+                            discr=1.0 / np.tanh(smuon_jet[histname]),
+                            weight=weights.partial_weight(exclude=exclude_btv),
+                        )
 
             output["njet"].fill(syst, osss, njet, weight=weight)
             output["nmujet"].fill(syst, osss, nmujet, weight=weight)
@@ -540,8 +555,9 @@ class NanoProcessor(processor.ProcessorABC):
                 out_branch,
                 np.where(
                     (out_branch == "SoftMuon")
-                    # | (out_branch == "MuonJet")
+                    | (out_branch == "MuonJet")
                     | (out_branch == "dilep")
+                    | (out_branch == "OtherJets")
                 ),
             )
 
@@ -550,7 +566,7 @@ class NanoProcessor(processor.ProcessorABC):
                     "Muon",
                     "Jet",
                     "SoftMuon",
-                    # "MuonJet",
+                    "MuonJet",
                     "dilep",
                     "charge",
                     "MET",
@@ -568,7 +584,7 @@ class NanoProcessor(processor.ProcessorABC):
             # write to root files
             os.system(f"mkdir -p {self.name}/{dataset}")
             with uproot.recreate(
-                f"{self.name}/{dataset}/{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+                f"{self.name}/{dataset}/{systematics[0]}_{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
             ) as fout:
                 fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
 

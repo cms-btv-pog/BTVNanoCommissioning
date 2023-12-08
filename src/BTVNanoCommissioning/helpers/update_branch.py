@@ -9,20 +9,39 @@ def missing_branch(events):
         if hasattr(events, "fixedGridRhoFastjetAll")
         else events.Rho.fixedGridRhoFastjetAll
     )
-
-    if not hasattr(events.Jet, "btagDeepFlavC"):
+    if not hasattr(events.Jet, "btagDeepFlavB"):
+        jets = events.Jet
+        jets["btagDeepFlavB"] = (
+            events.Jet.btagDeepFlavB_b
+            + events.Jet.btagDeepFlavB_bb
+            + events.Jet.btagDeepFlavB_lepb
+        )
+        events.Jet = update(
+            events.Jet,
+            {"btagDeepFlavB": jets.btagDeepFlavB},
+        )
+    if hasattr(events.Jet, "btagDeepFlavCvL") and not hasattr(
+        events.Jet, "btagDeepFlavC"
+    ):
         jets = events.Jet
         jets["btagDeepFlavC"] = (
             events.Jet.btagDeepFlavCvL / (1.0 - events.Jet.btagDeepFlavCvL)
         ) * events.Jet.btagDeepFlavB
+        events.Jet = update(
+            events.Jet,
+            {"btagDeepFlavC": jets.btagDeepFlavC},
+        )
+    if hasattr(events.Jet, "btagDeepCvL") and not hasattr(events.Jet, "btagDeepC"):
         jets["btagDeepC"] = (
             events.Jet.btagDeepCvL / (1.0 - events.Jet.btagDeepCvL)
         ) * events.Jet.btagDeepB
         events.Jet = update(
             events.Jet,
-            {"btagDeepFlavC": jets.btagDeepFlavC, "btagDeepC": jets.btagDeepC},
+            {"btagDeepC": jets.btagDeepC},
         )
-    if not hasattr(events.Jet, "btagDeepFlavCvL"):
+    if hasattr(events.Jet, "btagDeepFlavC") and not hasattr(
+        events.Jet, "btagDeepFlavCvL"
+    ):
         jets = events.Jet
         jets["btagDeepFlavCvL"] = np.maximum(
             np.minimum(
@@ -57,6 +76,21 @@ def missing_branch(events):
             ),
             -1,
         )
+        events.Jet = update(
+            events.Jet,
+            {
+                "btagDeepFlavCvL": jets.btagDeepFlavCvL,
+                "btagDeepFlavCvB": jets.btagDeepFlavCvB,
+            },
+        )
+    if not hasattr(events.Jet, "btagDeepB"):
+        jets = events.Jet
+        jets["btagDeepB"] = events.Jet.btagDeepB_b + events.Jet.btagDeepB_bb
+        events.Jet = update(
+            events.Jet,
+            {"btagDeepB": jets.btagDeepB},
+        )
+    if hasattr(events.Jet, "btagDeepC") and not hasattr(events.Jet, "btagDeepCvL"):
         jets["btagDeepCvL"] = np.maximum(
             np.minimum(
                 np.where(
@@ -85,8 +119,6 @@ def missing_branch(events):
         events.Jet = update(
             events.Jet,
             {
-                "btagDeepFlavCvL": jets.btagDeepFlavCvL,
-                "btagDeepFlavCvB": jets.btagDeepFlavCvB,
                 "btagDeepCvL": jets.btagDeepCvL,
                 "btagDeepCvB": jets.btagDeepCvB,
             },
