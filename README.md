@@ -24,7 +24,7 @@ git clone --recursive git@github.com:cms-btv-pog/BTVNanoCommissioning.git
 conda activate btv_coffea
 ```
 ### Coffea installation with Micromamba
-For installing Miniconda, see also [https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Local-or-remote](https://mamba.readthedocs.io/en/latest/user_guide/)
+For installing Micromamba, see also [[https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Local-or-remote](https://mamba.readthedocs.io/en/latest/user_guide/)](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html)
 ```
 wget wget -L micro.mamba.pm/install.sh
 # Run and follow instructions on screen
