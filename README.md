@@ -32,10 +32,10 @@ bash install.sh
 ```
 NOTE: always make sure that conda, python, and pip point to local micromamba installation (`which conda` etc.).
 
-You can simply create the environment through the existing `test_env.yml` under your conda environment using micromamba, and activate it
+You can simply create the environment through the existing `test_env.yml` under your micromamba environment using micromamba, and activate it
 ```
 micromamba env create -f test_env.yml 
-conda activate btv_coffea
+micromamba activate btv_coffea
 ```
 
 Once the environment is set up, compile the python package:
