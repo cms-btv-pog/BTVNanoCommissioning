@@ -23,18 +23,18 @@ git clone --recursive git@github.com:cms-btv-pog/BTVNanoCommissioning.git
 # activate enviroment once you have coffea framework 
 conda activate btv_coffea
 ```
-### Coffea installation with Miniconda
-For installing Miniconda, see also https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Local-or-remote
+### Coffea installation with Micromamba
+For installing Miniconda, see also [https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Local-or-remote](https://mamba.readthedocs.io/en/latest/user_guide/)
 ```
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+wget wget -L micro.mamba.pm/install.sh
 # Run and follow instructions on screen
-bash Miniconda3-latest-Linux-x86_64.sh
+bash install.sh
 ```
-NOTE: always make sure that conda, python, and pip point to local Miniconda installation (`which conda` etc.).
+NOTE: always make sure that conda, python, and pip point to local micromamba installation (`which conda` etc.).
 
-You can simply create the environment through the existing `test_env.yml` under your conda environment, and activate it
+You can simply create the environment through the existing `test_env.yml` under your conda environment using micromamba, and activate it
 ```
-conda env create -f test_env.yml 
+micromamba env create -f test_env.yml 
 conda activate btv_coffea
 ```
 
