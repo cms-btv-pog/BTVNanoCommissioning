@@ -394,7 +394,7 @@ if __name__ == "__main__":
             condor_extra.append(f"export PATH={pathvar}:$PATH")
         else:
             condor_extra.append(f"cd {os.getcwd()}")
-            condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
+            condor_extra.append(f'micromamba activate {os.environ["MAMBA_EXE"]}')
     #########
     # Execute
     if args.executor in ["futures", "iterative"]:
