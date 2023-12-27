@@ -26,7 +26,7 @@ conda activate btv_coffea
 ### Coffea installation with Micromamba
 For installing Micromamba, see [[here](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html)]
 ```
-wget wget -L micro.mamba.pm/install.sh
+wget -L micro.mamba.pm/install.sh
 # Run and follow instructions on screen
 bash install.sh
 ```
