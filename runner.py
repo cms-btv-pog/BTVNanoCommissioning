@@ -409,15 +409,19 @@ if __name__ == "__main__":
                 if use_conda:
                     condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
                 else:
-                    condor_extra.append(f"micromamba activate {os.environ['MAMBA_EXE']}")
+                    condor_extra.append(
+                        f"micromamba activate {os.environ['MAMBA_EXE']}"
+                    )
             elif conda_available:
                 condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
             elif mamba_available:
                 condor_extra.append(f"micromamba activate {os.environ['MAMBA_EXE']}")
             else:
                 # Handle the case when neither Conda nor Micromamba is available
-                print("Neither Conda nor Micromamba is available in the environment. At least install one of them.")
-                
+                print(
+                    "Neither Conda nor Micromamba is available in the environment. At least install one of them."
+                )
+
     #########
     # Execute
     if args.executor in ["futures", "iterative"]:
