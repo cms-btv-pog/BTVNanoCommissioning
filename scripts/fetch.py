@@ -341,7 +341,7 @@ def main(args):
             empty = False
     assert empty, "you have empty lists"
     output_file = "./%s" % (args.output)
-    #fdict = remove_bad_files(fdict, args.output, True)  # remove bad files
+    fdict = remove_bad_files(fdict, args.output, True)  # remove bad files
     with open(output_file, "w") as fp:
         json.dump(fdict, fp, indent=4)
         print("The file is saved at: ", output_file)
