@@ -145,13 +145,13 @@ After a small test, you can run the full campaign for a dedicated phase space, s
 - Dileptonic ttbar phase space : check performance for btag SFs, emu channel
 
 ```
- python runner.py --workflow ttdilep_sf --json metadata/data_Summer22_Run3_2022_em_BTV_Comm_v3_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site}) 
+ python runner.py --workflow ttdilep_sf --json metadata/data_Summer22_Run3_2022_em_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site}) 
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v3_NanoV12_noPF.json --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site})
+python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site})
 ```
 
 </p>
@@ -164,26 +164,26 @@ python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_Run3_2022
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v3_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 
 - Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v3_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 - W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
 
 ```
-python runner.py --workflow ctag_Wc_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v3_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_Wc_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_DY_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v3_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_DY_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 </p>
@@ -208,7 +208,7 @@ python runner.py --workflow valid --json metadata/$json file
 
 Based on Congqiao's [development](notebooks/BTA_array_producer.ipynb) to produce BTA ntuples based on PFNano.
 
-:exclamation: Only the newest version [BTV_Run3_2022_Comm_v3](https://github.com/cms-jet/PFNano/tree/13_0_7_from124MiniAOD) ntuples work. Example files are given in [this](metadata/test_bta_run3.json) json. Optimize the chunksize(`--chunk`) in terms of the memory usage. This depends on sample, if the sample has huge jet collection/b-c hardons. The more info you store, the more memory you need. I would suggest to test with `iterative` to estimate the size.
+:exclamation: Only the newest version [BTV_Run3_2022_Comm_MINIAODv4](https://github.com/cms-btv-pog/btvnano-prod) ntuples work. Example files are given in [this](metadata/test_bta_run3.json) json. Optimize the chunksize(`--chunk`) in terms of the memory usage. This depends on sample, if the sample has huge jet collection/b-c hardons. The more info you store, the more memory you need. I would suggest to test with `iterative` to estimate the size.
 
 <details><summary>details</summary>
 <p>
@@ -241,10 +241,10 @@ However, some sites have certain restrictions for various reasons, in particular
 Memory usage is also useful to adapt to cluster. Check the memory by calling  `memory_usage_psutil()` from `helpers.func.memory_usage_psutil` to optimize job size. Example with `ectag_Wc_sf` summarized below.
  Type        |Array+Hist |  Hist only| Array Only|
 | :---:   | :---: | :---: | :---: |
-DoubleMuon (BTA,BTV_Comm_v3)| 1243MB |	848MB	|1249MB|
+DoubleMuon (BTA,BTV_Comm_v2)| 1243MB |	848MB	|1249MB|
 DoubleMuon (PFCands, BTV_Comm_v1)|1650MB	|1274MB	|1632MB|
 DoubleMuon (Nano_v11)|1183MB|	630MB	|1180MB|
-WJets_inc (BTA,BTV_Comm_v3)| 1243MB	|848MB	|1249MB|
+WJets_inc (BTA,BTV_Comm_v2)| 1243MB	|848MB	|1249MB|
 WJets_inc (PFCands, BTV_Comm_v1)|1650MB	|1274MB	|1632MB
 WJets_inc (Nano_v11)|1183MB	|630MB	|1180MB|
 
