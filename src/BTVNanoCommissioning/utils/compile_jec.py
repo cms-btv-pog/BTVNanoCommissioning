@@ -269,6 +269,8 @@ def jet_factories(campaign):
                     "src/BTVNanoCommissioning/data/JME/Summer22Run3/Summer22_V1_MC_L3Absolute_AK4PFPuppi.jec.txt",
                     "src/BTVNanoCommissioning/data/JME/Summer22Run3/Summer22_V1_MC_UncertaintySources_AK4PFPuppi.junc.txt",
                     "src/BTVNanoCommissioning/data/JME/Summer22Run3/Summer22_V1_MC_Uncertainty_AK4PFPuppi.junc.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22Run3/Summer22Run3_V1_MC_SF_AK4PFPuppi.jersf.txt",
+                    "src/BTVNanoCommissioning/data/JME/Summer22Run3/Summer22Run3_V1_MC_PtResolution_AK4PFPuppi.jr.txt",
                 ]
             ),
             "dataC": jet_factory_factory(
