@@ -15,7 +15,7 @@ Detailed documentation in [btv-wiki](https://btv-wiki.docs.cern.ch/SoftwareAlgor
 ### Setup 
 
 :heavy_exclamation_mark: suggested to install under `bash` environment
-
+:heavy_exclamation_mark: :heavy_exclamation_mark: not fully supported in EL9 machines yet, recommended to run in EL7 or EL8
 ```
 # only first time, including submodules
 git clone --recursive git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
@@ -23,19 +23,19 @@ git clone --recursive git@github.com:cms-btv-pog/BTVNanoCommissioning.git
 # activate enviroment once you have coffea framework 
 conda activate btv_coffea
 ```
-### Coffea installation with Miniconda
-For installing Miniconda, see also https://hackmd.io/GkiNxag0TUmHnnCiqdND1Q#Local-or-remote
+### Coffea installation with Micromamba
+For installing Micromamba, see [[here](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html)]
 ```
-wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+wget -L micro.mamba.pm/install.sh
 # Run and follow instructions on screen
-bash Miniconda3-latest-Linux-x86_64.sh
+bash install.sh
 ```
-NOTE: always make sure that conda, python, and pip point to local Miniconda installation (`which conda` etc.).
+NOTE: always make sure that conda, python, and pip point to local micromamba installation (`which conda` etc.).
 
-You can simply create the environment through the existing `test_env.yml` under your conda environment, and activate it
+You can simply create the environment through the existing `test_env.yml` under your micromamba environment using micromamba, and activate it
 ```
-conda env create -f test_env.yml 
-conda activate btv_coffea
+micromamba env create -f test_env.yml 
+micromamba activate btv_coffea
 ```
 
 Once the environment is set up, compile the python package:
@@ -145,13 +145,13 @@ After a small test, you can run the full campaign for a dedicated phase space, s
 - Dileptonic ttbar phase space : check performance for btag SFs, emu channel
 
 ```
- python runner.py --workflow ttdilep_sf --json metadata/data_Summer22_Run3_2022_em_BTV_Comm_v2_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site}) 
+ python runner.py --workflow ttdilep_sf --json metadata/data_Summer22_Run3_2022_em_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site}) 
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v2_NanoV12_noPF.json --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site})
+python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site})
 ```
 
 </p>
@@ -164,26 +164,26 @@ python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_Run3_2022
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v2_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 
 - Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v2_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 - W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
 
 ```
-python runner.py --workflow ctag_Wc_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v2_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_Wc_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_DY_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Comm_v2_NanoV12_noPF.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_DY_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
 ```
 
 </p>
@@ -208,7 +208,7 @@ python runner.py --workflow valid --json metadata/$json file
 
 Based on Congqiao's [development](notebooks/BTA_array_producer.ipynb) to produce BTA ntuples based on PFNano.
 
-:exclamation: Only the newest version [BTV_Run3_2022_Comm_v2](https://github.com/cms-jet/PFNano/tree/13_0_7_from124MiniAOD) ntuples work. Example files are given in [this](metadata/test_bta_run3.json) json. Optimize the chunksize(`--chunk`) in terms of the memory usage. This depends on sample, if the sample has huge jet collection/b-c hardons. The more info you store, the more memory you need. I would suggest to test with `iterative` to estimate the size.
+:exclamation: Only the newest version [BTV_Run3_2022_Comm_MINIAODv4](https://github.com/cms-btv-pog/btvnano-prod) ntuples work. Example files are given in [this](metadata/test_bta_run3.json) json. Optimize the chunksize(`--chunk`) in terms of the memory usage. This depends on sample, if the sample has huge jet collection/b-c hardons. The more info you store, the more memory you need. I would suggest to test with `iterative` to estimate the size.
 
 <details><summary>details</summary>
 <p>
