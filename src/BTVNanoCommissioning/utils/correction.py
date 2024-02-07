@@ -53,7 +53,7 @@ def load_SF(campaign, syst=False):
                         ext = extractor()
                         ext.add_weight_sets([f"* * {filename}"])
                         ext.finalize()
-                        correction_map["PU"] = ext.make_evaluator()["PU"]
+                        correction_map["PU"] = ext.make_evaluator()
 
         ## btag weight
         elif SF == "BTV":
@@ -92,9 +92,9 @@ def load_SF(campaign, syst=False):
                     ) as filename:
                         if "B" in tagger:
                             if filename.endswith(".json.gz"):
-                                correction_map[
-                                    "btag"
-                                ] = correctionlib.CorrectionSet.from_file(filename)
+                                correction_map["btag"] = (
+                                    correctionlib.CorrectionSet.from_file(filename)
+                                )
                             else:
                                 correction_map["btag"][tagger] = BTagScaleFactor(
                                     filename,
@@ -103,9 +103,9 @@ def load_SF(campaign, syst=False):
                                 )
                         else:
                             if filename.endswith(".json.gz"):
-                                correction_map[
-                                    "ctag"
-                                ] = correctionlib.CorrectionSet.from_file(filename)
+                                correction_map["ctag"] = (
+                                    correctionlib.CorrectionSet.from_file(filename)
+                                )
                             else:
                                 correction_map["ctag"][tagger] = BTagScaleFactor(
                                     filename,
@@ -689,9 +689,9 @@ def puwei(nPU, correct_map, weights, syst=False):
         if syst:
             weights.add(
                 "puweight",
-                correct_map["PU"](nPU),
-                correct_map["PUup"](nPU),
-                correct_map["PUdown"](nPU),
+                correct_map["PU"]["PU"](nPU),
+                correct_map["PU"]["PUup"](nPU),
+                correct_map["PU"]["PUdown"](nPU),
             )
         else:
             weights.add("puweight", correct_map["PU"](nPU))
