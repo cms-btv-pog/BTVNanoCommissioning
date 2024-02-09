@@ -54,7 +54,7 @@ def load_SF(campaign, syst=False):
                         ext = extractor()
                         ext.add_weight_sets([f"* * {filename}"])
                         ext.finalize()
-                        correct_map["PU"] = ext.make_evaluator()["PU"]
+                        correct_map["PU"] = ext.make_evaluator()
 
         ## btag weight
         elif SF == "BTV":
@@ -500,12 +500,7 @@ def JME_shifts(
 
             for var in ["mass", "pt"]:
                 jets[var] = j_mask * j_high_eta_mask * jets[var]
-        if (
-            "Run2022C" in events.metadata["dataset"]
-            or "Run2022D" in events.metadata["dataset"]
-            or "Run2022E" in events.metadata["dataset"]
-        ) and not exclude_jetveto:
-            jets["pt"] = ak.where(jets.veto == 0, jets.pt, 0.0)
+
     shifts += [({"Jet": jets, "MET": met}, None)]
 
     ## systematics
@@ -695,9 +690,9 @@ def puwei(nPU, correct_map, weights, syst=False):
         if syst:
             weights.add(
                 "puweight",
-                correct_map["PU"](nPU),
-                correct_map["PUup"](nPU),
-                correct_map["PUdown"](nPU),
+                correct_map["PU"]["PU"](nPU),
+                correct_map["PU"]["PUup"](nPU),
+                correct_map["PU"]["PUdown"](nPU),
             )
         else:
             weights.add("puweight", correct_map["PU"](nPU))

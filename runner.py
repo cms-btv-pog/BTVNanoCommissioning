@@ -396,7 +396,34 @@ if __name__ == "__main__":
             condor_extra.append(f"export PATH={pathvar}:$PATH")
         else:
             condor_extra.append(f"cd {os.getcwd()}")
-            condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
+
+            # Check if Conda is available
+            conda_check_command = "command -v conda"
+            conda_available = os.system(conda_check_command) == 0
+
+            # Check if Mamba is available
+            mamba_check_command = "command -v micromamba"
+            mamba_available = os.system(mamba_check_command) == 0
+
+            # Set up environment based on availability
+            if conda_available and mamba_available:
+                use_conda = True  # Set to False if you prefer Micromamba
+                if use_conda:
+                    condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
+                else:
+                    condor_extra.append(
+                        f"micromamba activate {os.environ['MAMBA_EXE']}"
+                    )
+            elif conda_available:
+                condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
+            elif mamba_available:
+                condor_extra.append(f"micromamba activate {os.environ['MAMBA_EXE']}")
+            else:
+                # Handle the case when neither Conda nor Micromamba is available
+                print(
+                    "Neither Conda nor Micromamba is available in the environment. At least install one of them."
+                )
+
     #########
     # Execute
     if args.executor in ["futures", "iterative"]:
