@@ -322,7 +322,7 @@ class NanoProcessor(processor.ProcessorABC):
                 (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
             )
             if len(self.SF_map.keys()) > 0:
-                syst_wei = True if self.isSyst != None else False
+                syst_wei = True if self.isSyst != False else False
                 if "PU" in self.SF_map.keys():
                     puwei(
                         events[event_level].Pileup.nTrueInt,
@@ -358,7 +358,7 @@ class NanoProcessor(processor.ProcessorABC):
         #  Fill histogram  #
         ####################
         for syst in systematics:
-            if self.isSyst == None and syst != "nominal":
+            if self.isSyst == False and syst != "nominal":
                 break
             if self.noHist:
                 break
@@ -512,6 +512,9 @@ class NanoProcessor(processor.ProcessorABC):
             output["w_mass"].fill(syst, osss, flatten(sw.mass), weight=weight)
             output["MET_pt"].fill(syst, osss, flatten(smet.pt), weight=weight)
             output["MET_phi"].fill(syst, osss, flatten(smet.phi), weight=weight)
+            output["npvs"].fill(events[event_level].PV.npvs, weight=weight)
+            if not isRealData:
+                output["pu"].fill(events[event_level].Pileup.nTrueInt, weight=weight)
         #######################
         #  Create root files  #
         #######################

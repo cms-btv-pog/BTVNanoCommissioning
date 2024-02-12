@@ -695,7 +695,7 @@ def puwei(nPU, correct_map, weights, syst=False):
                 correct_map["PU"]["PUdown"](nPU),
             )
         else:
-            weights.add("puweight", correct_map["PU"](nPU))
+            weights.add("puweight", correct_map["PU"]["PU"](nPU))
 
 
 def btagSFs(jet, correct_map, weights, SFtype, syst=False):

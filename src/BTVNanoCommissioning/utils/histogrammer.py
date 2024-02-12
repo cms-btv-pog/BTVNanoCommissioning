@@ -18,6 +18,7 @@ def histogrammer(events, workflow):
     softliso_axis = Hist.axis.Regular(
         20, 0.2, 6.2, name="pfRelIso03_all", label="Rel. Iso"
     )
+    npvs_axis = Hist.axis.Integer(0, 100, name="npv", label="N PVs")
     dr_axis = Hist.axis.Regular(20, 0, 8, name="dr", label="$\Delta$R")
     dr_s_axis = Hist.axis.Regular(20, 0, 0.5, name="dr", label="$\Delta$R")
     dxy_axis = Hist.axis.Regular(40, -0.05, 0.05, name="dxy", label="d_{xy}")
@@ -27,6 +28,8 @@ def histogrammer(events, workflow):
     ptratio_axis = Hist.axis.Regular(50, 0, 1, name="ratio", label="ratio")
     n_axis = Hist.axis.Integer(0, 10, name="n", label="N obj")
     osss_axis = Hist.axis.IntCategory([1, -1], name="osss", label="OS(+)/SS(-)")
+    _hist_dict["npvs"] = Hist.Hist(npvs_axis, Hist.storage.Weight())
+    _hist_dict["pu"] = Hist.Hist(npvs_axis, Hist.storage.Weight())
     ### Workflow specific
     if "example" == workflow:
         obj_list = [

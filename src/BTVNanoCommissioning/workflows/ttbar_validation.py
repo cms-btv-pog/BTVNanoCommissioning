@@ -185,7 +185,7 @@ class NanoProcessor(processor.ProcessorABC):
             genflavor = sjets.hadronFlavour + 1 * par_flav
             genweiev = ak.flatten(ak.broadcast_arrays(weights.weight(), sjets["pt"])[0])
             if len(self.SF_map.keys()) > 0:
-                syst_wei = True if self.isSyst != None else False
+                syst_wei = True if self.isSyst != False else False
                 if "PU" in self.SF_map.keys():
                     puwei(
                         events[event_level].Pileup.nTrueInt,
@@ -222,7 +222,7 @@ class NanoProcessor(processor.ProcessorABC):
         #  Fill histogram  #
         ####################
         for syst in systematics:
-            if self.isSyst == None and syst != "nominal":
+            if self.isSyst == False and syst != "nominal":
                 break
             if self.noHist:
                 break
