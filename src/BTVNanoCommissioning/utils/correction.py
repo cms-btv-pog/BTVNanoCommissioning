@@ -1544,14 +1544,13 @@ class JPCalibHandler(object):
                 if isSyst is not False:
                     filename = config[campaign]["JPCalib"]["MC"]
                 else:
+                    filename = "default"
                     for key in config[campaign]["JPCalib"]:
                         if key in dataset:
                             filename = config[campaign]["JPCalib"][key]
                             break
-                        else:
-                            raise ValueError(
-                                f"No JPCalib file found for dataset {dataset}"
-                            )
+                    if filename == "default":
+                        raise ValueError(f"No JPCalib file found for dataset {dataset}")
             else:
                 filename = config[campaign]["JPCalib"]["MC"]
 

@@ -75,7 +75,8 @@ class NanoProcessor(processor.ProcessorABC):
             return {dataset: len(events)}
 
         isRealData = not hasattr(events, "genWeight")
-
+        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
+            events.Jet = update(events.Jet, {"veto": jetveto(events, self.SF_map)})
         # basic variables
         basic_vars = {
             "Run": events.run,
@@ -393,6 +394,8 @@ class NanoProcessor(processor.ProcessorABC):
         jet = events.Jet[
             (events.Jet.pt > 20.0) & (abs(events.Jet.eta) < 2.5)
         ]  # basic selection
+        if "veto" in jet.fields:
+            jet = jet[(jet.veto == 0)]
         zeros = ak.zeros_like(jet.pt, dtype=int)
         Jet = ak.zip(
             {
@@ -427,8 +430,6 @@ class NanoProcessor(processor.ProcessorABC):
                 "ParTCvsBDisc": jet.btagRobustParTAK4CvB,
             }
         )
-        if isRealData:
-            Jet["vetomap"] = jet.veto
 
         if not isRealData:
             Jet["partonFlavour"] = jet.partonFlavour
