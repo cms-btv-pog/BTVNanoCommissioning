@@ -9,7 +9,7 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     to_bitwise_trigger,
 )
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts
+from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts, jetveto
 import os
 
 
