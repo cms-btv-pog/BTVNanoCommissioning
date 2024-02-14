@@ -103,10 +103,11 @@ class NanoProcessor(processor.ProcessorABC):
             **_hist_event_dict,
         }
 
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            if isRealData:
+                output["sumw"] = len(events)
+            else:
+                output["sumw"] = ak.sum(events.genWeight)
         ####################
         #    Selections    #
         ####################
@@ -288,7 +289,7 @@ class NanoProcessor(processor.ProcessorABC):
                 ):
                     h.fill(
                         syst,
-                        flatten(genflavor),
+                        flatten(ak.values_astype(genflavor, np.uint8)),
                         flatten(sjets[histname]),
                         weight=flatten(
                             ak.broadcast_arrays(
@@ -355,7 +356,7 @@ class NanoProcessor(processor.ProcessorABC):
                         if str(i) in histname:
                             h.fill(
                                 syst,
-                                flatten(genflavor[:, i]),
+                                flatten(ak.values_astype(genflavor[:, i], np.uint8)),
                                 flatten(sel_jet[histname.replace(f"jet{i}_", "")]),
                                 weight=weight,
                             )
@@ -363,16 +364,24 @@ class NanoProcessor(processor.ProcessorABC):
             for i in range(4):
                 output[f"dr_mujet{i}"].fill(
                     syst,
-                    flav=flatten(genflavor[:, i]),
+                    flav=flatten(ak.values_astype(genflavor[:, i], np.uint8)),
                     dr=flatten(smu.delta_r(sjets[:, i])),
                     weight=weight,
                 )
             output["njet"].fill(syst, nseljet, weight=weight)
             output["MET_pt"].fill(syst, flatten(smet.pt), weight=weight)
             output["MET_phi"].fill(syst, flatten(smet.phi), weight=weight)
-            output["npvs"].fill(events[event_level].PV.npvs, weight=weight)
+            output["npvs"].fill(
+                syst,
+                events[event_level].PV.npvs,
+                weight=weight,
+            )
             if not isRealData:
-                output["pu"].fill(events[event_level].Pileup.nTrueInt, weight=weight)
+                output["pu"].fill(
+                    syst,
+                    events[event_level].Pileup.nTrueInt,
+                    weight=weight,
+                )
         #######################
         #  Create root files  #
         #######################

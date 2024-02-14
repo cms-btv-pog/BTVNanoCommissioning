@@ -113,10 +113,11 @@ class NanoProcessor(processor.ProcessorABC):
             **_hist_event_dict,
         }
 
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            if isRealData:
+                output["sumw"] = len(events)
+            else:
+                output["sumw"] = ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
@@ -254,7 +255,7 @@ class NanoProcessor(processor.ProcessorABC):
                 ):
                     h.fill(
                         syst,
-                        flatten(genflavor),
+                        flatten(ak.values_astype(genflavor, np.uint8)),
                         flatten(sjets[histname]),
                         weight=flatten(
                             ak.broadcast_arrays(
@@ -348,7 +349,7 @@ class NanoProcessor(processor.ProcessorABC):
                         jet = sjets[:, i]
                         h.fill(
                             syst,
-                            flatten(genflavor[:, i]),
+                            flatten(ak.values_astype(genflavor[:, i], np.uint8)),
                             flatten(jet[histname.replace(f"jet{i}_", "")]),
                             weight=weight,
                         )
@@ -360,7 +361,7 @@ class NanoProcessor(processor.ProcessorABC):
                         jet = sjets[:, i]
                         h.fill(
                             "noSF",
-                            flav=flatten(genflavor[:, i]),
+                            flav=flatten(ak.values_astype(genflavor[:, i], np.uint8)),
                             discr=jet[histname.replace(f"_{i}", "")],
                             weight=weight,
                         )

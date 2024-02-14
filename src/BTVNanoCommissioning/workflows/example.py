@@ -110,10 +110,11 @@ class NanoProcessor(processor.ProcessorABC):
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,
         }
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            if isRealData:
+                output["sumw"] = len(events)
+            else:
+                output["sumw"] = ak.sum(events.genWeight)
         ####################
         #    Selections    #
         ####################
@@ -245,12 +246,17 @@ class NanoProcessor(processor.ProcessorABC):
 
             # fill the histogram (check axis defintion in histogrammer and following the order)
             output["jet_pt"].fill(
-                syst, flatten(genflavor[:, 0]), flatten(sjets[:, 0].pt), weight=weight
+                syst,
+                flatten(ak.values_astype(genflavor[:, 0], np.uint8)),
+                flatten(sjets[:, 0].pt),
+                weight=weight,
             )
             output["mu_pt"].fill(syst, flatten(smu[:, 0].pt), weight=weight)
             output["dr_mujet"].fill(
                 syst,
-                flatten(genflavor[:, 0]),  # the fill content should always flat arrays
+                flatten(
+                    ak.values_astype(genflavor[:, 0], np.uint8)
+                ),  # the fill content should always flat arrays
                 flatten(sjets[:, 0].delta_r(smu[:, 0])),
                 weight=weight,
             )

@@ -46,9 +46,7 @@ def load_SF(campaign, syst=False):
                             ]
                     elif str(filename).endswith(".json.gz"):
                         correct_map["PU"] = correctionlib.CorrectionSet.from_file(
-                            importlib.resources.path(
-                                f"BTVNanoCommissioning.data.PU.{campaign}", filename
-                            )
+                            str(filename)
                         )
                     elif str(filename).endswith(".histo.root"):
                         ext = extractor()

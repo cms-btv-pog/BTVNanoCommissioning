@@ -107,10 +107,11 @@ class NanoProcessor(processor.ProcessorABC):
             **_hist_event_dict,
         }
 
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            if isRealData:
+                output["sumw"] = len(events)
+            else:
+                output["sumw"] = ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
@@ -337,7 +338,7 @@ class NanoProcessor(processor.ProcessorABC):
                 ):
                     h.fill(
                         syst,
-                        flatten(genflavor),
+                        flatten(ak.values_astype(genflavor, np.uint8)),
                         flatten(sjets[histname]),
                         weight=flatten(
                             ak.broadcast_arrays(
@@ -352,7 +353,11 @@ class NanoProcessor(processor.ProcessorABC):
                 ):
                     h.fill(
                         syst,
-                        flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
+                        flatten(
+                            ak.broadcast_arrays(
+                                ak.values_astype(smflav, np.uint8), spfcands["pt"]
+                            )[0]
+                        ),
                         flatten(spfcands[histname.replace("PFCands_", "")]),
                         weight=flatten(
                             ak.broadcast_arrays(
@@ -364,7 +369,7 @@ class NanoProcessor(processor.ProcessorABC):
                 elif "jet_" in histname and "mu" not in histname:
                     h.fill(
                         syst,
-                        flatten(genflavor),
+                        flatten(ak.values_astype(genflavor, np.uint8)),
                         flatten(sjets[histname.replace("jet_", "")]),
                         weight=flatten(ak.broadcast_arrays(weight, sjets["pt"])[0]),
                     )
@@ -383,14 +388,14 @@ class NanoProcessor(processor.ProcessorABC):
                 elif "soft_l" in histname and not "ptratio" in histname:
                     h.fill(
                         syst,
-                        smflav,
+                        ak.values_astype(smflav, np.uint8),
                         flatten(softmu0[histname.replace("soft_l_", "")]),
                         weight=weight,
                     )
                 elif "lmujet_" in histname:
                     h.fill(
                         syst,
-                        smflav,
+                        ak.values_astype(smflav, np.uint8),
                         flatten(smuon_jet[histname.replace("lmujet_", "")]),
                         weight=weight,
                     )
@@ -403,14 +408,14 @@ class NanoProcessor(processor.ProcessorABC):
                             continue
                         h.fill(
                             syst="noSF",
-                            flav=smflav,
+                            flav=ak.values_astype(smflav, np.uint8),
                             discr=smuon_jet[histname.replace(f"_{i}", "")],
                             weight=weights.partial_weight(exclude=exclude_btv),
                         )
                         if not isRealData and "btag" in self.SF_map.keys():
                             h.fill(
                                 syst=syst,
-                                flav=smflav,
+                                flav=ak.values_astype(smflav, np.uint8),
                                 discr=smuon_jet[histname.replace(f"_{i}", "")],
                                 weight=weight,
                             )
@@ -420,31 +425,31 @@ class NanoProcessor(processor.ProcessorABC):
             output["nsoftmu"].fill(syst, nsoftmu, weight=weight)
             output["hl_ptratio"].fill(
                 syst,
-                flav=genflavor[:, 0],
+                flav=ak.values_astype(genflavor[:, 0], np.uint8),
                 ratio=isomu0.pt / sjets[:, 0].pt,
                 weight=weight,
             )
             output["sl_ptratio"].fill(
                 syst,
-                flav=genflavor[:, 0],
+                flav=ak.values_astype(genflavor[:, 0], np.uint8),
                 ratio=isomu1.pt / sjets[:, 0].pt,
                 weight=weight,
             )
             output["soft_l_ptratio"].fill(
                 syst,
-                flav=smflav,
+                flav=ak.values_astype(smflav, np.uint8),
                 ratio=softmu0.pt / smuon_jet.pt,
                 weight=weight,
             )
             output["dr_lmujetsmu"].fill(
                 syst,
-                flav=smflav,
+                flav=ak.values_astype(smflav, np.uint8),
                 dr=smuon_jet.delta_r(softmu0),
                 weight=weight,
             )
             output["dr_lmujethmu"].fill(
                 syst,
-                flav=smflav,
+                flav=ak.values_astype(smflav, np.uint8),
                 dr=smuon_jet.delta_r(isomu0),
                 weight=weight,
             )
@@ -455,9 +460,17 @@ class NanoProcessor(processor.ProcessorABC):
             output["z_mass"].fill(syst, flatten(sz.mass), weight=weight)
             output["MET_pt"].fill(syst, flatten(smet.pt), weight=weight)
             output["MET_phi"].fill(syst, flatten(smet.phi), weight=weight)
-            output["npvs"].fill(events[event_level].PV.npvs, weight=weight)
+            output["npvs"].fill(
+                syst,
+                events[event_level].PV.npvs,
+                weight=weight,
+            )
             if not isRealData:
-                output["pu"].fill(events[event_level].Pileup.nTrueInt, weight=weight)
+                output["pu"].fill(
+                    syst,
+                    events[event_level].Pileup.nTrueInt,
+                    weight=weight,
+                )
         #######################
         #  Create root files  #
         #######################
