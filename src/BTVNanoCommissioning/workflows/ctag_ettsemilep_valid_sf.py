@@ -376,7 +376,7 @@ class NanoProcessor(processor.ProcessorABC):
                 ):
                     h.fill(
                         syst,
-                        flatten(ak.values_astype(genflavor, np.uint8)),
+                        flatten(genflavor),
                         flatten(sjets[histname]),
                         weight=flatten(
                             ak.broadcast_arrays(
@@ -387,7 +387,7 @@ class NanoProcessor(processor.ProcessorABC):
                 elif "jet_" in histname and "mu" not in histname:
                     h.fill(
                         syst,
-                        flatten(ak.values_astype(genflavor, np.uint8)),
+                        flatten(genflavor),
                         flatten(sjets[histname.replace("jet_", "")]),
                         weight=flatten(
                             ak.broadcast_arrays(
@@ -407,14 +407,14 @@ class NanoProcessor(processor.ProcessorABC):
                 ):
                     h.fill(
                         syst,
-                        ak.values_astype(smflav, np.uint8),
+                        smflav,
                         flatten(ssmu[histname.replace("soft_l_", "")]),
                         weight=weight,
                     )
                 elif "mujet_" in histname:
                     h.fill(
                         syst,
-                        ak.values_astype(smflav, np.uint8),
+                        smflav,
                         flatten(smuon_jet[histname.replace("mujet_", "")]),
                         weight=weight,
                     )
@@ -425,11 +425,7 @@ class NanoProcessor(processor.ProcessorABC):
                 ):
                     h.fill(
                         syst,
-                        flatten(
-                            ak.broadcast_arrays(
-                                ak.values_astype(smflav, np.uint8), spfcands["pt"]
-                            )[0]
-                        ),
+                        flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
                         flatten(spfcands[histname.replace("PFCands_", "")]),
                         weight=flatten(
                             ak.broadcast_arrays(
@@ -447,14 +443,14 @@ class NanoProcessor(processor.ProcessorABC):
                             continue
                         h.fill(
                             syst="noSF",
-                            flav=ak.values_astype(smflav, np.uint8),
+                            flav=smflav,
                             discr=smuon_jet[histname.replace(f"_{i}", "")],
                             weight=weights.partial_weight(exclude=exclude_btv),
                         )
                         if not isRealData and "btag" in self.SF_map.keys():
                             h.fill(
                                 syst=syst,
-                                flav=ak.values_astype(smflav, np.uint8),
+                                flav=smflav,
                                 discr=smuon_jet[histname.replace(f"_{i}", "")],
                                 weight=weight,
                             )
@@ -463,25 +459,25 @@ class NanoProcessor(processor.ProcessorABC):
             output["nsoftmu"].fill(syst, nsoftmu, weight=weight)
             output["hl_ptratio"].fill(
                 syst,
-                flav=ak.values_astype(genflavor[:, 0], np.uint8),
+                genflavor[:, 0],
                 ratio=shmu.pt / sjets[:, 0].pt,
                 weight=weight,
             )
             output["soft_l_ptratio"].fill(
                 syst,
-                flav=ak.values_astype(smflav, np.uint8),
+                flav=smflav,
                 ratio=ssmu.pt / smuon_jet.pt,
                 weight=weight,
             )
             output["dr_lmujetsmu"].fill(
                 syst,
-                flav=ak.values_astype(smflav, np.uint8),
+                flav=smflav,
                 dr=smuon_jet.delta_r(ssmu),
                 weight=weight,
             )
             output["dr_lmujethmu"].fill(
                 syst,
-                flav=ak.values_astype(smflav, np.uint8),
+                flav=smflav,
                 dr=smuon_jet.delta_r(shmu),
                 weight=weight,
             )

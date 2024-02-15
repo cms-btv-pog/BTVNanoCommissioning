@@ -190,7 +190,7 @@ class NanoProcessor(processor.ProcessorABC):
         if not isRealData:
             weights.add("genweight", events[event_level].genWeight)
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
-            genflavor = sjets.hadronFlavour + 1 * par_flav
+            genflavor = ak.values_astype(sjets.hadronFlavour + 1 * par_flav, int)
             # Load SFs
             if len(self.SF_map.keys()) > 0:
                 syst_wei = (
@@ -247,16 +247,14 @@ class NanoProcessor(processor.ProcessorABC):
             # fill the histogram (check axis defintion in histogrammer and following the order)
             output["jet_pt"].fill(
                 syst,
-                flatten(ak.values_astype(genflavor[:, 0], np.uint8)),
+                flatten(genflavor[:, 0]),
                 flatten(sjets[:, 0].pt),
                 weight=weight,
             )
             output["mu_pt"].fill(syst, flatten(smu[:, 0].pt), weight=weight)
             output["dr_mujet"].fill(
                 syst,
-                flatten(
-                    ak.values_astype(genflavor[:, 0], np.uint8)
-                ),  # the fill content should always flat arrays
+                flatten(genflavor[:, 0]),  # the fill content should always flat arrays
                 flatten(sjets[:, 0].delta_r(smu[:, 0])),
                 weight=weight,
             )

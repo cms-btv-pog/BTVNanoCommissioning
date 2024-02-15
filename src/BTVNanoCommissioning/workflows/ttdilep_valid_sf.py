@@ -261,7 +261,7 @@ class NanoProcessor(processor.ProcessorABC):
         if not isRealData:
             weights.add("genweight", events[event_level].genWeight)
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
-            genflavor = sjets.hadronFlavour + 1 * par_flav
+            genflavor = ak.values_astype(sjets.hadronFlavour + 1 * par_flav, int)
             if len(self.SF_map.keys()) > 0:
                 syst_wei = True if self.isSyst != False else False
                 if "PU" in self.SF_map.keys():
@@ -318,7 +318,7 @@ class NanoProcessor(processor.ProcessorABC):
                         continue
                     h.fill(
                         syst,
-                        flatten(ak.values_astype(genflavor, np.uint8)),
+                        flatten(genflavor),
                         flatten(sjets[histname]),
                         weight=flatten(
                             ak.broadcast_arrays(
@@ -337,9 +337,10 @@ class NanoProcessor(processor.ProcessorABC):
                         h.fill(
                             syst,
                             flatten(
-                                ak.broadcast_arrays(genflavor[:, i], spfcands[i]["pt"])[
-                                    0
-                                ]
+                                ak.broadcast_arrays(
+                                    genflavor[:, i],
+                                    spfcands[i]["pt"],
+                                )[0]
                             ),
                             flatten(spfcands[i][histname.replace("PFCands_", "")]),
                             weight=flatten(
@@ -359,9 +360,7 @@ class NanoProcessor(processor.ProcessorABC):
                         ):
                             h.fill(
                                 "noSF",
-                                flav=flatten(
-                                    ak.values_astype(genflavor[:, i], np.uint8)
-                                ),
+                                flav=flatten(genflavor[:, i]),
                                 discr=flatten(sel_jet[histname.replace(f"_{i}", "")]),
                                 weight=weights.partial_weight(exclude=exclude_btv),
                             )
@@ -369,7 +368,10 @@ class NanoProcessor(processor.ProcessorABC):
                                 h.fill(
                                     syst=syst,
                                     flav=flatten(
-                                        ak.values_astype(genflavor[:, i], np.uint8)
+                                        ak.values_astype(
+                                            genflavor[:, i],
+                                            np.uint8,
+                                        )
                                     ),
                                     discr=flatten(
                                         sel_jet[histname.replace(f"_{i}", "")]
@@ -394,7 +396,7 @@ class NanoProcessor(processor.ProcessorABC):
                         if str(i) in histname:
                             h.fill(
                                 syst,
-                                flatten(ak.values_astype(genflavor[:, i], np.uint8)),
+                                flatten(genflavor[:, i]),
                                 flatten(sel_jet[histname.replace(f"jet{i}_", "")]),
                                 weight=weight,
                             )
@@ -402,7 +404,7 @@ class NanoProcessor(processor.ProcessorABC):
             for i in range(2):
                 output[f"dr_mujet{i}"].fill(
                     syst,
-                    flav=flatten(ak.values_astype(genflavor[:, i], np.uint8)),
+                    flav=flatten(genflavor[:, i]),
                     dr=flatten(smu.delta_r(sjets[:, i])),
                     weight=weight,
                 )
