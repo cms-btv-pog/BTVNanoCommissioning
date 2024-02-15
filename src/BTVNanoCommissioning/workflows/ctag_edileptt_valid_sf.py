@@ -417,6 +417,7 @@ class NanoProcessor(processor.ProcessorABC):
             output["nsoftmu"].fill(syst, nsoftmu, weight=weight)
             output["hl_ptratio"].fill(
                 syst,
+                genflavor[:, 0],
                 ratio=isomu0.pt / sjets[:, 0].pt,
                 weight=weight,
             )
