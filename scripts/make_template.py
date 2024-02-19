@@ -1,6 +1,7 @@
 from coffea.util import load
 import uproot, sys, os, argparse, hist
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
+import numpy as np
 
 parser = argparse.ArgumentParser(description="Make templates from coffea files")
 parser.add_argument(
@@ -48,9 +49,19 @@ parser.add_argument(
 def create_template(inputs, variable, mergemap, axis, lumi, output):
     inputs = scaleSumW(inputs, lumi)
     collated = collate(inputs, mergemap)
+    mergemap_all = {"all": [s for s in inputs]}
+    merge_all = collate(inputs, {"all": [s for s in inputs]})
+    hall = merge_all["all"][variable][axis]
+
     fout = uproot.recreate(f"{variable}_{output}")
     for data in collated.keys():
-        fout[data.replace("-", "_")] = collated[data][variable][axis]
+        if variable not in collated[data].keys():
+            raise f"{variable} not in {data}"
+        elif np.sum(collated[data][variable].values()) == 0:
+            print(f"0 value in {variable} histogram of {data}, set empty histogram")
+            fout[data.replace("-", "_")] = hall
+        else:
+            fout[data.replace("-", "_")] = collated[data][variable][axis]
 
 
 if __name__ == "__main__":

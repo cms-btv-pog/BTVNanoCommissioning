@@ -84,7 +84,7 @@ workflows["ctag_DY_sf"] = CTAGDYValidSFProcessor
 workflows["ectag_DY_sf"] = CTAGeDYValidSFProcessor
 
 # Tutorial
-workflows["example"] = ExampleProcessor
+# workflows["example"] = ExampleProcessor
 # BTA producers
 workflows["BTA"] = BTA_processor
 workflows["BTA_addPFMuons"] = partial(BTA_processor, addPFMuons=True)

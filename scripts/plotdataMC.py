@@ -76,8 +76,8 @@ parser.add_argument(
 parser.add_argument(
     "--flow",
     type=str,
-    default="show",
-    help="str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
+    default="none",
+    help="str, optional {'none', 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
 )
 parser.add_argument(
     "--split",
@@ -125,10 +125,6 @@ else:
     mergemap["data"] = datalist
 
 collated = collate(output, mergemap)
-
-for sample in mergemap.keys():
-    if type(collated[sample]) is not dict:
-        del collated[sample]
 ### input text settings
 if "Wc" in args.phase:
     input_txt = "W+c"
@@ -167,11 +163,7 @@ else:
 if "ctag" in args.phase and "DY" not in args.phase:
     input_txt = input_txt + "\nw/ soft-$\mu$"
 if args.variable == "all":
-    var_set = [
-        var
-        for var in collated["mc"].keys()
-        if var not in ["fname", "run", "lumi", "sumw"]
-    ]
+    var_set = [var for var in collated["mc"].keys()]
 elif "*" in args.variable:
     if args.variable.count("*") > 1:
         var_set = [
@@ -199,6 +191,8 @@ elif "*" in args.variable:
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
+    if not isinstance(collated["mc"][discr], hist.hist.Hist):
+        continue
     ## remove empty
     if (
         discr not in collated["mc"].keys()
@@ -599,6 +593,8 @@ for index, discr in enumerate(var_set):
     if args.norm:
         scale = "_norm"
     name = "all"
+    if args.split == "sample":
+        name = name + "_sample"
     hep.mpl_magic(ax=ax)
     if args.log:
         print(

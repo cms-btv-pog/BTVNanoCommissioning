@@ -86,6 +86,7 @@ jobs:
         chmod 400 $HOME/.globus/userkey.pem
         openssl rand -out $HOME/.rnd  -hex 256
         printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms --vomses ${X509_VOMSES} --debug --pwstdin
+        chmod 755 /usr/share/miniconda3/envs/btv_coffea/etc/grid-security/certificates
         
     - name: Test xrootd
       run: |

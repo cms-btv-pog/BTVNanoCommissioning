@@ -38,6 +38,12 @@ parser.add_argument(
     default=False,
 )
 parser.add_argument(
+    "--testfile",
+    action="store_true",
+    help="Construct file list in the test directory. Specify the test directory path, create the json file for individual dataset",
+    default=False,
+)
+parser.add_argument(
     "--whitelist_sites",
     help="White list fot sites",
     default=None,
@@ -48,9 +54,7 @@ parser.add_argument(
     default=None,
 )
 parser.add_argument(
-    "--save_",
-    help="Black list for sites",
-    default=None,
+    "--limit", help="Limit numbers of file to create json", default=None, type=int
 )
 
 
@@ -86,9 +90,9 @@ def get_xrootd_sites_map():
                         if "prefix" not in proc:
                             if "rules" in proc:
                                 for rule in proc["rules"]:
-                                    sites_xrootd_access[site["rse"]][
-                                        rule["lfn"]
-                                    ] = rule["pfn"]
+                                    sites_xrootd_access[site["rse"]][rule["lfn"]] = (
+                                        rule["pfn"]
+                                    )
                         else:
                             sites_xrootd_access[site["rse"]] = proc["prefix"]
         json.dump(sites_xrootd_access, open(".sites_map.json", "w"))
@@ -119,18 +123,15 @@ def getFilesFromDas(args):
         Tier = dataset.strip().split("/")[3]
         # NANOAODSIM for regular samples, USER for private
         if "Run" in dataset and "pythia8" not in dataset:
-            dsname = (
-                dataset.strip().split("/")[1]
-                + dataset.strip().split("/")[2][
-                    dataset.strip()
-                    .split("/")[2]
-                    .find("Run") : dataset.strip()
-                    .split("/")[2]
-                    .rfind("-")
-                ]
-            )
-            dsname = dsname[: dsname.find("_BTV")]
-            # +dataset.strip().split("/")[2].find("Run")
+            dsname = dataset.strip().split("/")[1] + dataset.strip().split("/")[2]
+            if "BTV" in dataset:
+                dsname = (
+                    dataset.strip().split("/")[1]
+                    + dataset.strip().split("/")[2][
+                        dataset.strip().split("/")[2].find("-") + 1 :
+                    ]
+                )
+                dsname = dsname[: dsname.find("_BTV")]
         instance = "prod/global"
         if Tier == "USER":
             instance = "prod/phys03"
@@ -144,6 +145,7 @@ def getFilesFromDas(args):
             .read()
             .split("\n")
         )
+
         import json
 
         dataset = dataset[:-1] if "\n" in dataset else dataset
@@ -180,6 +182,14 @@ def getFilesFromDas(args):
                             xrd = sites_xrootd_prefix[site]
             else:
                 for site in possible_sites:
+                    # skip sites without xrd prefix
+                    if (
+                        site == "T2_IT_Pisa"
+                        or site == "T2_IT_Bari"
+                        or site == "T2_BE_UCL"
+                        or site == "T2_IT_Rome"
+                    ):
+                        continue
                     if (
                         args.blacklist_sites is not None
                         and site in args.blacklist_sites
@@ -193,16 +203,16 @@ def getFilesFromDas(args):
 
         if xrd is None:
             raise Exception(f"No SITE available in the whitelist for file {dsname}")
-
+        if args.limit is not None:
+            flist = flist[: args.limit]
         if dsname not in fdict:
             fdict[dsname] = [xrd + f for f in flist if len(f) > 1]
         else:  # needed to collect all data samples into one common key "Data" (using append() would introduce a new element for the key)
             fdict[dsname].extend([xrd + f for f in flist if len(f) > 1])
-
     return fdict
 
 
-def getFilesFromPath(args, lim=None):
+def getFilesFromPath(args):
     fdict = {}
     fset = []
     with open(args.input) as fp:
@@ -220,8 +230,29 @@ def getFilesFromPath(args, lim=None):
             ds = line.strip().split()
             print("ds=", ds)
             dataset = ds[0]
-            fdict[ds[0]] = getRootFilesFromPath(ds[1])
+            fdict[ds[0]] = getRootFilesFromPath(ds[1], args.limit)
 
+    return fdict
+
+
+def getTestlist(args):
+    fdict = {}
+    with open(args.input) as fp:
+        lines = fp.readlines()
+        for line in lines:
+            if line.startswith("#") or line.strip() == "":
+                continue
+            if not line.endswith("/"):
+                line = line + "/"
+            if "test" not in line:
+                print("You are not getting files in test directory")
+
+            dirs_in_test = os.popen(f"gfal-ls {line}").read().split("\n")
+            for s in dirs_in_test:
+                if s == "":
+                    continue
+                print("dataset: ", s)
+                fdict[s] = getRootFilesFromPath(line + s, 1)
     return fdict
 
 
@@ -294,7 +325,7 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
         _rmap = p_map(
             validate,
             sample_dict[sample],
-            num_cpus=8,
+            num_cpus=4,
             desc=f"Validating {sample[:20]}...",
         )
 
@@ -327,12 +358,12 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
 def main(args):
     if args.from_path:
         print("do it from path: ")
-
         fdict = getFilesFromPath(args)
+    elif args.testfile:
 
+        fdict = getTestlist(args)
     else:
         fdict = getFilesFromDas(args)
-
     # Check the any file lists empty
     empty = True
     for dsname, flist in fdict.items():
@@ -341,7 +372,7 @@ def main(args):
             empty = False
     assert empty, "you have empty lists"
     output_file = "./%s" % (args.output)
-    fdict = remove_bad_files(fdict, args.output, True)  # remove bad files
+    # fdict = remove_bad_files(fdict, args.output, True)  # remove bad files
     with open(output_file, "w") as fp:
         json.dump(fdict, fp, indent=4)
         print("The file is saved at: ", output_file)

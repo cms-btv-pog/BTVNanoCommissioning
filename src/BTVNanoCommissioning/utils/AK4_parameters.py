@@ -38,11 +38,12 @@ correction_config = {
         "lumiMask": "Cert_Collisions2022_355100_357900_Golden.json",
         "PU": "puweight_Winter22Run3.histo.root",
         "JME": "jec_compiled.pkl.gz",
+        "jetveto": {"Run2022CD jetvetomap": "Winter22Run3_RunCD_v1.histo.root"},
     },
     "Summer22Run3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puweight_Winter22Run3-69p2mb.histo.root",  # use same 80.0mb for Summer22
-        "JME": "winter_jec_compiled.pkl.gz",  # not this is from Winter22Run3 since this is not yet finished
+        "PU": "puwei_2022_preEE.histo.root",  # new PU files, based on preEE
+        "JME": "jec_compiled.pkl.gz",  # update to latest JEC
         "LSF": {
             "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022_Prompt_ID_ISO_schemaV2.json",
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
@@ -53,11 +54,12 @@ correction_config = {
             "Run2022D": "calibeHistoWrite_Data2022D_NANO130X_v1.root",
             "MC": "calibeHistoWrite_MC2022_NANO130X_v2.root",
         },
+        "jetveto": {"Run2022CD jetvetomap": "Winter22Run3_RunCD_v1.histo.root"},
     },
     "Summer22EERun3": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puweight_Summer22EERun3-80p0mb.histo.root",  # 69.2mb
-        # "JME": "jec_compiled.pkl.gz",
+        "PU": "puwei_2022_postEE.histo.root",  # new PU file, post EE
+        "JME": "jec_compiled.pkl.gz",
         "LSF": {
             "ele_json": "electron.json.gz",
             "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022EE_Prompt_ID_ISO_schemaV2.json",
@@ -68,6 +70,8 @@ correction_config = {
             "ele_Reco_med 2022FG 2022FG-Electron-ID-SF": "Reco20to75",
             "ele_Reco_high 2022FG 2022FG-Electron-ID-SF": "RecoAbove75",
         },
+        "jetveto": {"Run2022E jetvetomap_eep": "Winter22Run3_RunE_v1.histo.root"},
+        # use for BTA production, jet probablity
         "JPCalib": {
             "Run2022E": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
             "Run2022F": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
@@ -79,6 +83,34 @@ correction_config = {
         "lumiMask": "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt",
         "PU": "puweight_2018_UL.HLTPFJet140.histo.root", #PU weights for HLT_Jet140 path
         "JME": "jec_compiled.pkl.gz",
-        "BTV": {"deepCSV": "shape"},
+        "BTV": {"deepCSV": "shape"}},
+    "Summer23": {
+        "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
+        "PU": "puwei_Summer23.histo.root",
+        # "JME": "jec_compiled.pkl.gz",
+        "jetveto": {
+            "Run2023BC jetvetomap": "jetveto2023BC.histo.root"
+        },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
+        "JPCalib": {
+            "Run2023B-22Sep2023-v1": "calibeHistoWrite_Data2023B-22Sep2023.root",
+            "Run2023C-22Sep2023-v1": "calibeHistoWrite_Data2023C-22Sep2023_v1.root",
+            "Run2023C-22Sep2023-v2": "calibeHistoWrite_Data2023C-22Sep2023_v2.root",
+            "Run2023C-22Sep2023-v3": "calibeHistoWrite_Data2023C-22Sep2023_v3.root",
+            "Run2023C-22Sep2023-v4": "calibeHistoWrite_Data2023C-22Sep2023_v4.root",
+            "MC": "calibeHistoWrite_MC2023_Summer23.root",
+        },
+    },
+    "Summer23BPix": {
+        "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
+        "PU": "puwei_Summer23BPix.histo.root",
+        # "JME": "jec_compiled.pkl.gz",
+        "jetveto": {
+            "Run2023D jetvetomap_bpix": "jetveto2023D.histo.root"
+        },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
+        "JPCalib": {
+            "Run2023D-22Sep2023-v1": "calibeHistoWrite_Data2023D-22Sep2023_v1.root",
+            "Run2023D-22Sep2023-v2": "calibeHistoWrite_Data2023D-22Sep2023_v2.root",
+            "MC": "calibeHistoWrite_MC2023_Summer23BPix.root",
+        },
     },
 }

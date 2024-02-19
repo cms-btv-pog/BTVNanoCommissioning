@@ -80,6 +80,8 @@ def get_main_parser():
             "Winter22Run3",
             "Summer22Run3",
             "Summer22EERun3",
+            "Summer23",
+            "Summer23BPix",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",
@@ -89,9 +91,9 @@ def get_main_parser():
     )
     parser.add_argument(
         "--isSyst",
-        default=None,
+        default=False,
         type=str,
-        choices=[None, "all", "weight_only", "JERC_split"],
+        choices=[False, "all", "weight_only", "JERC_split"],
         help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
@@ -227,7 +229,7 @@ if __name__ == "__main__":
     ogoutput = args.output
     histoutdir = ogoutput.split(".")[0]
     coffeaoutput = f"{histoutdir}/{ogoutput}"
-    outdir = histoutdir
+    outdir = "arrays_" + histoutdir
     basename = ogoutput.replace(".coffea", "").replace("hists_", "")
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
@@ -275,7 +277,7 @@ if __name__ == "__main__":
             _new_dict = {}
             print("Will only proces the following datasets:")
             for k, v in sample_dict.items():
-                if k.lstrip("/").startswith(args.only.rstrip("*")):
+                if args.only.replace("*", "") in k:
                     print("    ", k)
                     _new_dict[k] = v
             sample_dict = _new_dict
@@ -394,7 +396,34 @@ if __name__ == "__main__":
             condor_extra.append(f"export PATH={pathvar}:$PATH")
         else:
             condor_extra.append(f"cd {os.getcwd()}")
-            condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
+
+            # Check if Conda is available
+            conda_check_command = "command -v conda"
+            conda_available = os.system(conda_check_command) == 0
+
+            # Check if Mamba is available
+            mamba_check_command = "command -v micromamba"
+            mamba_available = os.system(mamba_check_command) == 0
+
+            # Set up environment based on availability
+            if conda_available and mamba_available:
+                use_conda = True  # Set to False if you prefer Micromamba
+                if use_conda:
+                    condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
+                else:
+                    condor_extra.append(
+                        f"micromamba activate {os.environ['MAMBA_EXE']}"
+                    )
+            elif conda_available:
+                condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
+            elif mamba_available:
+                condor_extra.append(f"micromamba activate {os.environ['MAMBA_EXE']}")
+            else:
+                # Handle the case when neither Conda nor Micromamba is available
+                print(
+                    "Neither Conda nor Micromamba is available in the environment. At least install one of them."
+                )
+
     #########
     # Execute
     if args.executor in ["futures", "iterative"]:

@@ -9,7 +9,7 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     to_bitwise_trigger,
 )
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts
+from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts, jetveto
 import os
 
 
@@ -28,7 +28,7 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self.chunksize = chunksize
-
+        self.syst = isSyst
         self.name = name
         self.SF_map = load_SF(self._campaign)
 
@@ -50,7 +50,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         if "JME" in self.SF_map.keys():
             shifts = JME_shifts(
-                shifts, self.SF_map, events, self._campaign, isRealData, False, True
+                shifts, self.SF_map, events, self._campaign, isRealData, self.syst, True
             )
         else:
             shifts = [
@@ -64,17 +64,29 @@ class NanoProcessor(processor.ProcessorABC):
 
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
-        isRealData = not hasattr(events, "genWeight")
-        events = missing_branch(events)
 
+        fname = f"{dataset}_{shift_name}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+
+        checkf = os.popen(
+            f"gfal-ls root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
+        ).read()
+        if len(checkf) > 0:
+            print("skip ", checkf)
+            return {dataset: len(events)}
+
+        isRealData = not hasattr(events, "genWeight")
+        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
+            events.Jet = update(events.Jet, {"veto": jetveto(events, self.SF_map)})
         # basic variables
         basic_vars = {
             "Run": events.run,
             "Evt": events.event,
             "LumiBlock": events.luminosityBlock,
             "rho": events.fixedGridRhoFastjetAll,
-            "npvs": events.PV.npvs,
-            "npvsGood": events.PV.npvsGood,
+            "npvs": ak.values_astype(events.PV.npvs, np.int32),
+            "npvsGood": ak.values_astype(events.PV.npvsGood, np.int32),
+            "fixedGridRhoFastjetCentralCalo": events.Rho.fixedGridRhoFastjetCentralCalo,
+            "fixedGridRhoFastjetCentralChargedPileUp": events.Rho.fixedGridRhoFastjetCentralChargedPileUp,
         }
         if not isRealData:
             basic_vars["nPU"] = events.Pileup.nPU
@@ -382,6 +394,8 @@ class NanoProcessor(processor.ProcessorABC):
         jet = events.Jet[
             (events.Jet.pt > 20.0) & (abs(events.Jet.eta) < 2.5)
         ]  # basic selection
+        if "veto" in jet.fields:
+            jet = jet[(jet.veto == 0)]
         zeros = ak.zeros_like(jet.pt, dtype=int)
         Jet = ak.zip(
             {
@@ -406,10 +420,16 @@ class NanoProcessor(processor.ProcessorABC):
                 "DeepFlavourBDisc": jet.btagDeepFlavB,
                 "DeepFlavourCvsLDisc": jet.btagDeepFlavCvL,
                 "DeepFlavourCvsBDisc": jet.btagDeepFlavCvB,
+                # ParticleNet
+                "PNetBDisc": jet.btagPNetB,
+                "PNetCvsLDisc": jet.btagPNetCvL,
+                "PNetCvsBDisc": jet.btagPNetCvB,
+                # ParticleTransformer
+                "ParTBDisc": jet.btagRobustParTAK4B,
+                "ParTCvsLDisc": jet.btagRobustParTAK4CvL,
+                "ParTCvsBDisc": jet.btagRobustParTAK4CvB,
             }
         )
-        if isRealData:
-            Jet["vetomap"] = jet.veto
 
         if not isRealData:
             Jet["partonFlavour"] = jet.partonFlavour
@@ -501,7 +521,25 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         #  Write root #
         ###############
+        fname = f"{dataset}_{shift_name}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        os.system(f"mkdir -p {dataset}_{shift_name}")
         if ak.any(passEvent) == False:
+            with uproot.recreate(fname) as fout:
+                fout["sumw"] = {
+                    "total_events": ak.Array([len(events)]),
+                }
+                if not isRealData:
+                    fout["total_pos_events"] = ak.Array([ak.sum(events.genWeight > 0)])
+                    fout["total_neg_events"] = ak.Array(
+                        [-1.0 * ak.sum(events.genWeight < 0)]
+                    )
+                    fout["total_wei_events"] = ak.Array([ak.sum(events.genWeight)])
+                    fout["total_poswei_events"] = ak.Array(
+                        [ak.sum(events.genWeight[events.genWeight > 0.0])]
+                    )
+                    fout["total_negwei_events"] = ak.Array(
+                        [ak.sum(events.genWeight[events.genWeight < 0.0])]
+                    )
             return {dataset: 0}
 
         output = {
@@ -519,8 +557,6 @@ class NanoProcessor(processor.ProcessorABC):
                 output["ttbar_ps_w"] = ps_w_arrays[passEvent]
 
         # customize output file name: <dataset>_<nanoAOD file name>_<chunk index>.root
-        fname = f"{dataset}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
-        os.system(f"mkdir -p {dataset}")
         with uproot.recreate(fname) as fout:
             output_root = {}
             for bname in output.keys():
@@ -547,7 +583,10 @@ class NanoProcessor(processor.ProcessorABC):
                         [ak.sum(events.genWeight[events.genWeight < 0.0])]
                     ),
                 }
-
+        os.system(
+            f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
+        )
+        os.system(f"rm {fname}")
         return {dataset: len(events)}
 
     def postprocess(self, accumulator):

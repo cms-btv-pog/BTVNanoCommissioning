@@ -6398,102 +6398,84 @@ def axes_name(var_input):
         elif "soft_l" in var:
             obj = "soft-$\\mu$"
         elif "mujet" in var:
-            unit = "($\\mu$,Jet)"
-    elif "MET_" in var:
-        obj = "MET"
-    elif "ele_" in var:
-        obj = "e"
-    elif "posl_" in var:
-        obj = "$\\ell^+$"
-    elif "negl_" in var:
-        obj = "$\\ell^-$"
-    elif "mu_" in var:
-        obj = "$\\mu$"
-    elif "hl_" in var:
-        obj = "$\\ell_1$"
-    elif "sl_" in var:
-        obj = "$\\ell_2$"
-    elif "soft_l" in var:
-        obj = "soft-$\\mu$"
-    elif "mujet" in var:
-        obj = "$\\mu$-Jet"
-    elif "jet" in var:
-        obj = "Jet"
-    elif "w_" in var:
-        obj = "W"
-    elif "z_" in var:
-        obj = "Z"
-    if "pt" in var:
-        unit = " $p_T$ [GeV]"
-    elif "mass" in var:
-        unit = " mass [GeV]"
-    elif "eta" in var:
-        unit = " $\\eta$"
-    elif "phi" in var:
-        unit = " $\\phi$"
-    elif "dxy" in var:
-        unit = " $d_{xy}$ [cm]"
-    elif "dz" in var:
-        unit = " $d_{z}$ [cm]"
-    elif "pfRelIso" in var:
-        unit = " Rel. Iso"
-    elif "btag" in var:
-        unit = "Jet"
-        ## Negative tagger
-        if "Neg" in var:
-            unit = "Neg. " + unit
-        if "tanh" in var:
-            unit = "Trans. " + unit
-        ## Different taggers
-        if "DeepFlav" in var:
-            unit = unit + " DeepJet"
-        elif "RobustParTAK4" in var:
-            unit = unit + " RobustParTAK4"
-        elif "PNet" in var:
-            unit = unit + " PNet"
-        else:
-            unit = unit + " DeepCSV"
-        # output node
-        if "CvL" in var:
-            unit = unit + " CvL"
-        elif "CvB" in var:
-            unit = unit + " CvB"
-        elif "B_b" in var or "ProbB" in var:
-            unit = unit + " Prob(b)"
-        elif "B_bb" in var:
-            unit = unit + " Prob(bb)"
-        elif "B_lepb" in var:
-            unit = unit + " Prob(lepb)"
-        elif "B_lepb" in var:
-            unit = unit + " Prob(lepb)"
-        elif "QvG" in var or "QG" in var:
-            unit = unit + " QvG"
-        elif "G" in var:
-            unit = unit + " Prob(g)"
-        elif "UDS" in var:
-            unit = unit + " Prob(uds)"
-        elif "TauVJet" in var:
-            unit = unit + " $\\tau$vJ"
-        elif "B" in var:
-            unit = unit + " BvAll"
-        elif "C" in var:
-            unit = unit + " Prob(c)"
-    elif "PNetReg" in var:
-        unit = "Jet PNet Reg."
-        if "Corr" in var:
-            unit = " Corr"
-        elif "CorrNeutrino" in var:
-            unit = " Corr (w/$\\nu$)"
-        elif "RegPtRawRes" in var:
-            unit = " Resoultion"
-    elif "ProbaN" in var:
-        unit = "Neg. Jet Probability"
-    elif "Proba" in var:
-        unit = "Jet Probability"
-    elif "BprobN" in var:
-        unit = "Neg. b-Jet Probability"
-    elif "Bprob" in var:
-        unit = "b-Jet Probability"
+            obj = "$\\mu$-Jet"
+        elif "jet" in var:
+            obj = "Jet"
+        elif "w_" in var:
+            obj = "W"
+        elif "z_" in var:
+            obj = "Z"
+        if "pt" in var:
+            unit = " $p_T$ [GeV]"
+        elif "mass" in var:
+            unit = " mass [GeV]"
+        elif "eta" in var:
+            unit = " $\\eta$"
+        elif "phi" in var:
+            unit = " $\\phi$"
+        elif "dxy" in var:
+            unit = " $d_{xy}$ [cm]"
+        elif "dz" in var:
+            unit = " $d_{z}$ [cm]"
+        elif "pfRelIso" in var:
+            unit = " Rel. Iso"
+        elif "btag" in var:
+            unit = "Jet"
+            ## Negative tagger
+            if "Neg" in var:
+                unit = "Neg. " + unit
+            if "tanh" in var:
+                unit = "Trans. " + unit
+            ## Different taggers
+            if "DeepFlav" in var:
+                unit = unit + " DeepJet"
+            elif "RobustParTAK4" in var:
+                unit = unit + " RobustParTAK4"
+            elif "PNet" in var:
+                unit = unit + " PNet"
+            else:
+                unit = unit + " DeepCSV"
+            # output node
+            if "CvL" in var:
+                unit = unit + " CvL"
+            elif "CvB" in var:
+                unit = unit + " CvB"
+            elif "B_b" in var or "ProbB" in var:
+                unit = unit + " Prob(b)"
+            elif "B_bb" in var:
+                unit = unit + " Prob(bb)"
+            elif "B_lepb" in var:
+                unit = unit + " Prob(lepb)"
+            elif "B_lepb" in var:
+                unit = unit + " Prob(lepb)"
+            elif "QvG" in var or "QG" in var:
+                unit = unit + " QvG"
+            elif "G" in var:
+                unit = unit + " Prob(g)"
+            elif "UDS" in var:
+                unit = unit + " Prob(uds)"
+            elif "TauVJet" in var:
+                unit = unit + " $\\tau$vJ"
+            elif "B" in var:
+                unit = unit + " BvAll"
+            elif "C" in var:
+                unit = unit + " Prob(c)"
+            elif "PNetReg" in var:
+                unit = "Jet PNet Reg."
+                if "Corr" in var:
+                    unit = " Corr"
+                elif "CorrNeutrino" in var:
+                    unit = " Corr (w/$\\nu$)"
+                elif "RegPtRawRes" in var:
+                    unit = " Resoultion"
+            elif "ProbaN" in var:
+                unit = "Neg. Jet Probability"
+            elif "Proba" in var:
+                unit = "Jet Probability"
+            elif "BprobN" in var:
+                unit = "Neg. b-Jet Probability"
+            elif "Bprob" in var:
+                unit = "b-Jet Probability"
     label = obj + unit
     if var.endswith("0") or "jet0" in var:
         if "btagDeepFlav" not in var:
