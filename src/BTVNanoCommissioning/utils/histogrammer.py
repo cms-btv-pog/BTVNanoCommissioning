@@ -44,9 +44,10 @@ def histogrammer(events, workflow):
         
         obj_list = ["jet0"]
         _hist_dict["dr_SVjet0"] = Hist.Hist(
-            flav_axis, dr_SV_axis, Hist.storage.Weight()
+            syst_axis,flav_axis, dr_SV_axis, Hist.storage.Weight()
         )
         _hist_dict["nJetSVs"] = Hist.Hist(n_axis, Hist.storage.Weight())
+        
     elif "validation" == workflow:
         obj_list = ["jet0", "jet1"]
         _hist_dict["bjet_WP_pt"] = Hist.Hist(
