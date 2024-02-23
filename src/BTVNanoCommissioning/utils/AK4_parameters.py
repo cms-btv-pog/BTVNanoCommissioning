@@ -79,11 +79,12 @@ correction_config = {
             "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",
         },
     },
-    "2018_UL": {#for QCD workflow
+    "2018_UL": {  # for QCD workflow
         "lumiMask": "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt",
-        "PU": "puweight_2018_UL.HLTPFJet140.histo.root", #PU weights for HLT_Jet140 path
+        "PU": "puweight_2018_UL.HLTPFJet140.histo.root",  # PU weights for HLT_Jet140 path
         "JME": "jec_compiled.pkl.gz",
-        "BTV": {"deepCSV": "shape"}},
+        "BTV": {"deepCSV": "shape"},
+    },
     "Summer23": {
         "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
         "PU": "puwei_Summer23.histo.root",

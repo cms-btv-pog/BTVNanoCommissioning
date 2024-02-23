@@ -1,4 +1,4 @@
-from BTVNanoCommissioning.helpers.definitions import definitions,SV_definitions
+from BTVNanoCommissioning.helpers.definitions import definitions, SV_definitions
 import hist as Hist
 
 
@@ -41,13 +41,12 @@ def histogrammer(events, workflow):
             syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
         )  # create cutstomize histogram
     elif "QCD" == workflow:
-        
         obj_list = ["jet0"]
         _hist_dict["dr_SVjet0"] = Hist.Hist(
-            syst_axis,flav_axis, dr_SV_axis, Hist.storage.Weight()
+            syst_axis, flav_axis, dr_SV_axis, Hist.storage.Weight()
         )
-        _hist_dict["nJetSVs"] = Hist.Hist(n_axis, Hist.storage.Weight())
-        
+        _hist_dict["nJetSVs"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
+
     elif "validation" == workflow:
         obj_list = ["jet0", "jet1"]
         _hist_dict["bjet_WP_pt"] = Hist.Hist(
@@ -453,6 +452,7 @@ def histogrammer(events, workflow):
             else SV_bininfo[d]["displayname"]
         )
         _hist_dict[d] = Hist.Hist(
+            syst_axis,
             flav_axis,
             Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels),
             Hist.storage.Weight(),

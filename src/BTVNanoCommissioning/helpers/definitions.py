@@ -6091,9 +6091,10 @@ def definitions():
 
     return definitions_dict
 
+
 def SV_definitions():
     SV_definitions_dict = {
-      "JetSVs_chi2": {
+        "JetSVs_chi2": {
             "displayname": "SV $\\chi^2$",
             "ylabel_text": "entries",
             "format_unit": "2f",
@@ -6108,7 +6109,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 40,
-            "manual_ranges": [-2., 2.],
+            "manual_ranges": [-2.0, 2.0],
             "inputVar_units": None,
         },
         "JetSVs_d3d": {
@@ -6117,7 +6118,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 2000,
-            "manual_ranges": [0., 200.],
+            "manual_ranges": [0.0, 200.0],
             "inputVar_units": "mm",
         },
         "JetSVs_d3dsig": {
@@ -6126,7 +6127,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 200,
-            "manual_ranges": [0., 200.],
+            "manual_ranges": [0.0, 200.0],
             "inputVar_units": None,
         },
         "JetSVs_dxy": {
@@ -6135,7 +6136,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 1000,
-            "manual_ranges": [0.,100.],
+            "manual_ranges": [0.0, 100.0],
             "inputVar_units": "mm",
         },
         "JetSVs_dxysig": {
@@ -6144,7 +6145,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 200,
-            "manual_ranges": [0.,200.],
+            "manual_ranges": [0.0, 200.0],
             "inputVar_units": None,
         },
         "JetSVs_enration": {
@@ -6153,7 +6154,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.,10.],
+            "manual_ranges": [0.0, 10.0],
             "inputVar_units": None,
         },
         "JetSVs_mass": {
@@ -6162,7 +6163,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 100,
-            "manual_ranges": [0.,10.],
+            "manual_ranges": [0.0, 10.0],
             "inputVar_units": None,
         },
         "JetSVs_normchi2": {
@@ -6171,7 +6172,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 30,
-            "manual_ranges": [0.,30.],
+            "manual_ranges": [0.0, 30.0],
             "inputVar_units": None,
         },
         "JetSVs_ntracks": {
@@ -6180,7 +6181,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 30,
-            "manual_ranges": [0.,30.],
+            "manual_ranges": [0.0, 30.0],
             "inputVar_units": None,
         },
         "JetSVs_phirel": {
@@ -6189,7 +6190,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 200,
-            "manual_ranges": [-1.,1.],
+            "manual_ranges": [-1.0, 1.0],
             "inputVar_units": None,
         },
         "JetSVs_pt": {
@@ -6198,7 +6199,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 200,
-            "manual_ranges": [0.,200.],
+            "manual_ranges": [0.0, 200.0],
             "inputVar_units": "[GeV]",
         },
         "JetSVs_ptrel": {
@@ -6207,7 +6208,7 @@ def SV_definitions():
             "format_unit": "2f",
             "format_unit_digits": 2,
             "bins": 10,
-            "manual_ranges": [0.,10.],
+            "manual_ranges": [0.0, 10.0],
             "inputVar_units": None,
         },
     }

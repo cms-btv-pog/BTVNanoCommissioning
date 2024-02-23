@@ -75,13 +75,13 @@ def btag_mu_idiso(events, campaign):
     )
     return mumask
 
+
 def jet_cut(events, campaign):
     multijetmask = (
-        (abs(events.Jet.eta) < 2.4)
-        & (events.Jet.pt > 180)
-        & (events.Jet.jetId >= 5)
+        (abs(events.Jet.eta) < 2.4) & (events.Jet.pt > 180) & (events.Jet.jetId >= 5)
     )
     return multijetmask
+
 
 btag_wp_dict = {
     "Summer22Run3": {
