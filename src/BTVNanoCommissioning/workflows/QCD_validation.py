@@ -173,19 +173,23 @@ class NanoProcessor(processor.ProcessorABC):
                 btagSFs(sjets, self.SF_map, weights, "DeepCSVC", syst_wei)
 
         if isRealData:
+            if self._year == "2022":
+                run_num = "355374_362760"
+            elif self._year == "2023":
+                run_num = "366727_370790"
             pseval = correctionlib.CorrectionSet.from_file(
-                f"src/BTVNanoCommissioning/data/Prescales/ps_weight_PFJet140_run355374_362760.json"
+                f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{triggers[0]}_run{run_num}.json"
             )
+            print(triggers[0])
             psweight = pseval["prescaleWeight"].evaluate(
                 selev.run,
-                "HLT_PFJet140",
+                f"HLT_{triggers[0]}",
                 ak.values_astype(selev.luminosityBlock, np.float32),
             )
-            print(psweight)
             weights.add("psweight", psweight)
             genflavor = ak.zeros_like(sjets.pt)
             lj_matched_JetSVs_genflav = ak.zeros_like(lj_matched_JetSVs.pt)
-        print(shift_name)
+
         # Systematics information
         if shift_name is None:
             systematics = ["nominal"] + list(weights.variations)

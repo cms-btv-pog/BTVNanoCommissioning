@@ -91,9 +91,9 @@ def load_SF(campaign, syst=False):
                     ) as filename:
                         if "B" in tagger:
                             if filename.endswith(".json.gz"):
-                                correct_map["btag"] = (
-                                    correctionlib.CorrectionSet.from_file(filename)
-                                )
+                                correct_map[
+                                    "btag"
+                                ] = correctionlib.CorrectionSet.from_file(filename)
                             else:
                                 correct_map["btag"][tagger] = BTagScaleFactor(
                                     filename,
@@ -102,9 +102,9 @@ def load_SF(campaign, syst=False):
                                 )
                         else:
                             if filename.endswith(".json.gz"):
-                                correct_map["ctag"] = (
-                                    correctionlib.CorrectionSet.from_file(filename)
-                                )
+                                correct_map[
+                                    "ctag"
+                                ] = correctionlib.CorrectionSet.from_file(filename)
                             else:
                                 correct_map["ctag"][tagger] = BTagScaleFactor(
                                     filename,
