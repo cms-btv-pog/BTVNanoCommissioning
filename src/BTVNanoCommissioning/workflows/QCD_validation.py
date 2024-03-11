@@ -14,6 +14,7 @@ from BTVNanoCommissioning.utils.correction import (
     btagSFs,
     JME_shifts,
     Roccor_shifts,
+    jetveto,
 )
 import correctionlib
 
@@ -50,12 +51,12 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         events = missing_branch(events)
         shifts = []
-        if "JME" in self.SF_map.keys():
+        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
             syst_JERC = self.isSyst
             if self.isSyst == "JERC_split":
                 syst_JERC = "split"
             shifts = JME_shifts(
-                shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
+                shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )
         else:
             if "Run3" not in self._campaign:
@@ -93,6 +94,8 @@ class NanoProcessor(processor.ProcessorABC):
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,
         }
+        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
+            events.Jet = update(events.Jet, {"veto": jetveto(events, self.SF_map)})
 
         if isRealData:
             output["sumw"] = len(events)
@@ -119,7 +122,9 @@ class NanoProcessor(processor.ProcessorABC):
             req_trig = req_trig | t
 
         ## Jet cuts
-        events.Jet = events.Jet[jet_cut(events, self._campaign)]
+        events.Jet = events.Jet[
+            jet_cut(events, self._campaign) & (events.Jet.veto != 1)
+        ]
         req_jets = ak.count(events.Jet.pt, axis=1) >= 1
 
         event_level = ak.fill_none(req_trig & req_jets, False)
