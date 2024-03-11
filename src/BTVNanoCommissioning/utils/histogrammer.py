@@ -99,12 +99,6 @@ def histogrammer(events, workflow):
             Hist.storage.Weight(),
         )
 
-    elif "ttcom" == workflow:
-        obj_list = ["mu", "ele"]
-        obj_list.append(f"jet{i}")
-        _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
-            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
-        )
     elif "ttdilep_sf" == workflow:
         obj_list = ["mu", "ele"]
         for i in range(2):
