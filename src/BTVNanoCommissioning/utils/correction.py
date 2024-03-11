@@ -91,9 +91,9 @@ def load_SF(campaign, syst=False):
                     ) as filename:
                         if "B" in tagger:
                             if filename.endswith(".json.gz"):
-                                correct_map[
-                                    "btag"
-                                ] = correctionlib.CorrectionSet.from_file(filename)
+                                correct_map["btag"] = (
+                                    correctionlib.CorrectionSet.from_file(filename)
+                                )
                             else:
                                 correct_map["btag"][tagger] = BTagScaleFactor(
                                     filename,
@@ -102,9 +102,9 @@ def load_SF(campaign, syst=False):
                                 )
                         else:
                             if filename.endswith(".json.gz"):
-                                correct_map[
-                                    "ctag"
-                                ] = correctionlib.CorrectionSet.from_file(filename)
+                                correct_map["ctag"] = (
+                                    correctionlib.CorrectionSet.from_file(filename)
+                                )
                             else:
                                 correct_map["ctag"][tagger] = BTagScaleFactor(
                                     filename,
@@ -443,6 +443,11 @@ def JME_shifts(
             jecname = "FGH"
         elif campaign == "Rereco17_94X":
             jecname = ""
+        elif "Summer23" == campaign:
+            if "v4" in dataset:
+                jecname = "Cv4"
+            else:
+                jecname = "Cv123"
         elif re.search(r"[Rr]un20\d{2}([A-Z])", dataset):
             jecname = re.search(r"[Rr]un20\d{2}([A-Z])", dataset).group(1)
         else:

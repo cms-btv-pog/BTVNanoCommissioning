@@ -9,7 +9,11 @@ import hist
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
-from BTVNanoCommissioning.helpers.definitions import definitions, axes_name,SV_definitions
+from BTVNanoCommissioning.helpers.definitions import (
+    definitions,
+    axes_name,
+    SV_definitions,
+)
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
     SFerror,
@@ -136,9 +140,9 @@ if "Wc" in args.phase:
         input_txt = input_txt + " OS-SS"
 elif "DY" in args.phase:
     input_txt = "DY+jets"
-elif "QCD" in arg.phase:
+elif "QCD" in args.phase:
     input_txt = "QCD"
-elif "semilep" in arg.phase:
+elif "semilep" in args.phase:
     input_txt = r"t$\bar{t}$ semileptonic"
     nj = 4
 elif "dilep" in args.phase:
@@ -154,9 +158,9 @@ if "emctag" in args.phase:
     input_txt = input_txt + " (e$\mu$)"
 elif "ectag" in args.phase:
     input_txt = input_txt + " (e)"
-elif "QCD" == arg.phase:
-    input_txt = input_txt + " (multijets)"
-elif "ttdilep_sf" == arg.phase:
+elif "QCD" == args.phase:
+    input_txt = input_txt + ""
+elif "ttdilep_sf" == args.phase:
     input_txt = input_txt + " (e$\mu$)"
 else:
     input_txt = input_txt + " ($\mu$)"
@@ -570,7 +574,6 @@ for index, discr in enumerate(var_set):
         )
     else:
         xlabel = axes_name(discr)
-
     rax.set_xlabel(xlabel)
     if "sample" in args.split:
         ax.legend(ncols=2, prop={"size": 16})
