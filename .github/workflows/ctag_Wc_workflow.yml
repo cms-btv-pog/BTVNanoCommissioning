@@ -113,7 +113,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ctag_Wc_sf --json metadata/test_bta_run3.json   --campaign Summer22Run3 --executor iterative  $opts
+        python runner.py --workflow ctag_Wc_sf --json metadata/test_bta_run3.json  --executor iterative  $opts
     
     - name: ctag electron W+c workflows with correctionlib
       run: |
@@ -128,4 +128,4 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ectag_Wc_sf --json metadata/test_bta_run3.json --executor iterative  --campaign Summer22Run3   --overwrite $opts
+        python runner.py --workflow ectag_Wc_sf --json metadata/test_bta_run3.json --executor iterative  --overwrite $opts

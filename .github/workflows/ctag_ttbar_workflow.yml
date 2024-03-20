@@ -111,7 +111,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     
     - name: ctag semileptonic electron ttbar workflows with correctionlib
       run: |
@@ -126,7 +126,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi 
-        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     
     - name: ctag dileptonic muon ttbar workflows with correctionlib
       run: |
@@ -141,7 +141,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi 
-        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     - name: ctag dileptonic electron ttbar workflows with correctionlib 
       run: |
         string=$(git log -1 --pretty=format:'%s')
@@ -155,7 +155,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     - name: ctag dileptonic emu ttbar workflows with correctionlib
       run: |
         string=$(git log -1 --pretty=format:'%s')
@@ -169,5 +169,5 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
 

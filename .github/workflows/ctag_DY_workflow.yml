@@ -110,7 +110,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ctag_DY_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --year 2022 $opts
+        python runner.py --workflow ctag_DY_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative  $opts
     
 
     - name: ctag electron DY workflows with correctionlib
@@ -126,4 +126,4 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ectag_DY_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --year 2022 $opts
+        python runner.py --workflow ectag_DY_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts

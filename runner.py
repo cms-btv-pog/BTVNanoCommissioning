@@ -71,10 +71,10 @@ def get_main_parser():
         help="JSON file containing dataset and file locations (default: %(default)s)",
     )
     ## Configuations
-    parser.add_argument("--year", default="2022", help="Year")
+    parser.add_argument("--year", default="2023", help="Year")
     parser.add_argument(
         "--campaign",
-        default="Summer22Run3",
+        default="Summer23",
         choices=[
             "Rereco17_94X",
             "Winter22Run3",

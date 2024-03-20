@@ -109,7 +109,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     
     
     - name: btag dileptonic ttbar workflows with correctionlib
@@ -125,5 +125,5 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
 
