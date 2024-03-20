@@ -75,7 +75,7 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )
         else:
-            if "Run3" not in self._campaign:
+            if int(self._year) > 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -407,8 +407,7 @@ class NanoProcessor(processor.ProcessorABC):
         jet = events.Jet[
             (events.Jet.pt > 20.0) & (abs(events.Jet.eta) < 2.5)
         ]  # basic selection & remove jets inside veto map
-        if "veto" in jet.fields:
-            jet = jet[(jet.veto == 0)]
+
         zeros = ak.zeros_like(jet.pt, dtype=int)
         if "pt_raw" not in jet.fields:
             jet["pt_raw"] = jet.pt * (1.0 - jet.rawFactor)
@@ -495,7 +494,8 @@ class NanoProcessor(processor.ProcessorABC):
                 "ParTGDiscN": jet.btagNegRobustParTAK4G,
             }
         )
-
+        if "veto" in jet.fields:
+            Jet["veto"] = jet.veto
         if not isRealData:
             Jet["nbHadrons"] = jet.nBHadrons
             Jet["ncHadrons"] = jet.nCHadrons

@@ -5,6 +5,7 @@ import contextlib
 import cloudpickle
 import os
 import re
+import copy
 import numpy as np
 import awkward as ak
 import uproot
@@ -17,6 +18,8 @@ import correctionlib
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.helpers.func import update
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
+from BTVNanoCommissioning.utils.compile_jec import jec_name_map
+from coffea.jetmet_tools.CorrectedMETFactory import corrected_polar_met
 
 
 def load_SF(campaign, syst=False):
@@ -28,10 +31,10 @@ def load_SF(campaign, syst=False):
         if SF == "PU":
             ## Check whether files in jsonpog-integration exist
             if os.path.exists(
-                f"src/BTVNanoCommissioning/jsonpog-integration/POG/LUM/{campaign}"
+                f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/LUM/{campaign}"
             ):
                 correct_map["PU"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/LUM/{campaign}/puWeights.json.gz"
+                    f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/LUM/{campaign}/puWeights.json.gz"
                 )
             ## Otherwise custom files
             else:
@@ -73,13 +76,13 @@ def load_SF(campaign, syst=False):
                     )
                 )
             if os.path.exists(
-                f"src/BTVNanoCommissioning/jsonpog-integration/POG/BTV/{campaign}"
+                f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{campaign}"
             ):
                 correct_map["btag"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/BTV/{campaign}/btagging.json.gz"
+                    f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{campaign}/btagging.json.gz"
                 )
                 correct_map["ctag"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/BTV/{campaign}/ctagging.json.gz"
+                    f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{campaign}/ctagging.json.gz"
                 )
             else:
                 correct_map["btag"] = {}
@@ -125,16 +128,16 @@ def load_SF(campaign, syst=False):
             }
             ## Muon
             if os.path.exists(
-                f"src/BTVNanoCommissioning/jsonpog-integration/POG/MUO/{campaign}"
+                f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/MUO/{campaign}"
             ):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/MUO/{campaign}/muon_Z.json.gz"
+                    f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/MUO/{campaign}/muon_Z.json.gz"
                 )
             if os.path.exists(
-                f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}"
+                f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/EGM/{campaign}"
             ):
                 correct_map["EGM"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
+                    f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
                 )
             if any(
                 np.char.find(np.array(list(config[campaign]["LSF"].keys())), "mu_json")
@@ -252,16 +255,39 @@ def load_SF(campaign, syst=False):
             )
             correct_map["roccor"] = rochester_lookup.rochester_lookup(rochester_data)
         elif SF == "JME":
-            correct_map["JME"] = load_jmefactory(campaign)
+            year = int(re.search(r"\d+", campaign).group())
+            if type(config[campaign]["JME"]) == str:
+                correct_map["JME"] = load_jmefactory(campaign)
+            elif os.path.exists(
+                f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/20{year}_{campaign}/jet_jerc.json.gz"
+            ):
+                correct_map["JME"] = correctionlib.CorrectionSet.from_file(
+                    f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/20{year}_{campaign}/jet_jerc.json.gz"
+                )
+                correct_map["JME_cfg"] = config[campaign]["JME"]
+                for dataset in correct_map["JME_cfg"].keys():
+                    if (
+                        np.all(
+                            np.char.find(
+                                np.array(list(correct_map["JME"].keys())),
+                                correct_map["JME_cfg"][dataset],
+                            )
+                        )
+                        == -1
+                    ):
+                        raise (
+                            f"{dataset} has no JEC map : {correct_map['JME_cfg'][dataset]} available"
+                        )
+
         elif SF == "JMAR":
             if os.path.exists(
-                f"src/BTVNanoCommissioning/jsonpog-integration/POG/JME/{campaign}/jmar.json.gz"
+                f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{campaign}/jmar.json.gz"
             ):
                 correct_map["JMAR_cfg"] = {
                     j: f for j, f in config[campaign]["JMAR"].items()
                 }
                 correct_map["JMAR"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/JME/{campaign}/jmar.json.gz"
+                    f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{campaign}/jmar.json.gz"
                 )
         elif SF == "jetveto":
             ext = extractor()
@@ -423,7 +449,7 @@ def add_jec_variables(jets, event_rho):
 
 
 ## JERC
-def JME_shifts(
+def JME_shifts(  # _factory(
     shifts,
     correct_map,
     events,
@@ -433,77 +459,152 @@ def JME_shifts(
     exclude_jetveto=False,
 ):
     dataset = events.metadata["dataset"]
-    if isRealData:
-        if "2016preVFP_UL" == campaign:
-            if "2016B" in dataset or "2016C" in dataset or "2016D" in dataset:
-                jecname = "BCD"
-            elif "2016E" in dataset or "2016F" in dataset:
-                jecname = "EF"
-        elif "2016postVFP_UL" == campaign:
-            jecname = "FGH"
-        elif campaign == "Rereco17_94X":
-            jecname = ""
-        elif "Summer23" == campaign:
-            if "v4" in dataset:
-                jecname = "Cv4"
-            else:
-                jecname = "Cv123"
-        elif re.search(r"[Rr]un20\d{2}([A-Z])", dataset):
-            jecname = re.search(r"[Rr]un20\d{2}([A-Z])", dataset).group(1)
-        else:
-            print("No valid jec name")
-            raise NameError
-        jecname = "data" + jecname
-    else:
-        jecname = "mc"
-
+    jecname = ""
+    syst_list = [i.split("_")[3] for i in correct_map["JME"].keys() if "MC" in i]
+    syst_list.remove("L1FastJet")
+    syst_list.remove("L2L3Residual")
+    syst_list.remove("L2Relative")
+    syst_list.remove("L3Absolute")
     if "JME" in correct_map.keys():
-        jets = correct_map["JME"]["jet_factory"][jecname].build(
-            add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
-            lazy_cache=events.caches[0],
-        )
-    else:
-        jets = events.Jet
+        ## correctionlib
+        if "JME_cfg" in correct_map.keys():
+            if isRealData:
+                jecname = [
+                    v
+                    for k, v in correct_map["JME_cfg"].items()
+                    if k in events.metadata["dataset"]
+                ]
+                if len(jecname) > 1:
+                    raise ("Multiple uncertainties match to this era")
+                else:
+                    jecname = jecname[0] + "_DATA"
+            else:
+                jecname = correct_map["JME_cfg"]["MC"] + "_MC"
+            corr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
+            nocorrjet = events.Jet
+            nocorrjet["pt_raw"] = (1 - nocorrjet["rawFactor"]) * nocorrjet["pt"]
+            nocorrjet["mass_raw"] = (1 - nocorrjet["rawFactor"]) * nocorrjet["mass"]
+            nocorrjet["rho"] = ak.broadcast_arrays(
+                events.fixedGridRhoFastjetAll, nocorrjet.pt
+            )[0]
+            j, nj = ak.flatten(nocorrjet), ak.num(nocorrjet)
+            values = [
+                np.array(
+                    j[
+                        inputs.name.replace("Jet", "")
+                        .replace("Pt", "pt")
+                        .replace("Phi", "phi")
+                        .replace("Eta", "eta")
+                        .replace("Mass", "mass")
+                        .replace("Rho", "rho")
+                        .replace("A", "area")
+                    ]
+                )
+                for inputs in corr.inputs
+            ]
+            flatCorrFactor = corr.evaluate(*values)
+            corrFactor = ak.unflatten(flatCorrFactor, nj)
+            jets = copy.copy(nocorrjet)
+            jets["pt_orig"] = nocorrjet["pt"]
+            jets["pt"] = nocorrjet["pt_raw"] * corrFactor
+            jets["mass"] = nocorrjet["mass_raw"] * corrFactor
 
+            # MET correction, from MET correct factory
+            # https://github.com/CoffeaTeam/coffea/blob/d7d02634a8d268b130a4d71f76d8eba6e6e27b96/coffea/jetmet_tools/CorrectedMETFactory.py#L105
+
+            nocorrmet = (
+                events.PuppiMET if "22" in campaign or "23" in campaign else events.MET
+            )
+            form = ak.forms.RecordForm(
+                {
+                    "pt": nocorrmet.pt.layout.form,
+                    "phi": nocorrmet.phi.layout.form,
+                }
+            )
+
+            met = copy.copy(nocorrmet)
+            metinfo = [nocorrmet.pt, nocorrmet.phi, jets.pt, jets.phi, jets.pt_raw]
+            met["pt"], met["phi"] = (
+                corrected_polar_met(*metinfo).pt,
+                corrected_polar_met(*metinfo).phi,
+            )
+            met["orig_pt"], met["orig_phi"] = nocorrmet["pt"], nocorrmet["pt"]
+            if systematic != False:
+
+                if systematic != "JERC_split":
+
+                    jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
+
+                    jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
+                    jets["JES_Total"] = ak.zip(
+                        {
+                            "up": jets.pt * (corrFactor + jesunc),
+                            "down": jets.pt * (corrFactor - jesunc),
+                        }
+                    )
+                    metinfo = [
+                        nocorrmet.pt,
+                        nocorrmet.phi,
+                        jets.pt,
+                        jets.phi,
+                        jets.pt_raw,
+                    ]
+                    met["JES_Total"] = ak.zip(
+                        {
+                            "up": corrected_polar_met(
+                                nocorrmet.pt,
+                                nocorrmet.phi,
+                                jets.JES_Total.up,
+                                jets.phi,
+                                jets.pt_raw,
+                            ),
+                            "down": corrected_polar_met(
+                                nocorrmet.pt,
+                                nocorrmet.phi,
+                                jets.JES_Total.down,
+                                jets.phi,
+                                jets.pt_raw,
+                            ),
+                        }
+                    )
+
+        else:
+            if isRealData:
+                if "2016preVFP_UL" == campaign:
+                    if "2016B" in dataset or "2016C" in dataset or "2016D" in dataset:
+                        jecname = "BCD"
+                    elif "2016E" in dataset or "2016F" in dataset:
+                        jecname = "EF"
+                elif "2016postVFP_UL" == campaign:
+                    jecname = "FGH"
+                elif campaign == "Rereco17_94X":
+                    jecname = ""
+                elif campaign == "Summer23":
+                    if "v4" in dataset:
+                        jecname = "Cv4"
+                    else:
+                        jecname = "Cv123"
+                elif re.search(r"[Rr]un20\d{2}([A-Z])", dataset):
+                    jecname = re.search(r"[Rr]un20\d{2}([A-Z])", dataset).group(1)
+                else:
+                    print("No valid jec name")
+                    raise NameError
+                jecname = "data" + jecname
+            else:
+                jecname = "mc"
+
+            jets = correct_map["JME"]["jet_factory"][jecname].build(
+                add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
+                lazy_cache=events.caches[0],
+            )
+            met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
+
+    else:
+        met = events.PuppiMET
+        jets = events.Jet
     # perform jet veto
     if "jetveto" in correct_map.keys():
         events.Jet = update(events.Jet, {"veto": jetveto(events, correct_map)})
-    if "Run3" not in campaign:
-        if "JME" in correct_map.keys():
-            met = correct_map["JME"]["met_factory"].build(events.MET, jets, {})
-        else:
-            met = events.MET
-    else:
-        if "JME" in correct_map.keys():
-            met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
-        else:
-            met = events.PuppiMET
-    ## HEM 18 issue
-    if isRealData:
-        if "2018" in events.metadata["dataset"]:
-            _runid = events.run >= 319077
-            j_mask = ak.where(
-                _runid
-                & (jets.phi > -1.57)
-                & (jets.phi < -0.87)
-                & (jets.eta > -2.5)
-                & (jets.eta < -1.3),
-                0.8,
-                1,
-            )
-            j_high_eta_mask = ak.where(
-                _runid
-                & (jets.phi > -1.57)
-                & (jets.phi < -0.87)
-                & (jets.eta > -3.0)
-                & (jets.eta < -2.5),
-                0.65,
-                1,
-            )
-
-            for var in ["mass", "pt"]:
-                jets[var] = j_mask * j_high_eta_mask * jets[var]
-
     shifts += [({"Jet": jets, "MET": met}, None)]
 
     ## systematics
@@ -548,36 +649,37 @@ def JME_shifts(
                         "JESDown",
                     ),
                 ]
-            shifts += [
-                (
-                    {
-                        "Jet": jets,
-                        "MET": met.MET_UnclusteredEnergy.up,
-                    },
-                    "UESUp",
-                ),
-                (
-                    {
-                        "Jet": jets,
-                        "MET": met.MET_UnclusteredEnergy.down,
-                    },
-                    "UESDown",
-                ),
-                (
-                    {
-                        "Jet": jets.JER.up,
-                        "MET": met.JER.up,
-                    },
-                    "JERUp",
-                ),
-                (
-                    {
-                        "Jet": jets.JER.down,
-                        "MET": met.JER.down,
-                    },
-                    "JERDown",
-                ),
-            ]
+            # shifts += [
+            #     (
+            #         {
+            #             "Jet": jets,
+            #             "MET": met.MET_UnclusteredEnergy.up,
+            #         },
+            #         "UESUp",
+            #     ),
+            #     (
+            #         {
+            #             "Jet": jets,
+            #             "MET": met.MET_UnclusteredEnergy.down,
+            #         },
+            #         "UESDown",
+            #     )
+            # ]
+            # if 'JER' in jets.fields:
+            #     shifts +=[(
+            #         {
+            #             "Jet": jets.JER.up,
+            #             "MET": met.JER.up,
+            #         },
+            #         "JERUp",
+            #     ),
+            #     (
+            #         {
+            #             "Jet": jets.JER.down,
+            #             "MET": met.JER.down,
+            #         },
+            #         "JERDown",
+            #     )]
     return shifts
 
 

@@ -69,7 +69,7 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            if "Run3" not in self._campaign:
+            if int(self._year) > 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -229,7 +229,7 @@ class NanoProcessor(processor.ProcessorABC):
             ak.count(dilep_mu.pt, axis=1) + ak.count(dilep_ele.pt, axis=1) != 2
         )
 
-        if "Run3" not in self._campaign:
+        if int(self._year) > 2020:
             MET = ak.zip(
                 {
                     "pt": events.MET.pt,

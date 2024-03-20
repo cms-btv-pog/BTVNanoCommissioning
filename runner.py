@@ -78,8 +78,8 @@ def get_main_parser():
         choices=[
             "Rereco17_94X",
             "Winter22Run3",
-            "Summer22Run3",
-            "Summer22EERun3",
+            "Summer22",
+            "Summer22EE",
             "Summer23",
             "Summer23BPix",
             "2018_UL",
