@@ -53,9 +53,7 @@ def load_SF(campaign, syst=False):
                         )
                     elif str(filename).endswith(".histo.root"):
                         ext = extractor()
-                        ext.add_weight_sets(
-                            [f"* * src/BTVNanoCommissioning/data/PU/{campaign}"]
-                        )
+                        ext.add_weight_sets([f"* * {filename}"])
                         ext.finalize()
                         correct_map["PU"] = ext.make_evaluator()
 
