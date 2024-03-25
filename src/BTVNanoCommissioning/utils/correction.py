@@ -460,11 +460,11 @@ def JME_shifts(  # _factory(
 ):
     dataset = events.metadata["dataset"]
     jecname = ""
-    syst_list = [i.split("_")[3] for i in correct_map["JME"].keys() if "MC" in i]
-    syst_list.remove("L1FastJet")
-    syst_list.remove("L2L3Residual")
-    syst_list.remove("L2Relative")
-    syst_list.remove("L3Absolute")
+    syst_list = [
+        i.split("_")[3]
+        for i in correct_map["JME"].keys()
+        if "MC" in i and "L1" not in i and "L2" not in i and "L3" not in i
+    ]
     if "JME" in correct_map.keys():
         ## correctionlib
         if "JME_cfg" in correct_map.keys():
@@ -505,9 +505,11 @@ def JME_shifts(  # _factory(
             flatCorrFactor = corr.evaluate(*values)
             corrFactor = ak.unflatten(flatCorrFactor, nj)
             jets = copy.copy(nocorrjet)
-            jets["pt_orig"] = nocorrjet["pt"]
-            jets["pt"] = nocorrjet["pt_raw"] * corrFactor
-            jets["mass"] = nocorrjet["mass_raw"] * corrFactor
+            jets["pt_orig"] = ak.values_astype(nocorrjet["pt"], np.float32)
+            jets["pt"] = ak.values_astype(nocorrjet["pt_raw"] * corrFactor, np.float32)
+            jets["mass"] = ak.values_astype(
+                nocorrjet["mass_raw"] * corrFactor, np.float32
+            )
 
             # MET correction, from MET correct factory
             # https://github.com/CoffeaTeam/coffea/blob/d7d02634a8d268b130a4d71f76d8eba6e6e27b96/coffea/jetmet_tools/CorrectedMETFactory.py#L105
@@ -525,8 +527,8 @@ def JME_shifts(  # _factory(
             met = copy.copy(nocorrmet)
             metinfo = [nocorrmet.pt, nocorrmet.phi, jets.pt, jets.phi, jets.pt_raw]
             met["pt"], met["phi"] = (
-                corrected_polar_met(*metinfo).pt,
-                corrected_polar_met(*metinfo).phi,
+                ak.values_astype(corrected_polar_met(*metinfo).pt, np.float32),
+                ak.values_astype(corrected_polar_met(*metinfo).phi, np.float32),
             )
             met["orig_pt"], met["orig_phi"] = nocorrmet["pt"], nocorrmet["pt"]
             if systematic != False:
@@ -1651,6 +1653,7 @@ class JPCalibHandler(object):
                 else:
                     filename = "default"
                     for key in config[campaign]["JPCalib"]:
+                        print(key, dataset)
                         if key in dataset:
                             filename = config[campaign]["JPCalib"][key]
                             break

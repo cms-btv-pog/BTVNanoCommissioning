@@ -119,8 +119,8 @@ correction_config = {
             "Run2023D jetvetomap_all": "Summer23BPixPrompt23_RunD_v1.histo.root"
         },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
         "JPCalib": {
-            "Run2023D-22Sep2023-v1": "calibeHistoWrite_Data2023D-22Sep2023_v1.root",
-            "Run2023D-22Sep2023-v2": "calibeHistoWrite_Data2023D-22Sep2023_v2.root",
+            "Run2023D-22Sep2023_v1": "calibeHistoWrite_Data2023D-22Sep2023_v1.root",
+            "Run2023D-22Sep2023_v2": "calibeHistoWrite_Data2023D-22Sep2023_v2.root",
             "MC": "calibeHistoWrite_MC2023_Summer23BPix.root",
         },
     },
