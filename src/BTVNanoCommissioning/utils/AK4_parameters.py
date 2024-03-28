@@ -38,11 +38,16 @@ correction_config = {
         "lumiMask": "Cert_Collisions2022_355100_357900_Golden.json",
         "PU": "puweight_Winter22Run3.histo.root",
         "JME": "jec_compiled.pkl.gz",
+        "jetveto": {"Run2022CD jetvetomap": "Winter22Run3_RunCD_v1.histo.root"},
     },
-    "Summer22Run3": {
+    "Summer22": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
         "PU": "puwei_2022_preEE.histo.root",  # new PU files, based on preEE
-        "JME": "jec_compiled.pkl.gz",  # update to latest JEC
+        "JME": {
+            "MC": "Summer22_22Sep2023_V2",
+            "Run2022C": "Summer22_22Sep2023_RunCD_V2",
+            "Run2022D": "Summer22_22Sep2023_RunCD_V2",
+        },  # update to latest JEC
         "LSF": {
             "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022_Prompt_ID_ISO_schemaV2.json",
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
@@ -53,11 +58,17 @@ correction_config = {
             "Run2022D": "calibeHistoWrite_Data2022D_NANO130X_v1.root",
             "MC": "calibeHistoWrite_MC2022_NANO130X_v2.root",
         },
+        "jetveto": {"Run2022CD jetvetomap": "Winter22Run3_RunCD_v1.histo.root"},
     },
-    "Summer22EERun3": {
+    "Summer22EE": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
         "PU": "puwei_2022_postEE.histo.root",  # new PU file, post EE
-        "JME": "jec_compiled.pkl.gz",
+        "JME": {
+            "MC": "Summer22EE_22Sep2023_V2",
+            "Run2022E": "Summer22EE_22Sep2023_RunE_V2",
+            "Run2022F": "Summer22EE_22Sep2023_RunF_V2",
+            "Run2022G": "Summer22EE_22Sep2023_RunG_V2",
+        },
         "LSF": {
             "ele_json": "electron.json.gz",
             "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022EE_Prompt_ID_ISO_schemaV2.json",
@@ -68,11 +79,49 @@ correction_config = {
             "ele_Reco_med 2022FG 2022FG-Electron-ID-SF": "Reco20to75",
             "ele_Reco_high 2022FG 2022FG-Electron-ID-SF": "RecoAbove75",
         },
+        "jetveto": {"Run2022E jetvetomap_eep": "Winter22Run3_RunE_v1.histo.root"},
+        # use for BTA production, jet probablity
         "JPCalib": {
             "Run2022E": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
             "Run2022F": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
             "Run2022G": "calibeHistoWrite_Data2022G_NANO130X_v1.root",
             "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",
+        },
+    },
+    "Summer23": {
+        "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
+        "PU": "puwei_Summer23.histo.root",
+        "JME": {
+            "MC": "Summer23Prompt23_V1",
+            "Run2023C-22Sep2023_v1": "Summer23Prompt23_RunCv123_V1",
+            "Run2023C-22Sep2023_v2": "Summer23Prompt23_RunCv123_V1",
+            "Run2023C-22Sep2023_v3": "Summer23Prompt23_RunCv123_V1",
+            "Run2023C-22Sep2023_v4": "Summer23Prompt23_RunCv4_V1",
+        },
+        #         "JME": "jec_compiled.pkl.gz",
+        "jetveto": {"Run2023BC jetvetomap_all": "Summer23Prompt23_RunC_v1.histo.root"},
+        "JPCalib": {
+            "Run2023C-22Sep2023_v1": "calibeHistoWrite_Data2023C-22Sep2023_v1.root",
+            "Run2023C-22Sep2023_v2": "calibeHistoWrite_Data2023C-22Sep2023_v2.root",
+            "Run2023C-22Sep2023_v3": "calibeHistoWrite_Data2023C-22Sep2023_v3.root",
+            "Run2023C-22Sep2023_v4": "calibeHistoWrite_Data2023C-22Sep2023_v4.root",
+            "MC": "calibeHistoWrite_MC2023_Summer23.root",
+        },
+    },
+    "Summer23BPix": {
+        "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
+        "PU": "puwei_Summer23BPix.histo.root",
+        "JME": {
+            "MC": "Summer23BPixPrompt23_V1",
+            "Run2023D": "Summer23BPixPrompt23_RunD_V1",
+        },
+        "jetveto": {
+            "Run2023D jetvetomap_all": "Summer23BPixPrompt23_RunD_v1.histo.root"
+        },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
+        "JPCalib": {
+            "Run2023D-22Sep2023_v1": "calibeHistoWrite_Data2023D-22Sep2023_v1.root",
+            "Run2023D-22Sep2023_v2": "calibeHistoWrite_Data2023D-22Sep2023_v2.root",
+            "MC": "calibeHistoWrite_MC2023_Summer23BPix.root",
         },
     },
 }

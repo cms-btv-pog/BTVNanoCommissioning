@@ -1,5 +1,5 @@
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import add_jec_variables, jetveto
+from BTVNanoCommissioning.utils.correction import add_jec_variables
 import numpy as np
 
 
@@ -31,7 +31,6 @@ def missing_branch(events):
             events.Jet,
             {"btagDeepFlavC": jets.btagDeepFlavC},
         )
-
     if hasattr(events.Jet, "btagDeepFlavC") and not hasattr(
         events.Jet, "btagDeepFlavCvL"
     ):
@@ -76,7 +75,6 @@ def missing_branch(events):
                 "btagDeepFlavCvB": jets.btagDeepFlavCvB,
             },
         )
-
     if hasattr(events, "METFixEE2017"):
         events.MET = events.METFixEE2017
     if not hasattr(events.PuppiMET, "MetUnclustEnUpDeltaX"):
@@ -90,17 +88,10 @@ def missing_branch(events):
                 "MetUnclustEnUpDeltaY": met.MetUnclustEnUpDeltaY,
             },
         )
-    if (
-        "Run2022C" in events.metadata["dataset"]
-        or "Run2022D" in events.metadata["dataset"]
-        or "Run2022E" in events.metadata["dataset"]
-        or "Run2022F" in events.metadata["dataset"]
-        or "Run2022G" in events.metadata["dataset"]
-    ):
-        events.Jet = update(events.Jet, {"veto": jetveto(events)})
     return events
 
 
+### Not used anymore
 def add_jec(events, campaign, jmestuff):
     dataset = events.metadata["dataset"]
     jet_factory = jmestuff["jet_factory"]

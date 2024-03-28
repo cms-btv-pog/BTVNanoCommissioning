@@ -56,7 +56,7 @@ along with the fileset these should run over. Multiple executors can be chosen
 
 To test a small set of files to see whether the workflows run smoothly, run:
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/test_bta_run3.json --campaign Summer22EERun3 --year 2022
+python runner.py --workflow ttsemilep_sf --json metadata/test_bta_run3.json --campaign Summer23 --year 2023
 ```
 
 More options for `runner.py` 
@@ -73,7 +73,7 @@ More options for `runner.py`
                         (default: dummy_samples.json)
   --year YEAR           Year
   --campaign CAMPAIGN   Dataset campaign, change the corresponding correction
-                        files{ "Rereco17_94X","Winter22Run3","Summer22Run3","Summer22EERun3","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
+                        files{ "Rereco17_94X","Winter22Run3","Summer23","Summer23BPix","Summer22","Summer22EE","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
   --isSyst              Run with systematics, all, weight_only(no JERC uncertainties included),JERC_split, None(not extract)
   --isArray             Output root files
   --noHist              Not save histogram coffea files
@@ -145,13 +145,13 @@ After a small test, you can run the full campaign for a dedicated phase space, s
 - Dileptonic ttbar phase space : check performance for btag SFs, emu channel
 
 ```
- python runner.py --workflow ttdilep_sf --json metadata/data_Summer22_Run3_2022_em_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site}) 
+ python runner.py --workflow ttdilep_sf --json metadata/data_Summer23_2023_em_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.json  --campaign Summer23 --year 2023 (--executor ${scaleout_site}) 
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
 
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_Run3_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json --campaign Summer22Run3 --year 2022 (--executor ${scaleout_site})
+python runner.py --workflow ttsemilep_sf --json metadata/data_Summer23_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.json --campaign Summer23 --year 2023 (--executor ${scaleout_site})
 ```
 
 </p>
@@ -164,26 +164,26 @@ python runner.py --workflow ttsemilep_sf --json metadata/data_Summer22_Run3_2022
 - Dileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttdilep_sf --json metadata/data_Summer23_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.json  --campaign Summer23 --year 2023(--executor ${scaleout_site})
 ```
 
 
 - Semileptonic ttbar phase space : check performance for charm SFs, bjets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_ttsemilep_sf --json metadata/data_Summer23_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.json  --campaign Summer23 --year 2023(--executor ${scaleout_site})
 ```
 
 - W+c phase space : check performance for charm SFs, cjets enriched SFs, muon  channel
 
 ```
-python runner.py --workflow ctag_Wc_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_Wc_sf --json metadata/data_Summer23_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.json  --campaign Summer23 --year 2023(--executor ${scaleout_site})
 ```
 
 - DY phase space : check performance for charm SFs, light jets enriched SFs, muon channel
 
 ```
-python runner.py --workflow ctag_DY_sf --json metadata/data_Summer22_2022_mu_BTV_Run3_2022_Comm_MINIAODv4_NanoV12.json  --campaign Summer22Run3 --year 2022(--executor ${scaleout_site})
+python runner.py --workflow ctag_DY_sf --json metadata/data_Summer23_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.json  --campaign Summer23 --year 2023(--executor ${scaleout_site})
 ```
 
 </p>
@@ -208,24 +208,24 @@ python runner.py --workflow valid --json metadata/$json file
 
 Based on Congqiao's [development](notebooks/BTA_array_producer.ipynb) to produce BTA ntuples based on PFNano.
 
-:exclamation: Only the newest version [BTV_Run3_2022_Comm_MINIAODv4](https://github.com/cms-btv-pog/btvnano-prod) ntuples work. Example files are given in [this](metadata/test_bta_run3.json) json. Optimize the chunksize(`--chunk`) in terms of the memory usage. This depends on sample, if the sample has huge jet collection/b-c hardons. The more info you store, the more memory you need. I would suggest to test with `iterative` to estimate the size.
+:exclamation: Only the newest version [BTV_Run3_2023_Comm_MINIAODv4](https://github.com/cms-btv-pog/btvnano-prod) ntuples work. Example files are given in [this](metadata/test_bta_run3.json) json. Optimize the chunksize(`--chunk`) in terms of the memory usage. This depends on sample, if the sample has huge jet collection/b-c hardons. The more info you store, the more memory you need. I would suggest to test with `iterative` to estimate the size.
 
 <details><summary>details</summary>
 <p>
 
 Run with the nominal `BTA` workflow to include the basic event variables, jet observables, and GEN-level quarks, hadrons, leptons, and V0 variables. 
 ```
-python runner.py --wf BTA --json metadata/test_bta_run3.json --campaign Summer22EERun3 --isJERC
+python runner.py --wf BTA --json metadata/test_bta_run3.json --campaign Summer22EE --isJERC
 ```
 
 Run with the `BTA_addPFMuons` workflow to additionally include the `PFMuon` and `TrkInc` collection, used by the b-tag SF derivation with the QCD(μ) methods.
 ```
-python runner.py --wf BTA_addPFMuons --json metadata/test_bta_run3.json --campaign Summer22EERun3 --isJERC
+python runner.py --wf BTA_addPFMuons --json metadata/test_bta_run3.json --campaign Summer22EE --isJERC
 ```
 
 Run with the `BTA_addAllTracks` workflow to additionally include the `Tracks` collection, used by the JP variable calibration.
 ```
-python runner.py --wf BTA_addAllTracks --json metadata/test_bta_run3.json --campaign Summer22EERun3 --isJERC
+python runner.py --wf BTA_addAllTracks --json metadata/test_bta_run3.json --campaign Summer22EE --isJERC
 ```
 
 </p>
@@ -239,6 +239,10 @@ However, some sites have certain restrictions for various reasons, in particular
 
 
 Memory usage is also useful to adapt to cluster. Check the memory by calling  `memory_usage_psutil()` from `helpers.func.memory_usage_psutil` to optimize job size. Example with `ectag_Wc_sf` summarized below.
+
+<details><summary>details</summary>
+<p>
+
  Type        |Array+Hist |  Hist only| Array Only|
 | :---:   | :---: | :---: | :---: |
 DoubleMuon (BTA,BTV_Comm_v2)| 1243MB |	848MB	|1249MB|
@@ -248,6 +252,8 @@ WJets_inc (BTA,BTV_Comm_v2)| 1243MB	|848MB	|1249MB|
 WJets_inc (PFCands, BTV_Comm_v1)|1650MB	|1274MB	|1632MB
 WJets_inc (Nano_v11)|1183MB	|630MB	|1180MB|
 
+</p>
+</details>
 
 ### Sites configuration with dask/parsl schedular
 
@@ -318,6 +324,8 @@ This utility is currently adapted for the lxplus and cmsconnect condor systems. 
 
 After executing the command, a new folder will be created, preparing the submission. Follow the on-screen instructions and utilize `condor_submit ...` to submit the jdl file. The output will be transferred to the designated XRootD destination.
 
+The script provided by Pablo to resubmit failure jobs in `script/missingFiles.py` from the original job folder.
+
 <details><summary>Frequent issues for standalone condor jobs submission
 </summary>
 <p>
@@ -331,6 +339,7 @@ After executing the command, a new folder will be created, preparing the submiss
 
 </p>
 </details>
+
 
 
 ## Make the dataset json files
@@ -481,7 +490,7 @@ Compile correction pickle files for a specific JEC campaign by changing the dict
 
 ```
 python -m BTVNanoCommissioning.utils.compile_jec ${campaign} jec_compiled
-e.g. python -m BTVNanoCommissioning.utils.compile_jec Summer22Run3 jec_compiled
+e.g. python -m BTVNanoCommissioning.utils.compile_jec Summer23 jec_compiled
 ```
 
 
@@ -645,7 +654,7 @@ Yout can find the secret configuration in the direcotry : `Settings>>Secrets>>Ac
 Special commit head messages could run different commands in actions (add the flag in front of your commit)
 The default configureation is doing 
 ```
-python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 --isArray --isSyst all
+python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer23 --isArray --isSyst all
 ```
 
 - `[skip ci]`: not running ci at all in the commit message

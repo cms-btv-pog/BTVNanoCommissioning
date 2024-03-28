@@ -26,7 +26,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.8","3.10"]
+        python-version: ["3.10"]
     
     defaults:
       run:
@@ -90,7 +90,7 @@ jobs:
         chmod 400 $HOME/.globus/userkey.pem
         openssl rand -out $HOME/.rnd  -hex 256
         printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms --vomses ${X509_VOMSES} --debug --pwstdin
-        
+        chmod 755 /usr/share/miniconda3/envs/btv_coffea/etc/grid-security/certificates
     - name: Test xrootd
       run: |
         xrdcp root://eoscms.cern.ch//eos/cms/store/group/phys_btag/nano-commissioning/test_w_dj.root .
@@ -113,7 +113,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ctag_Wc_sf --json metadata/test_bta_run3.json   --campaign Summer22Run3 --executor iterative  $opts
+        python runner.py --workflow ctag_Wc_sf --json metadata/test_bta_run3.json  --executor iterative  $opts
     
     - name: ctag electron W+c workflows with correctionlib
       run: |
@@ -128,4 +128,4 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ectag_Wc_sf --json metadata/test_bta_run3.json --executor iterative  --campaign Summer22Run3   --overwrite $opts
+        python runner.py --workflow ectag_Wc_sf --json metadata/test_bta_run3.json --executor iterative  --overwrite $opts

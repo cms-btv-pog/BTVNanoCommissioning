@@ -27,7 +27,12 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
-from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_cuttightid
+from BTVNanoCommissioning.utils.selection import (
+    jet_id,
+    mu_idiso,
+    ele_cuttightid,
+    btag_wp,
+)
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -63,14 +68,14 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
         shifts = []
         if "JME" in self.SF_map.keys():
-            syst_JERC = True if self.isSyst != None else False
+            syst_JERC = self.isSyst
             if self.isSyst == "JERC_split":
                 syst_JERC = "split"
             shifts = JME_shifts(
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            if "Run3" not in self._campaign:
+            if int(self._year) > 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -108,10 +113,11 @@ class NanoProcessor(processor.ProcessorABC):
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,
         }
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            if isRealData:
+                output["sumw"] = len(events)
+            else:
+                output["sumw"] = ak.sum(events.genWeight)
         ####################
         #    Selections    #
         ####################
@@ -255,9 +261,9 @@ class NanoProcessor(processor.ProcessorABC):
         if not isRealData:
             weights.add("genweight", events[event_level].genWeight)
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
-            genflavor = sjets.hadronFlavour + 1 * par_flav
+            genflavor = ak.values_astype(sjets.hadronFlavour + 1 * par_flav, int)
             if len(self.SF_map.keys()) > 0:
-                syst_wei = True if self.isSyst != None else False
+                syst_wei = True if self.isSyst != False else False
                 if "PU" in self.SF_map.keys():
                     puwei(
                         events[event_level].Pileup.nTrueInt,
@@ -293,7 +299,7 @@ class NanoProcessor(processor.ProcessorABC):
         #  Fill histogram  #
         ####################
         for syst in systematics:
-            if self.isSyst == None and syst != "nominal":
+            if self.isSyst == False and syst != "nominal":
                 break
             if self.noHist:
                 break
@@ -331,9 +337,10 @@ class NanoProcessor(processor.ProcessorABC):
                         h.fill(
                             syst,
                             flatten(
-                                ak.broadcast_arrays(genflavor[:, i], spfcands[i]["pt"])[
-                                    0
-                                ]
+                                ak.broadcast_arrays(
+                                    genflavor[:, i],
+                                    spfcands[i]["pt"],
+                                )[0]
                             ),
                             flatten(spfcands[i][histname.replace("PFCands_", "")]),
                             weight=flatten(
@@ -354,25 +361,20 @@ class NanoProcessor(processor.ProcessorABC):
                             h.fill(
                                 "noSF",
                                 flav=flatten(genflavor[:, i]),
-                                discr=flatten(
-                                    np.where(
-                                        sel_jet[histname.replace(f"_{i}", "")] < 0,
-                                        -0.2,
-                                        sel_jet[histname.replace(f"_{i}", "")],
-                                    )
-                                ),
+                                discr=flatten(sel_jet[histname.replace(f"_{i}", "")]),
                                 weight=weights.partial_weight(exclude=exclude_btv),
                             )
                             if not isRealData and "btag" in self.SF_map.keys():
                                 h.fill(
                                     syst=syst,
-                                    flav=flatten(genflavor[:, i]),
-                                    discr=flatten(
-                                        np.where(
-                                            sel_jet[histname.replace(f"_{i}", "")] < 0,
-                                            -0.2,
-                                            sel_jet[histname.replace(f"_{i}", "")],
+                                    flav=flatten(
+                                        ak.values_astype(
+                                            genflavor[:, i],
+                                            np.uint8,
                                         )
+                                    ),
+                                    discr=flatten(
+                                        sel_jet[histname.replace(f"_{i}", "")]
                                     ),
                                     weight=weight,
                                 )
@@ -407,7 +409,17 @@ class NanoProcessor(processor.ProcessorABC):
                     weight=weight,
                 )
             output["njet"].fill(syst, nseljet, weight=weight)
-
+            output["npvs"].fill(
+                syst,
+                events[event_level].PV.npvs,
+                weight=weight,
+            )
+            if not isRealData:
+                output["pu"].fill(
+                    syst,
+                    events[event_level].Pileup.nTrueInt,
+                    weight=weight,
+                )
         #######################
         #  Create root files  #
         #######################

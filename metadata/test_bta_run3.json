@@ -1,6 +1,6 @@
 {
-"JetMETRun2022D-22Sep2023-v1": [
-        "root://eoscms.cern.ch//eos/cms/store/group/cmst3/group/deepjet//PFNano_Run3/data_2022_MINIAODv4/JetMET/Run2022D-22Sep2023-v1_BTV_Run3_2022_Comm_MINIAODv4/231125_161517/0000/data_defaultAK4_1.root"],
- "QCD_PT-15to20_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8": [
-        "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/milee/PFNano_Run3/mc_summer22_MINIAODv4/QCD_PT-15to20_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_BTV_Run3_2022_Comm_MINIAODv4/231124_225033/0000/MC_defaultAK4_preEE_20.root"]
+        "JetMET0Run2023C-22Sep2023_v1-v1": [
+                "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/usarkar/PFNano_Run3/data_2023/JetMET0/Run2023C-22Sep2023_v1-v1_BTV_Run3_2023_Comm_MINIAODv4/231228_125731/0000/data_defaultAK4_2023_328.root"],
+        "QCD_PT-15to30_TuneCP5_13p6TeV_pythia8": [
+                "root://grid-cms-xrootd.physik.rwth-aachen.de:1094//store/user/usarkar/PFNano_Run3/mc_summer23/QCD_PT-15to30_TuneCP5_13p6TeV_pythia8/Run3Summer23MiniAODv4-EpsilonPU_130X_mcRun3_2023_realistic_v14-v2_BTV_Run3_2023_Comm_MINIAODv4/231228_130142/0000/MC_defaultAK4_2023_1-1.root"]
 }

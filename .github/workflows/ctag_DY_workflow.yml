@@ -24,7 +24,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.8","3.10"]
+        python-version: ["3.10"]
     
     defaults:
       run:
@@ -86,6 +86,7 @@ jobs:
         chmod 400 $HOME/.globus/userkey.pem
         openssl rand -out $HOME/.rnd  -hex 256
         printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms --vomses ${X509_VOMSES} --debug --pwstdin
+        chmod 755 /usr/share/miniconda3/envs/btv_coffea/etc/grid-security/certificates
         
     - name: Test xrootd
       run: |
@@ -109,7 +110,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ctag_DY_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --year 2022 $opts
+        python runner.py --workflow ctag_DY_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative  $opts
     
 
     - name: ctag electron DY workflows with correctionlib
@@ -125,4 +126,4 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ectag_DY_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3  --year 2022 $opts
+        python runner.py --workflow ectag_DY_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts

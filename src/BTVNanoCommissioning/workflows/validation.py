@@ -27,7 +27,13 @@ from BTVNanoCommissioning.helpers.func import (
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
-from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_mvatightid
+from BTVNanoCommissioning.utils.selection import (
+    jet_id,
+    mu_idiso,
+    ele_mvatightid,
+    btag_wp,
+    btag_wp_dict,
+)
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -36,6 +42,7 @@ class NanoProcessor(processor.ProcessorABC):
         self,
         year="2022",
         campaign="Summer22Run3",
+        name="",
         isSyst=False,
         isArray=False,
         noHist=False,
@@ -43,8 +50,12 @@ class NanoProcessor(processor.ProcessorABC):
     ):
         self._year = year
         self._campaign = campaign
-        self.isSyst = isSyst
+        self.name = name
+        self.isSyst = False
+        self.isArray = isArray
+        self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
+        self.chunksize = chunksize
         ## Load corrections
         self.SF_map = load_SF(self._campaign)
 
@@ -58,14 +69,14 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
         shifts = []
         if "JME" in self.SF_map.keys():
-            syst_JERC = True if self.isSyst != None else False
+            syst_JERC = self.isSyst
             if self.isSyst == "JERC_split":
                 syst_JERC = "split"
             shifts = JME_shifts(
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            if "Run3" not in self._campaign:
+            if int(self._year) > 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -102,10 +113,11 @@ class NanoProcessor(processor.ProcessorABC):
             **_hist_event_dict,
         }
 
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            if isRealData:
+                output["sumw"] = len(events)
+            else:
+                output["sumw"] = ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
@@ -189,12 +201,12 @@ class NanoProcessor(processor.ProcessorABC):
         if not isRealData:
             weights.add("genweight", events[event_level].genWeight)
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
-            genflavor = sjets.hadronFlavour + 1 * par_flav
+            genflavor = ak.values_astype(sjets.hadronFlavour + 1 * par_flav, int)
             genweiev = ak.flatten(
                 ak.broadcast_arrays(events[event_level].genWeight, sjets["pt"])[0]
             )
             if len(self.SF_map.keys()) > 0:
-                syst_wei = True if self.isSyst != None else False
+                syst_wei = True if self.isSyst == True else False
                 if "PU" in self.SF_map.keys():
                     puwei(
                         events[event_level].Pileup.nTrueInt,
@@ -226,7 +238,7 @@ class NanoProcessor(processor.ProcessorABC):
         #  Fill histogram  #
         ####################
         for syst in systematics:
-            if self.isSyst == None and syst != "nominal":
+            if self.isSyst == False and syst != "nominal":
                 break
             if self.noHist:
                 break
@@ -251,6 +263,85 @@ class NanoProcessor(processor.ProcessorABC):
                             )[0]
                         ),
                     )
+                elif "WP" in histname:
+                    jet = sjets[:, 0]
+
+                    for tagger in btag_wp_dict[self._campaign].keys():
+                        if "bjet" in histname:
+                            for wp in btag_wp_dict[self._campaign][tagger]["b"].keys():
+                                wp_weight = weight[
+                                    btag_wp(
+                                        jet,
+                                        self._campaign,
+                                        tagger,
+                                        "b",
+                                        wp,
+                                    )
+                                    & (jet.hadronFlavour == 5)
+                                ]
+                                wp_jet = jet[
+                                    btag_wp(
+                                        jet,
+                                        self._campaign,
+                                        tagger,
+                                        "b",
+                                        wp,
+                                    )
+                                    & (jet.hadronFlavour == 5)
+                                ]
+
+                                if "discr" in histname:
+                                    h.fill(
+                                        wp,
+                                        tagger,
+                                        wp_jet[f"btag{tagger}B"],
+                                        weight=wp_weight,
+                                    )
+                                else:
+                                    h.fill(
+                                        wp,
+                                        tagger,
+                                        wp_jet[histname.replace("bjet_WP_", "")],
+                                        weight=wp_weight,
+                                    )
+                        elif "cjet" in histname:
+                            for wp in btag_wp_dict[self._campaign][tagger]["c"].keys():
+                                wp_weight = weight[
+                                    btag_wp(
+                                        jet,
+                                        self._campaign,
+                                        tagger,
+                                        "c",
+                                        wp,
+                                    )
+                                    & (jet.hadronFlavour == 4)
+                                ]
+                                wp_jet = jet[
+                                    btag_wp(
+                                        jet,
+                                        self._campaign,
+                                        tagger,
+                                        "c",
+                                        wp,
+                                    )
+                                    & (jet.hadronFlavour == 4)
+                                ]
+
+                                if "discr" in histname:
+                                    h.fill(
+                                        wp,
+                                        tagger,
+                                        wp_jet[f"btag{tagger}CvL"],
+                                        wp_jet[f"btag{tagger}CvB"],
+                                        weight=wp_weight,
+                                    )
+                                else:
+                                    h.fill(
+                                        wp,
+                                        tagger,
+                                        wp_jet[histname.replace("cjet_WP_", "")],
+                                        weight=wp_weight,
+                                    )
                 elif "jet" in histname:
                     for i in range(2):
                         if histname.replace(f"jet{i}_", "") not in sjets.fields:
@@ -262,7 +353,18 @@ class NanoProcessor(processor.ProcessorABC):
                             flatten(jet[histname.replace(f"jet{i}_", "")]),
                             weight=weight,
                         )
-
+                elif "btag" in histname:
+                    for i in range(2):
+                        if histname.replace(f"_{i}", "") not in sjets.fields:
+                            continue
+                        # print(histname.replace(f"_{i}", ""))
+                        jet = sjets[:, i]
+                        h.fill(
+                            "noSF",
+                            flav=flatten(genflavor[:, i]),
+                            discr=jet[histname.replace(f"_{i}", "")],
+                            weight=weight,
+                        )
         #######################
         #  Create root files  #
         #######################
