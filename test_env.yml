@@ -12,7 +12,7 @@ dependencies:
   - fsspec[version='>=0.3.3']
   - psutil
   - dask
-  - parsl
+  - parsl==2024.01.29
   - arrow
   - dask-jobqueue
   
