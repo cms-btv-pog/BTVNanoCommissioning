@@ -211,6 +211,15 @@ xsection = [
         "comment": "running genxsanalyzer",
     },
     {
+        "process_name": "WtoLNu-4Jets_4J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "cross_section": "416.5",
+        "total_uncertainty": "1.28",
+        "accuracy": "LO",
+        "DAS": "/WtoLNu-4Jets_4J_TuneCP5_13p6TeV_madgraphMLM-pythia8/Run3Summer22EEMiniAODv3-124X_mcRun3_2022_realistic_postEE_v1-v2/MINIAODSIM",
+        "equivalent_lumi": "2.401",
+        "fraction_negative_weight": "0",
+    },
+    {
         "process_name": "WW_TuneCP5_13p6TeV-pythia8",
         "cross_section": "75.9",
         "DAS": "/WW_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-FlatPU0to70_122X_mcRun3_2021_realistic_v9-v2/NANOAODSIM",
