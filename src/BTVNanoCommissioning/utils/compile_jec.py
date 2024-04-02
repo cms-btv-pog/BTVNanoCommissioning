@@ -6,6 +6,7 @@ from coffea.jetmet_tools import JECStack, CorrectedJetsFactory, CorrectedMETFact
 
 jec_name_map = {
     "JetPt": "pt",
+    "JetPhi": "phi",
     "JetMass": "mass",
     "JetEta": "eta",
     "JetA": "area",

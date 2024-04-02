@@ -449,7 +449,7 @@ def add_jec_variables(jets, event_rho):
 
 
 ## JERC
-def JME_shifts(  # _factory(
+def JME_shifts(
     shifts,
     correct_map,
     events,
@@ -460,6 +460,7 @@ def JME_shifts(  # _factory(
 ):
     dataset = events.metadata["dataset"]
     jecname = ""
+    # https://cms-jerc.web.cern.ch/JECUncertaintySources/, currently no recommendation of reduced/ full split sources
     syst_list = [
         i.split("_")[3]
         for i in correct_map["JME"].keys()
@@ -534,41 +535,46 @@ def JME_shifts(  # _factory(
             if systematic != False:
 
                 if systematic != "JERC_split":
-
                     jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
 
                     jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
+
                     jets["JES_Total"] = ak.zip(
                         {
-                            "up": jets.pt * (corrFactor + jesunc),
-                            "down": jets.pt * (corrFactor - jesunc),
+                            "up": ak.copy(jets),
+                            "down": ak.copy(jets),
                         }
                     )
-                    metinfo = [
-                        nocorrmet.pt,
-                        nocorrmet.phi,
-                        jets.pt,
-                        jets.phi,
-                        jets.pt_raw,
-                    ]
                     met["JES_Total"] = ak.zip(
                         {
-                            "up": corrected_polar_met(
-                                nocorrmet.pt,
-                                nocorrmet.phi,
-                                jets.JES_Total.up,
-                                jets.phi,
-                                jets.pt_raw,
-                            ),
-                            "down": corrected_polar_met(
-                                nocorrmet.pt,
-                                nocorrmet.phi,
-                                jets.JES_Total.down,
-                                jets.phi,
-                                jets.pt_raw,
-                            ),
+                            "up": ak.copy(met),
+                            "down": ak.copy(met),
                         }
                     )
+                    for var in ["up", "down"]:
+                        fac = 1.0 if var == "up" else -1.0
+
+                        jets["JES_Total"][var]["pt"] = jets["pt"] * (
+                            corrFactor + fac * jesunc
+                        )
+                        jets["JES_Total"][var]["mass"] = jets["mass"] * (
+                            corrFactor + fac * jesunc
+                        )
+
+                        met["JES_Total"][var]["pt"] = corrected_polar_met(
+                            nocorrmet.pt,
+                            nocorrmet.phi,
+                            jets.JES_Total[var]["pt"],
+                            jets.phi,
+                            jets.pt_raw,
+                        ).pt
+                        met["JES_Total"][var]["phi"] = corrected_polar_met(
+                            nocorrmet.pt,
+                            nocorrmet.phi,
+                            jets.JES_Total[var]["pt"],
+                            jets.phi,
+                            jets.pt_raw,
+                        ).phi
 
         else:
             if isRealData:
@@ -600,6 +606,83 @@ def JME_shifts(  # _factory(
                 lazy_cache=events.caches[0],
             )
             met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
+            ## systematics
+        if not isRealData:
+            if systematic != False:
+                if systematic == "split":
+                    for jes in met.fields:
+                        if "JES" not in jes or "Total" in jes:
+                            continue
+
+                        shifts += [
+                            (
+                                {
+                                    "Jet": jets[jes]["up"],
+                                    "MET": met[jes]["up"],
+                                },
+                                f"{jes}Up",
+                            ),
+                            (
+                                {
+                                    "Jet": jets[jes]["down"],
+                                    "MET": met[jes]["down"],
+                                },
+                                f"{jes}Down",
+                            ),
+                        ]
+
+                else:
+                    if "JES_Total" in jets.fields:
+                        shifts += [
+                            (
+                                {
+                                    "Jet": jets.JES_Total.up,
+                                    "MET": met.JES_Total.up,
+                                },
+                                "JESUp",
+                            ),
+                            (
+                                {
+                                    "Jet": jets.JES_Total.down,
+                                    "MET": met.JES_Total.down,
+                                },
+                                "JESDown",
+                            ),
+                        ]
+                    if "MET_UnclusteredEnergy" in met.fields:
+                        shifts += [
+                            (
+                                {
+                                    "Jet": jets,
+                                    "MET": met.MET_UnclusteredEnergy.up,
+                                },
+                                "UESUp",
+                            ),
+                            (
+                                {
+                                    "Jet": jets,
+                                    "MET": met.MET_UnclusteredEnergy.down,
+                                },
+                                "UESDown",
+                            ),
+                        ]
+                    if "JER" in jets.fields:
+                        shifts += [
+                            (
+                                {
+                                    "Jet": jets.JER.up,
+                                    "MET": met.JER.up,
+                                },
+                                "JERUp",
+                            ),
+                            (
+                                {
+                                    "Jet": jets.JER.down,
+                                    "MET": met.JER.down,
+                                },
+                                "JERDown",
+                            ),
+                        ]
 
     else:
         met = events.PuppiMET
@@ -608,80 +691,6 @@ def JME_shifts(  # _factory(
     if "jetveto" in correct_map.keys():
         events.Jet = update(events.Jet, {"veto": jetveto(events, correct_map)})
     shifts += [({"Jet": jets, "MET": met}, None)]
-
-    ## systematics
-    if not isRealData:
-        if systematic != False:
-            if systematic == "split":
-                for jes in met.fields:
-                    if "JES" not in jes or "Total" in jes:
-                        continue
-
-                    shifts += [
-                        (
-                            {
-                                "Jet": jets[jes]["up"],
-                                "MET": met[jes]["up"],
-                            },
-                            f"{jes}Up",
-                        ),
-                        (
-                            {
-                                "Jet": jets[jes]["down"],
-                                "MET": met[jes]["down"],
-                            },
-                            f"{jes}Down",
-                        ),
-                    ]
-
-            else:
-                shifts += [
-                    (
-                        {
-                            "Jet": jets.JES_Total.up,
-                            "MET": met.JES_Total.up,
-                        },
-                        "JESUp",
-                    ),
-                    (
-                        {
-                            "Jet": jets.JES_Total.down,
-                            "MET": met.JES_Total.down,
-                        },
-                        "JESDown",
-                    ),
-                ]
-            # shifts += [
-            #     (
-            #         {
-            #             "Jet": jets,
-            #             "MET": met.MET_UnclusteredEnergy.up,
-            #         },
-            #         "UESUp",
-            #     ),
-            #     (
-            #         {
-            #             "Jet": jets,
-            #             "MET": met.MET_UnclusteredEnergy.down,
-            #         },
-            #         "UESDown",
-            #     )
-            # ]
-            # if 'JER' in jets.fields:
-            #     shifts +=[(
-            #         {
-            #             "Jet": jets.JER.up,
-            #             "MET": met.JER.up,
-            #         },
-            #         "JERUp",
-            #     ),
-            #     (
-            #         {
-            #             "Jet": jets.JER.down,
-            #             "MET": met.JER.down,
-            #         },
-            #         "JERDown",
-            #     )]
     return shifts
 
 
