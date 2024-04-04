@@ -73,7 +73,7 @@ More options for `runner.py`
                         (default: dummy_samples.json)
   --year YEAR           Year
   --campaign CAMPAIGN   Dataset campaign, change the corresponding correction
-                        files{ "Rereco17_94X","Winter22Run3","Summer23","Summer23BPix","Summer22","Summer22EE","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
+                        files{ "Rereco17_94X","Winter22Run3","Summer23","Summer23BPix","Summer22","Summer22EE","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL","prompt_dataMC"}
   --isSyst              Run with systematics, all, weight_only(no JERC uncertainties included),JERC_split, None(not extract)
   --isArray             Output root files
   --noHist              Not save histogram coffea files
@@ -202,7 +202,6 @@ python runner.py --workflow valid --json metadata/$json file
 
 </p>
 </details>
-
 
 #### BTA - BTagAnalyzer Ntuple producer
 
@@ -344,13 +343,16 @@ The script provided by Pablo to resubmit failure jobs in `script/missingFiles.py
 
 ## Make the dataset json files
 
-Use `fetch.py` in folder `scripts/` to obtain your samples json files. You can create `$input_list` ,which can be a list of datasets taken from CMS DAS , and create the json contains `dataset_name:[filelist]`. One can specify the local path in that input list for samples not published in CMS DAS.
+Use `fetch.py` in folder `scripts/` to obtain your samples json files. You can create `$input_list` ,which can be a list of datasets taken from CMS DAS or names of dataset(need to specify campaigns explicity), and create the json contains `dataset_name:[filelist]`. One can specify the local path in that input list for samples not published in CMS DAS.
 `$output_json_name$` is the name of your output samples json file.
 
 The `--whitelist_sites, --blacklist_sites` are considered for fetch dataset if multiple sites are available
 
+
 ```
-## File publish in DAS
+## File publish in DAS, input MC file name list, specified --from_dataset and add campaign info, if more than one campaign found, would ask for specify explicity
+python scripts/fetch.py -i $MC_FILE_LIST -o ${output_json_name} --from_dataset --campaign Run3Summer23BPixNanoAODv12
+## File publish in DAS, input DAS path
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} (--xrd {prefix_forsite})
 
 ## Not publish case, specify site by --xrd prefix
@@ -493,10 +495,24 @@ python -m BTVNanoCommissioning.utils.compile_jec ${campaign} jec_compiled
 e.g. python -m BTVNanoCommissioning.utils.compile_jec Summer23 jec_compiled
 ```
 
+## Prompt data/MC checks and validation
+
+### Prompt data/MC checks (prompt_dataMC campaign, WIP)
+
+To quickly check the data/MC quickly, run part data/MC files, no SFs/JEC are applied, only the lumimasks.
+
+1. Get the file list from DAS, use the `scripts/fetch.py` scripts to obtain the jsons
+2. Replace the lumimask name in prompt_dataMC in `AK4_parameters.py` , you can do `sed -i 's/$LUMIMASK_DATAMC/xxx.json/g`
+3. Run through the dataset to obtained the `coffea` files
+4. Dump the lumi information via `dump_processed.py`, then use `brilcalc` to get the dedicated luminosity info
+5. Obtained data MC plots
+
+### Validation workflow
+
 
 ## Plotting code
 
-- data/MC comparisons
+### data/MC comparisons
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
 
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
@@ -544,7 +560,7 @@ options:
 </details>
 </p>
 
-- data/data, MC/MC comparisons
+### data/data, MC/MC comparisons
 
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
@@ -590,6 +606,15 @@ options:
 
 </details>
 </p>
+
+
+### ROCs & efficiency plots
+
+Extract the ROCs for different tagger and efficiencies from validation workflow
+
+```python
+python scripts/validation_plot.py -i  $INPUT_COFFEA -v $VERSION
+```
 
 ## Store histograms from coffea file
 

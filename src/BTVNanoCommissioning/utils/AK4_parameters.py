@@ -124,4 +124,5 @@ correction_config = {
             "MC": "calibeHistoWrite_MC2023_Summer23BPix.root",
         },
     },
+    "prompt_dataMC": {"lumiMask": "$LUMIMASK_DATAMC"},
 }

@@ -51,49 +51,65 @@ def histogrammer(events, workflow):
         obj_list = ["jet0", "jet1"]
         _hist_dict["bjet_WP_pt"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             pt_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["bjet_WP_eta"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             eta_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["bjet_WP_phi"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             phi_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["bjet_WP_discr"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             Hist.axis.Regular(25, 0, 1, name="B"),
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_pt"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             pt_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_eta"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             eta_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_phi"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             phi_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_discr"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             Hist.axis.Regular(25, 0, 1, name="CvL"),
             Hist.axis.Regular(25, 0, 1, name="CvB"),
             Hist.storage.Weight(),

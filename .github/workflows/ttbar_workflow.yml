@@ -5,14 +5,18 @@ on:
     branches: [ master ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/tt*'
-    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/helpers/update_branch.py'
+    - 'src/BTVNanoCommissioning/helpers/func.py'
+    - 'src/BTVNanoCommissioning/helpers/definitions.py'
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/ttbar_workflow.yml'
   pull_request_target:
     branches: [ master ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/tt*'
-    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/helpers/update_branch.py'
+    - 'src/BTVNanoCommissioning/helpers/func.py'
+    - 'src/BTVNanoCommissioning/helpers/definitions.py'
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/ttbar_workflow.yml'
   workflow_dispatch:

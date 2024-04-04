@@ -86,6 +86,7 @@ def get_main_parser():
             "2017_UL",
             "2016preVFP_UL",
             "2016postVFP_UL",
+            "prompt_dataMC",
         ],
         help="Dataset campaign, change the corresponding correction files",
     )
