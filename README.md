@@ -48,6 +48,15 @@ pip install -e .[dev] # for developer
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
 
+## Quick launch of all tasks
+
+Now you can use various shell scripts to directly launch the runner scripts with predefined scaleouts. You can modify and customize the scripts inside the ```scripts/submit``` directory according to your needs. Each script takes arguments from ```arguments.txt``` directory, that has 4 inputs i.e. - ```Campaign name```, ```year```, ```executor``` and ```luminosity```. To launch any workflow, for example W+c - 
+```
+./ctag_wc.sh arguments.txt
+```
+Additional scripts are provided to make a directory structure that creates directories locally and copies them in the remote BTV eos area [https://btvweb.web.cern.ch/Commissioning/dataMC/](https://btvweb.web.cern.ch/Commissioning/dataMC/). 
+Finally plots can be directly monitored in the webpage.
+
 ## Structure
  
 Each workflow can be a separate "processor" file, creating the mapping from NanoAOD to
