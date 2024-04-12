@@ -7,7 +7,7 @@ def histogrammer(events, workflow):
     ## Common variables
     flav_axis = Hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour")
     syst_axis = Hist.axis.StrCategory([], name="syst", growth=True)
-    pt_axis = Hist.axis.Regular(300, 0, 3000, name="pt", label=" $p_{T}$ [GeV]")
+    pt_axis = Hist.axis.Regular(300, 0, 300, name="pt", label=" $p_{T}$ [GeV]")
     jpt_axis = Hist.axis.Regular(300, 0, 3000, name="pt", label=" $p_{T}$ [GeV]")
     softlpt_axis = Hist.axis.Regular(25, 0, 25, name="pt", label=" $p_{T}$ [GeV]")
     mass_axis = Hist.axis.Regular(50, 0, 300, name="mass", label=" $p_{T}$ [GeV]")
@@ -51,49 +51,65 @@ def histogrammer(events, workflow):
         obj_list = ["jet0", "jet1"]
         _hist_dict["bjet_WP_pt"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             pt_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["bjet_WP_eta"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             eta_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["bjet_WP_phi"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             phi_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["bjet_WP_discr"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             Hist.axis.Regular(25, 0, 1, name="B"),
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_pt"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             pt_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_eta"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             eta_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_phi"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             phi_axis,
             Hist.storage.Weight(),
         )
         _hist_dict["cjet_WP_discr"] = Hist.Hist(
             Hist.axis.StrCategory([], name="WP", growth=True),
-            Hist.axis.StrCategory(["DeepFlav", "PNet", "RobustParTAK4"], name="tagger"),
+            Hist.axis.StrCategory(
+                ["DeepFlav", "PNet", "RobustParTAK4"], name="tagger", growth=True
+            ),
             Hist.axis.Regular(25, 0, 1, name="CvL"),
             Hist.axis.Regular(25, 0, 1, name="CvB"),
             Hist.storage.Weight(),

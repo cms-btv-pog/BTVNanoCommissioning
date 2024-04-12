@@ -6,9 +6,6 @@ from BTVNanoCommissioning.workflows.validation import (
 )
 
 # TTbar
-from BTVNanoCommissioning.workflows.ttbar_validation import (
-    NanoProcessor as TTbarValidProcessor,
-)
 from BTVNanoCommissioning.workflows.ttsemilep_valid_sf import (
     NanoProcessor as TTsemilepValidSFProcessor,
 )
@@ -64,7 +61,6 @@ workflows = {}
 workflows["validation"] = ValidationProcessor
 
 # TTBar
-workflows["ttcom"] = TTbarValidProcessor
 workflows["ttdilep_sf"] = TTdilepValidSFProcessor
 workflows["ttsemilep_sf"] = TTsemilepValidSFProcessor
 workflows["emctag_ttdilep_sf"] = CTAGEMDilepttValidSFProcessor
@@ -74,7 +70,7 @@ workflows["ctag_ttsemilep_sf"] = CTAGSemilepttValidSFProcessor
 workflows["ectag_ttsemilep_sf"] = CTAGETTSemilepValidSFProcessor
 
 ##QCD
-workflows["QCD"] = QCDValidProcessor
+workflows["QCD_sf"] = QCDValidProcessor
 
 # W+c
 workflows["ctag_Wc_sf"] = CTAGWcValidSFProcessor

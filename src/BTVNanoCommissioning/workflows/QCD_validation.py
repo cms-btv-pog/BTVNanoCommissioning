@@ -185,15 +185,14 @@ class NanoProcessor(processor.ProcessorABC):
             pseval = correctionlib.CorrectionSet.from_file(
                 f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{triggers[0]}_run{run_num}.json"
             )
-            print(triggers[0])
             psweight = pseval["prescaleWeight"].evaluate(
                 selev.run,
                 f"HLT_{triggers[0]}",
                 ak.values_astype(selev.luminosityBlock, np.float32),
             )
             weights.add("psweight", psweight)
-            genflavor = ak.zeros_like(sjets.pt)
-            lj_matched_JetSVs_genflav = ak.zeros_like(lj_matched_JetSVs.pt)
+            genflavor = ak.zeros_like(sjets.pt, dtype=int)
+            lj_matched_JetSVs_genflav = ak.zeros_like(lj_matched_JetSVs.pt, dtype=int)
 
         # Systematics information
         if shift_name is None:

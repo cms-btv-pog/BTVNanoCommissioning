@@ -75,7 +75,7 @@ def jet_cut(events, campaign):
 
 
 btag_wp_dict = {
-    "Summer22Run3": {
+    "Summer22": {
         "DeepFlav": {
             "b": {
                 "No": 0.0,
@@ -125,7 +125,7 @@ btag_wp_dict = {
             },
         },
     },
-    "Summer22EERun3": {
+    "Summer22EE": {
         "DeepFlav": {
             "b": {
                 "No": 0.0,

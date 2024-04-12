@@ -56,6 +56,13 @@ parser.add_argument(
 parser.add_argument(
     "--limit", help="Limit numbers of file to create json", default=None, type=int
 )
+parser.add_argument(
+    "--from_dataset",
+    help="input dataset only",
+    action="store_true",
+    default=False,
+)
+parser.add_argument("--campaign", help="campaign info", default=None, type=str)
 
 
 args = parser.parse_args()
@@ -202,7 +209,10 @@ def getFilesFromDas(args):
             xrd = args.xrd
 
         if xrd is None:
-            raise Exception(f"No SITE available in the whitelist for file {dsname}")
+            print(
+                f"No SITE available in the whitelist for file {dsname}, change to global redirector"
+            )
+            xrd = "root://xrootd-cms.infn.it//"
         if args.limit is not None:
             flist = flist[: args.limit]
         if dsname not in fdict:
@@ -356,11 +366,47 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
 
 
 def main(args):
+    if args.from_dataset:
+        f = open(args.input)
+        if args.campaign is None:
+            raise ("Please provide the campaign info when input dataset")
+        outf = open(args.input + "_DAS_" + args.campaign, "w")
+        short_campaign = args.campaign
+        for l in f.readlines():
+            l = l.replace("\n", "")
+            dataset = (
+                os.popen(
+                    f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.campaign}*/NANOAODSIM'"
+                )
+                .read()[:-1]
+                .split("\n")
+            )
+            if dataset[0] == "":
+                print(l, "not Found!")
+                continue
+            campaigns = [d.split("/")[2] for d in dataset]
+            if len(dataset) > 1:
+                args.campaign = input(f"which campaign? \n {campaigns} \n")
+                dataset = (
+                    os.popen(
+                        f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.campaign}*/NANOAODSIM'"
+                    )
+                    .read()[:-1]
+                    .split("\n")
+                )
+
+                outf.write(dataset[0] + "\n")
+
+            else:
+                outf.write(dataset[0] + "\n")
+        outf.close()
+
+        args.input = args.input + "_DAS_" + short_campaign
+
     if args.from_path:
         print("do it from path: ")
         fdict = getFilesFromPath(args)
     elif args.testfile:
-
         fdict = getTestlist(args)
     else:
         fdict = getFilesFromDas(args)

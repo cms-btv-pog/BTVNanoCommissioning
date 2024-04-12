@@ -6,6 +6,7 @@
 [![ctag DY+jets Workflow](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ctag_DY_workflow.yml/badge.svg)](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ctag_DY_workflow.yml)
 [![ctag W+c Workflow](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ctag_Wc_workflow.yml/badge.svg)](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/ctag_Wc_workflow.yml)
 [![BTA Workflow](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/BTA_workflow.yml/badge.svg)](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/BTA_workflow.yml)
+[![QCD Workflow](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/QCD_workflow.yml/badge.svg)](https://github.com/cms-btv-pog/BTVNanoCommissioning/actions/workflows/QCD_workflow.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 Repository for Commissioning studies in the BTV POG based on (custom) nanoAOD samples
@@ -47,6 +48,15 @@ pip install -e .[dev] # for developer
 ### Other installation options for coffea
 See https://coffeateam.github.io/coffea/installation.html
 
+## Quick launch of all tasks
+
+Now you can use various shell scripts to directly launch the runner scripts with predefined scaleouts. You can modify and customize the scripts inside the ```scripts/submit``` directory according to your needs. Each script takes arguments from ```arguments.txt``` directory, that has 4 inputs i.e. - ```Campaign name```, ```year```, ```executor``` and ```luminosity```. To launch any workflow, for example W+c - 
+```
+./ctag_wc.sh arguments.txt
+```
+Additional scripts are provided to make a directory structure that creates directories locally and copies them in the remote BTV eos area [https://btvweb.web.cern.ch/Commissioning/dataMC/](https://btvweb.web.cern.ch/Commissioning/dataMC/). 
+Finally plots can be directly monitored in the webpage.
+
 ## Structure
  
 Each workflow can be a separate "processor" file, creating the mapping from NanoAOD to
@@ -73,7 +83,7 @@ More options for `runner.py`
                         (default: dummy_samples.json)
   --year YEAR           Year
   --campaign CAMPAIGN   Dataset campaign, change the corresponding correction
-                        files{ "Rereco17_94X","Winter22Run3","Summer23","Summer23BPix","Summer22","Summer22EE","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL"}
+                        files{ "Rereco17_94X","Winter22Run3","Summer23","Summer23BPix","Summer22","Summer22EE","2018_UL","2017_UL","2016preVFP_UL","2016postVFP_UL","prompt_dataMC"}
   --isSyst              Run with systematics, all, weight_only(no JERC uncertainties included),JERC_split, None(not extract)
   --isArray             Output root files
   --noHist              Not save histogram coffea files
@@ -202,7 +212,6 @@ python runner.py --workflow valid --json metadata/$json file
 
 </p>
 </details>
-
 
 #### BTA - BTagAnalyzer Ntuple producer
 
@@ -344,13 +353,16 @@ The script provided by Pablo to resubmit failure jobs in `script/missingFiles.py
 
 ## Make the dataset json files
 
-Use `fetch.py` in folder `scripts/` to obtain your samples json files. You can create `$input_list` ,which can be a list of datasets taken from CMS DAS , and create the json contains `dataset_name:[filelist]`. One can specify the local path in that input list for samples not published in CMS DAS.
+Use `fetch.py` in folder `scripts/` to obtain your samples json files. You can create `$input_list` ,which can be a list of datasets taken from CMS DAS or names of dataset(need to specify campaigns explicity), and create the json contains `dataset_name:[filelist]`. One can specify the local path in that input list for samples not published in CMS DAS.
 `$output_json_name$` is the name of your output samples json file.
 
 The `--whitelist_sites, --blacklist_sites` are considered for fetch dataset if multiple sites are available
 
+
 ```
-## File publish in DAS
+## File publish in DAS, input MC file name list, specified --from_dataset and add campaign info, if more than one campaign found, would ask for specify explicity
+python scripts/fetch.py -i $MC_FILE_LIST -o ${output_json_name} --from_dataset --campaign Run3Summer23BPixNanoAODv12
+## File publish in DAS, input DAS path
 python fetch.py --input ${input_DAS_list} --output ${output_json_name} (--xrd {prefix_forsite})
 
 ## Not publish case, specify site by --xrd prefix
@@ -493,10 +505,24 @@ python -m BTVNanoCommissioning.utils.compile_jec ${campaign} jec_compiled
 e.g. python -m BTVNanoCommissioning.utils.compile_jec Summer23 jec_compiled
 ```
 
+## Prompt data/MC checks and validation
+
+### Prompt data/MC checks (prompt_dataMC campaign, WIP)
+
+To quickly check the data/MC quickly, run part data/MC files, no SFs/JEC are applied, only the lumimasks.
+
+1. Get the file list from DAS, use the `scripts/fetch.py` scripts to obtain the jsons
+2. Replace the lumimask name in prompt_dataMC in `AK4_parameters.py` , you can do `sed -i 's/$LUMIMASK_DATAMC/xxx.json/g`
+3. Run through the dataset to obtained the `coffea` files
+4. Dump the lumi information via `dump_processed.py`, then use `brilcalc` to get the dedicated luminosity info
+5. Obtained data MC plots
+
+### Validation workflow
+
 
 ## Plotting code
 
-- data/MC comparisons
+### data/MC comparisons
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
 
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
@@ -544,7 +570,7 @@ options:
 </details>
 </p>
 
-- data/data, MC/MC comparisons
+### data/data, MC/MC comparisons
 
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 :exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
@@ -590,6 +616,15 @@ options:
 
 </details>
 </p>
+
+
+### ROCs & efficiency plots
+
+Extract the ROCs for different tagger and efficiencies from validation workflow
+
+```python
+python scripts/validation_plot.py -i  $INPUT_COFFEA -v $VERSION
+```
 
 ## Store histograms from coffea file
 
