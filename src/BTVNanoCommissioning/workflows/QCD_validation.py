@@ -185,7 +185,6 @@ class NanoProcessor(processor.ProcessorABC):
             pseval = correctionlib.CorrectionSet.from_file(
                 f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{triggers[0]}_run{run_num}.json"
             )
-            print(triggers[0])
             psweight = pseval["prescaleWeight"].evaluate(
                 selev.run,
                 f"HLT_{triggers[0]}",

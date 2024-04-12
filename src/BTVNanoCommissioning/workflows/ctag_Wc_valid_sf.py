@@ -240,26 +240,15 @@ class NanoProcessor(processor.ProcessorABC):
             (dilep_mass.mass < 80) | (dilep_mass.mass > 100)
         )
 
-        if int(self._year) > 2020:
-            MET = ak.zip(
-                {
-                    "pt": events.MET.pt,
-                    "eta": ak.zeros_like(events.MET.pt),
-                    "phi": events.MET.phi,
-                    "mass": ak.zeros_like(events.MET.pt),
-                },
-                with_name="PtEtaPhiMLorentzVector",
-            )
-        else:
-            MET = ak.zip(
-                {
-                    "pt": events.PuppiMET.pt,
-                    "eta": ak.zeros_like(events.PuppiMET.pt),
-                    "phi": events.PuppiMET.phi,
-                    "mass": ak.zeros_like(events.PuppiMET.pt),
-                },
-                with_name="PtEtaPhiMLorentzVector",
-            )
+        MET = ak.zip(
+            {
+                "pt": events.MET.pt,
+                "eta": ak.zeros_like(events.MET.pt),
+                "phi": events.MET.phi,
+                "mass": ak.zeros_like(events.MET.pt),
+            },
+            with_name="PtEtaPhiMLorentzVector",
+        )
         Wmass = MET + iso_muon
         # modified to transverse mass
         req_mtw = (

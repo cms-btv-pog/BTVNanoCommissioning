@@ -531,7 +531,7 @@ def JME_shifts(
                 ak.values_astype(corrected_polar_met(*metinfo).pt, np.float32),
                 ak.values_astype(corrected_polar_met(*metinfo).phi, np.float32),
             )
-            met["orig_pt"], met["orig_phi"] = nocorrmet["pt"], nocorrmet["pt"]
+            met["orig_pt"], met["orig_phi"] = nocorrmet["pt"], nocorrmet["phi"]
             if systematic != False:
 
                 if systematic != "JERC_split":
@@ -691,6 +691,7 @@ def JME_shifts(
     if "jetveto" in correct_map.keys():
         events.Jet = update(events.Jet, {"veto": jetveto(events, correct_map)})
     shifts += [({"Jet": jets, "MET": met}, None)]
+    print("in shift", met.pt)
     return shifts
 
 
