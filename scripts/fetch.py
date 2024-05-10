@@ -373,6 +373,7 @@ def main(args):
         outf = open(args.input + "_DAS_" + args.campaign, "w")
         short_campaign = args.campaign
         for l in f.readlines():
+            print(l)
             l = l.replace("\n", "")
             dataset = (
                 os.popen(

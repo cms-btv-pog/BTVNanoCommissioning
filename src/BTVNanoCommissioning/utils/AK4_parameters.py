@@ -91,15 +91,15 @@ correction_config = {
     "Summer23": {
         "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
         "PU": "puwei_Summer23.histo.root",
-        "JME": {
-            "MC": "Summer23Prompt23_V1",
-            "Run2023C-22Sep2023_v1": "Summer23Prompt23_RunCv123_V1",
-            "Run2023C-22Sep2023_v2": "Summer23Prompt23_RunCv123_V1",
-            "Run2023C-22Sep2023_v3": "Summer23Prompt23_RunCv123_V1",
-            "Run2023C-22Sep2023_v4": "Summer23Prompt23_RunCv4_V1",
-        },
-        #         "JME": "jec_compiled.pkl.gz",
-        "jetveto": {"Run2023BC jetvetomap_all": "Summer23Prompt23_RunC_v1.histo.root"},
+        # "JME": {
+        #     "MC": "Summer23Prompt23_V1",
+        #     "Run2023C-22Sep2023_v1": "Summer23Prompt23_RunCv123_V1",
+        #     "Run2023C-22Sep2023_v2": "Summer23Prompt23_RunCv123_V1",
+        #     "Run2023C-22Sep2023_v3": "Summer23Prompt23_RunCv123_V1",
+        #     "Run2023C-22Sep2023_v4": "Summer23Prompt23_RunCv4_V1",
+        # },
+        "JME": "jec_compiled.pkl.gz",
+        # "jetveto": {"Run2023BC jetvetomap_all": "Summer23Prompt23_RunC_v1.histo.root"},
         "JPCalib": {
             "Run2023C-22Sep2023_v1": "calibeHistoWrite_Data2023C-22Sep2023_v1.root",
             "Run2023C-22Sep2023_v2": "calibeHistoWrite_Data2023C-22Sep2023_v2.root",
@@ -111,18 +111,19 @@ correction_config = {
     "Summer23BPix": {
         "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
         "PU": "puwei_Summer23BPix.histo.root",
-        "JME": {
-            "MC": "Summer23BPixPrompt23_V1",
-            "Run2023D": "Summer23BPixPrompt23_RunD_V1",
-        },
-        "jetveto": {
-            "Run2023D jetvetomap_all": "Summer23BPixPrompt23_RunD_v1.histo.root"
-        },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
+        # "JME": {
+        #     "MC": "Summer23BPixPrompt23_V1",
+        #     "Run2023D": "Summer23BPixPrompt23_RunD_V1",
+        # },
+        "JME": "jec_compiled.pkl.gz",
+        # "jetveto": {
+        #     "Run2023D jetvetomap_all": "Summer23BPixPrompt23_RunD_v1.histo.root"
+        # },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
         "JPCalib": {
             "Run2023D-22Sep2023_v1": "calibeHistoWrite_Data2023D-22Sep2023_v1.root",
             "Run2023D-22Sep2023_v2": "calibeHistoWrite_Data2023D-22Sep2023_v2.root",
             "MC": "calibeHistoWrite_MC2023_Summer23BPix.root",
         },
     },
-    "prompt_dataMC": {"lumiMask": "$LUMIMASK_DATAMC"},
+    "CAMPAIGN_prompt_dataMC": {"lumiMask": "$LUMIMASK_DATAMC"},
 }

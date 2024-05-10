@@ -7,7 +7,7 @@ def histogrammer(events, workflow):
     ## Common variables
     flav_axis = Hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour")
     syst_axis = Hist.axis.StrCategory([], name="syst", growth=True)
-    pt_axis = Hist.axis.Regular(300, 0, 300, name="pt", label=" $p_{T}$ [GeV]")
+    pt_axis = Hist.axis.Regular(60, 0, 300, name="pt", label=" $p_{T}$ [GeV]")
     jpt_axis = Hist.axis.Regular(300, 0, 3000, name="pt", label=" $p_{T}$ [GeV]")
     softlpt_axis = Hist.axis.Regular(25, 0, 25, name="pt", label=" $p_{T}$ [GeV]")
     mass_axis = Hist.axis.Regular(50, 0, 300, name="mass", label=" $p_{T}$ [GeV]")
@@ -18,7 +18,7 @@ def histogrammer(events, workflow):
     softliso_axis = Hist.axis.Regular(
         20, 0.2, 6.2, name="pfRelIso03_all", label="Rel. Iso"
     )
-    npvs_axis = Hist.axis.Regular(100, 0, 100, name="npv", label="N PVs")
+    npvs_axis = Hist.axis.Integer(0, 100, name="npv", label="N PVs")
     dr_axis = Hist.axis.Regular(20, 0, 8, name="dr", label="$\Delta$R")
     dr_s_axis = Hist.axis.Regular(20, 0, 0.5, name="dr", label="$\Delta$R")
     dr_SV_axis = Hist.axis.Regular(20, 0, 1.0, name="dr", label="$\Delta$R")
@@ -524,6 +524,7 @@ def histogrammer(events, workflow):
         "btagNegDeepFlavQG",
         "btagNegDeepFlavUDS",
         "btagNegPNetB",
+        "btagNegPNetC",
         "btagNegPNetCvB",
         "btagNegPNetCvL",
         "btagNegPNetProbB",

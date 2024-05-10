@@ -164,7 +164,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_jets = (ak.num(event_jet.pt) >= 1) & (ak.num(event_jet.pt) <= 3)
 
         ## Soft Muon cuts
-        soft_muon = events.Muon[softmu_mask(events, self._campaign)]
+        soft_muon = events.Muon[softmu_πmask(events, self._campaign)]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
         mujetsel = ak.fill_none(
             (ak.all(event_jet.metric_table(soft_muon) <= 0.4, axis=2))
@@ -326,7 +326,7 @@ class NanoProcessor(processor.ProcessorABC):
             "DeepCSVC",
             "DeepCSVB",
             "DeepJetB",
-            "DeepJetB",
+            "DeepJetC",
         ]  # exclude b-tag SFs for btag inputs
 
         ####################

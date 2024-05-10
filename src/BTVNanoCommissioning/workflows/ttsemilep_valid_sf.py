@@ -23,7 +23,8 @@ from BTVNanoCommissioning.helpers.func import (
 )
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
-from BTVNanoCommissioning.utils.selection import jet_id, btag_mu_idiso
+from BTVNanoCommissioning.utils.selection import jet_id, btag_mu_idiso, MET_filters
+import hist
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -143,7 +144,8 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Jet cuts
         event_jet = events.Jet[
-            ak.fill_none(
+            (events.Jet.veto != 1)
+            & ak.fill_none(
                 jet_id(events, self._campaign)
                 & (
                     ak.all(
@@ -163,6 +165,7 @@ class NanoProcessor(processor.ProcessorABC):
             ak.local_index(events.Jet.pt),
             (
                 jet_id(events, self._campaign)
+                & (events.Jet.veto != 1)
                 & (
                     ak.all(
                         events.Jet.metric_table(events.Muon) > 0.4,
@@ -190,8 +193,9 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_MET = MET.pt > 50
 
+        req_metfilter = MET_filters(events, self._campaign)
         event_level = ak.fill_none(
-            req_trig & req_jets & req_muon & req_MET & req_lumi, False
+            req_trig & req_jets & req_muon & req_MET & req_lumi & req_metfilter, False
         )
         if len(events[event_level]) == 0:
             return {dataset: output}
@@ -255,7 +259,7 @@ class NanoProcessor(processor.ProcessorABC):
             "DeepCSVC",
             "DeepCSVB",
             "DeepJetB",
-            "DeepJetB",
+            "DeepJetC",
         ]  # exclude b-tag SFs for btag inputs
 
         ####################

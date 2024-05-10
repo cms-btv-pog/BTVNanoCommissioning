@@ -60,6 +60,7 @@ class NanoProcessor(processor.ProcessorABC):
         return processor.accumulate(
             self.process_shift(update(events, collections), name)
             for collections, name in shifts
+            if name != None
         )
 
     def process_shift(self, events, shift_name):

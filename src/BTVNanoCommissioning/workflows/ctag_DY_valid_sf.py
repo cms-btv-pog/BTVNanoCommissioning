@@ -23,7 +23,12 @@ from BTVNanoCommissioning.helpers.func import (
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
-from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_mvatightid
+from BTVNanoCommissioning.utils.selection import (
+    jet_id,
+    mu_idiso,
+    ele_mvatightid,
+    MET_filters,
+)
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -96,7 +101,6 @@ class NanoProcessor(processor.ProcessorABC):
         _hist_event_dict = (
             {"": None} if self.noHist else histogrammer(events, "ctag_DY_sf")
         )
-
         output = {
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,
@@ -133,6 +137,8 @@ class NanoProcessor(processor.ProcessorABC):
         for t in trig_arrs:
             req_trig = req_trig | t
 
+        req_metfilter = MET_filters(events, self._campaign)
+
         ## Muon cuts
         dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
         ## Electron cuts
@@ -162,7 +168,8 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Jet cuts
         event_jet = events.Jet[
-            ak.fill_none(
+            (events.Jet.veto != 1)
+            & ak.fill_none(
                 jet_id(events, self._campaign)
                 & (
                     ak.all(
@@ -211,7 +218,8 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = jetindx[:, 0]
 
         event_level = ak.fill_none(
-            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets, False
+            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets & req_metfilter,
+            False,
         )
         if len(events[event_level]) == 0:
             return {dataset: output}
@@ -280,7 +288,7 @@ class NanoProcessor(processor.ProcessorABC):
             "DeepCSVC",
             "DeepCSVB",
             "DeepJetB",
-            "DeepJetB",
+            "DeepJetC",
         ]  # exclude b-tag SFs for btag inputs
 
         ####################
