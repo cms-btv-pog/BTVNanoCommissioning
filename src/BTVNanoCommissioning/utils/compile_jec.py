@@ -280,8 +280,9 @@ jet_factory = {
             "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_V1_MC_L3Absolute_AK4PFPuppi.jec.txt",
             "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_V1_MC_UncertaintySources_AK4PFPuppi.junc.txt",
             "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_V1_MC_Uncertainty_AK4PFPuppi.junc.txt",
-            "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_RunCv4_JRV1_MC_PtResolution_AK4PFPuppi.jr.txt",
-            "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_RunCv4_JRV1_MC_SF_AK4PFPuppi.jersf.txt",
+            "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_JRV1_MC_SF_AK4PFPuppi.jersf.txt",
+            "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_JRV1_MC_PtResolution_AK4PFPuppi.jr.txt",
+
         ],
         "dataCv123": [
             "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_RunCv123_V1_DATA_L1FastJet_AK4PFPuppi.jec.txt",
