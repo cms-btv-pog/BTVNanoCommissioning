@@ -5,14 +5,18 @@ on:
     branches: [ master ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/*BTA*'
-    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/helpers/update_branch.py'
+    - 'src/BTVNanoCommissioning/helpers/func.py'
+    - 'src/BTVNanoCommissioning/helpers/definitions.py'
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/BTA_workflow.yml'
   pull_request_target:
     branches: [ master ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/*BTA*'
-    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/helpers/update_branch.py'
+    - 'src/BTVNanoCommissioning/helpers/func.py'
+    - 'src/BTVNanoCommissioning/helpers/definitions.py'
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/BTA_workflow.yml'
   workflow_dispatch:
@@ -24,7 +28,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.8","3.10"]
+        python-version: ["3.10"]
     
     defaults:
       run:
@@ -87,6 +91,7 @@ jobs:
         chmod 400 $HOME/.globus/userkey.pem
         openssl rand -out $HOME/.rnd  -hex 256
         printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms --vomses ${X509_VOMSES} --debug --pwstdin
+        chmod 755 /usr/share/miniconda3/envs/btv_coffea/etc/grid-security/certificates
         
     - name: Test xrootd
       run: |
@@ -98,9 +103,9 @@ jobs:
   
     - name: BTA workflow test
       run: |
-         python runner.py --wf BTA --json metadata/test_bta_run3.json --campaign Summer22Run3 --executor iterative --overwrite
+         python runner.py --wf BTA --json metadata/test_bta_run3.json --executor iterative --overwrite
     
     - name: BTA_ttbar workflow test
       run: |
-         python runner.py --wf BTA_ttbar --json metadata/test_bta_run3.json --campaign Summer22Run3 --executor iterative --overwrite
+         python runner.py --wf BTA_ttbar --json metadata/test_bta_run3.json  --executor iterative --overwrite
 

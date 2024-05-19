@@ -1,5 +1,5 @@
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import add_jec_variables, jetveto
+from BTVNanoCommissioning.utils.correction import add_jec_variables
 import numpy as np
 
 
@@ -9,6 +9,8 @@ def missing_branch(events):
         if hasattr(events, "fixedGridRhoFastjetAll")
         else events.Rho.fixedGridRhoFastjetAll
     )
+    ## calculate missing nodes
+
     if not hasattr(events.Jet, "btagDeepFlavB"):
         jets = events.Jet
         jets["btagDeepFlavB"] = (
@@ -30,14 +32,6 @@ def missing_branch(events):
         events.Jet = update(
             events.Jet,
             {"btagDeepFlavC": jets.btagDeepFlavC},
-        )
-    if hasattr(events.Jet, "btagDeepCvL") and not hasattr(events.Jet, "btagDeepC"):
-        jets["btagDeepC"] = (
-            events.Jet.btagDeepCvL / (1.0 - events.Jet.btagDeepCvL)
-        ) * events.Jet.btagDeepB
-        events.Jet = update(
-            events.Jet,
-            {"btagDeepC": jets.btagDeepC},
         )
     if hasattr(events.Jet, "btagDeepFlavC") and not hasattr(
         events.Jet, "btagDeepFlavCvL"
@@ -138,53 +132,4 @@ def missing_branch(events):
                 "MetUnclustEnUpDeltaY": met.MetUnclustEnUpDeltaY,
             },
         )
-    if (
-        "Run2022C" in events.metadata["dataset"]
-        or "Run2022D" in events.metadata["dataset"]
-        or "Run2022E" in events.metadata["dataset"]
-        or "Run2022F" in events.metadata["dataset"]
-        or "Run2022G" in events.metadata["dataset"]
-    ):
-        events.Jet = update(events.Jet, {"veto": jetveto(events)})
-    return events
-
-
-def add_jec(events, campaign, jmestuff):
-    dataset = events.metadata["dataset"]
-    jet_factory = jmestuff["jet_factory"]
-    met_factory = jmestuff["met_factory"]
-    isRealData = not hasattr(events, "genWeight")
-    if isRealData:
-        if "un" in dataset:
-            jecname = dataset[dataset.find("un") + 6]
-        else:
-            print("No valid jec name")
-            raise NameError
-        if "2016_" in campaign:
-            if "B" == jecname or "C" == jecname or "D" == jecname:
-                jecname = "BCD"
-            elif "E" == jecname or "F" == jecname:
-                jecname = "EF"
-            elif "F" == jecname or "G" == jecname or "H" == jecname:
-                jecname = "FGH"
-            else:
-                raise NameError
-        elif campaign == "Rereco17_94X":
-            jecname = ""
-        jets = jet_factory[f"data{jecname}"].build(
-            add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
-            lazy_cache=events.caches[0],
-        )
-    else:
-        jets = jet_factory["mc"].build(
-            add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
-            lazy_cache=events.caches[0],
-        )
-
-    if "Run3" not in campaign:
-        met = met_factory.build(events.MET, jets, {})
-        events = update(events, {"Jet": jets, "MET": met})
-    else:
-        met = met_factory.build(events.PuppiMET, jets, {})
-        events = update(events, {"Jet": jets, "PuppiMET": met})
     return events

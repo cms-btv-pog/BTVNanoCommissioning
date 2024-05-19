@@ -60,8 +60,8 @@ parser.add_argument(
 parser.add_argument(
     "--flow",
     type=str,
-    default="show",
-    help="str, optional {None, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
+    default="none",
+    help="str, optional {none, 'show', 'sum'} Whether plot the under/overflow bin. If 'show', add additional under/overflow bin. If 'sum', add the under/overflow bin content to first/last bin.",
 )
 parser.add_argument("--ext", type=str, default="", help="prefix name/btv name tag")
 parser.add_argument("--com", default="13.6", type=str, help="sqrt(s) in TeV")
@@ -188,21 +188,31 @@ elif "*" in args.variable:
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
+    if not isinstance(collated[args.ref][discr], hist.hist.Hist):
+        continue
     allaxis = {}
-
     if (
         discr not in collated[args.ref].keys()
         or (collated[args.ref][discr].values() == 0).all()
     ):
         print(discr, "not in file or empty")
-    for c in args.compared.split(","):
-        if discr not in collated[c].keys() or (collated[c][discr].values() == 0).all():
-            print(discr, "not in file or empty")
+        continue
+    checkempty = [
+        False
+        for c in args.compared.split(",")
+        if discr not in collated[c].keys() or (collated[c][discr].values() == 0).all()
+    ]
+    if all(checkempty) == False:
+        print(discr, "not in file or empty")
+        continue
+
         continue
     if "flav" in collated[args.ref][discr].axes.name:
         allaxis["flav"] = sum
     if "syst" in collated[args.ref][discr].axes.name:
         allaxis["syst"] = "nominal"
+        if "btag" in discr:
+            allaxis["syst"] = "noSF"
     if "osss" in collated[args.ref][discr].axes.name:  ## do dominal OS-SS
         if args.splitOSSS is None:  # OS-SS
             collated[args.ref][discr] = (
@@ -225,12 +235,13 @@ for index, discr in enumerate(var_set):
         else:
             rebin = np.array([float(i) for i in args.autorebin.split(",")])
             do_xerr = True
-        collated["mc"][discr] = rebin_hist(
-            collated["mc"][discr], collated["mc"][discr].axes[-1].name, rebin
+        collated[args.ref][discr] = rebin_hist(
+            collated[args.ref][discr], collated[args.ref][discr].axes[-1].name, rebin
         )
-        collated["data"][discr] = rebin_hist(
-            collated["data"][discr], collated["data"][discr].axes[-1].name, rebin
-        )
+        for c in args.compared.split(","):
+            collated[c][discr] = rebin_hist(
+                collated[c][discr], collated[c][discr].axes[-1].name, rebin
+            )
 
     ## FIXME: Set temporary fix for the x-axis
     if args.xlabel is not None:
@@ -429,12 +440,16 @@ for index, discr in enumerate(var_set):
                 xerr=do_xerr,
                 flow=args.flow,
             )
+            if len(ax.get_lines()) > 2 * len(args.compared.split(",")):
+                colors = ax.get_lines()[(i + 1) * 2]
+            else:
+                colors = ax.get_lines()[i + 1]
             plotratio(
                 collated[c][discr][allaxis],
                 collated[args.ref][discr][allaxis],
                 ax=rax,
                 denom_fill_opts=None,
-                error_opts={"color": ax.get_lines()[i + 1].get_color()},
+                error_opts={"color": colors.get_color()},
                 clear=False,
                 xerr=do_xerr,
                 flow=args.flow,
@@ -452,9 +467,10 @@ for index, discr in enumerate(var_set):
         ax.set_ylabel(args.ylabel)
         rax.set_ylabel("Other/Ref")
         ax.legend(loc=1)
-        rax.set_ylim(0.0, 2.0)
+        rax.axhline(1.0, ls=":")
+        rax.set_ylim(0.5, 1.5)
 
-        at = AnchoredText(input_txt + "\n" + args.ext, loc=2, frameon=False)
+        at = AnchoredText(input_txt + "\n" + text, loc=2, frameon=False)
         ax.add_artist(at)
         hep.mpl_magic(ax=ax)
         ax.set_ylim(bottom=0)

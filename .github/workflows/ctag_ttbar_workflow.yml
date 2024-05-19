@@ -5,14 +5,18 @@ on:
     branches: [ master ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/ctag*tt*'
-    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/helpers/update_branch.py'
+    - 'src/BTVNanoCommissioning/helpers/func.py'
+    - 'src/BTVNanoCommissioning/helpers/definitions.py'
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/ctag_ttbar_workflow.yml'
   pull_request_target:
     branches: [ master ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/ctag*tt*'
-    - 'src/BTVNanoCommissioning/helpers/*'
+    - 'src/BTVNanoCommissioning/helpers/update_branch.py'
+    - 'src/BTVNanoCommissioning/helpers/func.py'
+    - 'src/BTVNanoCommissioning/helpers/definitions.py'
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/ctag_ttbar_workflow.yml'
   workflow_dispatch:
@@ -24,7 +28,7 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: ["3.8","3.10"]
+        python-version: ["3.10"]
     
     defaults:
       run:
@@ -87,6 +91,7 @@ jobs:
         chmod 400 $HOME/.globus/userkey.pem
         openssl rand -out $HOME/.rnd  -hex 256
         printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms --vomses ${X509_VOMSES} --debug --pwstdin
+        chmod 755 /usr/share/miniconda3/envs/btv_coffea/etc/grid-security/certificates
         
     - name: Test xrootd
       run: |
@@ -110,7 +115,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow ctag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     
     - name: ctag semileptonic electron ttbar workflows with correctionlib
       run: |
@@ -125,7 +130,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi 
-        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow ectag_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     
     - name: ctag dileptonic muon ttbar workflows with correctionlib
       run: |
@@ -140,7 +145,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi 
-        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow ctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     - name: ctag dileptonic electron ttbar workflows with correctionlib 
       run: |
         string=$(git log -1 --pretty=format:'%s')
@@ -154,7 +159,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow ectag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     - name: ctag dileptonic emu ttbar workflows with correctionlib
       run: |
         string=$(git log -1 --pretty=format:'%s')
@@ -168,5 +173,5 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer22Run3 $opts
+        python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
 

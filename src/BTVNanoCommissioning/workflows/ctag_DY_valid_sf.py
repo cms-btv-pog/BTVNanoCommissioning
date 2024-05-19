@@ -24,7 +24,12 @@ from BTVNanoCommissioning.helpers.func import (
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
-from BTVNanoCommissioning.utils.selection import jet_id, mu_idiso, ele_mvatightid
+from BTVNanoCommissioning.utils.selection import (
+    jet_id,
+    mu_idiso,
+    ele_mvatightid,
+    MET_filters,
+)
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -61,14 +66,14 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
         shifts = []
         if "JME" in self.SF_map.keys():
-            syst_JERC = True if self.isSyst != None else False
+            syst_JERC = self.isSyst
             if self.isSyst == "JERC_split":
                 syst_JERC = "split"
             shifts = JME_shifts(
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            if "Run3" not in self._campaign:
+            if int(self._year) > 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -112,16 +117,16 @@ class NanoProcessor(processor.ProcessorABC):
         _hist_event_dict = (
             {"": None} if self.noHist else histogrammer(events, histname[self.selMod])
         )
-
         output = {
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,
         }
 
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            if isRealData:
+                output["sumw"] = len(events)
+            else:
+                output["sumw"] = ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
@@ -146,6 +151,8 @@ class NanoProcessor(processor.ProcessorABC):
         req_trig = np.zeros(len(events), dtype="bool")
         for t in trig_arrs:
             req_trig = req_trig | t
+
+        req_metfilter = MET_filters(events, self._campaign)
 
         ## Muon cuts
         dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
@@ -202,7 +209,28 @@ class NanoProcessor(processor.ProcessorABC):
         )
 
         ## Jet cuts
-        event_jet = events.Jet[jet_sel]
+        event_jet = events.Jet[
+            (events.Jet.veto != 1)
+            & ak.fill_none(
+                jet_id(events, self._campaign)
+                & (
+                    ak.all(
+                        events.Jet.metric_table(pos_dilep[:, 0]) > 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
+                )
+                & (
+                    ak.all(
+                        events.Jet.metric_table(neg_dilep[:, 0]) > 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
+                ),
+                False,
+                axis=-1,
+            )
+        ]
         req_jets = ak.num(event_jet.pt) >= 1
         # event_jet = ak.pad_none(event_jet, 1, axis=1)
 
@@ -215,7 +243,8 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = jetindx[:, 0]
 
         event_level = ak.fill_none(
-            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets, False
+            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets & req_metfilter,
+            False,
         )
         if len(events[event_level]) == 0:
             return {dataset: output}
@@ -257,7 +286,7 @@ class NanoProcessor(processor.ProcessorABC):
             par_flav = (sel_jet.partonFlavour == 0) & (sel_jet.hadronFlavour == 0)
             genflavor = sel_jet.hadronFlavour + 1 * par_flav
             if len(self.SF_map.keys()) > 0:
-                syst_wei = True if self.isSyst != None else False
+                syst_wei = True if self.isSyst != False else False
                 if "PU" in self.SF_map.keys():
                     puwei(
                         events[event_level].Pileup.nTrueInt,
@@ -286,14 +315,14 @@ class NanoProcessor(processor.ProcessorABC):
             "DeepCSVC",
             "DeepCSVB",
             "DeepJetB",
-            "DeepJetB",
+            "DeepJetC",
         ]  # exclude b-tag SFs for btag inputs
 
         ####################
         #  Fill histogram  #
         ####################
         for syst in systematics:
-            if self.isSyst == None and syst != "nominal":
+            if self.isSyst == False and syst != "nominal":
                 break
             if self.noHist:
                 break
@@ -388,6 +417,17 @@ class NanoProcessor(processor.ProcessorABC):
             output["z_eta"].fill(syst, flatten(sz.eta), weight=weight)
             output["z_phi"].fill(syst, flatten(sz.phi), weight=weight)
             output["z_mass"].fill(syst, flatten(sz.mass), weight=weight)
+            output["npvs"].fill(
+                syst,
+                events[event_level].PV.npvs,
+                weight=weight,
+            )
+            if not isRealData:
+                output["pu"].fill(
+                    syst,
+                    events[event_level].Pileup.nTrueInt,
+                    weight=weight,
+                )
         #######################
         #  Create root files  #
         #######################

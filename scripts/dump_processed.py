@@ -27,17 +27,29 @@ def dump_lumi(output, fname):
 def dump_dataset(output, fname, alljson):
     jsonlist = glob.glob(alljson) if "*" in alljson else alljson.split(",")
     print("Original jsons:", jsonlist)
-    oldf, newf = {}, {}
+    original_list, list_from_coffea = {}, {}
     for j in jsonlist:
         old = json.load(open(j))
         for o in old.keys():
-            oldf[o] = old[o]
+            if o not in original_list.keys():
+                original_list[o] = []
+            original_list[o].append(old[o])
+
     for m in output.keys():
         for f in output[m].keys():
-            newf[f] = list(output[m][f]["fname"])
+            if f not in list_from_coffea.keys():
+                list_from_coffea[f] = []
+            else:
+                list_from_coffea[f] += list(set(output[m][f]["fname"]))
     failed = {}
-    for t in oldf.keys():
-        failed[t] = list(set(oldf[t]) - set(newf[t]))
+    for t in original_list.keys():
+        failed[t] = []
+        if t not in list_from_coffea.keys():
+            failed[t] = original_list[t]
+            continue
+        for f in original_list[t]:
+            if not f in list_from_coffea[t]:
+                failed[t].append(f)
 
     with open(f"{fname}_failed_dataset.json", "w") as outfile:
         json.dump(failed, outfile, indent=4)

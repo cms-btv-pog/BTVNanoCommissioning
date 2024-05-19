@@ -14,7 +14,12 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     calc_ip_vector,
 )
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts, JPCalibHandler
+from BTVNanoCommissioning.utils.correction import (
+    load_SF,
+    JME_shifts,
+    JPCalibHandler,
+    jetveto,
+)
 
 
 ## Based on coffea_array_producer.ipynb from Congqiao
@@ -41,6 +46,7 @@ class NanoProcessor(processor.ProcessorABC):
         #               when running on data, requires events passing HLT_PFJet80
         self.addPFMuons = addPFMuons
         self.addAllTracks = addAllTracks
+        self.isSyst = True if isSyst != False else False
 
     @property
     def accumulator(self):
@@ -51,13 +57,25 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         events = missing_branch(events)
         shifts = []
+        fname = f"{dataset}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        dirname = "BTA"
+        if self.addAllTracks:
+            dirname += "_addAllTracks"
+        if self.addPFMuons:
+            dirname += "_addPFMuons"
+        checkf = os.popen(
+            f"gfal-ls root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
+        ).read()
+        if len(checkf) > 0:
+            print("skip ", checkf)
+            return {dataset: len(events)}
 
-        if "JME" in self.SF_map.keys():
+        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
             shifts = JME_shifts(
                 shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )
         else:
-            if "Run3" not in self._campaign:
+            if int(self._year) > 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -81,19 +99,23 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        events = missing_branch(events)
 
         if isRealData and self.addAllTracks:
             events = events[events.HLT.PFJet80]
             if len(events) == 0:
                 return {dataset: len(events)}
-
+        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
+            events.Jet = update(events.Jet, {"veto": jetveto(events, self.SF_map)})
         # basic variables
         basic_vars = {
             "Run": events.run,
             "Evt": events.event,
             "LumiBlock": events.luminosityBlock,
             "rho": events.fixedGridRhoFastjetAll,
+            "fixedGridRhoFastjetCentralCalo": events.Rho.fixedGridRhoFastjetCentralCalo,
+            "fixedGridRhoFastjetCentralChargedPileUp": events.Rho.fixedGridRhoFastjetCentralChargedPileUp,
+            "npvs": ak.values_astype(events.PV.npvs, np.int32),
+            "npvsGood": ak.values_astype(events.PV.npvsGood, np.int32),
         }
         if not isRealData:
             basic_vars["nPU"] = events.Pileup.nPU
@@ -125,7 +147,6 @@ class NanoProcessor(processor.ProcessorABC):
         basic_vars["BitTrigger"] = to_bitwise_trigger(
             pass_trig, ak.ArrayBuilder()
         ).snapshot()
-
         # PV
         PV = ak.zip(
             {
@@ -385,8 +406,12 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         jet = events.Jet[
             (events.Jet.pt > 20.0) & (abs(events.Jet.eta) < 2.5)
-        ]  # basic selection
+        ]  # basic selection & remove jets inside veto map
+
         zeros = ak.zeros_like(jet.pt, dtype=int)
+        if "pt_raw" not in jet.fields:
+            jet["pt_raw"] = jet.pt * (1.0 - jet.rawFactor)
+            jet["pt_orig"] = jet.pt
         Jet = ak.zip(
             {
                 # basic kinematics
@@ -469,9 +494,8 @@ class NanoProcessor(processor.ProcessorABC):
                 "ParTGDiscN": jet.btagNegRobustParTAK4G,
             }
         )
-        if isRealData:
-            Jet["vetomap"] = jet.veto
-
+        if "veto" in jet.fields:
+            Jet["veto"] = jet.veto
         if not isRealData:
             Jet["nbHadrons"] = jet.nBHadrons
             Jet["ncHadrons"] = jet.nCHadrons
@@ -709,7 +733,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         # calculate track probability, based on IPsig and category
-        jpc = JPCalibHandler(self._campaign, isRealData, dataset)
+        jpc = JPCalibHandler(self._campaign, isRealData, dataset, self.isSyst)
         trkj_jetbased["proba"] = jpc.calc_track_proba(
             trkj_jetbased.btagSip3dSig,
             ak.where(trkj_jetbased.category >= 0, trkj_jetbased.category, 0),
@@ -1089,7 +1113,12 @@ class NanoProcessor(processor.ProcessorABC):
             output["Genlep"] = Genlep
             output["GenV0"] = GenV0
         os.system(f"mkdir -p {dataset}")
-        fname = f"{dataset}/f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        fname = f"{dataset}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        dirname = "BTA"
+        if self.addAllTracks:
+            dirname += "_addAllTracks"
+        if self.addPFMuons:
+            dirname += "_addPFMuons"
         with uproot.recreate(fname) as fout:
             output_root = {}
             for bname in output.keys():
@@ -1101,6 +1130,10 @@ class NanoProcessor(processor.ProcessorABC):
                         b_nest[n] = ak.packed(ak.without_parameters(output[bname][n]))
                     output_root[bname] = ak.zip(b_nest)
             fout["btagana/ttree"] = output_root
+        os.system(
+            f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
+        )
+        os.system(f"rm {fname}")
         return {dataset: len(events)}
 
     def postprocess(self, accumulator):

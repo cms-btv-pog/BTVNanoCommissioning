@@ -62,7 +62,10 @@ OPTS="--wf ${ARGS[workflow]} --year ${ARGS[year]} --campaign ${ARGS[campaign]} -
 if [ "${ARGS[voms]}" != "null" ]; then
     OPTS="$OPTS --voms ${ARGS[voms]}"
 fi
-for key in  isSyst isArray noHist overwrite skipbadfiles; do
+if [ "${ARGS[isSyst]}" != "null" ]; then
+    OPTS="$OPTS --isSyst ${ARGS[isSyst]}"
+fi
+for key in  isArray noHist overwrite skipbadfiles; do
     if [ "${ARGS[$key]}" == true ]; then
         OPTS="$OPTS --$key"
     fi
