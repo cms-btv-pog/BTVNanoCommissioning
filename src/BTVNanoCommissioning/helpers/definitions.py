@@ -6216,7 +6216,6 @@ def SV_definitions():
 
 
 def axes_name(var):
-
     output = {}
 
     unit = ""

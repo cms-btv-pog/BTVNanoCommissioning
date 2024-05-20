@@ -18,12 +18,11 @@ from BTVNanoCommissioning.utils.correction import (
 from BTVNanoCommissioning.helpers.func import (
     flatten,
     update,
-    array_writer,
     dump_lumi,
 )
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
@@ -73,7 +72,7 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            if int(self._year) > 2020:
+            if int(self._year) < 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -122,11 +121,10 @@ class NanoProcessor(processor.ProcessorABC):
             **_hist_event_dict,
         }
 
-        if shift_name is None:
-            if isRealData:
-                output["sumw"] = len(events)
-            else:
-                output["sumw"] = ak.sum(events.genWeight)
+        if isRealData:
+            output["sumw"] = len(events)
+        else:
+            output["sumw"] = ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
@@ -231,7 +229,7 @@ class NanoProcessor(processor.ProcessorABC):
                 axis=-1,
             )
         ]
-        req_jets = ak.num(event_jet.pt) >= 1
+        req_jets = ak.count(event_jet.pt, axis=1) >= 1
         # event_jet = ak.pad_none(event_jet, 1, axis=1)
 
         ## store jet index for PFCands, create mask on the jet index
@@ -247,6 +245,16 @@ class NanoProcessor(processor.ProcessorABC):
             False,
         )
         if len(events[event_level]) == 0:
+            if self.isArray:
+                array_writer(
+                    self,
+                    events[event_level],
+                    events,
+                    "nominal",
+                    dataset,
+                    isRealData,
+                    empty=True,
+                )
             return {dataset: output}
         ####################
         # Selected objects #

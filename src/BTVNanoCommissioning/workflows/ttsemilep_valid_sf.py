@@ -23,6 +23,7 @@ from BTVNanoCommissioning.helpers.func import (
 )
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import jet_id, btag_mu_idiso, MET_filters
 import hist
 
@@ -67,7 +68,7 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            if int(self._year) > 2020:
+            if int(self._year) < 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -144,8 +145,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Jet cuts
         event_jet = events.Jet[
-            (events.Jet.veto != 1)
-            & ak.fill_none(
+            ak.fill_none(
                 jet_id(events, self._campaign)
                 & (
                     ak.all(
@@ -165,7 +165,6 @@ class NanoProcessor(processor.ProcessorABC):
             ak.local_index(events.Jet.pt),
             (
                 jet_id(events, self._campaign)
-                & (events.Jet.veto != 1)
                 & (
                     ak.all(
                         events.Jet.metric_table(events.Muon) > 0.4,
@@ -198,6 +197,16 @@ class NanoProcessor(processor.ProcessorABC):
             req_trig & req_jets & req_muon & req_MET & req_lumi & req_metfilter, False
         )
         if len(events[event_level]) == 0:
+            if self.isArray:
+                array_writer(
+                    self,
+                    events[event_level],
+                    events,
+                    "nominal",
+                    dataset,
+                    isRealData,
+                    empty=True,
+                )
             return {dataset: output}
         ####################
         # Selected objects #
@@ -384,8 +393,8 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
-            pruned_ev.Jet = sjets
-            pruned_ev.Muon = smu
+            pruned_ev["SelJet"] = sjets
+            pruned_ev["Muon"] = smu
             if "PFCands" in events.fields:
                 pruned_ev.PFCands = spfcands
             # Add custom variables
@@ -398,28 +407,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             for i in range(4):
                 pruned_ev[f"dr_mujet{i}"] = smu.delta_r(sjets[:, i])
-
-            # Create a list of variables want to store. For objects from the PFNano file, specify as {object}_{variable}, wildcard option only accepted at the end of the string
-            out_branch = np.setdiff1d(
-                np.array(pruned_ev.fields), np.array(events.fields)
-            )
-            for kin in ["pt", "eta", "phi", "mass"]:  # ,"pfRelIso04_all","dxy", "dz"]:
-                # for obj in ["Jet",  "Muon", "MET","PuppiMET"]:
-                for obj in ["Muon"]:
-                    if "MET" in obj and ("pt" != kin or "phi" != kin):
-                        continue
-                    if (obj != "Muon") and ("pfRelIso04_all" == kin or "d" in kin):
-                        continue
-                    out_branch = np.append(out_branch, [f"{obj}_{kin}"])
-            out_branch = np.append(
-                out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*"]
-            )
-            # write to root files
-            os.system(f"mkdir -p {self.name}/{dataset}")
-            with uproot.recreate(
-                f"{self.name}/{dataset}/f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
-            ) as fout:
-                fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
+            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
         return {dataset: output}
 
     def postprocess(self, accumulator):

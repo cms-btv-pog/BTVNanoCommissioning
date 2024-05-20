@@ -181,9 +181,10 @@ def histogrammer(events, workflow):
                     syst_axis, flav_axis, dz_axis, Hist.storage.Weight()
                 )
             else:
-                _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                    syst_axis, iso_axis, Hist.storage.Weight()
-                )
+                if "m" in workflow:
+                    _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
+                        syst_axis, iso_axis, Hist.storage.Weight()
+                    )
                 _hist_dict[f"{i}_dxy"] = Hist.Hist(
                     syst_axis, qcddxy_axis, Hist.storage.Weight()
                 )
@@ -191,6 +192,52 @@ def histogrammer(events, workflow):
                     syst_axis, dz_axis, Hist.storage.Weight()
                 )
             # lepton / jet pT ratio
+            _hist_dict[f"{i}_ptratio"] = Hist.Hist(
+                syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
+            )
+    elif "ctag_ttsemilep_sf" in workflow:
+        obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
+        _hist_dict["z_mass"] = Hist.Hist(
+            syst_axis,
+            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\ell}$ [GeV]"),
+            Hist.storage.Weight(),
+        )
+        _hist_dict["w_mass"] = Hist.Hist(
+            syst_axis,
+            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\nu}$ [GeV]"),
+            Hist.storage.Weight(),
+        )
+        # delta R between soft muon and mu-jet
+        _hist_dict["dr_lmujetsmu"] = Hist.Hist(
+            syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
+        )
+        # delta R between hard muon and mu-jet
+        _hist_dict["dr_lmujethmu"] = Hist.Hist(
+            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+        )
+        # delta R between hard muon and soft-muon
+        _hist_dict["dr_lmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+        for i in ["hl", "soft_l"]:
+            if i == "soft_l":
+                _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
+                    syst_axis, flav_axis, softliso_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                    syst_axis, flav_axis, dxy_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{i}_dz"] = Hist.Hist(
+                    syst_axis, flav_axis, dz_axis, Hist.storage.Weight()
+                )
+            else:
+                _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
+                    syst_axis, iso_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                    syst_axis, dxy_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{i}_dz"] = Hist.Hist(
+                    syst_axis, dz_axis, Hist.storage.Weight()
+                )
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
@@ -263,9 +310,10 @@ def histogrammer(events, workflow):
         )
         _hist_dict["dr_mumu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["posl", "negl"]:
-            _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                syst_axis, iso_axis, Hist.storage.Weight()
-            )
+            if "m" in workflow:
+                _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
+                    syst_axis, iso_axis, Hist.storage.Weight()
+                )
             _hist_dict[f"{i}_dxy"] = Hist.Hist(
                 syst_axis, dxy_axis, Hist.storage.Weight()
             )
@@ -381,7 +429,7 @@ def histogrammer(events, workflow):
     ### Btag input variables & PFCands
     bininfo = definitions()
     for d in bininfo.keys():
-        if d not in events.Jet.fields and "":
+        if d not in events.Jet.fields:
             continue
         ranges = bininfo[d]["manual_ranges"]
         binning = bininfo[d]["bins"]
@@ -466,6 +514,12 @@ def histogrammer(events, workflow):
         "btagRobustParTAK4CvB",
         "btagRobustParTAK4CvL",
         "btagRobustParTAK4QG",
+        "btagUParTAK4B",
+        "btagUParTAK4CvL",
+        "btagUParTAK4CvB",
+        "btagUParTAK4CvNotB",
+        "btagUParTAK4QvG",
+        "btagUParTAK4TauVJet",
         ## Negative tagger
         "btagNegDeepFlavB",
         "btagNegDeepFlavB_b",
@@ -499,6 +553,9 @@ def histogrammer(events, workflow):
         "PNetRegPtRawCorr",
         "PNetRegPtRawCorrNeutrino",
         "PNetRegPtRawRes",
+        "UParTAK4RegPtRawRes",
+        "UParTAK4RegPtRawCorrNeutrino",
+        "UParTAK4RegPtRawCorr",
         "Bprob",
         "BprobN",
         "ProbaN",
@@ -537,7 +594,7 @@ def histogrammer(events, workflow):
                         Hist.axis.Regular(50, 0, 10, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
-                elif "PNetRegPtRawRes" == disc:
+                elif "Res" in disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,
@@ -545,7 +602,7 @@ def histogrammer(events, workflow):
                         Hist.axis.Regular(40, 0, 1, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
-                elif "PNetRegPtRawCorr" in disc:
+                elif "Corr" in disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,

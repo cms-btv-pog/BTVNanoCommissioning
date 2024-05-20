@@ -77,46 +77,6 @@ def missing_branch(events):
                 "btagDeepFlavCvB": jets.btagDeepFlavCvB,
             },
         )
-    if hasattr(events.Jet, "btagDeepB_b") and not hasattr(events.Jet, "btagDeepB"):
-        jets = events.Jet
-        jets["btagDeepB"] = events.Jet.btagDeepB_b + events.Jet.btagDeepB_bb
-        events.Jet = update(
-            events.Jet,
-            {"btagDeepB": jets.btagDeepB},
-        )
-    if hasattr(events.Jet, "btagDeepC") and not hasattr(events.Jet, "btagDeepCvL"):
-        jets["btagDeepCvL"] = np.maximum(
-            np.minimum(
-                np.where(
-                    (events.Jet.btagDeepC > 0) & (events.Jet.pt > 15),
-                    (events.Jet.btagDeepC / (1.0 - events.Jet.btagDeepB)),
-                    -1,
-                ),
-                0.999999,
-            ),
-            -1,
-        )
-        jets["btagDeepCvB"] = np.maximum(
-            np.minimum(
-                np.where(
-                    (events.Jet.btagDeepC > 0) & (events.Jet.pt > 15),
-                    (
-                        events.Jet.btagDeepC
-                        / (events.Jet.btagDeepC + events.Jet.btagDeepB)
-                    ),
-                    -1,
-                ),
-                0.999999,
-            ),
-            -1,
-        )
-        events.Jet = update(
-            events.Jet,
-            {
-                "btagDeepCvL": jets.btagDeepCvL,
-                "btagDeepCvB": jets.btagDeepCvB,
-            },
-        )
     if hasattr(events, "METFixEE2017"):
         events.MET = events.METFixEE2017
     if hasattr(events.PuppiMET, "ptUnclusteredUp") and not hasattr(

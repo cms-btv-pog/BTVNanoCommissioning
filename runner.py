@@ -86,7 +86,7 @@ def get_main_parser():
             "2017_UL",
             "2016preVFP_UL",
             "2016postVFP_UL",
-            "prompt_dataMC",
+            "CAMPAIGN_prompt_dataMC",
         ],
         help="Dataset campaign, change the corresponding correction files",
     )
@@ -94,7 +94,7 @@ def get_main_parser():
         "--isSyst",
         default=False,
         type=str,
-        choices=[False, "all", "weight_only", "JERC_split"],
+        choices=[False, "all", "weight_only", "JERC_split", "JP_MC"],
         help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
@@ -235,8 +235,8 @@ if __name__ == "__main__":
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
-        histoutdir = f"hists_{args.workflow}"
-        outdir = f"arrays_{args.workflow}"
+        histoutdir = f"hists_{args.workflow}_{sample_json.rstrip('.json')}"
+        outdir = f"arrays_{args.workflow}_{sample_json.rstrip('.json')}"
         coffeaoutput = (
             f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
         )
@@ -262,12 +262,12 @@ if __name__ == "__main__":
     if args.only is not None:
         if args.only in sample_dict.keys():  # is dataset
             sample_dict = dict([(args.only, sample_dict[args.only])])
-            coffeaoutput = coffeaoutput.replace(".coffea", f"_{key}.coffea")
+            coffeaoutput = coffeaoutput.replace(".coffea", f"_{args.only}.coffea")
         elif args.only.isdigit():
             isamp = int(args.only)
             nsamp = len(sample_dict.keys())
             if isamp >= nsamp:
-                raise RuntimeError(
+                print(
                     f"There are {nsamp} datasets, please use --only n with n<{nsamp}."
                 )
             key = list(sample_dict.keys())[isamp]
@@ -350,7 +350,10 @@ if __name__ == "__main__":
         raise Exception(f"{coffeaoutput} exists")
 
     if args.isArray:
-        os.system(f"mkdir -p {outdir}")
+        if path.exists(outdir) and args.overwrite == False and args.only is None:
+            raise Exception("Directory exists")
+        else:
+            os.system(f"mkdir -p {outdir}")
 
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """

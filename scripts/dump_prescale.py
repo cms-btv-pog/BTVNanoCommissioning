@@ -25,9 +25,7 @@ def get_prescale(HLT, lumimask, verbose=False):
     if not os.path.exists(
         f"src/BTVNanoCommissioning/data/Prescales/HLTinfo_{HLT}_run{runs[0]}_{runs[-1]}.csv"
     ):
-
         for run in runs:
-
             os.system(
                 f"brilcalc trg --prescale --hltpath 'HLT_{HLT}*'  -r {run}  --output-style csv &>tmp.csv"
             )

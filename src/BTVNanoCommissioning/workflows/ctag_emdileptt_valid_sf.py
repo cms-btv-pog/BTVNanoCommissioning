@@ -17,11 +17,11 @@ from BTVNanoCommissioning.utils.correction import (
 from BTVNanoCommissioning.helpers.func import (
     flatten,
     update,
-    uproot_writeable,
     dump_lumi,
 )
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
@@ -69,7 +69,7 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            if int(self._year) > 2020:
+            if int(self._year) < 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]

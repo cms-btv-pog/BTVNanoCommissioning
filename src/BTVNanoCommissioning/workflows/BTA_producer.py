@@ -46,7 +46,7 @@ class NanoProcessor(processor.ProcessorABC):
         #               when running on data, requires events passing HLT_PFJet80
         self.addPFMuons = addPFMuons
         self.addAllTracks = addAllTracks
-        self.isSyst = True if isSyst != False else False
+        self.isSyst = isSyst
 
     @property
     def accumulator(self):
@@ -63,6 +63,8 @@ class NanoProcessor(processor.ProcessorABC):
             dirname += "_addAllTracks"
         if self.addPFMuons:
             dirname += "_addPFMuons"
+        if self.isSyst:
+            fname = "systematic/" + fname
         checkf = os.popen(
             f"gfal-ls root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
         ).read()
@@ -75,7 +77,7 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )
         else:
-            if int(self._year) > 2020:
+            if int(self._year) < 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -104,8 +106,6 @@ class NanoProcessor(processor.ProcessorABC):
             events = events[events.HLT.PFJet80]
             if len(events) == 0:
                 return {dataset: len(events)}
-        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
-            events.Jet = update(events.Jet, {"veto": jetveto(events, self.SF_map)})
         # basic variables
         basic_vars = {
             "Run": events.run,
@@ -733,7 +733,8 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         # calculate track probability, based on IPsig and category
-        jpc = JPCalibHandler(self._campaign, isRealData, dataset, self.isSyst)
+        JPMC_syst = True if self.isSyst == "JP_MC" else False
+        jpc = JPCalibHandler(self._campaign, isRealData, dataset, JPMC_syst)
         trkj_jetbased["proba"] = jpc.calc_track_proba(
             trkj_jetbased.btagSip3dSig,
             ak.where(trkj_jetbased.category >= 0, trkj_jetbased.category, 0),
@@ -1114,6 +1115,8 @@ class NanoProcessor(processor.ProcessorABC):
             output["GenV0"] = GenV0
         os.system(f"mkdir -p {dataset}")
         fname = f"{dataset}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        if self.isSyst:
+            fname = "systematic/" + fname
         dirname = "BTA"
         if self.addAllTracks:
             dirname += "_addAllTracks"
@@ -1131,7 +1134,7 @@ class NanoProcessor(processor.ProcessorABC):
                     output_root[bname] = ak.zip(b_nest)
             fout["btagana/ttree"] = output_root
         os.system(
-            f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
+            f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/systematic/{fname}"
         )
         os.system(f"rm {fname}")
         return {dataset: len(events)}
