@@ -103,7 +103,7 @@ class NanoProcessor(processor.ProcessorABC):
         isMu = False
         isEle = False
         if "WcM" in self.selMod or "semittM" in self.selMod:
-            triggers = ["IsoMu27"]
+            triggers = ["IsoMu27","IsoMu24"]
             isMu = True
             dxySigcut = 1
             muNeEmSum = 0.7
@@ -134,11 +134,10 @@ class NanoProcessor(processor.ProcessorABC):
             **_hist_event_dict,
         }
 
-        if shift_name is None:
-            if isRealData:
-                output["sumw"] = len(events)
-            else:
-                output["sumw"] = ak.sum(events.genWeight)
+        if isRealData:
+            output["sumw"] = len(events)
+        else:
+            output["sumw"] = ak.sum(events.genWeight)
         ####################
         #    Selections    #
         ####################
@@ -151,7 +150,6 @@ class NanoProcessor(processor.ProcessorABC):
             output = dump_lumi(events[req_lumi], output)
 
         ## HLT
-        triggers = ["IsoMu24"]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -201,15 +199,16 @@ class NanoProcessor(processor.ProcessorABC):
         if "DeepJet_nsv" in events.Jet.fields:
             jet_sel = jet_sel & (events.Jet.DeepJet_nsv > 0)
         event_jet = events.Jet[jet_sel]
+        nseljet = ak.count(event_jet.pt, axis=1)
         if "Wc" in self.selMod:
-            req_jets = (ak.num(event_jet.pt) >= 1) & (ak.num(event_jet.pt) <= 3)
+            req_jets = (nseljet >= 1) & (nseljet <= 3)
         else:
-            req_jets = ak.num(event_jet.pt) >= 4
+            req_jets = nseljet >= 4
 
         ## Soft Muon cuts
         soft_muon = events.Muon[
             softmu_mask(events, self._campaign)
-            & (abs(events.Muon.dxy / events.Muon.dxyErr) > 1.0)
+            & (abs(events.Muon.dxy / events.Muon.dxyErr) > dxySigcut)
         ]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
         mujetsel = ak.fill_none(
@@ -350,6 +349,7 @@ class NanoProcessor(processor.ProcessorABC):
         )
         event_level = ak.fill_none(event_level, False)
         if len(events[event_level]) == 0:
+            array_writer(self, events[event_level], events, "nominal", dataset, isRealData, empty=True)
             return {dataset: output}
         ####################
         # Selected objects #
@@ -525,7 +525,11 @@ class NanoProcessor(processor.ProcessorABC):
                             syst="noSF",
                             flav=smflav,
                             osss=osss,
-                            discr=smuon_jet[histname.replace(f"_{i}", "")],
+                            discr=np.where(
+                                smuon_jet[histname.replace(f"_{i}", "")] < 0,
+                                -0.2,
+                                smuon_jet[histname.replace(f"_{i}", "")],
+                            ),
                             weight=weights.partial_weight(exclude=exclude_btv),
                         )
                         if not isRealData and "btag" in self.SF_map.keys():
@@ -533,7 +537,11 @@ class NanoProcessor(processor.ProcessorABC):
                                 syst=syst,
                                 flav=smflav,
                                 osss=osss,
-                                discr=smuon_jet[histname.replace(f"_{i}", "")],
+                                discr=np.where(
+                                    smuon_jet[histname.replace(f"_{i}", "")] < 0,
+                                    -0.2,
+                                    smuon_jet[histname.replace(f"_{i}", "")],
+                                ),
                                 weight=weight,
                             )
                 elif "btag" in histname and "Trans" in histname:
@@ -641,6 +649,7 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["soft_l_ptratio"] = ssmu.pt / smuon_jet.pt
             pruned_ev["l1_ptratio"] = shmu.pt / smuon_jet.pt
             pruned_ev["MuonJet_beta"] = smuon_jet.pt / smuon_jet.E
+            pruned_ev["MuonJet_muneuEF"] = smuon_jet.muEF + smuon_jet.neEmEF
 
             array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
 

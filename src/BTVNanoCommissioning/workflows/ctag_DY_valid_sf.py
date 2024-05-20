@@ -122,11 +122,10 @@ class NanoProcessor(processor.ProcessorABC):
             **_hist_event_dict,
         }
 
-        if shift_name is None:
-            if isRealData:
-                output["sumw"] = len(events)
-            else:
-                output["sumw"] = ak.sum(events.genWeight)
+        if isRealData:
+            output["sumw"] = len(events)
+        else:
+            output["sumw"] = ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
@@ -231,7 +230,7 @@ class NanoProcessor(processor.ProcessorABC):
                 axis=-1,
             )
         ]
-        req_jets = ak.num(event_jet.pt) >= 1
+        req_jets = ak.count(event_jet.pt, axis=1) >= 1
         # event_jet = ak.pad_none(event_jet, 1, axis=1)
 
         ## store jet index for PFCands, create mask on the jet index
@@ -247,6 +246,7 @@ class NanoProcessor(processor.ProcessorABC):
             False,
         )
         if len(events[event_level]) == 0:
+            array_writer(self, events[event_level], events, "nominal", dataset, isRealData, empty=True)
             return {dataset: output}
         ####################
         # Selected objects #

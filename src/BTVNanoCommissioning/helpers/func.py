@@ -163,31 +163,36 @@ def array_writer(
         "Muon_sip3d",
     ],  # other fields, for Data and MC
     othersMC=["Pileup_nTrueInt", "Pileup_nPU"],  # other fields, for MC only
+    empty=False
 ):
-    # Get only the variables that were added newly
-    out_branch = np.setdiff1d(
-        np.array(pruned_event.fields), np.array(nano_event.fields)
-    )
+    if empty:
+        print("WARNING: No events selected. Writing blank file.")
+        out_branch = []
+    else:
+        # Get only the variables that were added newly
+        out_branch = np.setdiff1d(
+            np.array(pruned_event.fields), np.array(nano_event.fields)
+        )
 
-    # Handle kinOnly vars
-    for v in remove:
-        out_branch = np.delete(out_branch, np.where((out_branch == v)))
+        # Handle kinOnly vars
+        for v in remove:
+            out_branch = np.delete(out_branch, np.where((out_branch == v)))
 
-    for kin in kins:
-        for obj in kinOnly:
-            if "MET" in obj and ("pt" != kin or "phi" != kin):
-                continue
-            if (obj != "Muon" and obj != "SoftMuon") and (
-                "pfRelIso04_all" == kin or "d" in kin
-            ):
-                continue
-            out_branch = np.append(out_branch, [f"{obj}_{kin}"])
+        for kin in kins:
+            for obj in kinOnly:
+                if "MET" in obj and ("pt" != kin or "phi" != kin):
+                    continue
+                if (obj != "Muon" and obj != "SoftMuon") and (
+                    "pfRelIso04_all" == kin or "d" in kin
+                ):
+                    continue
+                out_branch = np.append(out_branch, [f"{obj}_{kin}"])
 
-    # Handle data vars
-    out_branch = np.append(out_branch, othersData)
+        # Handle data vars
+        out_branch = np.append(out_branch, othersData)
 
-    if not isRealData:
-        out_branch = np.append(out_branch, othersMC)
+        if not isRealData:
+            out_branch = np.append(out_branch, othersMC)
 
     # Write to root files
     print("Branches to write:", out_branch)
@@ -197,7 +202,7 @@ def array_writer(
     with uproot.recreate(
         f"{outdir}/{nano_event.metadata['filename'].split('/')[-1].replace('.root','')}_{int(nano_event.metadata['entrystop']/processor_class.chunksize)}.root"
     ) as fout:
-        fout["Events"] = uproot_writeable(pruned_event, include=out_branch)
+        if not empty: fout["Events"] = uproot_writeable(pruned_event, include=out_branch)
         fout["TotalEventCount"] = ak.Array(
             [nano_event.metadata["entrystop"] - nano_event.metadata["entrystart"]]
         )
