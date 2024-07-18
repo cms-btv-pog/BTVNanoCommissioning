@@ -86,7 +86,7 @@ def get_main_parser():
             "2017_UL",
             "2016preVFP_UL",
             "2016postVFP_UL",
-            "prompt_dataMC",
+            "CAMPAIGN_prompt_dataMC",
         ],
         help="Dataset campaign, change the corresponding correction files",
     )
@@ -94,7 +94,7 @@ def get_main_parser():
         "--isSyst",
         default=False,
         type=str,
-        choices=[False, "all", "weight_only", "JERC_split"],
+        choices=[False, "all", "weight_only", "JERC_split", "JP_MC"],
         help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
@@ -262,7 +262,7 @@ if __name__ == "__main__":
     if args.only is not None:
         if args.only in sample_dict.keys():  # is dataset
             sample_dict = dict([(args.only, sample_dict[args.only])])
-            coffeaoutput = coffeaoutput.replace(".coffea", f"_{key}.coffea")
+            coffeaoutput = coffeaoutput.replace(".coffea", f"_{args.only}.coffea")
         elif args.only.isdigit():
             isamp = int(args.only)
             nsamp = len(sample_dict.keys())

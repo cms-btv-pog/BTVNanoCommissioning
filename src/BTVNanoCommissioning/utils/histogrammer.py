@@ -427,7 +427,7 @@ def histogrammer(events, workflow):
     ### Btag input variables & PFCands
     bininfo = definitions()
     for d in bininfo.keys():
-        if d not in events.Jet.fields and "":
+        if d not in events.Jet.fields:
             continue
         ranges = bininfo[d]["manual_ranges"]
         binning = bininfo[d]["bins"]
@@ -512,6 +512,12 @@ def histogrammer(events, workflow):
         "btagRobustParTAK4CvB",
         "btagRobustParTAK4CvL",
         "btagRobustParTAK4QG",
+        "btagUParTAK4B",
+        "btagUParTAK4CvL",
+        "btagUParTAK4CvB",
+        "btagUParTAK4CvNotB",
+        "btagUParTAK4QvG",
+        "btagUParTAK4TauVJet",
         ## Negative tagger
         "btagNegDeepFlavB",
         "btagNegDeepFlavB_b",
@@ -545,6 +551,9 @@ def histogrammer(events, workflow):
         "PNetRegPtRawCorr",
         "PNetRegPtRawCorrNeutrino",
         "PNetRegPtRawRes",
+        "UParTAK4RegPtRawRes",
+        "UParTAK4RegPtRawCorrNeutrino",
+        "UParTAK4RegPtRawCorr",
         "Bprob",
         "BprobN",
         "ProbaN",
@@ -583,7 +592,7 @@ def histogrammer(events, workflow):
                         Hist.axis.Regular(50, 0, 10, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
-                elif "PNetRegPtRawRes" == disc:
+                elif "Res" in disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,
@@ -591,7 +600,7 @@ def histogrammer(events, workflow):
                         Hist.axis.Regular(40, 0, 1, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
-                elif "PNetRegPtRawCorr" in disc:
+                elif "Corr" in disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,

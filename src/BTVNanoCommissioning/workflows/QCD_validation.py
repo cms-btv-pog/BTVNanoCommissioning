@@ -59,7 +59,7 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )
         else:
-            if int(self._year) > 2020:
+            if int(self._year) < 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -124,9 +124,7 @@ class NanoProcessor(processor.ProcessorABC):
         if shift_name is None:
             output = dump_lumi(events[req_lumi], output)
         ## Jet cuts
-        events.Jet = events.Jet[
-            jet_cut(events, self._campaign) & (events.Jet.veto != 1)
-        ]
+        events.Jet = events.Jet[jet_cut(events, self._campaign)]
         req_jets = ak.count(events.Jet.pt, axis=1) >= 1
 
         event_level = ak.fill_none(req_lumi & req_trig & req_jets, False)
