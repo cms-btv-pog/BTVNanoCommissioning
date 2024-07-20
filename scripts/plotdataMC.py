@@ -1,5 +1,5 @@
 import numpy as np
-import argparse, os, arrow, glob, re
+import argparse, os, arrow, glob, re, sys
 from coffea.util import load
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
@@ -195,8 +195,12 @@ elif "*" in args.variable:
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
-    if not isinstance(collated["mc"][discr], hist.hist.Hist):
-        continue
+    try:
+        if not isinstance(collated["mc"][discr], hist.hist.Hist):
+            continue
+    except:
+        print(f"{discr} not found. Variable must be in", collated["mc"].keys())
+        sys.exit(1)
     ## remove empty
     if (
         discr not in collated["mc"].keys()

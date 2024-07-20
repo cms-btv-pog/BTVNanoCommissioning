@@ -181,9 +181,10 @@ def histogrammer(events, workflow):
                     syst_axis, flav_axis, dz_axis, Hist.storage.Weight()
                 )
             else:
-                _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                    syst_axis, iso_axis, Hist.storage.Weight()
-                )
+                if "m" in workflow:
+                    _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
+                        syst_axis, iso_axis, Hist.storage.Weight()
+                    )
                 _hist_dict[f"{i}_dxy"] = Hist.Hist(
                     syst_axis, qcddxy_axis, Hist.storage.Weight()
                 )
@@ -309,9 +310,10 @@ def histogrammer(events, workflow):
         )
         _hist_dict["dr_mumu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["posl", "negl"]:
-            _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
-                syst_axis, iso_axis, Hist.storage.Weight()
-            )
+            if "m" in workflow:
+                _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
+                    syst_axis, iso_axis, Hist.storage.Weight()
+                )
             _hist_dict[f"{i}_dxy"] = Hist.Hist(
                 syst_axis, dxy_axis, Hist.storage.Weight()
             )

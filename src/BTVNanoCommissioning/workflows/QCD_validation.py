@@ -4,6 +4,7 @@ from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.utils.selection import jet_cut
 from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.correction import (
     load_SF,

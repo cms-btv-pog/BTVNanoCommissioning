@@ -282,7 +282,6 @@ jet_factory = {
             "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_V1_MC_Uncertainty_AK4PFPuppi.junc.txt",
             "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_JRV1_MC_SF_AK4PFPuppi.jersf.txt",
             "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_JRV1_MC_PtResolution_AK4PFPuppi.jr.txt",
-
         ],
         "dataCv123": [
             "src/BTVNanoCommissioning/data/JME/Summer23/Summer23Prompt23_RunCv123_V1_DATA_L1FastJet_AK4PFPuppi.jec.txt",
@@ -308,6 +307,14 @@ jet_factory = {
             "src/BTVNanoCommissioning/data/JME/Summer23BPix/Summer23BPixPrompt23_JRV1_MC_PtResolution_AK4PFPuppi.jr.txt",
             "src/BTVNanoCommissioning/data/JME/Summer23BPix/Summer23BPixPrompt23_JRV1_MC_SF_AK4PFPuppi.jersf.txt",
         ],
+        # "dataD":[
+        #    "src/BTVNanoCommissioning/data/JME/Summer23BPix/Summer23BPixPrompt23_RunD_V1_DATA_L1FastJet_AK4PFPuppi.jec.txt",
+        #    "src/BTVNanoCommissioning/data/JME/Summer23BPix/Summer23BPixPrompt23_RunD_V1_DATA_L2Relative_AK4PFPuppi.jec.txt",
+        #    "src/BTVNanoCommissioning/data/JME/Summer23BPix/Summer23BPixPrompt23_RunD_V1_DATA_L2Residual_AK4PFPuppi.jec.txt",
+        #    "src/BTVNanoCommissioning/data/JME/Summer23BPix/Summer23BPixPrompt23_RunD_V1_DATA_L3Absolute_AK4PFPuppi.jec.txt",
+        #    "src/BTVNanoCommissioning/data/JME/Summer23BPix/Summer23BPixPrompt23_RunD_V1_DATA_Uncertainty_AK4PFPuppi.junc.txt",
+        # "src/BTVNanoCommissioning/data/JME/Summer23BPix/Summer23BPixPrompt23_RunD_V1_DATA_UncertaintySources_AK4PFPuppi.junc.txt"
+        # ]
     },
 }
 

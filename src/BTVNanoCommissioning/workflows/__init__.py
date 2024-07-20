@@ -20,41 +20,30 @@ from BTVNanoCommissioning.workflows.ctag_emdileptt_valid_sf import (
 from BTVNanoCommissioning.workflows.ctag_dileptt_valid_sf import (
     NanoProcessor as CTAGDilepttValidSFProcessor,
 )
-from BTVNanoCommissioning.workflows.ctag_eDY_valid_sf import (
-    NanoProcessor as CTAGeDYValidSFProcessor,
-)
-from BTVNanoCommissioning.workflows.ctag_eWc_valid_sf import (
-    NanoProcessor as CTAGeWcValidSFProcessor,
-)
-from BTVNanoCommissioning.workflows.ctag_Wc_valid_sf import (
-    NanoProcessor as CTAGWcValidSFProcessor,
+from BTVNanoCommissioning.workflows.ctag_Wctt_valid_sf import (
+    NanoProcessor as CTAGWcTTValidSFProcessor,
 )
 from BTVNanoCommissioning.workflows.ctag_DY_valid_sf import (
     NanoProcessor as CTAGDYValidSFProcessor,
 )
-from BTVNanoCommissioning.workflows.ctag_edileptt_valid_sf import (
-    NanoProcessor as CTAGEDilepttValidSFProcessor,
+
+##QCD
+from BTVNanoCommissioning.workflows.QCD_validation import (
+    NanoProcessor as QCDValidProcessor,
 )
-from BTVNanoCommissioning.workflows.ctag_ettsemilep_valid_sf import (
-    NanoProcessor as CTAGETTSemilepValidSFProcessor,
-)
-from BTVNanoCommissioning.workflows.ctag_semileptt_valid_sf import (
-    NanoProcessor as CTAGSemilepttValidSFProcessor,
-)
+
+## BTA - for SFs
 from BTVNanoCommissioning.workflows.BTA_producer import (
     NanoProcessor as BTA_processor,
 )
 from BTVNanoCommissioning.workflows.BTA_ttbar_producer import (
     NanoProcessor as BTA_ttbar_processor,
-)
+)  # ttbar -kinFit
 
 # from BTVNanoCommissioning.workflows.example import (
 #     NanoProcessor as ExampleProcessor,
 # )
-##QCD
-from BTVNanoCommissioning.workflows.QCD_validation import (
-    NanoProcessor as QCDValidProcessor,
-)
+
 
 # FIXME - make names more systematic?
 workflows = {}
@@ -63,22 +52,31 @@ workflows["validation"] = ValidationProcessor
 # TTBar
 workflows["ttdilep_sf"] = TTdilepValidSFProcessor
 workflows["ttsemilep_sf"] = TTsemilepValidSFProcessor
+
 workflows["emctag_ttdilep_sf"] = CTAGEMDilepttValidSFProcessor
-workflows["ctag_ttdilep_sf"] = CTAGDilepttValidSFProcessor
-workflows["ectag_ttdilep_sf"] = CTAGEDilepttValidSFProcessor
-workflows["ctag_ttsemilep_sf"] = CTAGSemilepttValidSFProcessor
-workflows["ectag_ttsemilep_sf"] = CTAGETTSemilepValidSFProcessor
+workflows["ctag_ttdilep_sf"] = partial(
+    CTAGDilepttValidSFProcessor, selectionModifier="dilepttM"
+)
+workflows["ectag_ttdilep_sf"] = partial(
+    CTAGDilepttValidSFProcessor, selectionModifier="dilepttE"
+)
+workflows["ctag_ttsemilep_sf"] = partial(
+    CTAGWcTTValidSFProcessor, selectionModifier="semittM"
+)
+workflows["ectag_ttsemilep_sf"] = partial(
+    CTAGWcTTValidSFProcessor, selectionModifier="semittE"
+)
 
 ##QCD
 workflows["QCD_sf"] = QCDValidProcessor
 
 # W+c
-workflows["ctag_Wc_sf"] = CTAGWcValidSFProcessor
-workflows["ectag_Wc_sf"] = CTAGeWcValidSFProcessor
+workflows["ctag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcM")
+workflows["ectag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcE")
 
 # DY
-workflows["ctag_DY_sf"] = CTAGDYValidSFProcessor
-workflows["ectag_DY_sf"] = CTAGeDYValidSFProcessor
+workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
+workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
 
 # Tutorial
 # workflows["example"] = ExampleProcessor

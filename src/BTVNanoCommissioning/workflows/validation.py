@@ -21,12 +21,12 @@ from BTVNanoCommissioning.utils.correction import (
 from BTVNanoCommissioning.helpers.func import (
     flatten,
     update,
-    uproot_writeable,
     dump_lumi,
 )
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
@@ -371,7 +371,8 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
-            pruned_ev.Jet = sjets
+            pruned_ev["SelJet"] = sjets
+
             # Add custom variables
             if not isRealData:
                 pruned_ev["weight"] = weights.weight()
@@ -379,23 +380,7 @@ class NanoProcessor(processor.ProcessorABC):
                     pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
                         include=[ind_wei]
                     )
-
-            # Create a list of variables want to store. For objects from the PFNano file, specify as {object}_{variable}, wildcard option only accepted at the end of the string
-            out_branch = np.setdiff1d(
-                np.array(pruned_ev.fields), np.array(events.fields)
-            )
-            for kin in ["pt", "eta", "phi", "mass"]:
-                for obj in ["Jet"]:
-                    out_branch = np.append(out_branch, [f"{obj}_{kin}"])
-            out_branch = np.append(
-                out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*"]
-            )
-            # write to root files
-            os.system(f"mkdir -p {self.name}/{dataset}")
-            with uproot.recreate(
-                f"{self.name}/{dataset}/f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
-            ) as fout:
-                fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
+            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
         return {dataset: output}
 
     def postprocess(self, accumulator):

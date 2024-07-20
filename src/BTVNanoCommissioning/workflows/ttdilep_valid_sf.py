@@ -20,13 +20,13 @@ from BTVNanoCommissioning.utils.correction import (
 from BTVNanoCommissioning.helpers.func import (
     flatten,
     update,
-    uproot_writeable,
     dump_lumi,
 )
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
@@ -223,6 +223,16 @@ class NanoProcessor(processor.ProcessorABC):
         )
         event_level = ak.fill_none(event_level, False)
         if len(events[event_level]) == 0:
+            if self.isArray:
+                array_writer(
+                    self,
+                    events[event_level],
+                    events,
+                    "nominal",
+                    dataset,
+                    isRealData,
+                    empty=True,
+                )
             return {dataset: output}
 
         ####################
@@ -426,9 +436,9 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
-            pruned_ev.Jet = sjets
-            pruned_ev.Electron = sel
-            pruned_ev.Muon = smu
+            pruned_ev["SelJet"] = sjets
+            pruned_ev["Muon"] = smu
+            pruned_ev["Electron"] = sel
             if "PFCands" in events.fields:
                 pruned_ev.PFCands = spfcands
             # Add custom variables
@@ -441,32 +451,8 @@ class NanoProcessor(processor.ProcessorABC):
 
             pruned_ev["dr_mujet0"] = smu.delta_r(sjets[:, 0])
             pruned_ev["dr_mujet1"] = smu.delta_r(sjets[:, 1])
+            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
 
-            # Create a list of variables want to store. For objects from the PFNano file, specify as {object}_{variable}, wildcard option only accepted at the end of the string
-            out_branch = np.setdiff1d(
-                np.array(pruned_ev.fields), np.array(events.fields)
-            )
-            for kin in ["pt", "eta", "phi", "mass", "dz", "dxy"]:
-                for obj in ["Jet", "Electron", "Muon"]:
-                    if obj == "Jet" and "d" in kin:
-                        continue
-                    out_branch = np.append(out_branch, [f"{obj}_{kin}"])
-            out_branch = np.append(
-                out_branch,
-                [
-                    "Jet_btagDeep*",
-                    "Jet_DeepJet*",
-                    "PFCands_*",
-                    "Electron_pfRelIso03_all",
-                    "Muon_pfRelIso03_all",
-                ],
-            )
-            # write to root files
-            os.system(f"mkdir -p {self.name}/{dataset}")
-            with uproot.recreate(
-                f"{self.name}/{dataset}/f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
-            ) as fout:
-                fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
         return {dataset: output}
 
     def postprocess(self, accumulator):
