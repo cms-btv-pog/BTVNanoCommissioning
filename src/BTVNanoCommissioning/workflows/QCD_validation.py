@@ -2,9 +2,10 @@ import collections, numpy as np, awkward as ak
 from coffea import processor
 from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.utils.selection import jet_cut
-from BTVNanoCommissioning.helpers.func import flatten, update
+from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
-from BTVNanoCommissioning.helpers.update_branch import missing_branch, add_jec
+from BTVNanoCommissioning.utils.array_writer import array_writer
+from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.correction import (
     load_SF,
     load_lumi,
@@ -59,7 +60,7 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, False, True
             )
         else:
-            if int(self._year) > 2020:
+            if int(self._year) < 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -94,8 +95,6 @@ class NanoProcessor(processor.ProcessorABC):
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,
         }
-        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
-            events.Jet = update(events.Jet, {"veto": jetveto(events, self.SF_map)})
 
         if isRealData:
             output["sumw"] = len(events)
@@ -120,14 +119,16 @@ class NanoProcessor(processor.ProcessorABC):
         req_trig = np.zeros(len(events), dtype="bool")
         for t in trig_arrs:
             req_trig = req_trig | t
-
+        req_lumi = np.ones(len(events), dtype="bool")
+        if isRealData:
+            req_lumi = self.lumiMask(events.run, events.luminosityBlock)
+        if shift_name is None:
+            output = dump_lumi(events[req_lumi], output)
         ## Jet cuts
-        events.Jet = events.Jet[
-            jet_cut(events, self._campaign) & (events.Jet.veto != 1)
-        ]
+        events.Jet = events.Jet[jet_cut(events, self._campaign)]
         req_jets = ak.count(events.Jet.pt, axis=1) >= 1
 
-        event_level = ak.fill_none(req_trig & req_jets, False)
+        event_level = ak.fill_none(req_lumi & req_trig & req_jets, False)
         if len(events[event_level]) == 0:
             return {dataset: output}
 
@@ -140,10 +141,11 @@ class NanoProcessor(processor.ProcessorABC):
         # Selected SV #
         ###############
         selev = events[event_level]
-        matched_JetSVs = selev.Jet[selev.JetSVs.jetIdx]
-        lj_matched_JetSVs = matched_JetSVs[selev.JetSVs.jetIdx == 0]
-        lj_SVs = selev.JetSVs[selev.JetSVs.jetIdx == 0]
-        nJetSVs = ak.count(lj_SVs.pt, axis=1)
+        if "JetSVs" in events.Jet.fields:
+            matched_JetSVs = selev.Jet[selev.JetSVs.jetIdx]
+            lj_matched_JetSVs = matched_JetSVs[selev.JetSVs.jetIdx == 0]
+            lj_SVs = selev.JetSVs[selev.JetSVs.jetIdx == 0]
+            nJetSVs = ak.count(lj_SVs.pt, axis=1)
 
         ####################
         # Weight & Geninfo #
@@ -156,12 +158,13 @@ class NanoProcessor(processor.ProcessorABC):
             # genweiev = ak.flatten(
             # ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[0]
             # )
-            lj_matched_JetSVs_par_flav = (lj_matched_JetSVs.partonFlavour == 0) & (
-                lj_matched_JetSVs.hadronFlavour == 0
-            )
-            lj_matched_JetSVs_genflav = (
-                lj_matched_JetSVs.hadronFlavour + 1 * lj_matched_JetSVs_par_flav
-            )
+            if "JetSVs" in events.Jet.fields:
+                lj_matched_JetSVs_par_flav = (lj_matched_JetSVs.partonFlavour == 0) & (
+                    lj_matched_JetSVs.hadronFlavour == 0
+                )
+                lj_matched_JetSVs_genflav = (
+                    lj_matched_JetSVs.hadronFlavour + 1 * lj_matched_JetSVs_par_flav
+                )
             syst_wei = True if self.isSyst != None else False
             if "PU" in self.SF_map.keys():
                 puwei(
@@ -185,6 +188,7 @@ class NanoProcessor(processor.ProcessorABC):
             pseval = correctionlib.CorrectionSet.from_file(
                 f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{triggers[0]}_run{run_num}.json"
             )
+            # if 369869 in selev.run: continue
             psweight = pseval["prescaleWeight"].evaluate(
                 selev.run,
                 f"HLT_{triggers[0]}",
@@ -192,7 +196,10 @@ class NanoProcessor(processor.ProcessorABC):
             )
             weights.add("psweight", psweight)
             genflavor = ak.zeros_like(sjets.pt, dtype=int)
-            lj_matched_JetSVs_genflav = ak.zeros_like(lj_matched_JetSVs.pt, dtype=int)
+            if "JetSVs" in events.Jet.fields:
+                lj_matched_JetSVs_genflav = ak.zeros_like(
+                    lj_matched_JetSVs.pt, dtype=int
+                )
 
         # Systematics information
         if shift_name is None:
@@ -204,7 +211,7 @@ class NanoProcessor(processor.ProcessorABC):
             "DeepCSVC",
             "DeepCSVB",
             "DeepJetB",
-            "DeepJetB",
+            "DeepJetC",
         ]  # exclude b-tag SFs for btag inputs
         ####################
         #  Fill histogram  #
@@ -241,7 +248,7 @@ class NanoProcessor(processor.ProcessorABC):
                         flatten(sjets[:, 0][histname.replace(f"jet0_", "")]),
                         weight=weight,
                     )
-                elif "JetSVs_" in histname:
+                elif "JetSVs_" in histname and "JetSVs" in events.Jet.fields:
                     h.fill(
                         syst,
                         flatten(lj_matched_JetSVs_genflav),
@@ -280,14 +287,17 @@ class NanoProcessor(processor.ProcessorABC):
                         )
 
             output["njet"].fill(syst, njet, weight=weight)
-            output["nJetSVs"].fill(syst, nJetSVs, weight=weight)
+            if "JetSVs" in events.Jet.fields:
+                output["nJetSVs"].fill(syst, nJetSVs, weight=weight)
 
-            output["dr_SVjet0"].fill(
-                syst,
-                flatten(lj_matched_JetSVs_genflav),
-                flatten(abs(lj_SVs.deltaR) - 0.1),
-                weight=flatten(ak.broadcast_arrays(weight, lj_matched_JetSVs["pt"])[0]),
-            )
+                output["dr_SVjet0"].fill(
+                    syst,
+                    flatten(lj_matched_JetSVs_genflav),
+                    flatten(abs(lj_SVs.deltaR) - 0.1),
+                    weight=flatten(
+                        ak.broadcast_arrays(weight, lj_matched_JetSVs["pt"])[0]
+                    ),
+                )
             output["npvs"].fill(syst, flatten(selev.PV.npvsGood), weight=weight)
             if not isRealData:
                 if syst == "nominal":

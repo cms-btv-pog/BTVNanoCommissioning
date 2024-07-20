@@ -2,6 +2,7 @@ import awkward as ak
 import numpy as np
 from coffea import processor
 import psutil, os
+import uproot
 
 
 def memory_usage_psutil():
@@ -103,9 +104,12 @@ def uproot_writeable(events, include=["events", "run", "luminosityBlock"]):
                     and "Flavor" not in n
                 ):
                     continue
-                if not _is_rootcompat(events[bname][n]) and ak.num(
-                    events[bname][n], axis=0
-                ) != len(flatten(events[bname][n])):
+                evnums = ak.num(events[bname][n], axis=0)
+                if not isinstance(evnums, int):
+                    continue
+                if not _is_rootcompat(events[bname][n]) and evnums != len(
+                    flatten(events[bname][n])
+                ):
                     continue
                 # skip IdxG
                 if "IdxG" in n:

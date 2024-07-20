@@ -62,6 +62,23 @@ parser.add_argument(
     action="store_true",
     default=False,
 )
+parser.add_argument(
+    "-r",
+    "--redirector",
+    help="xrootd ridirector in case sites are not found",
+    choices=["infn", "fnal", "cern"],
+    default="infn",
+)
+parser.add_argument(
+    "-j", "--ncpus", help="Number of CPUs to use for validation", default="4"
+)
+parser.add_argument(
+    "--skipvalidation",
+    action="store_true",
+    help="If true, the readability of files will not be validated.",
+    default=False,
+)
+
 parser.add_argument("--campaign", help="campaign info", default=None, type=str)
 
 
@@ -210,9 +227,14 @@ def getFilesFromDas(args):
 
         if xrd is None:
             print(
-                f"No SITE available in the whitelist for file {dsname}, change to global redirector"
+                f"No SITE available in the whitelist for file {dsname}, change to global redirector: {args.redirector}"
             )
-            xrd = "root://xrootd-cms.infn.it//"
+            redirector = {
+                "infn": "root://xrootd-cms.infn.it//",
+                "fnal": "root://cmsxrootd.fnal.gov/",
+                "cern": "root://cms-xrd-global.cern.ch/",
+            }
+            xrd = redirector[args.redirector]
         if args.limit is not None:
             flist = flist[: args.limit]
         if dsname not in fdict:
@@ -335,7 +357,7 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
         _rmap = p_map(
             validate,
             sample_dict[sample],
-            num_cpus=4,
+            num_cpus=int(args.ncpus),
             desc=f"Validating {sample[:20]}...",
         )
 
@@ -373,6 +395,7 @@ def main(args):
         outf = open(args.input + "_DAS_" + args.campaign, "w")
         short_campaign = args.campaign
         for l in f.readlines():
+            print(l)
             l = l.replace("\n", "")
             dataset = (
                 os.popen(
@@ -418,7 +441,8 @@ def main(args):
             empty = False
     assert empty, "you have empty lists"
     output_file = "./%s" % (args.output)
-    # fdict = remove_bad_files(fdict, args.output, True)  # remove bad files
+    if not args.skipvalidation:
+        fdict = remove_bad_files(fdict, args.output, True)  # remove bad files
     with open(output_file, "w") as fp:
         json.dump(fdict, fp, indent=4)
         print("The file is saved at: ", output_file)

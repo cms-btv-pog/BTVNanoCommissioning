@@ -314,113 +314,14 @@ def load_lumi(campaign):
         return LumiMask(filename)
 
 
-## MET filters
-met_filters = {
-    "2016preVFP_UL": {
-        "data": [
-            "goodVertices",
-            "globalSuperTightHalo2016Filter",
-            "HBHENoiseFilter",
-            "HBHENoiseIsoFilter",
-            "EcalDeadCellTriggerPrimitiveFilter",
-            "BadPFMuonFilter",
-            "eeBadScFilter",
-        ],
-        "mc": [
-            "goodVertices",
-            "globalSuperTightHalo2016Filter",
-            "HBHENoiseFilter",
-            "HBHENoiseIsoFilter",
-            "EcalDeadCellTriggerPrimitiveFilter",
-            "BadPFMuonFilter",
-            "eeBadScFilter",
-        ],
-    },
-    "2016postVFP_UL": {
-        "data": [
-            "goodVertices",
-            "globalSuperTightHalo2016Filter",
-            "HBHENoiseFilter",
-            "HBHENoiseIsoFilter",
-            "EcalDeadCellTriggerPrimitiveFilter",
-            "BadPFMuonFilter",
-            "BadPFMuonDzFilter",
-            "eeBadScFilter",
-        ],
-        "mc": [
-            "goodVertices",
-            "globalSuperTightHalo2016Filter",
-            "HBHENoiseFilter",
-            "HBHENoiseIsoFilter",
-            "EcalDeadCellTriggerPrimitiveFilter",
-            "BadPFMuonFilter",
-            "BadPFMuonDzFilter",
-            "eeBadScFilter",
-        ],
-    },
-    "2017_UL": {
-        "data": [
-            "goodVertices",
-            "globalSuperTightHalo2016Filter",
-            "HBHENoiseFilter",
-            "HBHENoiseIsoFilter",
-            "EcalDeadCellTriggerPrimitiveFilter",
-            "BadPFMuonFilter",
-            "BadPFMuonDzFilter",
-            "hfNoisyHitsFilter",
-            "eeBadScFilter",
-            "ecalBadCalibFilter",
-        ],
-        "mc": [
-            "goodVertices",
-            "globalSuperTightHalo2016Filter",
-            "HBHENoiseFilter",
-            "HBHENoiseIsoFilter",
-            "EcalDeadCellTriggerPrimitiveFilter",
-            "BadPFMuonFilter",
-            "BadPFMuonDzFilter",
-            "hfNoisyHitsFilter",
-            "eeBadScFilter",
-            "ecalBadCalibFilter",
-        ],
-    },
-    "2018_UL": {
-        "data": [
-            "goodVertices",
-            "globalSuperTightHalo2016Filter",
-            "HBHENoiseFilter",
-            "HBHENoiseIsoFilter",
-            "EcalDeadCellTriggerPrimitiveFilter",
-            "BadPFMuonFilter",
-            "BadPFMuonDzFilter",
-            "hfNoisyHitsFilter",
-            "eeBadScFilter",
-            "ecalBadCalibFilter",
-        ],
-        "mc": [
-            "goodVertices",
-            "globalSuperTightHalo2016Filter",
-            "HBHENoiseFilter",
-            "HBHENoiseIsoFilter",
-            "EcalDeadCellTriggerPrimitiveFilter",
-            "BadPFMuonFilter",
-            "BadPFMuonDzFilter",
-            "hfNoisyHitsFilter",
-            "eeBadScFilter",
-            "ecalBadCalibFilter",
-        ],
-    },
-}
-
-
-def jetveto(events, correct_map):
+def jetveto(jets, correct_map):
     return ak.where(
         correct_map["jetveto"][list(correct_map["jetveto"].keys())[0]](
-            events.Jet.phi, events.Jet.eta
+            jets.phi, jets.eta
         )
         > 0,
-        ak.ones_like(events.Jet.eta),
-        ak.zeros_like(events.Jet.eta),
+        ak.ones_like(jets.eta),
+        ak.zeros_like(jets.eta),
     )
 
 
@@ -458,6 +359,7 @@ def JME_shifts(
     systematic=False,
     exclude_jetveto=False,
 ):
+
     dataset = events.metadata["dataset"]
     jecname = ""
     # https://cms-jerc.web.cern.ch/JECUncertaintySources/, currently no recommendation of reduced/ full split sources
@@ -689,9 +591,11 @@ def JME_shifts(
         jets = events.Jet
     # perform jet veto
     if "jetveto" in correct_map.keys():
-        events.Jet = update(events.Jet, {"veto": jetveto(events, correct_map)})
+        jets = update(jets, {"veto": jetveto(jets, correct_map)})
+
+        if "Summer22" in campaign:
+            jets = jets[jets.veto != 1]
     shifts += [({"Jet": jets, "MET": met}, None)]
-    print("in shift", met.pt)
     return shifts
 
 
@@ -816,7 +720,7 @@ def puwei(nPU, correct_map, weights, syst=False):
 
 
 def btagSFs(jet, correct_map, weights, SFtype, syst=False):
-    if SFtype == "DeepJetC" or SFtype == "DeepCSVC":
+    if SFtype.endswith("C"):
         systlist = [
             "Extrap",
             "Interp",
@@ -832,7 +736,7 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
             "jer",
             "jesTotal",
         ]
-    elif SFtype == "DeepJetB" or SFtype == "DeepCSVB":
+    elif SFtype.endswith("B"):
         systlist = [
             "hf",
             "lf",

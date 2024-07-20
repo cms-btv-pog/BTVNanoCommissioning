@@ -9,6 +9,8 @@ def missing_branch(events):
         if hasattr(events, "fixedGridRhoFastjetAll")
         else events.Rho.fixedGridRhoFastjetAll
     )
+    ## calculate missing nodes
+
     if not hasattr(events.Jet, "btagDeepFlavB"):
         jets = events.Jet
         jets["btagDeepFlavB"] = (
@@ -77,7 +79,9 @@ def missing_branch(events):
         )
     if hasattr(events, "METFixEE2017"):
         events.MET = events.METFixEE2017
-    if not hasattr(events.PuppiMET, "MetUnclustEnUpDeltaX"):
+    if hasattr(events.PuppiMET, "ptUnclusteredUp") and not hasattr(
+        events.PuppiMET, "MetUnclustEnUpDeltaX"
+    ):
         met = events.PuppiMET
         met["MetUnclustEnUpDeltaX"] = met.ptUnclusteredUp * np.cos(met.phiUnclusteredUp)
         met["MetUnclustEnUpDeltaY"] = met.ptUnclusteredUp * np.sin(met.phiUnclusteredUp)
@@ -88,46 +92,4 @@ def missing_branch(events):
                 "MetUnclustEnUpDeltaY": met.MetUnclustEnUpDeltaY,
             },
         )
-    return events
-
-
-### Not used anymore
-def add_jec(events, campaign, jmestuff):
-    dataset = events.metadata["dataset"]
-    jet_factory = jmestuff["jet_factory"]
-    met_factory = jmestuff["met_factory"]
-    isRealData = not hasattr(events, "genWeight")
-    if isRealData:
-        if "un" in dataset:
-            jecname = dataset[dataset.find("un") + 6]
-        else:
-            print("No valid jec name")
-            raise NameError
-        if "2016_" in campaign:
-            if "B" == jecname or "C" == jecname or "D" == jecname:
-                jecname = "BCD"
-            elif "E" == jecname or "F" == jecname:
-                jecname = "EF"
-            elif "F" == jecname or "G" == jecname or "H" == jecname:
-                jecname = "FGH"
-            else:
-                raise NameError
-        elif campaign == "Rereco17_94X":
-            jecname = ""
-        jets = jet_factory[f"data{jecname}"].build(
-            add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
-            lazy_cache=events.caches[0],
-        )
-    else:
-        jets = jet_factory["mc"].build(
-            add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
-            lazy_cache=events.caches[0],
-        )
-
-    if "Run3" not in campaign:
-        met = met_factory.build(events.MET, jets, {})
-        events = update(events, {"Jet": jets, "MET": met})
-    else:
-        met = met_factory.build(events.PuppiMET, jets, {})
-        events = update(events, {"Jet": jets, "PuppiMET": met})
     return events

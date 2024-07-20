@@ -8,6 +8,7 @@ from BTVNanoCommissioning.utils.correction import (
     load_lumi,
     load_SF,
     muSFs,
+    eleSFs,
     puwei,
     btagSFs,
     JME_shifts,
@@ -17,12 +18,11 @@ from BTVNanoCommissioning.utils.correction import (
 from BTVNanoCommissioning.helpers.func import (
     flatten,
     update,
-    uproot_writeable,
-    _is_rootcompat,
     dump_lumi,
 )
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
@@ -41,6 +41,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
+        selectionModifier="DilepTTEM",
     ):
         self._year = year
         self._campaign = campaign
@@ -50,6 +51,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
+        self.selMod = selectionModifier
         ## Load corrections
         self.SF_map = load_SF(self._campaign)
 
@@ -70,7 +72,7 @@ class NanoProcessor(processor.ProcessorABC):
                 shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
             )
         else:
-            if int(self._year) > 2020:
+            if int(self._year) < 2020:
                 shifts = [
                     ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
                 ]
@@ -98,20 +100,6 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        _hist_event_dict = (
-            {"": None} if self.noHist else histogrammer(events, "ctag_ttdilep_sf")
-        )
-
-        output = {
-            "sumw": processor.defaultdict_accumulator(float),
-            **_hist_event_dict,
-        }
-
-        if shift_name is None:
-            if isRealData:
-                output["sumw"] = len(events)
-            else:
-                output["sumw"] = ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
@@ -120,12 +108,12 @@ class NanoProcessor(processor.ProcessorABC):
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
-        # only dump for nominal case
-        if shift_name is None:
-            output = dump_lumi(events[req_lumi], output)
 
         ## HLT
-        triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
+        if self.selMod == "dilepttM":
+            triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
+        elif self.selMod == "dilepttE":
+            triggers = ["Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"]
         checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
         if ak.all(checkHLT == False):
             raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
@@ -138,18 +126,43 @@ class NanoProcessor(processor.ProcessorABC):
         for t in trig_arrs:
             req_trig = req_trig | t
 
-        ## Muon cuts
-        # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
-        iso_muon = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
-        iso_muon = ak.pad_none(iso_muon, 2)
-        req_muon = (ak.count(iso_muon.pt, axis=1) == 2) & (iso_muon[:, 0].pt > 20)
+        # Lepton selections
+        if self.selMod == "dilepttM":
+            # dilepton selections
+            iso_muon = events.Muon[
+                (events.Muon.pt > 12) & mu_idiso(events, self._campaign)
+            ]
+            iso_lep = ak.pad_none(iso_muon, 2)
+            req_lep = (ak.count(iso_lep.pt, axis=1) == 2) & (iso_lep[:, 0].pt > 20)
+            # veto other flavors
+            dilep_ele = events.Electron[
+                (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
+            ]
+            req_dilepveto = ak.count(dilep_ele.pt, axis=1) == 0
+        elif self.selMod == "dilepttE":
+            # dilepton selections
+            iso_ele = events.Electron[
+                (events.Electron.pt > 25) & ele_mvatightid(events, self._campaign)
+            ]
+            iso_lep = ak.pad_none(iso_ele, 2)
+            req_lep = (ak.count(iso_lep.pt, axis=1) == 2) & (iso_lep[:, 0].pt > 27)
+            # veto other flavors
+            dilep_mu = events.Muon[
+                (events.Muon.pt > 12) & mu_idiso(events, self._campaign)
+            ]
+            req_dilepveto = ak.count(dilep_mu.pt, axis=1) == 0
 
+        # veto Z events
+        dilep_mass = iso_lep[:, 0] + iso_lep[:, 1]
+        req_dilepmass = (dilep_mass.mass > 12.0) & (
+            (dilep_mass.mass < 75) | (dilep_mass.mass > 105)
+        )
         ## Jet cuts
         event_jet = events.Jet[
             ak.fill_none(
                 jet_id(events, self._campaign)
                 & ak.all(
-                    events.Jet.metric_table(iso_muon) > 0.4, axis=2, mask_identity=True
+                    events.Jet.metric_table(iso_lep) > 0.4, axis=2, mask_identity=True
                 ),
                 False,
                 axis=-1,
@@ -198,17 +211,6 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = ak.pad_none(jetindx, 1)
         jetindx = jetindx[:, 0]
 
-        ## Other cuts
-        dilep_ele = events.Electron[
-            (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
-        ]
-        req_dilepveto = ak.count(dilep_ele.pt, axis=1) == 0
-
-        dilep_mass = iso_muon[:, 0] + iso_muon[:, 1]
-        req_dilepmass = (dilep_mass.mass > 12.0) & (
-            (dilep_mass.mass < 75) | (dilep_mass.mass > 105)
-        )
-
         MET = ak.zip(
             {
                 "pt": events.MET.pt,
@@ -223,7 +225,7 @@ class NanoProcessor(processor.ProcessorABC):
         event_level = (
             req_trig
             & req_lumi
-            & req_muon
+            & req_lep
             & req_dilepveto
             & req_dilepmass
             & req_MET
@@ -232,20 +234,50 @@ class NanoProcessor(processor.ProcessorABC):
             & req_mujet
         )
         event_level = ak.fill_none(event_level, False)
+        histname = {
+            "dilepttM": "ctag_ttdilep_sf",
+            "dilepttE": "ectag_ttdilep_sf",
+        }
+        _hist_event_dict = (
+            {"": None} if self.noHist else histogrammer(events, histname[self.selMod])
+        )
+
+        output = {
+            "sumw": processor.defaultdict_accumulator(float),
+            **_hist_event_dict,
+        }
+        if shift_name is None:
+            if isRealData:
+                output["sumw"] = len(events)
+            else:
+                output["sumw"] = ak.sum(events.genWeight)
+        # only dump for nominal case
+        if shift_name is None:
+            output = dump_lumi(events[req_lumi], output)
         if len(events[event_level]) == 0:
+            if self.isArray:
+                array_writer(
+                    self,
+                    events[event_level],
+                    events,
+                    "nominal",
+                    dataset,
+                    isRealData,
+                    empty=True,
+                )
             return {dataset: output}
 
         ####################
         # Selected objects #
         ####################
-        shmu = iso_muon[event_level]
+        shlep = iso_lep[event_level]
         ssmu = soft_muon[event_level]
         nsoftmu = ak.count(ssmu.pt, axis=1)
         softmu0 = ssmu
         softmu0 = ssmu[:, 0]
-        sz = shmu[:, 0] + shmu[:, 1]
-        isomu0 = shmu[:, 0]
-        isomu1 = shmu[:, 1]
+        sz = shlep[:, 0] + shlep[:, 1]
+        isomu0 = shlep[:, 0]
+        isomu1 = shlep[:, 1]
         sjets = event_jet[event_level]
         smuon_jet = mu_jet[event_level]
         nmujet = ak.count(smuon_jet.pt, axis=1)
@@ -282,8 +314,10 @@ class NanoProcessor(processor.ProcessorABC):
                         weights,
                         syst_wei,
                     )
-                if "MUO" in self.SF_map.keys():
-                    muSFs(shmu, self.SF_map, weights, syst_wei, False)
+                if "MUO" in self.SF_map.keys() and self.selMod == "dilepttM":
+                    muSFs(shlep, self.SF_map, weights, syst_wei, False)
+                if "EGM" in self.SF_map.keys() and self.selMod == "dilepttE":
+                    eleSFs(shlep, self.SF_map, weights, syst_wei, False)
                 if "BTV" in self.SF_map.keys():
                     btagSFs(smuon_jet, self.SF_map, weights, "DeepJetC", syst_wei)
                     btagSFs(smuon_jet, self.SF_map, weights, "DeepJetB", syst_wei)
@@ -459,21 +493,27 @@ class NanoProcessor(processor.ProcessorABC):
         #######################
         #  Create root files  #
         #######################
+
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
-            pruned_ev.Jet = sjets
-            pruned_ev.Muon = shmu
-            pruned_ev["dilep"] = shmu[:, 0] + shmu[:, 1]
+            # pruned_ev["SelJet"] = sjets
+            if self.selMod == "dilepttM":
+                pruned_ev["Muon1"] = shlep[:, 0]
+                pruned_ev["Muon2"] = shlep[:, 1]
+            if self.selMod == "dilepttE":
+                pruned_ev["Electron1"] = shlep[:, 0]
+                pruned_ev["Electron2"] = shlep[:, 1]
+
+            pruned_ev["MuonJet"] = smuon_jet
+            pruned_ev["SoftMuon"] = ssmu
+            pruned_ev["dilep"] = shlep[:, 0] + shlep[:, 1]
             pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
             pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta
             pruned_ev["dilep", "phi"] = pruned_ev.dilep.phi
             pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
             if "PFCands" in events.fields:
                 pruned_ev.PFCands = spfcands
-            pruned_ev["MuonJet"] = smuon_jet
-            pruned_ev["SoftMuon"] = ssmu
-
             # Add custom variables
             if not isRealData:
                 pruned_ev["weight"] = weights.weight()
@@ -481,46 +521,11 @@ class NanoProcessor(processor.ProcessorABC):
                     pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
                         include=[ind_wei]
                     )
-
             pruned_ev["dr_mujet_softmu"] = ssmu[:, 0].delta_r(smuon_jet)
-            pruned_ev["dr_mujet_lep1"] = shmu[:, 0].delta_r(smuon_jet)
-            pruned_ev["dr_mujet_lep2"] = shmu[:, 1].delta_r(smuon_jet)
-            pruned_ev["dr_lep1_softmu"] = shmu[:, 0].delta_r(ssmu[:, 0])
             pruned_ev["soft_l_ptratio"] = ssmu[:, 0].pt / smuon_jet.pt
-            pruned_ev["l1_ptratio"] = shmu[:, 0].pt / smuon_jet.pt
-            pruned_ev["l2_ptratio"] = shmu[:, 1].pt / smuon_jet.pt
 
-            # Create a list of variables want to store. For objects from the PFNano file, specify as {object}_{variable}, wildcard option only accepted at the end of the string
-            out_branch = np.setdiff1d(
-                np.array(pruned_ev.fields), np.array(events.fields)
-            )
-            out_branch = np.delete(
-                out_branch,
-                np.where(
-                    (out_branch == "SoftMuon")
-                    | (out_branch == "MuonJet")
-                    | (out_branch == "dilep")
-                ),
-            )
+            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
 
-            for kin in ["pt", "eta", "phi", "mass", "pfRelIso04_all", "dxy", "dz"]:
-                for obj in ["Muon", "Jet", "SoftMuon", "MuonJet", "dilep", "MET"]:
-                    if "MET" in obj and ("pt" != kin or "phi" != kin):
-                        continue
-                    if (obj != "Muon" and obj != "SoftMuon") and (
-                        "pfRelIso04_all" == kin or "d" in kin
-                    ):
-                        continue
-                    out_branch = np.append(out_branch, [f"{obj}_{kin}"])
-            out_branch = np.append(
-                out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*"]
-            )
-            # write to root files
-            os.system(f"mkdir -p {self.name}/{dataset}")
-            with uproot.recreate(
-                f"{self.name}/{dataset}/f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
-            ) as fout:
-                fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
         return {dataset: output}
 
     def postprocess(self, accumulator):
