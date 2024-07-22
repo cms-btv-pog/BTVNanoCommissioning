@@ -497,7 +497,7 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
-            # pruned_ev["SelJet"] = sjets
+            pruned_ev["SelJet"] = sjets
             if self.selMod == "dilepttM":
                 pruned_ev["Muon1"] = shlep[:, 0]
                 pruned_ev["Muon2"] = shlep[:, 1]

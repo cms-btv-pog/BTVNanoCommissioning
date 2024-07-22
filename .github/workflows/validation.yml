@@ -1,26 +1,24 @@
-name: ctag W+c Workflow
+name: Prompt dataMC Workflows
 
 on:
   push:
     branches: [ master ]
     paths:
-    - 'src/BTVNanoCommissioning/workflows/ctag_*Wc*'
+    - 'src/BTVNanoCommissioning/workflows/validation.py'
     - 'src/BTVNanoCommissioning/helpers/update_branch.py'
     - 'src/BTVNanoCommissioning/helpers/func.py'
     - 'src/BTVNanoCommissioning/helpers/definitions.py'
     - 'src/BTVNanoCommissioning/utils/*'
-    - '.github/workflows/ctag_Wc_workflow.yml'
-    
+    - '.github/workflows/validation.yml'
   pull_request_target:
     branches: [ master ]
     paths:
-    - 'src/BTVNanoCommissioning/workflows/ctag_*Wc*'
+    - 'src/BTVNanoCommissioning/workflows/validation.py'
     - 'src/BTVNanoCommissioning/helpers/update_branch.py'
     - 'src/BTVNanoCommissioning/helpers/func.py'
     - 'src/BTVNanoCommissioning/helpers/definitions.py'
     - 'src/BTVNanoCommissioning/utils/*'
-    - '.github/workflows/ctag_Wc_workflow.yml'
-   
+    - '.github/workflows/validation.yml'
   workflow_dispatch:
 
 jobs:
@@ -44,7 +42,6 @@ jobs:
       run: |
         mkdir  $HOME/.ssh
         echo "$SSHKEY" > $HOME/.ssh/id_rsa
-        ls -lrt $HOME/.ssh
         chmod 600  $HOME/.ssh/id_rsa
         echo "HOST *" > ~/.ssh/config
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
@@ -69,7 +66,7 @@ jobs:
         conda info
         conda env list
         conda list
-    
+        
     - name: Set up proxy
       # https://awesome-workshop.github.io/gitlab-cms/03-vomsproxy/index.html
       # continue-on-error: true
@@ -93,7 +90,7 @@ jobs:
         # base64 -i $HOME/.globus/usercert.pem
         chmod 400 $HOME/.globus/userkey.pem
         openssl rand -out $HOME/.rnd  -hex 256
-        printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms  --debug --pwstdin
+        printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms --debug --pwstdin
         chmod 755 /usr/share/miniconda3/envs/btv_coffea/etc/grid-security/certificates
     - name: Test xrootd
       run: |
@@ -102,34 +99,11 @@ jobs:
     - name: Install Repo
       run: |
         pip install -e .
-    
 
-    - name: ctag muon W+c workflows with correctionlib
+   
+    - name: btag dileptonic ttbar workflows with correctionlib
       run: |
         string=$(git log -1 --pretty=format:'%s')
-        if [[ $string == *"ci:skip array"* ]]; then
-        opts=$(echo "$opts" | sed 's/--isArray //g')
-        fi
-        if [[ $string == *"ci:skip syst"* ]]; then
-            opts=$(echo "$opts" | sed 's/--isSyst all//g')
-        elif [[ $string == *"ci:JERC_split"* ]]; then
-            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
-        elif [[ $string == *"ci:weight_only"* ]]; then
-            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
-        fi
-        python runner.py --workflow ctag_Wc_sf --json metadata/test_bta_run3.json  --executor iterative  $opts
-    
-    - name: ctag electron W+c workflows with correctionlib
-      run: |
-        message=$(git log -1 --pretty=format:'%s')
-        if [[ $string == *"ci:skip array"* ]]; then
-        opts=$(echo "$opts" | sed 's/--isArray //g')
-        fi
-        if [[ $string == *"ci:skip syst"* ]]; then
-            opts=$(echo "$opts" | sed 's/--isSyst all//g')
-        elif [[ $string == *"ci:JERC_split"* ]]; then
-            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
-        elif [[ $string == *"ci:weight_only"* ]]; then
-            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
-        fi
-        python runner.py --workflow ectag_Wc_sf --json metadata/test_bta_run3.json --executor iterative  --overwrite $opts
+        
+        python runner.py --workflow ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
+

@@ -473,28 +473,18 @@ def histogrammer(events, workflow):
     disc_list = [
         "btagDeepFlavB",
         "btagDeepFlavC",
-        "btagTransDeepFlavB",
-        "btagTransDeepFlavC",
         "btagDeepFlavCvL",
         "btagDeepFlavCvB",
         "btagDeepFlavB_b",
         "btagDeepFlavB_bb",
-        "btagTransDeepFlavB_lepb",
-        "btagTransDeepFlavB_b",
-        "btagTransDeepFlavB_bb",
-        "btagTransDeepFlavB_lepb",
         "btagPNetB",
-        "btagTransPNetB",
         "btagPNetCvB",
         "btagPNetCvL",
+        "btagPNetCvNotB",
         "btagPNetProbB",
         "btagPNetProbC",
         "btagPNetProbG",
         "btagPNetProbUDS",
-        "btagTransPNetProbB",
-        "btagTransPNetProbC",
-        "btagTransPNetProbG",
-        "btagTransPNetProbUDS",
         "btagPNetQvG",
         "btagPNetTauVJet",
         "btagRobustParTAK4B",
@@ -504,13 +494,6 @@ def histogrammer(events, workflow):
         "btagRobustParTAK4C",
         "btagRobustParTAK4G",
         "btagRobustParTAK4UDS",
-        "btagTransRobustParTAK4B",
-        "btagTransRobustParTAK4B_b",
-        "btagTransRobustParTAK4B_bb",
-        "btagTransRobustParTAK4B_lepb",
-        "btagTransRobustParTAK4C",
-        "btagTransRobustParTAK4G",
-        "btagTransRobustParTAK4UDS",
         "btagRobustParTAK4CvB",
         "btagRobustParTAK4CvL",
         "btagRobustParTAK4QG",
@@ -633,14 +616,14 @@ def histogrammer(events, workflow):
                         Hist.axis.Regular(50, 0, 10, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
-                elif "PNetRegPtRawRes" == disc:
+                elif "Res" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,
                         Hist.axis.Regular(40, 0, 1, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
-                elif "PNetRegPtRawCorr" in disc:
+                elif "Corr" in disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,

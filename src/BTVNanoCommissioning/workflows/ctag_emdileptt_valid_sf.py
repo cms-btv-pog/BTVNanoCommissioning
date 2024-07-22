@@ -276,6 +276,16 @@ class NanoProcessor(processor.ProcessorABC):
         )
         event_level = ak.fill_none(event_level, False)
         if len(events[event_level]) == 0:
+            if self.isArray:
+                array_writer(
+                    self,
+                    events[event_level],
+                    events,
+                    "nominal",
+                    dataset,
+                    isRealData,
+                    empty=True,
+                )
             return {dataset: output}
 
         ####################
@@ -512,19 +522,18 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
-            pruned_ev.Jet = sjets
-            pruned_ev.Muon = isomu0
-            pruned_ev.Electron = isomu1
-            pruned_ev["dilep"] = isomu0 + isomu1
+            pruned_ev["SelJet"] = sjets
+            pruned_ev["Muon"] = isomu0
+            pruned_ev["Electron"] = isomu1
+            pruned_ev["MuonJet"] = smuon_jet
+            pruned_ev["SoftMuon"] = ssmu[:, 0]
+            pruned_ev["dilep"] = isomu0[:, 0] + isomu1[:, 1]
             pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
             pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta
             pruned_ev["dilep", "phi"] = pruned_ev.dilep.phi
             pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
             if "PFCands" in events.fields:
                 pruned_ev.PFCands = spfcands
-            pruned_ev["MuonJet"] = smuon_jet
-            pruned_ev["SoftMuon"] = ssmu[:, 0]
-
             # Add custom variables
             if not isRealData:
                 pruned_ev["weight"] = weights.weight()
@@ -532,7 +541,6 @@ class NanoProcessor(processor.ProcessorABC):
                     pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
                         include=[ind_wei]
                     )
-
             pruned_ev["dr_mujet_softmu"] = pruned_ev.SoftMuon.delta_r(smuon_jet)
             pruned_ev["dr_mujet_lep1"] = pruned_ev.Muon.delta_r(smuon_jet)
             pruned_ev["dr_mujet_lep2"] = pruned_ev.Electron.delta_r(smuon_jet)
@@ -540,38 +548,8 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["soft_l_ptratio"] = pruned_ev.SoftMuon.pt / smuon_jet.pt
             pruned_ev["l1_ptratio"] = pruned_ev.Muon.pt / smuon_jet.pt
             pruned_ev["l2_ptratio"] = pruned_ev.Electron.pt / smuon_jet.pt
+            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
 
-            # Create a list of variables want to store. For objects from the PFNano file, specify as {object}_{variable}, wildcard option only accepted at the end of the string
-            out_branch = np.setdiff1d(
-                np.array(pruned_ev.fields), np.array(events.fields)
-            )
-            out_branch = np.delete(
-                out_branch,
-                np.where(
-                    (out_branch == "SoftMuon")
-                    | (out_branch == "MuonJet")
-                    | (out_branch == "dilep")
-                ),
-            )
-
-            for kin in ["pt", "eta", "phi", "mass", "pfRelIso04_all", "dxy", "dz"]:
-                for obj in ["Muon", "Jet", "Electron", "SoftMuon", "MuonJet", "MET"]:
-                    if "MET" in obj and ("pt" != kin or "phi" != kin):
-                        continue
-                    if (obj != "Muon" and obj != "SoftMuon") and (
-                        "pfRelIso04_all" == kin or "d" in kin
-                    ):
-                        continue
-                    out_branch = np.append(out_branch, [f"{obj}_{kin}"])
-            out_branch = np.append(
-                out_branch, ["Jet_btagDeep*", "Jet_DeepJet*", "PFCands_*"]
-            )
-            # write to root files
-            os.system(f"mkdir -p {self.name}/{dataset}")
-            with uproot.recreate(
-                f"{self.name}/{dataset}/f{events.metadata['filename'].split('_')[-1].replace('.root','')}_{systematics[0]}_{int(events.metadata['entrystop']/self.chunksize)}.root"
-            ) as fout:
-                fout["Events"] = uproot_writeable(pruned_ev, include=out_branch)
         return {dataset: output}
 
     def postprocess(self, accumulator):

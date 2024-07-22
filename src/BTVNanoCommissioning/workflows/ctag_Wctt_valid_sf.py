@@ -105,16 +105,16 @@ class NanoProcessor(processor.ProcessorABC):
         if "WcM" in self.selMod or "semittM" in self.selMod:
             triggers = ["IsoMu27", "IsoMu24"]
             isMu = True
-            dxySigcut = 0  # 1
-            muNeEmSum = 1  # 0.7
-            muonpTratioCut = 1  # 0.4
+            dxySigcut = 1.0
+            muNeEmSum = 0.7
+            muonpTratioCut = 0.4
             isolepdz, isolepdxy, isolepsip3d = 0.01, 0.002, 2
         elif "WcE" in self.selMod or "semittE" in self.selMod:
             triggers = ["Ele32_WPTight_Gsf_L1DoubleEG"]
             isEle = True
-            dxySigcut = 0
-            muNeEmSum = 1
-            muonpTratioCut = 1  # 0.6
+            dxySigcut = 0.0
+            muNeEmSum = 1.0
+            muonpTratioCut = 0.6  # 0.6
             isolepdz, isolepdxy, isolepsip3d = 0.02, 0.01, 2.5
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
@@ -258,6 +258,7 @@ class NanoProcessor(processor.ProcessorABC):
         # Other cuts
         req_pTratio = (soft_muon[:, 0].pt / mu_jet[:, 0].pt) < muonpTratioCut
         idx = np.where(iso_lep.jetIdx == -1, 0, iso_lep.jetIdx)
+        ## Additional cut to reject QCD events,used in BTV-20-001
         # req_QCDveto = (
         #     (iso_lep.pfRelIso04_all < 0.05)
         # & (abs(iso_lep.dz) < isolepdz)
@@ -285,13 +286,11 @@ class NanoProcessor(processor.ProcessorABC):
 
         dilep_mass = iso_lep + soft_muon[:, 0]
         if isMu:
-            req_dilepmass = dilep_mass.mass > 12.0
-            # & (
-            #    (dilep_mass.mass < 80) | (dilep_mass.mass > 100)
-            # )
+            req_dilepmass = (dilep_mass.mass > 12.0) & (
+                (dilep_mass.mass < 80) | (dilep_mass.mass > 100)
+            )
         elif isEle:
             req_dilepmass = iso_lep.pt > 0
-
         iso_lep_trans = ak.zip(
             {
                 "pt": iso_lep.pt,
@@ -331,11 +330,12 @@ class NanoProcessor(processor.ProcessorABC):
         req_mtw = Wmass > wmasscut
 
         # ==This is the manual calculation for transverse mass==
-        # dphi = iso_lep.phi-events.PuppiMET.phi
-        # dphi = np.where(dphi<np.pi,dphi+2*np.pi,dphi)
-        # dphi = np.where(dphi>np.pi,dphi-2*np.pi,dphi)
-        # trans = np.sqrt(2*iso_lep.pt*events.PuppiMET.pt*(1-np.cos(dphi)))
-
+        """
+        dphi = iso_lep.phi-events.PuppiMET.phi
+        dphi = np.where(dphi<np.pi,dphi+2*np.pi,dphi)
+        dphi = np.where(dphi>np.pi,dphi-2*np.pi,dphi)
+        trans = np.sqrt(2*iso_lep.pt*events.PuppiMET.pt*(1-np.cos(dphi)))
+        """
         event_level = (
             req_trig
             & req_lumi
@@ -623,7 +623,7 @@ class NanoProcessor(processor.ProcessorABC):
             if not isRealData:
                 output["pu"].fill(
                     syst,
-                    events[event_level].Pileup.nTrueInt,
+                    ak.values_astype(events[event_level].Pileup.nTrueInt, int),
                     weight=weight,
                 )
         #######################

@@ -6285,6 +6285,8 @@ def axes_name(var):
             unit = unit + " RobustParTAK4"
         elif "PNet" in var:
             unit = unit + " PNet"
+        elif "UParT" in var:
+            unit = unit + " UParTAK4"
         else:
             unit = unit + " DeepCSV"
         # output node
@@ -6292,6 +6294,8 @@ def axes_name(var):
             unit = unit + " CvL"
         elif "CvB" in var:
             unit = unit + " CvB"
+        elif "CvNotB" in var:
+            unit = unit + " CvNotB"
         elif "B_b" in var or "ProbB" in var:
             unit = unit + " Prob(b)"
         elif "B_bb" in var:
