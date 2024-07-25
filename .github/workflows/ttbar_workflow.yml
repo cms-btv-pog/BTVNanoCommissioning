@@ -46,7 +46,7 @@ jobs:
         echo "HOST *" > ~/.ssh/config
         echo "StrictHostKeyChecking no" >> ~/.ssh/config
         git submodule update --init --recursive 
-    - uses: cvmfs-contrib/github-action-cvmfs@v2
+    - uses: cvmfs-contrib/github-action-cvmfs@v4
       with:
         cvmfs_repositories: 'grid.cern.ch'
 
@@ -80,6 +80,7 @@ jobs:
         # Read automatically by voms-proxy-init
         X509_VOMS_DIR: /cvmfs/grid.cern.ch/etc/grid-security/vomsdir/
         X509_VOMSES: /cvmfs/grid.cern.ch/etc/grid-security/vomses/
+        X509_CERT_DIR: /cvmfs/grid.cern.ch/etc/grid-security/certificates/
         X509_DEFAULT_USER_CERT: $HOME/.globus/usercert.pem
         X509_DEFAULT_USER_KEY: $HOME/.globus/userkey.pem
       run: |
@@ -90,7 +91,7 @@ jobs:
         # base64 -i $HOME/.globus/usercert.pem
         chmod 400 $HOME/.globus/userkey.pem
         openssl rand -out $HOME/.rnd  -hex 256
-        printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms --pwstdin
+        printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms  --debug --pwstdin -certdir $X509_CERT_DIR  -vomses $X509_VOMSES
         chmod 755 /usr/share/miniconda3/envs/btv_coffea/etc/grid-security/certificates
     - name: Test xrootd
       run: |

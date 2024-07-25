@@ -77,6 +77,26 @@ def missing_branch(events):
                 "btagDeepFlavCvB": jets.btagDeepFlavCvB,
             },
         )
+    if not hasattr(events.Jet, "btagPNetCvNotB"):
+        jets = events.Jet
+        jets["btagPNetCvNotB"] = (
+            jets.btagPNetCvB * jets.btagPNetB / (1.0 - jets.btagPNetB) ** 2
+        )
+        events.Jet = update(
+            events.Jet,
+            {"btagPNetCvNotB": jets.btagPNetCvNotB},
+        )
+    if not hasattr(events.Jet, "btagRobustParTAK4CvNotB"):
+        jets = events.Jet
+        jets["btagRobustParTAK4CvNotB"] = (
+            jets.btagRobustParTAK4CvB
+            * jets.btagRobustParTAK4B
+            / (1.0 - jets.btagRobustParTAK4B) ** 2
+        )
+        events.Jet = update(
+            events.Jet,
+            {"btagRobustParTAK4CvNotB": jets.btagRobustParTAK4CvNotB},
+        )
     if hasattr(events, "METFixEE2017"):
         events.MET = events.METFixEE2017
     if hasattr(events.PuppiMET, "ptUnclusteredUp") and not hasattr(

@@ -18,7 +18,6 @@ from BTVNanoCommissioning.utils.correction import (
     load_SF,
     JME_shifts,
     JPCalibHandler,
-    jetveto,
 )
 
 
@@ -471,29 +470,52 @@ class NanoProcessor(processor.ProcessorABC):
                 "PNetCDiscN": jet.btagNegPNetProbC,
                 "PNetUDSDiscN": jet.btagNegPNetProbUDS,
                 "PNetGDiscN": jet.btagNegPNetProbG,
-                # ParticleTransformer
-                "ParTBDisc": jet.btagRobustParTAK4B,
-                "ParTCvsLDisc": jet.btagRobustParTAK4CvL,
-                "ParTCvsBDisc": jet.btagRobustParTAK4CvB,
-                "ParTQvsGDisc": jet.btagRobustParTAK4QG,
-                "ParTBDisc_b": jet.btagRobustParTAK4B_b,
-                "ParTBDisc_bb": jet.btagRobustParTAK4B_bb,
-                "ParTBDisc_lepb": jet.btagRobustParTAK4B_lepb,
-                "ParTCDisc": jet.btagRobustParTAK4C,
-                "ParTUDSDisc": jet.btagRobustParTAK4UDS,
-                "ParTGDisc": jet.btagRobustParTAK4G,
-                "ParTBDiscN": jet.btagNegRobustParTAK4B,
-                "ParTCvsLDiscN": jet.btagNegRobustParTAK4CvL,
-                "ParTCvsBDiscN": jet.btagNegRobustParTAK4CvB,
-                "ParTQvsGDiscN": jet.btagNegRobustParTAK4QG,
-                "ParTBDisc_bN": jet.btagNegRobustParTAK4B_b,
-                "ParTBDisc_bbN": jet.btagNegRobustParTAK4B_bb,
-                "ParTBDisc_lepbN": jet.btagNegRobustParTAK4B_lepb,
-                "ParTCDiscN": jet.btagNegRobustParTAK4C,
-                "ParTUDSDiscN": jet.btagNegRobustParTAK4UDS,
-                "ParTGDiscN": jet.btagNegRobustParTAK4G,
             }
         )
+        if "btagRobustParTAK4B" in jet.fields:
+            # ParticleTransformer
+            Jet["ParTBDisc"] = jet.btagRobustParTAK4B
+            Jet["ParTCvsLDisc"] = jet.btagRobustParTAK4CvL
+            Jet["ParTCvsBDisc"] = jet.btagRobustParTAK4CvB
+            Jet["ParTQvsGDisc"] = jet.btagRobustParTAK4QG
+            Jet["ParTBDisc_b"] = jet.btagRobustParTAK4B_b
+            Jet["ParTBDisc_bb"] = jet.btagRobustParTAK4B_bb
+            Jet["ParTBDisc_lepb"] = jet.btagRobustParTAK4B_lepb
+            Jet["ParTCDisc"] = jet.btagRobustParTAK4C
+            Jet["ParTUDSDisc"] = jet.btagRobustParTAK4UDS
+            Jet["ParTGDisc"] = jet.btagRobustParTAK4G
+            Jet["ParTBDiscN"] = jet.btagNegRobustParTAK4B
+            Jet["ParTCvsLDiscN"] = jet.btagNegRobustParTAK4CvL
+            Jet["ParTCvsBDiscN"] = jet.btagNegRobustParTAK4CvB
+            Jet["ParTQvsGDiscN"] = jet.btagNegRobustParTAK4QG
+            Jet["ParTBDisc_bN"] = jet.btagNegRobustParTAK4B_b
+            Jet["ParTBDisc_bbN"] = jet.btagNegRobustParTAK4B_bb
+            Jet["ParTBDisc_lepbN"] = jet.btagNegRobustParTAK4B_lepb
+            Jet["ParTCDiscN"] = jet.btagNegRobustParTAK4C
+            Jet["ParTUDSDiscN"] = jet.btagNegRobustParTAK4UDS
+            Jet["ParTGDiscN"] = jet.btagNegRobustParTAK4G
+        if "btagUParTAK4B" in jet.fields:
+            # UParT
+            Jet["UParTBDisc"] = jet.btagUParTAK4B
+            Jet["UParTCvsLDisc"] = jet.btagUParTAK4CvL
+            Jet["UParTCvsBDisc"] = jet.btagUParTAK4CvB
+            Jet["UParTQvsGDisc"] = jet.btagUParTAK4QG
+            Jet["UParTBDisc_b"] = jet.btagUParTAK4B_b
+            Jet["UParTBDisc_bb"] = jet.btagUParTAK4B_bb
+            Jet["UParTBDisc_lepb"] = jet.btagUParTAK4B_lepb
+            Jet["UParTCDisc"] = jet.btagUParTAK4C
+            Jet["UParTUDSDisc"] = jet.btagUParTAK4UDS
+            Jet["UParTGDisc"] = jet.btagUParTAK4G
+            Jet["UParTBDiscN"] = jet.btagNegUParTAK4B
+            Jet["UParTCvsLDiscN"] = jet.btagNegUParTAK4CvL
+            Jet["UParTCvsBDiscN"] = jet.btagNegUParTAK4CvB
+            Jet["UParTQvsGDiscN"] = jet.btagNegUParTAK4QG
+            Jet["UParTBDisc_bN"] = jet.btagNegUParTAK4B_b
+            Jet["UParTBDisc_bbN"] = jet.btagNegUParTAK4B_bb
+            Jet["UParTBDisc_lepbN"] = jet.btagNegUParTAK4B_lepb
+            Jet["UParTCDiscN"] = jet.btagNegUParTAK4C
+            Jet["UParTUDSDiscN"] = jet.btagNegUParTAK4UDS
+            Jet["UParTGDiscN"] = jet.btagNegUParTAK4G
         if "veto" in jet.fields:
             Jet["veto"] = jet.veto
         if not isRealData:
@@ -1137,6 +1159,7 @@ class NanoProcessor(processor.ProcessorABC):
             f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
         )
         os.system(f"rm {fname}")
+
         return {dataset: len(events)}
 
     def postprocess(self, accumulator):

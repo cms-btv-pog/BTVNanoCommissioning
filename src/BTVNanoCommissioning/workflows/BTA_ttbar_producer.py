@@ -9,7 +9,7 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     to_bitwise_trigger,
 )
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts, jetveto
+from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts
 import os
 
 
@@ -56,11 +56,9 @@ class NanoProcessor(processor.ProcessorABC):
             shifts = [
                 ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
             ]
-
         return processor.accumulate(
             self.process_shift(update(events, collections), name)
             for collections, name in shifts
-            if name != None
         )
 
     def process_shift(self, events, shift_name):
@@ -72,12 +70,10 @@ class NanoProcessor(processor.ProcessorABC):
             f"gfal-ls root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
         ).read()
         if len(checkf) > 0:
-            print("skip ", checkf)
             return {dataset: len(events)}
 
         isRealData = not hasattr(events, "genWeight")
-        if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
-            events.Jet = update(events.Jet, {"veto": jetveto(events, self.SF_map)})
+
         # basic variables
         basic_vars = {
             "Run": events.run,
@@ -401,11 +397,11 @@ class NanoProcessor(processor.ProcessorABC):
         Jet = ak.zip(
             {
                 # basic kinematics
-                "pt": jet.pt,
+                "pt": ak.values_astype(jet.pt, float),
                 "eta": jet.eta,
                 "phi": jet.phi,
-                "mass": jet.mass,
-                "uncorrpt": jet.pt_raw,
+                "mass": ak.values_astype(jet.mass, float),
+                "uncorrpt": ak.values_astype(jet.pt_raw, float),
                 # jet ID/pileup ID // !!!
                 "looseID": jet.jetId >= 2,
                 "tightID": jet.jetId >= 4,
@@ -425,12 +421,21 @@ class NanoProcessor(processor.ProcessorABC):
                 "PNetBDisc": jet.btagPNetB,
                 "PNetCvsLDisc": jet.btagPNetCvL,
                 "PNetCvsBDisc": jet.btagPNetCvB,
-                # ParticleTransformer
-                "ParTBDisc": jet.btagRobustParTAK4B,
-                "ParTCvsLDisc": jet.btagRobustParTAK4CvL,
-                "ParTCvsBDisc": jet.btagRobustParTAK4CvB,
+                "PNetCvsNotBDisc": jet.btagPNetCvNotB,
             }
         )
+        # ParticleTransformer
+        if "btagRobustParTAK4B" in jet.fields:
+            Jet["RobustParTBDisc"] = jet.btagRobustParTAK4B
+            Jet["RobustParTCvsLDisc"] = jet.btagRobustParTAK4CvL
+            Jet["RobustParTCvsBDisc"] = jet.btagRobustParTAK4CvB
+            Jet["RobustParTCvsNotBDisc"] = jet.btagRobustParTAK4CvNotB
+        # UParT
+        if "UParTAK4" in jet.fields:
+            Jet["UParTBDisc"] = jet.btagUParTAK4B
+            Jet["UParTCvsLDisc"] = jet.btagUParTAK4CvL
+            Jet["UParTCvsBDisc"] = jet.btagRobustParTAK4CvB
+            Jet["UParTCvsNotBDisc"] = jet.btagRobustParTAK4CvNotB
 
         if not isRealData:
             Jet["partonFlavour"] = jet.partonFlavour
@@ -588,6 +593,7 @@ class NanoProcessor(processor.ProcessorABC):
             f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
         )
         os.system(f"rm {fname}")
+        print("rm")
         return {dataset: len(events)}
 
     def postprocess(self, accumulator):
