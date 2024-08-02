@@ -50,7 +50,7 @@ See https://coffeateam.github.io/coffea/installation.html
 
 ## Quick launch of all tasks
 
-Now you can use various shell scripts to directly launch the runner scripts with predefined scaleouts. You can modify and customize the scripts inside the ```scripts/submit``` directory according to your needs. Each script takes arguments from ```arguments.txt``` directory, that has 4 inputs i.e. - ```Campaign name```, ```year```, ```executor``` and ```luminosity```. To launch any workflow, for example W+c - 
+Now you can use various shell scripts to directly launch the runner scripts with predefined scaleouts. You can modify and customize the scripts inside the ```scripts/submit``` directory according to your needs. Each script takes arguments from ```arguments.txt``` directory, that has 4 inputs i.e. - ```Campaign name```, ```year```, ```executor``` and ```luminosity```. To launch any workflow, for example W+c 
 ```
 ./ctag_wc.sh arguments.txt
 ```
@@ -147,6 +147,11 @@ Check out [notes for developer](https://btv-wiki.docs.cern.ch/SoftwareAlgorithms
 
 After a small test, you can run the full campaign for a dedicated phase space, separately for data and for MC.
 
+```
+ python runner.py --workflow $WF --json metadata/$JSON  --campaign $CAMPAIGN --year $YEAR (--executor ${scaleout_site}) 
+``` 
+
+  
 #### b-SFs 
 
 <details><summary>details</summary>
@@ -155,7 +160,7 @@ After a small test, you can run the full campaign for a dedicated phase space, s
 - Dileptonic ttbar phase space : check performance for btag SFs, emu channel
 
 ```
- python runner.py --workflow ttdilep_sf --json metadata/data_Summer23_2023_em_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.json  --campaign Summer23 --year 2023 (--executor ${scaleout_site}) 
+python runner.py --workflow ttdiilep_sf --json metadata/data_Summer23_2023_em_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.json --campaign Summer23 --year 2023 (--executor ${scaleout_site})
 ```
 
 - Semileptonic ttbar phase space : check performance for btag SFs, muon channel
@@ -204,7 +209,7 @@ python runner.py --workflow ctag_DY_sf --json metadata/data_Summer23_2023_mu_BTV
 <details><summary>details</summary>
 <p>
 
-Only basic jet selections(PUID, ID, pT, $\eta$) applied. Put the json files with different campaigns
+Only basic jet selections(PUID, ID, pT, $\eta$) applied. Put the json files with different campaigns, plot ROC & efficiency
 
 ```
 python runner.py --workflow valid --json metadata/$json file
@@ -491,6 +496,19 @@ The official correction files collected in [jsonpog-integration](https://gitlab.
 
 </p>
 </details>
+
+
+## Get Prescale weights
+
+! this only works in lxplus
+
+Generate prescale weights using `brilcalc`
+
+```python
+python scripts/dump_prescale.py --HLT $HLT --lumi $LUMIMASK
+# HLT : put prescaled triggers
+# lumi: golden lumi json
+```
 
 ## Create compiled JERC file(`pkl.gz`)
 
