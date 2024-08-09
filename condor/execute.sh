@@ -8,26 +8,26 @@ if [ -d /afs/cern.ch/user/${USER:0:1}/$USER ]; then
 fi
 env
 
+
 WORKDIR=`pwd`
 
-# Load a base cmssw env
-export SCRAM_ARCH=slc7_amd64_gcc820
-source /cvmfs/cms.cern.ch/cmsset_default.sh
-scram p CMSSW CMSSW_11_1_0_pre5_PY3
-cd CMSSW_11_1_0_pre5_PY3/src
-eval `scram runtime -sh`
-cd ../..
 
-# Set up conda environment
-wget https://repo.anaconda.com/miniconda/Miniconda3-py310_23.5.0-3-Linux-x86_64.sh
-bash Miniconda3-py310_23.5.0-3-Linux-x86_64.sh -b -p $WORKDIR/miniconda
+# Set up mamba environment
+## Interactive bash script with fallback pointing to $HOME, hence setting $PWD of worker node as $HOME
+export HOME=`pwd`
+wget -L micro.mamba.pm/install.sh
+chmod +x install.sh
+## FIXME parsing arguments does not work. will use defaults in install.sh instead, see https://github.com/mamba-org/micromamba-releases/blob/main/install.sh 
+## Tried solutions listed in https://stackoverflow.com/questions/14392525/passing-arguments-to-an-interactive-program-non-interactively
+./install.sh <<< $'bin\nY\nY\nmicromamba\n' 
+source .bashrc
 
-export PATH=$WORKDIR/miniconda/bin:$PATH
-export PYTHONPATH=$WORKDIR/miniconda/lib/python3.10/site-packages
+export PATH=$WORKDIR:$PATH
+
 
 if [ ! -d /afs/cern.ch/user/${USER:0:1}/$USER ]; then
     ## install necessary packages if on cmsconnect
-    conda install -c conda-forge jq --yes
+    micromamba install -c conda-forge jq --yes
 fi
 
 # Get arguments
@@ -35,6 +35,12 @@ declare -A ARGS
 for key in workflow output samplejson year campaign isSyst isArray noHist overwrite voms chunk skipbadfiles outputXrootdDir remoteRepo; do
     ARGS[$key]=$(jq -r ".$key" $WORKDIR/arguments.json)
 done
+
+# Create base env with python=3.10 and setuptools<=70.1.1
+micromamba activate 
+micromamba install python=3.10 -c conda-forge xrootd --yes
+micromamba activate base
+micromamba install setuptools=70.1.1
 
 # Install BTVNanoCommissioning
 mkdir BTVNanoCommissioning
@@ -51,7 +57,6 @@ ln -s /cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration src/BTVNanoCommis
 pip install -e .
 
 ## other dependencies
-conda install -c conda-forge xrootd --yes
 pip install psutil
 
 # Build the sample json given the job id
@@ -62,9 +67,10 @@ OPTS="--wf ${ARGS[workflow]} --year ${ARGS[year]} --campaign ${ARGS[campaign]} -
 if [ "${ARGS[voms]}" != "null" ]; then
     OPTS="$OPTS --voms ${ARGS[voms]}"
 fi
-if [ "${ARGS[isSyst]}" != "null" ]; then
+if [ "${ARGS[isSyst]}" != "false" ]; then
     OPTS="$OPTS --isSyst ${ARGS[isSyst]}"
 fi
+
 for key in  isArray noHist overwrite skipbadfiles; do
     if [ "${ARGS[$key]}" == true ]; then
         OPTS="$OPTS --$key"

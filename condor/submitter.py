@@ -65,27 +65,30 @@ def get_main_parser():
         help="JSON file containing dataset and file locations (default: %(default)s)",
     )
     ## Configuations
-    parser.add_argument("--year", default="2017", help="Year")
+    parser.add_argument("--year", default="2023", help="Year")
     parser.add_argument(
         "--campaign",
-        default="Rereco17_94X",
+        default="Summer23",
         choices=[
             "Rereco17_94X",
             "Winter22Run3",
-            "Summer22Run3",
-            "Summer22EERun3",
+            "Summer22",
+            "Summer22EE",
+            "Summer23",
+            "Summer23BPix",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",
             "2016postVFP_UL",
+            "CAMPAIGN_prompt_dataMC",
         ],
         help="Dataset campaign, change the corresponding correction files",
     )
     parser.add_argument(
         "--isSyst",
-        default=None,
+        default=False,
         type=str,
-        choices=[None, "all", "weight_only", "JERC_split"],
+        choices=[False, "all", "weight_only", "JERC_split", "JP_MC"],
         help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
@@ -217,7 +220,6 @@ Executable = {executable}
 
 Arguments = $(JOBNUM)
 
-requirements = (OpSysAndVer =?= "CentOS7")
 request_cpus = 1
 request_memory = 2000
 use_x509userproxy = true
