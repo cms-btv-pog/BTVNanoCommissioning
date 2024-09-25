@@ -5,6 +5,8 @@ from BTVNanoCommissioning.helpers.definitions import (
     disc_list,
 )
 import hist as Hist
+import awkward as ak
+from BTVNanoCommissioning.helpers.func import flatten
 
 
 def histogrammer(events, workflow, campaign="Summer22"):
@@ -34,33 +36,34 @@ def histogrammer(events, workflow, campaign="Summer22"):
     ptratio_axis = Hist.axis.Regular(50, 0, 1, name="ratio", label="ratio")
     n_axis = Hist.axis.Integer(0, 10, name="n", label="N obj")
     osss_axis = Hist.axis.IntCategory([1, -1], name="osss", label="OS(+)/SS(-)")
-    _hist_dict["npvs"] = Hist.Hist(syst_axis, npvs_axis, Hist.storage.Weight())
-    _hist_dict["pu"] = Hist.Hist(syst_axis, npvs_axis, Hist.storage.Weight())
     ### Workflow specific
     if "example" == workflow:
         obj_list = [
             "jet",
             "mu",
         ]  # store basic 4-vector, pt,eta, phi, mass for the object
-        _hist_dict[f"dr_mujet"] = Hist.Hist(
+        _hist_dict[f"dr_mujet0"] = Hist.Hist(
             syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
         )  # create cutstomize histogram
     elif "QCD" == workflow:
         obj_list = ["jet0"]
-        _hist_dict["dr_SVjet0"] = Hist.Hist(
-            syst_axis, flav_axis, dr_SV_axis, Hist.storage.Weight()
-        )
-        _hist_dict["nJetSVs"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
+        # FIXME: commented SVJet related histogram until fixing linkinf of BTVNano
+        # _hist_dict["dr_SVjet0"] = Hist.Hist(
+        #     syst_axis, flav_axis, dr_SV_axis, Hist.storage.Weight()
+        # )x
+        # _hist_dict["nJetSVs"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
 
     elif "QCD_smu" == workflow:
         obj_list = ["jet0", "hl", "soft_l"]
-        _hist_dict["dr_SVjet0"] = Hist.Hist(
-            syst_axis, flav_axis, dr_SV_axis, Hist.storage.Weight()
-        )
-        _hist_dict["nJetSVs"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
-        _hist_dict["nsmuj"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
+        # _hist_dict["dr_SVjet0"] = Hist.Hist(
+        #     syst_axis, flav_axis, dr_SV_axis, Hist.storage.Weight()
+        # )
+        # _hist_dict["nJetSVs"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
+        _hist_dict["nmujet"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
         _hist_dict["nssmu"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
-
+        _hist_dict["dr_lmujetsmu"] = Hist.Hist(
+            syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
+        )
         for i in ["soft_l"]:
             if i == "soft_l":
                 _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
@@ -78,7 +81,7 @@ def histogrammer(events, workflow, campaign="Summer22"):
             _hist_dict[f"{i}_ptratio"] = Hist.Hist(
                 syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
-        _hist_dict["dr_lmujetsmu"] = Hist.Hist(
+        _hist_dict["dr_lmusmujetsmu"] = Hist.Hist(
             syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
         )
 
@@ -150,7 +153,7 @@ def histogrammer(events, workflow, campaign="Summer22"):
             Hist.storage.Weight(),
         )
 
-    elif "ttdilep_sf" == workflow:
+    elif "ttdilep_sf" == workflow or "emctag_ttdilep_sf" == workflow:
         obj_list = ["mu", "ele"]
         for i in range(2):
             obj_list.append(f"jet{i}")
@@ -191,11 +194,7 @@ def histogrammer(events, workflow, campaign="Summer22"):
                 syst_axis, dxy_axis, Hist.storage.Weight()
             )
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
-        _hist_dict["w_mass"] = Hist.Hist(
-            syst_axis,
-            Hist.axis.Regular(50, 40, 120, name="mass", label="$m_{\\ell\\nu}$ [GeV]"),
-            Hist.storage.Weight(),
-        )
+
     elif "c_ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
         obj_list.append("cjet")
@@ -217,14 +216,10 @@ def histogrammer(events, workflow, campaign="Summer22"):
                 syst_axis, dxy_axis, Hist.storage.Weight()
             )
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
-        _hist_dict["w_mass"] = Hist.Hist(
-            syst_axis,
-            Hist.axis.Regular(50, 40, 120, name="mass", label="$m_{\\ell\\nu}$ [GeV]"),
-            Hist.storage.Weight(),
-        )
+
     elif "ctag_ttdilep_sf" in workflow:
-        obj_list = ["hl", "sl", "soft_l", "MET", "z", "lmujet"]
-        _hist_dict["z_mass"] = Hist.Hist(
+        obj_list = ["hl", "sl", "soft_l", "MET", "dilep", "lmujet"]
+        _hist_dict["dilep_mass"] = Hist.Hist(
             syst_axis,
             Hist.axis.Regular(
                 50, 50, 100, name="mass", label=" $m_{\\ell\\ell}$ [GeV]"
@@ -240,7 +235,7 @@ def histogrammer(events, workflow, campaign="Summer22"):
             syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
         )
         # delta R between soft muon and hard muon
-        _hist_dict["dr_lmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_hmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["hl", "sl", "soft_l"]:
             if i == "soft_l":
                 _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
@@ -268,17 +263,13 @@ def histogrammer(events, workflow, campaign="Summer22"):
                 syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
     elif "ctag_ttsemilep_sf" in workflow:
-        obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
-        _hist_dict["z_mass"] = Hist.Hist(
+        obj_list = ["hl", "soft_l", "MET", "dilep", "mujet"]
+        _hist_dict["dilep_mass"] = Hist.Hist(
             syst_axis,
             Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\ell}$ [GeV]"),
             Hist.storage.Weight(),
         )
-        _hist_dict["w_mass"] = Hist.Hist(
-            syst_axis,
-            Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\nu}$ [GeV]"),
-            Hist.storage.Weight(),
-        )
+
         # delta R between soft muon and mu-jet
         _hist_dict["dr_lmujetsmu"] = Hist.Hist(
             syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
@@ -288,7 +279,7 @@ def histogrammer(events, workflow, campaign="Summer22"):
             syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
         )
         # delta R between hard muon and soft-muon
-        _hist_dict["dr_lmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_hmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["hl", "soft_l"]:
             if i == "soft_l":
                 _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
@@ -314,14 +305,14 @@ def histogrammer(events, workflow, campaign="Summer22"):
                 syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
             )
     elif "Wc_sf" in workflow:
-        obj_list = ["hl", "soft_l", "MET", "z", "w", "mujet"]
+        obj_list = ["hl", "soft_l", "MET", "dilep", "mujet"]
         _hist_dict["SV_charge"] = Hist.Hist(
             syst_axis,
             osss_axis,
             Hist.axis.Regular(20, -10, 10, name="charge", label="SV charge"),
             Hist.storage.Weight(),
         )
-        _hist_dict["z_mass"] = Hist.Hist(
+        _hist_dict["dilep_mass"] = Hist.Hist(
             syst_axis,
             osss_axis,
             Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\ell}$ [GeV]"),
@@ -333,6 +324,19 @@ def histogrammer(events, workflow, campaign="Summer22"):
             Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\nu}$ [GeV]"),
             Hist.storage.Weight(),
         )
+        _hist_dict["w_pt"] = Hist.Hist(
+            syst_axis,
+            osss_axis,
+            Hist.axis.Regular(50, 0, 300, name="pT", label="$p_T^{\\ell\\nu}$ [GeV]"),
+            Hist.storage.Weight(),
+        )
+        _hist_dict["w_phi"] = Hist.Hist(
+            syst_axis,
+            osss_axis,
+            phi_axis,
+            Hist.storage.Weight(),
+        )
+
         # delta R between soft muon and mu-jet
         _hist_dict["dr_lmujetsmu"] = Hist.Hist(
             syst_axis, flav_axis, osss_axis, dr_s_axis, Hist.storage.Weight()
@@ -342,7 +346,7 @@ def histogrammer(events, workflow, campaign="Summer22"):
             syst_axis, flav_axis, osss_axis, dr_axis, Hist.storage.Weight()
         )
         # delta R between hard muon and soft-muon
-        _hist_dict["dr_lmusmu"] = Hist.Hist(
+        _hist_dict["dr_hmusmu"] = Hist.Hist(
             syst_axis, osss_axis, dr_axis, Hist.storage.Weight()
         )
         for i in ["hl", "soft_l"]:
@@ -374,13 +378,14 @@ def histogrammer(events, workflow, campaign="Summer22"):
                 syst_axis, flav_axis, osss_axis, ptratio_axis, Hist.storage.Weight()
             )
     elif "DY_sf" in workflow:
-        obj_list = ["posl", "negl", "z", "jet"]
-        _hist_dict["z_mass"] = Hist.Hist(
+        obj_list = ["posl", "negl", "dilep", "jet0"]
+        _hist_dict["dilep_mass"] = Hist.Hist(
             syst_axis,
             Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\ell}$ [GeV]"),
             Hist.storage.Weight(),
         )
-        _hist_dict["dr_mumu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_poslnegl"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_mujet0"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["posl", "negl"]:
             if "m" in workflow:
                 _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
@@ -390,32 +395,9 @@ def histogrammer(events, workflow, campaign="Summer22"):
                 syst_axis, dxy_axis, Hist.storage.Weight()
             )
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
-        for i in range(2):
-            obj_list.append(f"jet{i}")
-            _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
+            _hist_dict[f"dr_{i}jet"] = Hist.Hist(
                 syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
-    elif "QCDmuen" in workflow:
-        obj_list = ["mu", "MET"]
-        for i in range(2):
-            obj_list.append(f"jet{i}")
-            _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
-                syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
-            )
-            _hist_dict["mu_pfRelIso04_all"] = Hist.Hist(
-                syst_axis, iso_axis, Hist.storage.Weight()
-            )
-            _hist_dict[f"muon_dxy"] = Hist.Hist(
-                syst_axis, dxy_axis, Hist.storage.Weight()
-            )
-            _hist_dict[f"muon_dz"] = Hist.Hist(
-                syst_axis, dz_axis, Hist.storage.Weight()
-            )
-            _hist_dict[f"mu_ptratio"] = Hist.Hist(
-                syst_axis, flav_axis, osss_axis, ptratio_axis, Hist.storage.Weight()
-            )
-
-            _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
 
     ### Common kinematic variables histogram creation
     if "Wc_sf" not in workflow:
@@ -431,7 +413,7 @@ def histogrammer(events, workflow, campaign="Summer22"):
                     )
                 else:
                     _hist_dict[f"{obj}_pt"] = Hist.Hist(
-                        syst_axis, flav_axis, jpt_axis, Hist.storage.Weight()
+                        syst_axis, flav_axis, pt_axis, Hist.storage.Weight()
                     )
                 _hist_dict[f"{obj}_eta"] = Hist.Hist(
                     syst_axis, flav_axis, eta_axis, Hist.storage.Weight()
@@ -489,7 +471,7 @@ def histogrammer(events, workflow, campaign="Summer22"):
                     )
                 else:
                     _hist_dict[f"{obj}_pt"] = Hist.Hist(
-                        syst_axis, flav_axis, osss_axis, jpt_axis, Hist.storage.Weight()
+                        syst_axis, flav_axis, osss_axis, pt_axis, Hist.storage.Weight()
                     )
                 _hist_dict[f"{obj}_eta"] = Hist.Hist(
                     syst_axis, flav_axis, osss_axis, eta_axis, Hist.storage.Weight()
@@ -511,7 +493,10 @@ def histogrammer(events, workflow, campaign="Summer22"):
                     _hist_dict[f"{obj}_eta"] = Hist.Hist(
                         syst_axis, osss_axis, eta_axis, Hist.storage.Weight()
                     )
-
+    if "QCD_sf" in workflow:
+        _hist_dict[f"{obj}_pt"] = Hist.Hist(
+            syst_axis, flav_axis, jpt_axis, Hist.storage.Weight()
+        )
     ### Btag input variables & PFCands
     bininfo = definitions()
     for d in bininfo.keys():
@@ -540,24 +525,25 @@ def histogrammer(events, workflow, campaign="Summer22"):
                 Hist.storage.Weight(),
             )
     ### JetSVs variables
-    SV_bininfo = SV_definitions()
-    for d in SV_bininfo.keys():
-        ranges = SV_bininfo[d]["manual_ranges"]
-        binning = SV_bininfo[d]["bins"]
-        labels = (
-            SV_bininfo[d]["displayname"] + " [" + SV_bininfo[d]["inputVar_units"] + "]"
-            if SV_bininfo[d]["inputVar_units"] is not None
-            else SV_bininfo[d]["displayname"]
-        )
-        _hist_dict[d] = Hist.Hist(
-            syst_axis,
-            flav_axis,
-            Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels),
-            Hist.storage.Weight(),
-        )
+    ### FIXME: Commented out JetSV distrobution until btvnano is fixed
+    # SV_bininfo = SV_definitions()
+    # for d in SV_bininfo.keys():
+    #     ranges = SV_bininfo[d]["manual_ranges"]
+    #     binning = SV_bininfo[d]["bins"]
+    #     labels = (
+    #         SV_bininfo[d]["displayname"] + " [" + SV_bininfo[d]["inputVar_units"] + "]"
+    #         if SV_bininfo[d]["inputVar_units"] is not None
+    #         else SV_bininfo[d]["displayname"]
+    #     )
+    #     _hist_dict[d] = Hist.Hist(
+    #         syst_axis,
+    #         flav_axis,
+    #         Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels),
+    #         Hist.storage.Weight(),
+    #     )
     ### discriminators
     for disc in disc_list:
-        if disc not in events.Jet.fields and "Trans" not in disc:
+        if disc not in events.Jet.fields:
             continue
         njet = 1
         if "ttdilep_sf" in workflow:
@@ -657,3 +643,289 @@ def histogrammer(events, workflow, campaign="Summer22"):
                         Hist.storage.Weight(),
                     )
     return _hist_dict
+
+
+def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
+    exclude_btv = [
+        "DeepCSVC",
+        "DeepCSVB",
+        "DeepJetB",
+        "DeepJetC",
+    ]  # exclude b-tag SFs for btag inputs
+    # define Jet flavor
+    nj = 1 if type(pruned_ev.SelJet.pt[0]) == float else len(pruned_ev.SelJet.pt[0])
+    if "hadronFlavour" in pruned_ev.SelJet.fields:
+        isRealData = False
+        genflavor = ak.values_astype(
+            pruned_ev.SelJet.hadronFlavour + 1 * (pruned_ev.SelJet.partonFlavour == 0)
+            & (pruned_ev.SelJet.hadronFlavour == 0),
+            int,
+        )
+        if "MuonJet" in pruned_ev.fields:
+            smflav = ak.values_astype(
+                1 * (pruned_ev.MuonJet.partonFlavour == 0)
+                & (pruned_ev.MuonJet.hadronFlavour == 0)
+                + pruned_ev.MuonJet.hadronFlavour,
+                int,
+            )
+    else:
+        isRealData = True
+        genflavor = ak.zeros_like(pruned_ev.SelJet.pt, dtype=int)
+        if "MuonJet" in pruned_ev.fields:
+            smflav = ak.zeros_like(pruned_ev.MuonJet.pt, dtype=int)
+    for syst in systematics:
+        if isSyst == False and syst != "nominal":
+            break
+        weight = (
+            weights.weight()
+            if syst == "nominal" or syst not in list(weights.variations)
+            else weights.weight(modifier=syst)
+        )
+        for histname, h in output.items():
+            if (
+                "Deep" in histname
+                and "btag" not in histname
+                and histname in pruned_ev.SelJet.fields
+            ):
+
+                h.fill(
+                    syst,
+                    flatten(genflavor),
+                    flatten(pruned_ev.SelJet[histname]),
+                    weight=flatten(
+                        ak.broadcast_arrays(
+                            weights.partial_weight(exclude=exclude_btv),
+                            pruned_ev.SelJet["pt"],
+                        )[0]
+                    ),
+                )
+            elif (
+                "PFCands" in pruned_ev.fields
+                and "PFCands" in histname
+                and histname.split("_")[1] in pruned_ev.PFCands.fields
+            ):
+                if "MuonJet" in pruned_ev.fields:
+                    h.fill(
+                        syst,
+                        flatten(
+                            ak.broadcast_arrays(smflav, pruned_ev.PFCands["pt"])[0]
+                        ),
+                        flatten(pruned_ev.PFCands[histname.replace("PFCands_", "")]),
+                        weight=flatten(
+                            ak.broadcast_arrays(
+                                weights.partial_weight(exclude=exclude_btv),
+                                pruned_ev.PFCands["pt"],
+                            )[0]
+                        ),
+                    )
+                else:
+                    h.fill(
+                        syst,
+                        flatten(
+                            ak.broadcast_arrays(
+                                genflavor[:, 0], pruned_ev.PFCands["pt"]
+                            )[0]
+                        ),
+                        flatten(pruned_ev.PFCands[histname.replace("PFCands_", "")]),
+                        weight=flatten(
+                            ak.broadcast_arrays(
+                                weights.partial_weight(exclude=exclude_btv),
+                                pruned_ev.PFCands["pt"],
+                            )[0]
+                        ),
+                    )
+
+            elif (
+                "hl_" in histname
+                and "hl" in pruned_ev.fields
+                and histname.replace("hl_", "") in pruned_ev.hl.fields
+            ):
+
+                h.fill(
+                    syst,
+                    flatten(pruned_ev.hl[histname.replace("hl_", "")]),
+                    weight=weight,
+                )
+            elif (
+                "sl_" in histname
+                and "sl" in pruned_ev.fields
+                and histname.replace("sl_", "") in pruned_ev.sl.fields
+            ):
+                h.fill(
+                    syst,
+                    flatten(pruned_ev.sl[histname.replace("sl_", "")]),
+                    weight=weight,
+                )
+            elif (
+                "ele_" in histname
+                and histname.replace("ele_", "") in pruned_ev.SelElectron.fields
+            ):
+
+                h.fill(
+                    syst,
+                    flatten(pruned_ev.SelElectron[histname.replace("ele_", "")]),
+                    weight=weight,
+                )
+            elif (
+                "mu_" in histname
+                and histname.replace("mu_", "") in pruned_ev.SelMuon.fields
+            ):
+                h.fill(
+                    syst,
+                    flatten(pruned_ev.SelMuon[histname.replace("mu_", "")]),
+                    weight=weight,
+                )
+            elif (
+                "negl_" in histname
+                and histname.replace("negl_", "") in pruned_ev.negl.fields
+            ):
+                h.fill(
+                    syst,
+                    flatten(pruned_ev.negl[histname.replace("negl_", "")]),
+                    weight=weight,
+                )
+            elif (
+                "posl_" in histname
+                and histname.replace("posl_", "") in pruned_ev.posl.fields
+            ):
+                h.fill(
+                    syst,
+                    flatten(pruned_ev.posl[histname.replace("posl_", "")]),
+                    weight=weight,
+                )
+            elif "soft_l" in histname and not "ptratio" in histname:
+                h.fill(
+                    syst,
+                    smflav,
+                    flatten(pruned_ev.SoftMuon[histname.replace("soft_l_", "")]),
+                    weight=weight,
+                )
+            elif "njet" == histname:
+                output["njet"].fill(syst, pruned_ev.njet, weight=weight)
+
+            elif (
+                "jet" in histname and "posl" not in histname and "negl" not in histname
+            ):
+                for i in range(nj):
+                    if f"jet{i}" not in histname:
+                        continue
+                    if nj == 1:
+                        sel_jet, flav = pruned_ev.SelJet, genflavor
+                    else:
+                        sel_jet, flav = pruned_ev.SelJet[:, i], genflavor[:, i]
+
+                    if str(i) in histname:
+                        if "dr_mujet" in histname:
+                            h.fill(
+                                syst,
+                                flatten(flav),
+                                flatten(sel_jet.delta_r(pruned_ev.SelMuon)),
+                                weight=weight,
+                            )
+                        else:
+                            h.fill(
+                                syst,
+                                flatten(flav),
+                                flatten(sel_jet[histname.replace(f"jet{i}_", "")]),
+                                weight=weight,
+                            )
+            # mu-Jets distribution
+            elif "lmujet_" in histname:
+                h.fill(
+                    syst,
+                    smflav,
+                    flatten(pruned_ev.MuonJet[histname.replace("lmujet_", "")]),
+                    weight=weight,
+                )
+            # filled discriminants
+            elif "btag" in histname or "PNet" in histname:
+                if "MuonJet" in pruned_ev.fields:
+                    flavs, seljets = smflav, pruned_ev.MuonJet
+                    nj = 1
+                else:
+                    flavs, seljets = genflavor, pruned_ev.SelJet
+
+                for i in range(nj):
+                    if not histname.endswith(str(i)):
+                        continue
+                    if nj > 1:
+                        flav, seljet = flavs[:, i], seljets[:, i]
+                    else:
+                        flav, seljet = flavs, seljets
+                    h.fill(
+                        syst="nominal",
+                        flav=flav,
+                        discr=seljet[histname.replace(f"_{i}", "")],
+                        weight=weights.partial_weight(exclude=exclude_btv),
+                    )
+                    if not isRealData and "btag" in SF_map.keys():
+                        h.fill(
+                            syst=syst,
+                            flav=flav,
+                            discr=seljet[histname.replace(f"_{i}", "")],
+                            weight=weight,
+                        )
+
+        if "hl" in pruned_ev.fields:
+            output["hl_ptratio"].fill(
+                syst,
+                genflavor[:, 0],
+                ratio=pruned_ev.hl.pt / pruned_ev.SelJet[:, 0].pt,
+                weight=weight,
+            )
+        if "sl" in pruned_ev.fields:
+            output["sl_ptratio"].fill(
+                syst,
+                genflavor[:, 0],
+                ratio=pruned_ev.sl.pt / pruned_ev.SelJet[:, 0].pt,
+                weight=weight,
+            )
+        if "dr_poslnegl" in output.keys():
+            output["dr_poslnegl"].fill(
+                syst, pruned_ev.posl.delta_r(pruned_ev.negl), weight=weight
+            )
+            output["dr_posljet"].fill(
+                syst, genflavor, pruned_ev.posl.delta_r(pruned_ev.SelJet), weight=weight
+            )
+            output["dr_negljet"].fill(
+                syst, genflavor, pruned_ev.negl.delta_r(pruned_ev.SelJet), weight=weight
+            )
+
+        if "MuonJet" in pruned_ev.fields:
+            output["soft_l_ptratio"].fill(
+                syst,
+                flav=smflav,
+                ratio=pruned_ev.SoftMuon.pt / pruned_ev.MuonJet.pt,
+                weight=weight,
+            )
+            output["dr_lmujetsmu"].fill(
+                syst,
+                flav=smflav,
+                dr=pruned_ev.MuonJet.delta_r(pruned_ev.SoftMuon),
+                weight=weight,
+            )
+            if "SelMuon" in pruned_ev.fields:
+                if ak.all(ak.count(pruned_ev.SelMuon.pt, axis=-1) > 1):
+                    pruned_ev.SelMuon = pruned_ev.SelMuon[:, 0]
+                output["dr_lmujethmu"].fill(
+                    syst,
+                    flav=smflav,
+                    dr=pruned_ev.MuonJet.delta_r(pruned_ev.SelMuon),
+                    weight=weight,
+                )
+                output["dr_hmusmu"].fill(
+                    syst, pruned_ev.SelMuon.delta_r(pruned_ev.SoftMuon), weight=weight
+                )
+        if "dilep" in pruned_ev.fields:
+            output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.pt), weight=weight)
+            output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.eta), weight=weight)
+            output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.phi), weight=weight)
+            output["dilep_mass"].fill(
+                syst, flatten(pruned_ev.dilep.mass), weight=weight
+            )
+
+        if "MET" in output.keys():
+            output["MET_pt"].fill(syst, flatten(pruned_ev.MET.pt), weight=weight)
+            output["MET_phi"].fill(syst, flatten(pruned_ev.MET.phi), weight=weight)
+
+    return output

@@ -1,4 +1,18 @@
 import awkward as ak
+import numpy as np
+
+
+def HLT_helper(events, triggers):
+    checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
+    if ak.all(checkHLT == False):
+        raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
+    elif ak.any(checkHLT == False):
+        print(np.array(triggers)[~checkHLT], " not exist in", dataset)
+    trig_arrs = [events.HLT[_trig] for _trig in triggers if hasattr(events.HLT, _trig)]
+    req_trig = np.zeros(len(events), dtype="bool")
+    for t in trig_arrs:
+        req_trig = req_trig | t
+    return req_trig
 
 
 ## Jet pu ID not exist in Winter22Run3 sample
@@ -78,7 +92,6 @@ def jet_cut(events, campaign):
 def MET_filters(events, campaign):
     # apply MET filter
     metfilter = ak.ones_like(events.run, dtype=bool)
-    print(metfilter)
     for flag in met_filters[campaign]["data" if "Run" else "mc"]:
         metfilter = events.Flag[flag] & metfilter
     ## Flag_ecalBadCalibFilter

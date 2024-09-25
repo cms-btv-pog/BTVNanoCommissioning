@@ -4,6 +4,8 @@ from coffea import processor
 import psutil, os
 import uproot
 
+import collections
+
 
 def memory_usage_psutil():
     # return the memory usage in MB
@@ -63,6 +65,26 @@ def _is_rootcompat(a):
         ):
             return True
     return False
+
+
+def PFCand_link(events, event_level, jetindx):
+    if str(ak.type(jetindx)).count("*") > 1:
+        jetindx = jetindx[event_level]
+        spfcands = collections.defaultdict(dict)
+        for i in range(len(jetindx[0])):
+            spfcands[i] = events[event_level].PFCands[
+                events[event_level]
+                .JetPFCands[events[event_level].JetPFCands.jetIdx == jetindx[:, i]]
+                .pFCandsIdx
+            ]
+
+    else:
+        spfcands = events[event_level].PFCands[
+            events[event_level]
+            .JetPFCands[events[event_level].JetPFCands.jetIdx == jetindx[event_level]]
+            .pFCandsIdx
+        ]
+    return spfcands
 
 
 def uproot_writeable(events, include=["events", "run", "luminosityBlock"]):

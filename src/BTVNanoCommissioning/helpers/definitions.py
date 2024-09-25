@@ -6427,7 +6427,6 @@ def axes_name(var):
         elif "Bprob" in var:
             unit = "b-Jet Probability"
     label = obj + unit
-    print(obj)
     if var.endswith("0") or "jet0" in var:
         if "btagDeepFlav" not in var:
             label = label.replace("Jet", "$1^{st}$-Jet")

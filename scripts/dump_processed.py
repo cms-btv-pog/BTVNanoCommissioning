@@ -2,6 +2,7 @@ from coffea.util import load
 import awkward as ak
 import numpy as np
 import sys, json, glob
+import os
 
 
 def dump_lumi(output, fname):
@@ -11,7 +12,7 @@ def dump_lumi(output, fname):
             lumi.extend(output[m][f]["lumi"].value)
             run.extend(output[m][f]["run"].value)
 
-    lumi, run = np.array(lumi), np.array(run)
+    lumi, run = np.array(sorted(lumi)), np.array(sorted(run))
     dicts = {}
     for r in list(set(run)):
         dicts[str(r)] = lumi[r == run]
@@ -22,6 +23,16 @@ def dump_lumi(output, fname):
 
     with open(f"{fname}_lumi.json", "w") as outfile:
         json.dump(dicts, outfile, indent=2)
+
+    lumi_in_pb = os.popen(
+        f"export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:$PATH; brilcalc lumi -c web -i {fname}_lumi.json -u /pb "
+    ).read()
+    lumi_in_pb = lumi_in_pb[
+        lumi_in_pb.find("#Summary:") : lumi_in_pb.find("#Check JSON:")
+    ]
+    lumi_in_pb = float(lumi_in_pb.split("\n")[-3].split("|")[-2])
+
+    print(f"Luminosity in pb: {lumi_in_pb}")
 
 
 def dump_dataset(output, fname, alljson):

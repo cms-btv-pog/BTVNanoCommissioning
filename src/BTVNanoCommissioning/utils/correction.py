@@ -14,9 +14,10 @@ from coffea.lookup_tools import extractor, txt_converters, rochester_lookup
 from coffea.lumi_tools import LumiMask
 from coffea.btag_tools import BTagScaleFactor
 import correctionlib
-
-from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.helpers.func import update
+from BTVNanoCommissioning.helpers.cTagSFReader import getSF
+from coffea.analysis_tools import Weights
+
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
 from BTVNanoCommissioning.utils.compile_jec import jec_name_map
 from coffea.jetmet_tools.CorrectedMETFactory import corrected_polar_met
@@ -312,6 +313,41 @@ def load_lumi(campaign):
     _lumi_path = "BTVNanoCommissioning.data.lumiMasks"
     with importlib.resources.path(_lumi_path, config[campaign]["lumiMask"]) as filename:
         return LumiMask(filename)
+
+
+# wrapped up common shifts
+def common_shifts(self, events):
+    isRealData = not hasattr(events, "genWeight")
+    dataset = events.metadata["dataset"]
+    shifts = []
+    if "JME" in self.SF_map.keys():
+        syst_JERC = self.isSyst
+        if self.isSyst == "JERC_split":
+            syst_JERC = "split"
+        shifts = JME_shifts(
+            shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
+        )
+    else:
+        if int(self._year) < 2020:
+            shifts = [
+                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
+            ]
+        else:
+            shifts = [
+                (
+                    {
+                        "Jet": events.Jet,
+                        "MET": events.PuppiMET,
+                        "Muon": events.Muon,
+                    },
+                    None,
+                )
+            ]
+    if "roccor" in self.SF_map.keys():
+        shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
+    else:
+        shifts[0][0]["Muon"] = events.Muon
+    return shifts
 
 
 def jetveto(jets, correct_map):
@@ -1567,7 +1603,6 @@ class JPCalibHandler(object):
                 else:
                     filename = "default"
                     for key in config[campaign]["JPCalib"]:
-                        print(key, dataset)
                         if key in dataset:
                             filename = config[campaign]["JPCalib"][key]
                             break
@@ -1680,3 +1715,32 @@ class JPCalibHandler(object):
         prob_jet = np.maximum(prob_jet, 1e-30)
 
         return prob_jet
+
+
+def weight_manager(pruned_ev, SF_map, isSyst):
+    weights = Weights(len(pruned_ev), storeIndividual=True)
+    if len(SF_map.keys()) == 0:
+        if "genWeight" in pruned_ev.fields:
+            weights.add("genweight", pruned_ev.genWeight)
+        return weights
+    if "hadronFlavour" in pruned_ev.Jet.fields:
+
+        syst_wei = True if isSyst != False else False
+        if "PU" in SF_map.keys():
+            puwei(
+                pruned_ev.Pileup.nTrueInt,
+                SF_map,
+                weights,
+                syst_wei,
+            )
+        if "MUO" in SF_map.keys() and "Muon" in pruned_ev.fields:
+            muSFs(pruned_ev.Muon, SF_map, weights, syst_wei, False)
+        if "EGM" in SF_map.keys() and "Electron" in pruned_ev.fields:
+            eleSFs(pruned_ev.Electron, SF_map, weights, syst_wei, False)
+        if "BTV" in SF_map.keys() and "SelJet" in pruned_ev.fields:
+            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepJetC", syst_wei)
+            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepJetB", syst_wei)
+            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepCSVB", syst_wei)
+            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepCSVC", syst_wei)
+
+    return weights
