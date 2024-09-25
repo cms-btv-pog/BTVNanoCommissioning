@@ -36,7 +36,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    
     - name: Merge PR locally
       if: github.event_name == 'pull_request_target'
       id: merge

@@ -29,8 +29,8 @@ def get_condor_submitter_parser(parser):
         help="Number of files proceed per condor job",
     )
     parser.add_argument(
-        "--outputXrootdDir",
-        help="Output directory for xrootd files. Start with root://",
+        "--outputDir",
+        help="Output directory",
         required=True,
     )
     parser.add_argument(
@@ -216,7 +216,6 @@ if __name__ == "__main__":
     jdl_template = """Universe   = vanilla
 Executable = {executable}
 
-+ProjectName="cms.org.cern"
 
 Arguments = $(JOBNUM)
 
@@ -245,7 +244,7 @@ Queue JOBNUM from {jobnum_file}
     )
     with open(os.path.join(job_dir, "submit.jdl"), "w") as f:
         f.write(jdl_template)
-
+    os.system(f"condor_submit {job_dir}/submit.jdl")
     print(
         f"Setup completed. Now submit the condor jobs by:\n  condor_submit {job_dir}/submit.jdl"
     )
