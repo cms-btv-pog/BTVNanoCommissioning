@@ -73,6 +73,8 @@ workflows["QCD_sf"] = QCDValidProcessor
 # W+c
 workflows["ctag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcM")
 workflows["ectag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcE")
+workflows["ctag_Wc_WP_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="cutbased_WcM")
+workflows["ectag_Wc_WP_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="cutbased_WcE")
 
 # DY
 workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
