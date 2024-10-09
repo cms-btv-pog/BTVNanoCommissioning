@@ -397,8 +397,8 @@ def histogrammer(events, workflow, campaign="Summer22"):
             # mujet pt passing tagger WPs
             if "mujet" in obj:
                 for tagger in btag_wp_dict[campaign].keys():
-                    for wp in btag_wp_dict[campaign][tagger]['c'].keys():
-                        if not 'No' in wp:
+                    for wp in btag_wp_dict[campaign][tagger]["c"].keys():
+                        if not "No" in wp:
                             _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
                                 syst_axis,
                                 flav_axis,
@@ -406,7 +406,7 @@ def histogrammer(events, workflow, campaign="Summer22"):
                                 jpt_axis,
                                 Hist.storage.Weight(),
                             )
-                    
+
             if "jet" in obj or "soft_l" in obj:
                 if obj == "soft_l":
                     _hist_dict["soft_l_pt"] = Hist.Hist(
