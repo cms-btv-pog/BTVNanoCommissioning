@@ -67,7 +67,7 @@ def array_writer(
             for obj in kinOnly:
                 if "MET" in obj and ("pt" != kin or "phi" != kin):
                     continue
-                if (obj != "Muon" and obj != "SoftMuon") and (
+                if (obj != "SelMuon" and obj != "SoftMuon") and (
                     "pfRelIso04_all" == kin or "d" in kin
                 ):
                     continue

@@ -258,7 +258,7 @@ def load_SF(campaign, syst=False):
         elif SF == "JME":
             year = int(re.search(r"\d+", campaign).group())
             if type(config[campaign]["JME"]) == str:
-                correct_map["JME"] = load_jmefactory(campaign)
+                correct_map["JME"] = load_jmefactory(year, campaign)
             elif os.path.exists(
                 f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/20{year}_{campaign}/jet_jerc.json.gz"
             ):
@@ -363,8 +363,8 @@ def jetveto(jets, correct_map):
 
 ##JEC
 # FIXME: would be nicer if we can move to correctionlib in the future together with factory and workable
-def load_jmefactory(campaign):
-    _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
+def load_jmefactory(year, campaign):
+    _jet_path = f"BTVNanoCommissioning.data.JME.{year}_{campaign}"
     with importlib.resources.path(_jet_path, config[campaign]["JME"]) as filename:
         with gzip.open(filename) as fin:
             jmestuff = cloudpickle.load(fin)

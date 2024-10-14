@@ -231,12 +231,12 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["SelJet"] = event_jet[event_level]
 
         if self.selMod == "dilepttM":
-            pruned_ev["SelMuon"] = shlep
+            pruned_ev["SelMuon"] = shlep[:, :2]
             pruned_ev["hl"] = shlep[:, 0]
             pruned_ev["sl"] = shlep[:, 1]
             pruned_ev["dilep"] = shlep[:, 0] + shlep[:, 1]
         if self.selMod == "dilepttE":
-            pruned_ev["SelElectron"] = shlep
+            pruned_ev["SelElectron"] = shlep[:, :2]
             pruned_ev["hl"] = shlep[:, 0]
             pruned_ev["sl"] = shlep[:, 1]
             pruned_ev["dilep"] = shlep[:, 0] + shlep[:, 1]

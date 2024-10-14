@@ -225,7 +225,7 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["SelElectron"] = iso_ele[event_level][:, 0]
         pruned_ev["MuonJet"] = mu_jet[event_level][:, 0]
         pruned_ev["SoftMuon"] = soft_muon[event_level][:, 0]
-        pruned_ev["dilep"] = pruned_ev.Muon + pruned_ev.Electron
+        pruned_ev["dilep"] = pruned_ev.SelMuon + pruned_ev.SelElectron
         pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
         pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta
         pruned_ev["dilep", "phi"] = pruned_ev.dilep.phi
@@ -235,12 +235,12 @@ class NanoProcessor(processor.ProcessorABC):
         # Add custom variables
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
         pruned_ev["dr_mujet_softmu"] = pruned_ev.SoftMuon.delta_r(pruned_ev.MuonJet)
-        pruned_ev["dr_mujet_lep1"] = pruned_ev.Muon.delta_r(pruned_ev.MuonJet)
-        pruned_ev["dr_mujet_lep2"] = pruned_ev.Electron.delta_r(pruned_ev.MuonJet)
-        pruned_ev["dr_lep1_softmu"] = pruned_ev.Muon.delta_r(pruned_ev.SoftMuon)
+        pruned_ev["dr_mujet_lep1"] = pruned_ev.SelMuon.delta_r(pruned_ev.MuonJet)
+        pruned_ev["dr_mujet_lep2"] = pruned_ev.SelElectron.delta_r(pruned_ev.MuonJet)
+        pruned_ev["dr_lep1_softmu"] = pruned_ev.SelMuon.delta_r(pruned_ev.SoftMuon)
         pruned_ev["soft_l_ptratio"] = pruned_ev.SoftMuon.pt / pruned_ev.MuonJet.pt
-        pruned_ev["l1_ptratio"] = pruned_ev.Muon.pt / pruned_ev.MuonJet.pt
-        pruned_ev["l2_ptratio"] = pruned_ev.Electron.pt / pruned_ev.MuonJet.pt
+        pruned_ev["l1_ptratio"] = pruned_ev.SelMuon.pt / pruned_ev.MuonJet.pt
+        pruned_ev["l2_ptratio"] = pruned_ev.SelElectron.pt / pruned_ev.MuonJet.pt
         ####################
         #     Output       #
         ####################
