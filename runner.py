@@ -46,7 +46,11 @@ def retry_handler(exception, task_record):
 
 ## From condor/submitter.py https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/9edb9ed6bb0b28730b8de9e5aa1142ec4fdf74b7/condor/submitter.py
 # create t
+
+
 def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
+    import tarfile
+
     with tarfile.open(output_filename, "w:gz") as tar:
         for root, dirs, files in os.walk(source_dir):
             dirs[:] = [
@@ -524,6 +528,7 @@ if __name__ == "__main__":
                             "BTVNanoCommissioning.egg-info",
                         ],
                     )
+            import shutil
 
             # Create job dir
             job_dir = f"jobs_{args.jobName}"

@@ -102,7 +102,7 @@ jobs:
       run: |
         pip install -e .
 
-    - name:  btag semileptonic ttbar workflows with correctionlib
+    - name:  btag semileptonic ttbar workflows
       run: |
         string=$(git log -1 --pretty=format:'%s')
         if [[ $string == *"ci:skip array"* ]]; then
@@ -133,7 +133,7 @@ jobs:
         python runner.py --workflow c_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     
     
-    - name: btag dileptonic ttbar workflows with correctionlib
+    - name: btag dileptonic ttbar workflows 
       run: |
         string=$(git log -1 --pretty=format:'%s')
         if [[ $string == *"ci:skip array"* ]]; then
@@ -146,5 +146,5 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
+        python runner.py --workflow ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --campaign Summer23 --year 2023 $opts
 

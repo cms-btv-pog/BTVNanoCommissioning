@@ -152,7 +152,7 @@ def histogrammer(events, workflow):
             Hist.storage.Weight(),
         )
 
-    elif "ttdilep_sf" == workflow or "emctag_ttdilep_sf" == workflow:
+    elif "ttdilep_sf" == workflow:
         obj_list = ["mu", "ele"]
         for i in range(2):
             obj_list.append(f"jet{i}")
@@ -249,6 +249,10 @@ def histogrammer(events, workflow):
             else:
                 if "m" in workflow:
                     _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
+                        syst_axis, iso_axis, Hist.storage.Weight()
+                    )
+                else:
+                    _hist_dict[f"{i}_pfRelIso03_all"] = Hist.Hist(
                         syst_axis, iso_axis, Hist.storage.Weight()
                     )
                 _hist_dict[f"{i}_dxy"] = Hist.Hist(
@@ -658,6 +662,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
         genflavor = ak.zeros_like(pruned_ev.SelJet.pt, dtype=int)
         if "MuonJet" in pruned_ev.fields:
             smflav = ak.zeros_like(pruned_ev.MuonJet.pt, dtype=int)
+
     for syst in systematics:
         if isSyst == False and syst != "nominal":
             break
@@ -744,6 +749,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             elif (
                 "ele_" in histname
                 and histname.replace("ele_", "") in pruned_ev.SelElectron.fields
+                and "Plus" not in pruned_ev.fields
             ):
 
                 h.fill(
@@ -754,6 +760,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             elif (
                 "mu_" in histname
                 and histname.replace("mu_", "") in pruned_ev.SelMuon.fields
+                and "Plus" not in pruned_ev.fields
             ):
                 h.fill(
                     syst,
@@ -877,6 +884,32 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             )
 
         if "MuonJet" in pruned_ev.fields:
+            if "hl" not in pruned_ev.fields:
+                pruned_ev["hl"] = ak.zip(
+                    {
+                        "pt": (
+                            pruned_ev.SelMuon.pt
+                            if pruned_ev.SelMuon.pt > pruned_ev.SelElectron.pt
+                            else pruned_ev.SelElectron.pt
+                        ),
+                        "eta": (
+                            pruned_ev.SelMuon.eta
+                            if pruned_ev.SelMuon.pt > pruned_ev.SelElectron.pt
+                            else pruned_ev.SelElectron.eta
+                        ),
+                        "phi": (
+                            pruned_ev.SelMuon.phi
+                            if pruned_ev.SelMuon.pt > pruned_ev.SelElectron.pt
+                            else pruned_ev.SelElectron.phi
+                        ),
+                        "energy": (
+                            pruned_ev.SelMuon.energy
+                            if pruned_ev.SelMuon.pt > pruned_ev.SelElectron.pt
+                            else pruned_ev.SelElectron.energy
+                        ),
+                    },
+                    with_name="PtEtaPhiECandidate",
+                )
             output["soft_l_ptratio"].fill(
                 syst,
                 flav=smflav,
