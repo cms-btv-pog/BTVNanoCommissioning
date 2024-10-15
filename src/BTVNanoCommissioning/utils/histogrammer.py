@@ -47,6 +47,36 @@ def histogrammer(events, workflow):
         )
         _hist_dict["nJetSVs"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
 
+    elif "QCD_smu" == workflow:
+        obj_list = ["jet0", "hl", "soft_l"]
+        _hist_dict["dr_SVjet0"] = Hist.Hist(
+            syst_axis, flav_axis, dr_SV_axis, Hist.storage.Weight()
+        )
+        _hist_dict["nJetSVs"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
+        _hist_dict["nsmuj"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
+        _hist_dict["nssmu"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
+
+        for i in ["soft_l"]:
+            if i == "soft_l":
+                _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
+                    syst_axis,
+                    flav_axis,
+                    softliso_axis,
+                    Hist.storage.Weight(),
+                )
+                _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                    syst_axis, flav_axis, dxy_axis, Hist.storage.Weight()
+                )
+                _hist_dict[f"{i}_dz"] = Hist.Hist(
+                    syst_axis, flav_axis, dz_axis, Hist.storage.Weight()
+                )
+            _hist_dict[f"{i}_ptratio"] = Hist.Hist(
+                syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
+            )
+        _hist_dict["dr_lmujetsmu"] = Hist.Hist(
+            syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
+        )
+
     elif "validation" == workflow:
         obj_list = ["jet0", "jet1"]
         _hist_dict["bjet_WP_pt"] = Hist.Hist(
@@ -137,11 +167,17 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
     elif "ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
+        obj_list.append("cjet")
+        _hist_dict["dr_cjet"] = Hist.Hist(
+            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+        )
         for i in range(4):
             obj_list.append(f"jet{i}")
+
             _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
                 syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
+
         for i in ["mu"]:
             _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
                 syst_axis, iso_axis, Hist.storage.Weight()
@@ -150,6 +186,37 @@ def histogrammer(events, workflow):
                 syst_axis, dxy_axis, Hist.storage.Weight()
             )
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
+        _hist_dict["w_mass"] = Hist.Hist(
+            syst_axis,
+            Hist.axis.Regular(50, 40, 120, name="mass", label="$m_{\\ell\\nu}$ [GeV]"),
+            Hist.storage.Weight(),
+        )
+    elif "c_ttsemilep_sf" == workflow:
+        obj_list = ["mu", "MET"]
+        obj_list.append("cjet")
+        _hist_dict["dr_cjet"] = Hist.Hist(
+            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+        )
+        for i in range(4):
+            obj_list.append(f"jet{i}")
+
+            _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
+                syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+            )
+
+        for i in ["mu"]:
+            _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
+                syst_axis, iso_axis, Hist.storage.Weight()
+            )
+            _hist_dict[f"{i}_dxy"] = Hist.Hist(
+                syst_axis, dxy_axis, Hist.storage.Weight()
+            )
+            _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
+        _hist_dict["w_mass"] = Hist.Hist(
+            syst_axis,
+            Hist.axis.Regular(50, 40, 120, name="mass", label="$m_{\\ell\\nu}$ [GeV]"),
+            Hist.storage.Weight(),
+        )
     elif "ctag_ttdilep_sf" in workflow:
         obj_list = ["hl", "sl", "soft_l", "MET", "z", "lmujet"]
         _hist_dict["z_mass"] = Hist.Hist(
@@ -473,18 +540,28 @@ def histogrammer(events, workflow):
     disc_list = [
         "btagDeepFlavB",
         "btagDeepFlavC",
+        "btagTransDeepFlavB",
+        "btagTransDeepFlavC",
         "btagDeepFlavCvL",
         "btagDeepFlavCvB",
         "btagDeepFlavB_b",
         "btagDeepFlavB_bb",
+        "btagTransDeepFlavB_lepb",
+        "btagTransDeepFlavB_b",
+        "btagTransDeepFlavB_bb",
+        "btagTransDeepFlavB_lepb",
         "btagPNetB",
+        "btagTransPNetB",
         "btagPNetCvB",
         "btagPNetCvL",
-        "btagPNetCvNotB",
         "btagPNetProbB",
         "btagPNetProbC",
         "btagPNetProbG",
         "btagPNetProbUDS",
+        "btagTransPNetProbB",
+        "btagTransPNetProbC",
+        "btagTransPNetProbG",
+        "btagTransPNetProbUDS",
         "btagPNetQvG",
         "btagPNetTauVJet",
         "btagRobustParTAK4B",
@@ -494,6 +571,13 @@ def histogrammer(events, workflow):
         "btagRobustParTAK4C",
         "btagRobustParTAK4G",
         "btagRobustParTAK4UDS",
+        "btagTransRobustParTAK4B",
+        "btagTransRobustParTAK4B_b",
+        "btagTransRobustParTAK4B_bb",
+        "btagTransRobustParTAK4B_lepb",
+        "btagTransRobustParTAK4C",
+        "btagTransRobustParTAK4G",
+        "btagTransRobustParTAK4UDS",
         "btagRobustParTAK4CvB",
         "btagRobustParTAK4CvL",
         "btagRobustParTAK4QG",
@@ -551,6 +635,41 @@ def histogrammer(events, workflow):
             njet = 2
         elif "ttsemilep_sf" in workflow:
             njet = 4
+            if "Trans" in disc:
+                _hist_dict[f"c_{disc}"] = Hist.Hist(
+                    syst_axis,
+                    flav_axis,
+                    Hist.axis.Regular(40, 0, 8, name="discr", label=disc),
+                    Hist.storage.Weight(),
+                )
+            if "btag" in disc or "ProbaN" == disc:
+                _hist_dict[f"c_{disc}"] = Hist.Hist(
+                    syst_axis,
+                    flav_axis,
+                    Hist.axis.Regular(50, 0.0, 1, name="discr", label=disc),
+                    Hist.storage.Weight(),
+                )
+            elif "Bprob" in disc:
+                _hist_dict[f"c_{disc}"] = Hist.Hist(
+                    syst_axis,
+                    flav_axis,
+                    Hist.axis.Regular(50, 0, 10, name="discr", label=disc),
+                    Hist.storage.Weight(),
+                )
+            elif "PNetRegPtRawRes" == disc:
+                _hist_dict[f"c_{disc}"] = Hist.Hist(
+                    syst_axis,
+                    flav_axis,
+                    Hist.axis.Regular(40, 0, 1, name="discr", label=disc),
+                    Hist.storage.Weight(),
+                )
+            elif "PNetRegPtRawCorr" in disc:
+                _hist_dict[f"c_{disc}"] = Hist.Hist(
+                    syst_axis,
+                    flav_axis,
+                    Hist.axis.Regular(40, 0, 2, name="discr", label=disc),
+                    Hist.storage.Weight(),
+                )
         for i in range(njet):
             if "Wc_sf" in workflow:
                 if "Trans" in disc:
@@ -616,14 +735,14 @@ def histogrammer(events, workflow):
                         Hist.axis.Regular(50, 0, 10, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
-                elif "Res" == disc:
+                elif "PNetRegPtRawRes" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,
                         Hist.axis.Regular(40, 0, 1, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
-                elif "Corr" in disc:
+                elif "PNetRegPtRawCorr" in disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,

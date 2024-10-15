@@ -22,13 +22,26 @@ def missing_branch(events):
             events.Jet,
             {"btagDeepFlavB": jets.btagDeepFlavB},
         )
-    if hasattr(events.Jet, "btagDeepFlavCvL") and not hasattr(
-        events.Jet, "btagDeepFlavC"
+    if (
+        hasattr(events.Jet, "btagDeepFlavCvL")
+        and hasattr(events.Jet, "btagDeepFlavUDS")
+        and not hasattr(events.Jet, "btagDeepFlavC")
     ):
         jets = events.Jet
         jets["btagDeepFlavC"] = (
             events.Jet.btagDeepFlavCvL / (1.0 - events.Jet.btagDeepFlavCvL)
-        ) * events.Jet.btagDeepFlavB
+        ) * (events.Jet.btagDeepFlavG + events.Jet.btagDeepFlavUDS)
+        events.Jet = update(
+            events.Jet,
+            {"btagDeepFlavC": jets.btagDeepFlavC},
+        )
+    if hasattr(events.Jet, "btagDeepFlavCvB") and not hasattr(
+        events.Jet, "btagDeepFlavC"
+    ):
+        jets = events.Jet
+        jets["btagDeepFlavC"] = (
+            events.Jet.btagDeepFlavCvB / (1.0 - events.Jet.btagDeepFlavCvB)
+        ) * (events.Jet.btagDeepFlavB)
         events.Jet = update(
             events.Jet,
             {"btagDeepFlavC": jets.btagDeepFlavC},
