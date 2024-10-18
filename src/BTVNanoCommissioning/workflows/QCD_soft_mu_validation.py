@@ -185,7 +185,6 @@ class NanoProcessor(processor.ProcessorABC):
         nsmuj = ak.count(smuj.pt, axis=1)
         njet = ak.count(sjets.pt, axis=1)
 
-        osss = 1
         ###############
         # Selected SV #
         ###############
@@ -203,6 +202,7 @@ class NanoProcessor(processor.ProcessorABC):
                 )
             return {dataset: output}
         ### FIXME: Check if the JetSVs are present in the events
+        ###FIXME: https://gitlab.cern.ch/cms-btv-coordination/tasks/-/issues/188
         if "JetSVs" in events.fields:
             valid_events = (ak.count(selev.Jet.pt, axis=1) > 0) & (
                 ak.count(selev.JetSVs.pt, axis=1) > 0
@@ -257,21 +257,19 @@ class NanoProcessor(processor.ProcessorABC):
                 lj_SVs = filtered_events.JetSVs[filtered_events.JetSVs.jetIdx == 0]
                 nJetSVs = ak.count(lj_SVs.pt, axis=1)
 
+            ### FIXME: https://gitlab.cern.ch/cms-btv-coordination/tasks/-/issues/188
             # Print the final state of the variables
-            print("matched_JetSVs:", matched_JetSVs)
-            print("lj_matched_JetSVs:", lj_matched_JetSVs)
-            print("lj_SVs:", lj_SVs)
-            print("nJetSVs:", nJetSVs)
+            # print("matched_JetSVs:", matched_JetSVs)
+            # print("lj_matched_JetSVs:", lj_matched_JetSVs)
+            # print("lj_SVs:", lj_SVs)
+            # print("nJetSVs:", nJetSVs)
 
         ####################
         # Weight & Geninfo #
         ####################
         weights = Weights(len(selev), storeIndividual=True)
-        if not isRealData and len(selev) > 0:
-            if len(selev.genWeight) > 0:
-                weights.add("genweight", selev.genWeight)
-            else:
-                print("Warning: selev.genWeight is empty, skipping weight addition.")
+        if not isRealData:
+            weights.add("genweight", selev.genWeight)
 
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
             genflavor = sjets.hadronFlavour + 1 * par_flav
@@ -495,19 +493,6 @@ class NanoProcessor(processor.ProcessorABC):
                         ),
                     )
             output["npvs"].fill(syst, flatten(selev.PV.npvsGood), weight=weight)
-            if not isRealData:
-                if syst == "nominal":
-                    # output["pu"].fill(
-                    #    "noPU",
-                    #    flatten(selev.Pileup.nTrueInt),
-                    #    weight=np.ones_like(weight),
-                    # )
-                    # output["npvs"].fill(
-                    #    "noPU",
-                    #    flatten(selev.Pileup.nTrueInt),
-                    #    weight=np.ones_like(weight),
-                    # )
-                    output["pu"].fill(syst, flatten(selev.PV.npvsGood), weight=weight)
         #######################
         #  Create root files  #
         #######################
@@ -515,8 +500,8 @@ class NanoProcessor(processor.ProcessorABC):
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
             pruned_ev["SelJet"] = sjets
-            pruned_ev["SMu"] = ssmu[:, 0]
-            pruned_ev["MuJet"] = smuj[:, 0]
+            pruned_ev["SoftMuon"] = ssmu[:, 0]
+            pruned_ev["MuonJet"] = smuj[:, 0]
             array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
         return {dataset: output}
 

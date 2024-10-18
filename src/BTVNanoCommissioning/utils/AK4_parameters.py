@@ -49,8 +49,6 @@ correction_config = {
             "Run2022D": "Summer22_22Sep2023_RunCD_V2",
         },  # update to latest JEC
         "LSF": {
-            # "ele_json": "electron.json.gz",
-            # "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022_Prompt_ID_ISO_schemaV2.json",
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
             "ele_ID 2022Re-recoBCD Electron-ID-SF": "Tight",
@@ -75,8 +73,6 @@ correction_config = {
             "Run2022G": "Summer22EE_22Sep2023_RunG_V2",
         },
         "LSF": {
-            # "ele_json": "electron.json.gz",
-            # "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2022EE_Prompt_ID_ISO_schemaV2.json",
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
             "ele_ID 2022Re-recoE+PromptFG Electron-ID-SF": "Tight",
@@ -105,8 +101,6 @@ correction_config = {
         # },
         "JME": "jec_compiled.pkl.gz",
         "LSF": {
-            # "ele_json": "electron.json.gz",
-            # "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2023_Prompt_ID_ISO_schemaV2.json",
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
             "ele_ID 2023PromptC Electron-ID-SF": "Tight",
@@ -132,8 +126,6 @@ correction_config = {
         },
         # "JME": "jec_compiled.pkl.gz",
         "LSF": {
-            # "ele_json": "electron.json.gz",
-            # "mu_json": "ScaleFactors_Muon_trackerMuons_Z_2023BPix_Prompt_ID_ISO_schemaV2.json",
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
             "ele_ID 2023PromptD Electron-ID-SF": "Tight",
@@ -150,7 +142,5 @@ correction_config = {
             "MC": "calibeHistoWrite_MC2023_Summer23BPix.root",
         },
     },
-    "CAMPAIGN_prompt_dataMC": {
-        "lumiMask": "Cert_Collisions2024_378981_381594_Golden.json"
-    },
+    "CAMPAIGN_prompt_dataMC": {"lumiMask": "$LUMIMASK_DATAMC"},
 }

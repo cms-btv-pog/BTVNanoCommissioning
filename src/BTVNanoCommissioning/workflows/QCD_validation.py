@@ -142,6 +142,8 @@ class NanoProcessor(processor.ProcessorABC):
         # Selected SV #
         ###############
         selev = events[event_level]
+
+        ###FIXME: https://gitlab.cern.ch/cms-btv-coordination/tasks/-/issues/188
         if "JetSVs" in events.fields:
             valid_events = (ak.count(selev.Jet.pt, axis=1) > 0) & (
                 ak.count(selev.JetSVs.pt, axis=1) > 0
@@ -367,16 +369,6 @@ class NanoProcessor(processor.ProcessorABC):
             output["npvs"].fill(syst, flatten(selev.PV.npvsGood), weight=weight)
             if not isRealData:
                 if syst == "nominal":
-                    # output["pu"].fill(
-                    #    "noPU",
-                    #    flatten(selev.Pileup.nTrueInt),
-                    #    weight=np.ones_like(weight),
-                    # )
-                    # output["npvs"].fill(
-                    #    "noPU",
-                    #    flatten(selev.Pileup.nTrueInt),
-                    #    weight=np.ones_like(weight),
-                    # )
                     output["pu"].fill(syst, flatten(selev.PV.npvsGood), weight=weight)
         #######################
         #  Create root files  #
@@ -384,7 +376,7 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             # Keep the structure of events and pruned the object size
             pruned_ev = events[event_level]
-            pruned_ev["MuJet"] = sjets
+            pruned_ev["SelJet"] = sjets
             array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
 
         return {dataset: output}

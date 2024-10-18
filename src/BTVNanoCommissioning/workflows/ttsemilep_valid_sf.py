@@ -67,120 +67,8 @@ class NanoProcessor(processor.ProcessorABC):
         # Filter attributes that contain 'btagDeepFlav' in their name
         btag_attributes = [attr for attr in attributes if "btagDeepFlav" in attr]
 
-        # Print the attribute names
-        for attr in btag_attributes:
-            print(attr)
-
-        (
-            print("ProbB present in dataset")
-            if hasattr(events.Jet, "btagDeepFlavB")
-            else None
-        )
-        (
-            print("ProbC present in dataset")
-            if hasattr(events.Jet, "btagDeepFlavC")
-            else None
-        )
-        (
-            print("ProbB is: ", events.Jet.btagDeepFlavB)
-            if hasattr(events.Jet, "btagDeepFlavB")
-            else None
-        )
-        (
-            print(
-                "ProbB calculated is: ",
-                events.Jet.btagDeepFlavB_b
-                + events.Jet.btagDeepFlavB_bb
-                + events.Jet.btagDeepFlavB_lepb,
-            )
-            if hasattr(events.Jet, "btagDeepFlavB_b")
-            and hasattr(events.Jet, "btagDeepFlavB_bb")
-            and hasattr(events.Jet, "btagDeepFlavB_lepb")
-            else None
-        )
-        (
-            print("ProbC is: ", events.Jet.btagDeepFlavC)
-            if hasattr(events.Jet, "btagDeepFlavC")
-            else None
-        )
-        (
-            print(
-                "ProbC calculated is: ",
-                events.Jet.btagDeepFlavCvL
-                / (1.0 - events.Jet.btagDeepFlavCvL)
-                * (events.Jet.btagDeepFlavG + events.Jet.btagDeepFlavUDS),
-            )
-            if hasattr(events.Jet, "btagDeepFlavCvL")
-            and hasattr(events.Jet, "btagDeepFlavUDS")
-            and hasattr(events.Jet, "btagDeepFlavG")
-            else None
-        )
-        (
-            print(
-                "ProbC calculated is : ",
-                events.Jet.btagDeepFlavCvB
-                / (1.0 - events.Jet.btagDeepFlavCvB)
-                * (events.Jet.btagDeepFlavB),
-            )
-            if hasattr(events.Jet, "btagDeepFlavCvB")
-            else None
-        )
-
         events = missing_branch(events)
-        (
-            print("ProbB present in dataset after corr")
-            if hasattr(events.Jet, "btagDeepFlavB")
-            else None
-        )
-        (
-            print("ProbC present in dataset after corr")
-            if hasattr(events.Jet, "btagDeepFlavC")
-            else None
-        )
-        (
-            print("ProbB is after corr: ", events.Jet.btagDeepFlavB)
-            if hasattr(events.Jet, "btagDeepFlavB")
-            else None
-        )
-        (
-            print(
-                "ProbB calculated is after corr: ",
-                events.Jet.btagDeepFlavB_b
-                + events.Jet.btagDeepFlavB_bb
-                + events.Jet.btagDeepFlavB_lepb,
-            )
-            if hasattr(events.Jet, "btagDeepFlavB_b")
-            and hasattr(events.Jet, "btagDeepFlavB_bb")
-            and hasattr(events.Jet, "btagDeepFlavB_lepb")
-            else None
-        )
-        (
-            print("ProbC is after corr: ", events.Jet.btagDeepFlavC)
-            if hasattr(events.Jet, "btagDeepFlavC")
-            else None
-        )
-        (
-            print(
-                "ProbC calculated is after corr: ",
-                events.Jet.btagDeepFlavCvL
-                / (1.0 - events.Jet.btagDeepFlavCvL)
-                * (events.Jet.btagDeepFlavG + events.Jet.btagDeepFlavUDS),
-            )
-            if hasattr(events.Jet, "btagDeepFlavCvL")
-            and hasattr(events.Jet, "btagDeepFlavUDS")
-            and hasattr(events.Jet, "btagDeepFlavG")
-            else None
-        )
-        (
-            print(
-                "ProbC calculated is after corr B: ",
-                events.Jet.btagDeepFlavCvB
-                / (1.0 - events.Jet.btagDeepFlavCvB)
-                * (events.Jet.btagDeepFlavB),
-            )
-            if hasattr(events.Jet, "btagDeepFlavCvB")
-            else None
-        )
+
         shifts = []
         if "JME" in self.SF_map.keys():
             syst_JERC = self.isSyst
@@ -309,9 +197,6 @@ class NanoProcessor(processor.ProcessorABC):
             nob_selection = remaining_jets.btagDeepFlavB < 0.5
 
             nob_candidate_jets = remaining_jets[nob_selection]
-            print()
-            print("req_c_jets", req_c_jets, len(req_c_jets))
-            print()
 
             # Create combinations of single_c_jet and nob_candidate_jets
             combinations = ak.cartesian(
@@ -326,9 +211,6 @@ class NanoProcessor(processor.ProcessorABC):
 
             # Apply the mask to get the valid combinations
             valid_combinations = combinations[mass_mask]
-            print()
-            print("valid_combinations", valid_combinations)
-            print()
             # Create an event-level mask
             event_mask = ak.any(mass_mask, axis=1)
 
@@ -340,38 +222,12 @@ class NanoProcessor(processor.ProcessorABC):
             nob_w_selection = ak.fill_none(nob_w_selection, False)
             w_cand_b_jet = ak.firsts(event_jet[nob_w_selection])
 
-            print()
-            print("w_cand_b_jet", w_cand_b_jet, len(w_cand_b_jet))
-            print()
-
             w_mass_lead_sublead = (single_c_jet + w_cand_b_jet).mass
-
-            print()
-            print("w_mass_lead_sublead", w_mass_lead_sublead, len(w_mass_lead_sublead))
-            print()
 
             w_mask = (w_mass_lead_sublead > 50) & (w_mass_lead_sublead < 110)
             w_mask = ak.fill_none(w_mask, False)
 
-            print()
-            print("w_mask", w_mask, len(w_mask))
-            print()
-
-            # req_w_jets = ak.num(event_jet[w_mask].pt) >= 1
-
-            print()
-            # print("req_w_jets", req_w_jets, len(req_w_jets))
-            print()
-
             # req_w_jets = ak.fill_none(req_w_jets, False)
-
-            print()
-            print("event_mask", req_w_mass, len(req_w_mass))
-            print()
-
-            print()
-            # print("req_w_jets", req_w_jets, len(req_w_jets))
-            print()
 
         ## store jet index for PFCands, create mask on the jet index
         jetindx = ak.mask(
@@ -412,17 +268,7 @@ class NanoProcessor(processor.ProcessorABC):
         if self.ttaddsel == "c_tt_semilep":
 
             # Combine masks with the original conditions
-            event_level = ak.fill_none(
-                req_trig
-                & req_jets
-                & req_muon
-                & req_MET
-                & req_lumi
-                & req_metfilter
-                & req_w_mass
-                & req_c_jets,
-                False,
-            )
+            event_level = ak.fill_none(event_level & req_w_mass & req_c_jets, False)
         if len(events[event_level]) == 0:
             if self.isArray:
                 array_writer(
@@ -443,32 +289,24 @@ class NanoProcessor(processor.ProcessorABC):
         sjets = event_jet[event_level]
 
         # Filter jets with btagDeepFlavC > 0.6
+        ### With such a cut we reach c-purity of 70 %
         jet_c_sel_hist = sjets.btagDeepFlavC > 0.6
-        scjets = sjets[jet_c_sel_hist]
+        if self.ttaddsel == "c_tt_semilep":
+            scjets = sjets[jet_c_sel_hist]
 
         # Ensure the filtered jets are padded to maintain a consistent shape
         # scjets = ak.pad_none(scjets, 4, axis=1)
 
         # Calculate the number of selected jets
-        ncseljet = ak.count(scjets.pt, axis=1)
+        if self.ttaddsel == "c_tt_semilep":
+            ncseljet = ak.count(scjets.pt, axis=1)
         nseljet = ak.count(sjets.pt, axis=1)
 
         # Limit the number of jets to 4
         sjets = sjets[:, :4]
 
-        print()
-        print("scjets before filtering", scjets, ncseljet)
-        print()
-
-        # scjets = ak.pad_none(scjets, 1, axis=1)  # Pad to at least 1 element along the second axis
-
-        # scjets = ak.fill_none(scjets, -999)
-
-        scjets = scjets[:, 0]
-
-        print()
-        print("scjets", scjets, ncseljet)
-        print()
+        if self.ttaddsel == "c_tt_semilep":
+            scjets = scjets[:, 0]
 
         sw = sjets[:, 0] + sjets[:, 1]
         smet = MET[event_level]
@@ -494,9 +332,13 @@ class NanoProcessor(processor.ProcessorABC):
         if not isRealData:
             weights.add("genweight", events[event_level].genWeight)
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
-            par_flav_c = (scjets.partonFlavour == 0) & (scjets.hadronFlavour == 0)
+            if self.ttaddsel == "c_tt_semilep":
+                par_flav_c = (scjets.partonFlavour == 0) & (scjets.hadronFlavour == 0)
             genflavor = ak.values_astype(sjets.hadronFlavour + 1 * par_flav, int)
-            genflavor_c = ak.values_astype(scjets.hadronFlavour + 1 * par_flav_c, int)
+            if self.ttaddsel == "c_tt_semilep":
+                genflavor_c = ak.values_astype(
+                    scjets.hadronFlavour + 1 * par_flav_c, int
+                )
             if len(self.SF_map.keys()) > 0:
                 syst_wei = True if self.isSyst != False else False
                 if "PU" in self.SF_map.keys():
@@ -520,7 +362,8 @@ class NanoProcessor(processor.ProcessorABC):
                         btagSFs(scjets, self.SF_map, weights, "DeepCSVC", syst_wei)
         else:
             genflavor = ak.zeros_like(sjets.pt, dtype=int)
-            genflavor_c = ak.zeros_like(scjets.pt, dtype=int)
+            if self.ttaddsel == "c_tt_semilep":
+                genflavor_c = ak.zeros_like(scjets.pt, dtype=int)
 
         # Systematics information
         if shift_name is None:
@@ -539,10 +382,8 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         for syst in systematics:
             if self.isSyst == False and syst != "nominal":
-                print("Skip systematics for nominal")
                 break
             if self.noHist:
-                print("Skip histogramming")
                 break
 
             weight = (
@@ -797,12 +638,6 @@ class NanoProcessor(processor.ProcessorABC):
                     flatten(sw.mass),
                     weight=weight,
                 )
-            # if not isRealData:
-            #    output["pu"].fill(
-            #        syst,
-            #        events[event_level].Pileup.nTrueInt,
-            #        weight=weight,
-            #    )
         #######################
         #  Create root files  #
         #######################

@@ -10,8 +10,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 import numpy as np
 import seaborn as sns
-from BTVNanoCommissioning.helpers.definitions_for_corr import definitions_dict
-from BTVNanoCommissioning.helpers.definitions_for_corr import disc_list
+import awkward as ak
+from BTVNanoCommissioning.helpers.definitions import definitions_dict
+from BTVNanoCommissioning.helpers.definitions import disc_list
 
 
 # Suppress the specific FutureWarning from uproot
@@ -86,7 +87,7 @@ def load_single_file(
         branches = [
             branch
             for branch in tree.keys()
-            if "MuJet" in branch
+            if "MuonJet" in branch
             and (
                 any(key in branch for key in filtered_definitions_dict.keys())
                 or any(name in branch for name in filtered_names)
@@ -105,44 +106,46 @@ def load_single_file(
 
         # Include branches that have 'SMu' in their name if the SMu flag is True
         if SMu:
-            smu_branches = [branch for branch in tree.keys() if "SMu" in branch]
-            smu_branches.append("MuJet_muEF")
+            smu_branches = [branch for branch in tree.keys() if "SoftMuon" in branch]
+            smu_branches.append("MuonJet_muEF")
             if limit_inputs:
                 smu_branches = [
-                    "SMu_tunepRelPt",
-                    "SMu_pfRelIso03_chg",
-                    "SMu_eta",
-                    "SMu_phi",
-                    "SMu_jetPtRelv2",
-                    "SMu_dxy",
-                    "SMu_dxyErr",
-                    "SMu_jetRelIso",
-                    "SMu_sip3d",
-                    "SMu_dzErr",
-                    "SMu_pfRelIso04_all",
-                    "SMu_ip3d",
-                    "SMu_pt",
-                    "SMu_ptErr",
-                    "SMu_tkRelIso",
-                    "SMu_dz",
-                    "SMu_pfRelIso03_all",
-                    "MuJet_muEF",
-                    "SMu_charge",
+                    "SoftMuon_tunepRelPt",
+                    "SoftMuon_pfRelIso03_chg",
+                    "SoftMuon_eta",
+                    "SoftMuon_phi",
+                    "SoftMuon_jetPtRelv2",
+                    "SoftMuon_dxy",
+                    "SoftMuon_dxyErr",
+                    "SoftMuon_jetRelIso",
+                    "SoftMuon_sip3d",
+                    "SoftMuon_dzErr",
+                    "SoftMuon_pfRelIso04_all",
+                    "SoftMuon_ip3d",
+                    "SoftMuon_pt",
+                    "SoftMuon_ptErr",
+                    "SoftMuon_tkRelIso",
+                    "SoftMuon_dz",
+                    "SoftMuon_pfRelIso03_all",
+                    "MuonJet_muEF",
+                    "SoftMuon_charge",
                 ]
             branches.extend(smu_branches)
             branches = list(set(branches))  # Remove duplicates
 
         # Include the flavour column if flavour_split is enabled
         if flavour_split:
-            branches.append("MuJet_hadronFlavour")
+            branches.append("MuonJet_hadronFlavour")
 
         # Extract manual ranges for x and y columns if they don't start with SelJet_ or SMu_
         x_limits_dict = {}
         for x_col in branches:
-            if not x_col.startswith(("SelJet_", "SMu_", "MuJet_")):
+            if not x_col.startswith(("SelJet_", "SoftMuon_", "MuonJet_")):
                 x_limits = definitions_dict.get(x_col, {}).get("manual_ranges", None)
             else:
-                x_col_str = x_col.lstrip("SelJet_").lstrip("SMu_").lstrip("MuJet_")
+                x_col_str = (
+                    x_col.lstrip("SelJet_").lstrip("SoftMuon_").lstrip("MuonJet_")
+                )
                 x_limits = definitions_dict.get(x_col_str, {}).get(
                     "manual_ranges", None
                 )
@@ -236,30 +239,32 @@ def inspect_first_file(
             print("Filtered Branches:", branches)
             print(len(branches))
             if SMu:
-                smu_branches = [branch for branch in tree.keys() if "SMu" in branch]
-                smu_branches.append("MuJet_muEF")
+                smu_branches = [
+                    branch for branch in tree.keys() if "SoftMuon" in branch
+                ]
+                smu_branches.append("MuonJet_muEF")
                 print(smu_branches)
                 if limit_inputs:
                     smu_branches = [
-                        "SMu_tunepRelPt",
-                        "SMu_pfRelIso03_chg",
-                        "SMu_eta",
-                        "SMu_phi",
-                        "SMu_jetPtRelv2",
-                        "SMu_dxy",
-                        "SMu_dxyErr",
-                        "SMu_jetRelIso",
-                        "SMu_sip3d",
-                        "SMu_dzErr",
-                        "SMu_pfRelIso04_all",
-                        "SMu_ip3d",
-                        "SMu_pt",
-                        "SMu_ptErr",
-                        "SMu_tkRelIso",
-                        "SMu_dz",
-                        "SMu_pfRelIso03_all",
-                        "MuJet_muEF",
-                        "SMu_charge",
+                        "SoftMuon_tunepRelPt",
+                        "SoftMuon_pfRelIso03_chg",
+                        "SoftMuon_eta",
+                        "SoftMuon_phi",
+                        "SoftMuon_jetPtRelv2",
+                        "SoftMuon_dxy",
+                        "SoftMuon_dxyErr",
+                        "SoftMuon_jetRelIso",
+                        "SoftMuon_sip3d",
+                        "SoftMuon_dzErr",
+                        "SoftMuon_pfRelIso04_all",
+                        "SoftMuon_ip3d",
+                        "SoftMuon_pt",
+                        "SoftMuon_ptErr",
+                        "SoftMuon_tkRelIso",
+                        "SoftMuon_dz",
+                        "SoftMuon_pfRelIso03_all",
+                        "MuonJet_muEF",
+                        "SoftMuon_charge",
                     ]
 
                 branches.extend(smu_branches)
@@ -268,7 +273,7 @@ def inspect_first_file(
 
             # Include the flavour column if flavour_split is enabled
             if flavour_split:
-                branches.append("MuJet_hadronFlavour")
+                branches.append("MuonJet_hadronFlavour")
 
             print("Branches:", branches)
 
@@ -295,12 +300,14 @@ def inspect_first_file(
             # Extract manual ranges for x and y columns if they don't start with SelJet_ or SMu_
             x_limits_dict = {}
             for x_col in branches:
-                if not x_col.startswith(("SelJet_", "SMu_", "MuJet_")):
+                if not x_col.startswith(("SelJet_", "SoftMuon_", "MuonJet_")):
                     x_limits = definitions_dict.get(x_col, {}).get(
                         "manual_ranges", None
                     )
                 else:
-                    x_col_str = x_col.lstrip("SelJet_").lstrip("SMu_").lstrip("MuJet_")
+                    x_col_str = (
+                        x_col.lstrip("SelJet_").lstrip("SoftMuon_").lstrip("MuonJet_")
+                    )
                     x_limits = definitions_dict.get(x_col_str, {}).get(
                         "manual_ranges", None
                     )
@@ -399,6 +406,7 @@ def load_data(
         event_counts.append((key, len(df)))  # Store the number of events and the key
 
     # Define ranking factors for each subfolder
+    ###FIXME: sumw has to change, whenever you run a different set. Pay attention!!!
     ranking_factors = {
         "QCD_PT-15to20_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8": 295600 / 142083,
         "QCD_PT-20to30_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8": 2689000 / 5926,
@@ -464,26 +472,26 @@ def load_data(
 
 
 variables_to_zoom = {
-    "MuJet_DeepCSV_flightDistance2dSig": [2, 4],
-    "MuJet_DeepCSV_flightDistance2dVal": [0, 0.4],
-    "MuJet_DeepCSV_flightDistance3dSig": [1, 10],
-    "MuJet_DeepCSV_flightDistance3dVal": [0, 0.5],
-    "MuJet_DeepCSV_jetNSelectedTracks": [5, 12],
-    "MuJet_DeepCSV_trackJetPt": [25, 60],
-    "MuJet_DeepCSV_trackSip2dSigAboveCharm": [0, 2],
-    "MuJet_DeepCSV_trackSip2dValAboveCharm": [0, 0.01],
-    "MuJet_DeepCSV_trackSip3dSigAboveCharm": [0, 2],
-    "MuJet_DeepCSV_trackSip3dValAboveCharm": [0, 0.01],
-    "MuJet_DeepCSV_trackSumJetDeltaR": [0, 0.03],
-    "MuJet_DeepCSV_vertexEnergyRatio": [0, 0.4],
-    "MuJet_DeepCSV_vertexJetDeltaR": [0, 0.07],
-    "SMu_ip3d": [0, 0.05],
-    "SMu_jetPtRelv2": [0, 1],
-    "SMu_jetRelIso": [0, 30],
-    "SMu_pfRelIso03_all": [0, 20],
-    "SMu_pfRelIso03_chg": [0, 20],
-    "SMu_pfRelIso04_all": [0, 20],
-    "SMu_sip3d": [0, 15],
+    "MuonJet_DeepCSV_flightDistance2dSig": [2, 4],
+    "MuonJet_DeepCSV_flightDistance2dVal": [0, 0.4],
+    "MuonJet_DeepCSV_flightDistance3dSig": [1, 10],
+    "MuonJet_DeepCSV_flightDistance3dVal": [0, 0.5],
+    "MuonJet_DeepCSV_jetNSelectedTracks": [5, 12],
+    "MuonJet_DeepCSV_trackJetPt": [25, 60],
+    "MuonJet_DeepCSV_trackSip2dSigAboveCharm": [0, 2],
+    "MuonJet_DeepCSV_trackSip2dValAboveCharm": [0, 0.01],
+    "MuonJet_DeepCSV_trackSip3dSigAboveCharm": [0, 2],
+    "MuonJet_DeepCSV_trackSip3dValAboveCharm": [0, 0.01],
+    "MuonJet_DeepCSV_trackSumJetDeltaR": [0, 0.03],
+    "MuonJet_DeepCSV_vertexEnergyRatio": [0, 0.4],
+    "MuonJet_DeepCSV_vertexJetDeltaR": [0, 0.07],
+    "SoftMuon_ip3d": [0, 0.05],
+    "SoftMuon_jetPtRelv2": [0, 1],
+    "SoftMuon_jetRelIso": [0, 30],
+    "SoftMuon_pfRelIso03_all": [0, 20],
+    "SoftMuon_pfRelIso03_chg": [0, 20],
+    "SoftMuon_pfRelIso04_all": [0, 20],
+    "SoftMuon_sip3d": [0, 15],
 }
 
 
@@ -557,7 +565,7 @@ def plot_all_histograms(
             )
 
     elif split_region_b:
-        deepflavb_column = "MuJet_btagDeepFlavB"
+        deepflavb_column = "MuonJet_btagDeepFlavB"
         high_probB_data = data[data[deepflavb_column] > 0.5]
         low_probB_data = data[data[deepflavb_column] <= 0.5]
 

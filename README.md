@@ -644,6 +644,23 @@ Extract the ROCs for different tagger and efficiencies from validation workflow
 python scripts/validation_plot.py -i  $INPUT_COFFEA -v $VERSION
 ```
 
+### Correlation plots study
+
+You can perform a study of linear correlations of b-tagging input variables. Additionally, soft muon variables may be added into the study by requesting `--SMu` argument. If you wan to limit the outputs only to DeepFlavB, PNetB and RobustParTAK4B, you can use the `--limit_outputs` option. If you want to use only the set of variables used for tagger training, not just all the input variables, then use the option `--limit_inputs`. To limit number of files read, make use of option `--max_files`. In case your study requires splitting samples by flavour, use `--flavour_split`. `--split_region_b` performs a sample splitting based on the DeepFlavB >/< 0.5 
+
+```python
+python correlation_plots.py $input_folder [--max_files $nmax_files --SMu --limit_inputs --limit_outputs --specify_MC --flavour_split --split_region_b]
+```
+
+### 2D plots (Correlation study-related)
+
+To further investigate the correlations, one can create the 2D plots of the variables used in this study. Inputs and optional arguments are the same as for the correlation plots study.
+
+```python
+python 2Dhistogramms.py $input_folder [--max_files $nmax_files --SMu --limit_inputs --limit_outputs --specify_MC --flavour_split --split_region_b]
+```
+
+
 ## Store histograms from coffea file
 
 Use `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/TH2D` with hist. MC histograms can be reweighted to according to luminosity value given via `--lumi`. You can also merge several files 
