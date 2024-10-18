@@ -167,10 +167,6 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
     elif "ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
-        obj_list.append("cjet")
-        _hist_dict["dr_cjet"] = Hist.Hist(
-            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
-        )
         for i in range(4):
             obj_list.append(f"jet{i}")
 
@@ -540,28 +536,19 @@ def histogrammer(events, workflow):
     disc_list = [
         "btagDeepFlavB",
         "btagDeepFlavC",
-        "btagTransDeepFlavB",
-        "btagTransDeepFlavC",
         "btagDeepFlavCvL",
         "btagDeepFlavCvB",
         "btagDeepFlavB_b",
         "btagDeepFlavB_bb",
-        "btagTransDeepFlavB_lepb",
-        "btagTransDeepFlavB_b",
-        "btagTransDeepFlavB_bb",
-        "btagTransDeepFlavB_lepb",
         "btagPNetB",
         "btagTransPNetB",
         "btagPNetCvB",
         "btagPNetCvL",
+        "btagPNetCvNotB",
         "btagPNetProbB",
         "btagPNetProbC",
         "btagPNetProbG",
         "btagPNetProbUDS",
-        "btagTransPNetProbB",
-        "btagTransPNetProbC",
-        "btagTransPNetProbG",
-        "btagTransPNetProbUDS",
         "btagPNetQvG",
         "btagPNetTauVJet",
         "btagRobustParTAK4B",
@@ -571,13 +558,6 @@ def histogrammer(events, workflow):
         "btagRobustParTAK4C",
         "btagRobustParTAK4G",
         "btagRobustParTAK4UDS",
-        "btagTransRobustParTAK4B",
-        "btagTransRobustParTAK4B_b",
-        "btagTransRobustParTAK4B_bb",
-        "btagTransRobustParTAK4B_lepb",
-        "btagTransRobustParTAK4C",
-        "btagTransRobustParTAK4G",
-        "btagTransRobustParTAK4UDS",
         "btagRobustParTAK4CvB",
         "btagRobustParTAK4CvL",
         "btagRobustParTAK4QG",
@@ -635,13 +615,6 @@ def histogrammer(events, workflow):
             njet = 2
         elif "ttsemilep_sf" in workflow:
             njet = 4
-            if "Trans" in disc:
-                _hist_dict[f"c_{disc}"] = Hist.Hist(
-                    syst_axis,
-                    flav_axis,
-                    Hist.axis.Regular(40, 0, 8, name="discr", label=disc),
-                    Hist.storage.Weight(),
-                )
             if "btag" in disc or "ProbaN" == disc:
                 _hist_dict[f"c_{disc}"] = Hist.Hist(
                     syst_axis,
@@ -672,14 +645,6 @@ def histogrammer(events, workflow):
                 )
         for i in range(njet):
             if "Wc_sf" in workflow:
-                if "Trans" in disc:
-                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
-                        syst_axis,
-                        flav_axis,
-                        osss_axis,
-                        Hist.axis.Regular(40, 0, 8, name="discr", label=disc),
-                        Hist.storage.Weight(),
-                    )
                 elif "btag" in disc or "ProbaN" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
@@ -714,13 +679,6 @@ def histogrammer(events, workflow):
                     )
 
             else:
-                if "Trans" in disc:
-                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
-                        syst_axis,
-                        flav_axis,
-                        Hist.axis.Regular(40, 0, 8, name="discr", label=disc),
-                        Hist.storage.Weight(),
-                    )
                 if "btag" in disc or "ProbaN" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
