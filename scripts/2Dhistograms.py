@@ -406,7 +406,8 @@ def load_data(
         event_counts.append((key, len(df)))  # Store the number of events and the key
 
     # Define ranking factors for each subfolder
-    ###FIXME: sumw has to change, whenever you run a different set. Pay attention!!!
+    ### FIXME: sumw has to change, whenever you run a different set. Pay attention!!!
+    ### FIXME: The former factor is the xs, the second - sumw!
     ranking_factors = {
         "QCD_PT-15to20_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8": 295600 / 142083,
         "QCD_PT-20to30_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8": 2689000 / 5926,
@@ -459,6 +460,7 @@ def load_data(
     weighted_event_counts.sort(key=lambda x: x[1], reverse=True)
 
     # Display the ranking
+    ### Ranking done by the yields: from the highest to the lowest
     print("Ranking by weighted number of events:")
     for rank, (key, weighted_count, parent_subfolder) in enumerate(
         weighted_event_counts, start=1
