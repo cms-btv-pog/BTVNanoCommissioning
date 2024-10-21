@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 import numpy as np
 import seaborn as sns
+import awkward as ak
 from BTVNanoCommissioning.helpers.definitions import definitions_dict
 from BTVNanoCommissioning.helpers.definitions import disc_list
 

@@ -645,7 +645,7 @@ def histogrammer(events, workflow):
                 )
         for i in range(njet):
             if "Wc_sf" in workflow:
-                elif "btag" in disc or "ProbaN" == disc:
+                if "btag" in disc or "ProbaN" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,

@@ -291,19 +291,22 @@ class NanoProcessor(processor.ProcessorABC):
         # Filter jets with btagDeepFlavC > 0.6
         ### With such a cut we reach c-purity of 70 %
         jet_c_sel_hist = sjets.btagDeepFlavC > 0.6
-        scjets = sjets[jet_c_sel_hist]
+        if self.ttaddsel == "c_tt_semilep":
+            scjets = sjets[jet_c_sel_hist]
 
         # Ensure the filtered jets are padded to maintain a consistent shape
         # scjets = ak.pad_none(scjets, 4, axis=1)
 
         # Calculate the number of selected jets
-        ncseljet = ak.count(scjets.pt, axis=1)
+        if self.ttaddsel == "c_tt_semilep":
+            ncseljet = ak.count(scjets.pt, axis=1)
         nseljet = ak.count(sjets.pt, axis=1)
 
         # Limit the number of jets to 4
         sjets = sjets[:, :4]
 
-        scjets = scjets[:, 0]
+        if self.ttaddsel == "c_tt_semilep":
+            scjets = scjets[:, 0]
 
         sw = sjets[:, 0] + sjets[:, 1]
         smet = MET[event_level]
@@ -329,9 +332,13 @@ class NanoProcessor(processor.ProcessorABC):
         if not isRealData:
             weights.add("genweight", events[event_level].genWeight)
             par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
-            par_flav_c = (scjets.partonFlavour == 0) & (scjets.hadronFlavour == 0)
+            if self.ttaddsel == "c_tt_semilep":
+                par_flav_c = (scjets.partonFlavour == 0) & (scjets.hadronFlavour == 0)
             genflavor = ak.values_astype(sjets.hadronFlavour + 1 * par_flav, int)
-            genflavor_c = ak.values_astype(scjets.hadronFlavour + 1 * par_flav_c, int)
+            if self.ttaddsel == "c_tt_semilep":
+                genflavor_c = ak.values_astype(
+                    scjets.hadronFlavour + 1 * par_flav_c, int
+                )
             if len(self.SF_map.keys()) > 0:
                 syst_wei = True if self.isSyst != False else False
                 if "PU" in self.SF_map.keys():
@@ -355,7 +362,8 @@ class NanoProcessor(processor.ProcessorABC):
                         btagSFs(scjets, self.SF_map, weights, "DeepCSVC", syst_wei)
         else:
             genflavor = ak.zeros_like(sjets.pt, dtype=int)
-            genflavor_c = ak.zeros_like(scjets.pt, dtype=int)
+            if self.ttaddsel == "c_tt_semilep":
+                genflavor_c = ak.zeros_like(scjets.pt, dtype=int)
 
         # Systematics information
         if shift_name is None:

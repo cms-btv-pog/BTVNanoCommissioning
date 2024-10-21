@@ -182,6 +182,9 @@ class NanoProcessor(processor.ProcessorABC):
         ssmu = soft_muon[event_level]
         smuj = mu_jet[event_level]
         nssmu = ak.count(ssmu.pt, axis=1)
+        nsmuj = ak.count(smuj.pt, axis=1)
+        njet = ak.count(sjets.pt, axis=1)
+
         ###############
         # Selected SV #
         ###############

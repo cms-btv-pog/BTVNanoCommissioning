@@ -6181,9 +6181,9 @@ def definitions():
 
     interger_variables = [59, 63, 64, 65, 66]
 
-    definitions_dict = definitions_dict
+    definition = definitions_dict
 
-    return definitions_dict
+    return definition
 
 
 def SV_definitions():
