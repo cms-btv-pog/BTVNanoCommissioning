@@ -36,16 +36,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: update submodules
-      env:
-        SSHKEY: ${{ secrets.GIT_CERN_SSH_PRIVATE }}
-      run: |
-        mkdir  $HOME/.ssh
-        echo "$SSHKEY" > $HOME/.ssh/id_rsa
-        chmod 600  $HOME/.ssh/id_rsa
-        echo "HOST *" > ~/.ssh/config
-        echo "StrictHostKeyChecking no" >> ~/.ssh/config
-        git submodule update --init --recursive 
+    
     - uses: cvmfs-contrib/github-action-cvmfs@v4
       with:
         cvmfs_repositories: 'grid.cern.ch'

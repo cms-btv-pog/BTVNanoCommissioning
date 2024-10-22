@@ -36,16 +36,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: update submodules
-      env:
-        SSHKEY: ${{ secrets.GIT_CERN_SSH_PRIVATE }}
-      run: |
-        mkdir  $HOME/.ssh
-        echo "$SSHKEY" > $HOME/.ssh/id_rsa
-        chmod 600  $HOME/.ssh/id_rsa
-        echo "HOST *" > ~/.ssh/config
-        echo "StrictHostKeyChecking no" >> ~/.ssh/config
-        git submodule update --init --recursive 
+    
     - uses: cvmfs-contrib/github-action-cvmfs@v4
       with:
         cvmfs_repositories: 'grid.cern.ch'
@@ -112,6 +103,21 @@ jobs:
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
         python runner.py --workflow ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
+
+    - name:  semileptonic + c ttbar workflows with correctionlib
+      run: |
+        string=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi
+        python runner.py --workflow c_ttsemilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
     
     
     - name: btag dileptonic ttbar workflows with correctionlib

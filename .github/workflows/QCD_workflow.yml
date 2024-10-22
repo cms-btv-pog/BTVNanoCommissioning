@@ -38,17 +38,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: update submodules
-      env:
-        SSHKEY: ${{ secrets.GIT_CERN_SSH_PRIVATE }}
-      run: |
-        mkdir  $HOME/.ssh
-        echo "$SSHKEY" > $HOME/.ssh/id_rsa
-        ls -lrt $HOME/.ssh
-        chmod 600  $HOME/.ssh/id_rsa
-        echo "HOST *" > ~/.ssh/config
-        echo "StrictHostKeyChecking no" >> ~/.ssh/config
-        git submodule update --init --recursive 
+    
     - uses: cvmfs-contrib/github-action-cvmfs@v4
       with:
         cvmfs_repositories: 'grid.cern.ch'
@@ -117,17 +107,19 @@ jobs:
         fi
         python runner.py --workflow QCD_sf --json metadata/test_bta_run3.json  --executor iterative  $opts
     
-    # - name: QCD mu workflows with correctionlib
-    #   run: |
-    #     message=$(git log -1 --pretty=format:'%s')
-    #     if [[ $string == *"ci:skip array"* ]]; then
-    #     opts=$(echo "$opts" | sed 's/--isArray //g')
-    #     fi
-    #     if [[ $string == *"ci:skip syst"* ]]; then
-    #         opts=$(echo "$opts" | sed 's/--isSyst all//g')
-    #     elif [[ $string == *"ci:JERC_split"* ]]; then
-    #         opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
-    #     elif [[ $string == *"ci:weight_only"* ]]; then
-    #         opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
-    #     fi
-    #     python runner.py --workflow QCD_mu --json metadata/test_bta_run3.json --executor iterative  --overwrite $opts
+    - name: QCD soft mu workflows with correctionlib
+      run: |
+        message=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi
+
+        python runner.py --workflow QCD_smu_sf --json metadata/test_bta_run3.json --executor iterative  --overwrite $opts
+
