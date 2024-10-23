@@ -646,7 +646,7 @@ python scripts/validation_plot.py -i  $INPUT_COFFEA -v $VERSION
 
 ### Correlation plots study
 
-You can perform a study of linear correlations of b-tagging input variables. Additionally, soft muon variables may be added into the study by requesting `--SMu` argument. If you wan to limit the outputs only to DeepFlavB, PNetB and RobustParTAK4B, you can use the `--limit_outputs` option. If you want to use only the set of variables used for tagger training, not just all the input variables, then use the option `--limit_inputs`. To limit number of files read, make use of option `--max_files`. In case your study requires splitting samples by flavour, use `--flavour_split`. `--split_region_b` performs a sample splitting based on the DeepFlavB >/< 0.5 
+You can perform a study of linear correlations of b-tagging input variables. Additionally, soft muon variables may be added into the study by requesting `--SMu` argument. If you wan to limit the outputs only to DeepFlavB, PNetB and RobustParTAK4B, you can use the `--limit_outputs` option. If you want to use only the set of variables used for tagger training, not just all the input variables, then use the option `--limit_inputs`. To limit number of files read, make use of option `--max_files`. In case your study requires splitting samples by flavour, use `--flavour_split`. `--split_region_b` performs a sample splitting based on the DeepFlavB >/< 0.5. For Data/MC comparison purpose pay attention - change ranking factors (xs/sumw) in L420! 
 
 ```python
 python correlation_plots.py $input_folder [--max_files $nmax_files --SMu --limit_inputs --limit_outputs --specify_MC --flavour_split --split_region_b]

@@ -1,4 +1,8 @@
-from BTVNanoCommissioning.helpers.definitions import definitions, SV_definitions
+from BTVNanoCommissioning.helpers.definitions import (
+    definitions,
+    SV_definitions,
+    disc_list,
+)
 import hist as Hist
 
 
@@ -167,6 +171,10 @@ def histogrammer(events, workflow):
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
     elif "ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
+        obj_list.append("cjet")
+        _hist_dict["dr_cjet"] = Hist.Hist(
+            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+        )
         for i in range(4):
             obj_list.append(f"jet{i}")
 
@@ -533,80 +541,6 @@ def histogrammer(events, workflow):
             Hist.storage.Weight(),
         )
     ### discriminators
-    disc_list = [
-        "btagDeepFlavB",
-        "btagDeepFlavC",
-        "btagDeepFlavCvL",
-        "btagDeepFlavCvB",
-        "btagDeepFlavB_b",
-        "btagDeepFlavB_bb",
-        "btagPNetB",
-        "btagTransPNetB",
-        "btagPNetCvB",
-        "btagPNetCvL",
-        "btagPNetCvNotB",
-        "btagPNetProbB",
-        "btagPNetProbC",
-        "btagPNetProbG",
-        "btagPNetProbUDS",
-        "btagPNetQvG",
-        "btagPNetTauVJet",
-        "btagRobustParTAK4B",
-        "btagRobustParTAK4B_b",
-        "btagRobustParTAK4B_bb",
-        "btagRobustParTAK4B_lepb",
-        "btagRobustParTAK4C",
-        "btagRobustParTAK4G",
-        "btagRobustParTAK4UDS",
-        "btagRobustParTAK4CvB",
-        "btagRobustParTAK4CvL",
-        "btagRobustParTAK4QG",
-        "btagUParTAK4B",
-        "btagUParTAK4CvL",
-        "btagUParTAK4CvB",
-        "btagUParTAK4CvNotB",
-        "btagUParTAK4QvG",
-        "btagUParTAK4TauVJet",
-        ## Negative tagger
-        "btagNegDeepFlavB",
-        "btagNegDeepFlavB_b",
-        "btagNegDeepFlavB_bb",
-        "btagNegDeepFlavB_lepb",
-        "btagNegDeepFlavC",
-        "btagNegDeepFlavCvB",
-        "btagNegDeepFlavCvL",
-        "btagNegDeepFlavG",
-        "btagNegDeepFlavQG",
-        "btagNegDeepFlavUDS",
-        "btagNegPNetB",
-        "btagNegPNetC",
-        "btagNegPNetCvB",
-        "btagNegPNetCvL",
-        "btagNegPNetProbB",
-        "btagNegPNetProbC",
-        "btagNegPNetProbG",
-        "btagNegPNetProbUDS",
-        "btagNegRobustParTAK4B",
-        "btagNegRobustParTAK4B_b",
-        "btagNegRobustParTAK4B_bb",
-        "btagNegRobustParTAK4B_lepb",
-        "btagNegRobustParTAK4C",
-        "btagNegRobustParTAK4CvB",
-        "btagNegRobustParTAK4CvL",
-        "btagNegRobustParTAK4G",
-        "btagNegRobustParTAK4QG",
-        "btagNegRobustParTAK4UDS",
-        # other prob info
-        "PNetRegPtRawCorr",
-        "PNetRegPtRawCorrNeutrino",
-        "PNetRegPtRawRes",
-        "UParTAK4RegPtRawRes",
-        "UParTAK4RegPtRawCorrNeutrino",
-        "UParTAK4RegPtRawCorr",
-        "Bprob",
-        "BprobN",
-        "ProbaN",
-    ]
     for disc in disc_list:
         if disc not in events.Jet.fields and "Trans" not in disc:
             continue

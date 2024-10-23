@@ -507,11 +507,6 @@ class NanoProcessor(processor.ProcessorABC):
                         and "btag" not in histname
                         and histname in events.Jet.fields
                     ):
-                        print(
-                            "Deep in histname, btag not in histname, histname in events.Jet.fields",
-                            histname,
-                            scjets[histname],
-                        )
                         h.fill(
                             syst,
                             flatten(genflavor_c),
@@ -528,10 +523,6 @@ class NanoProcessor(processor.ProcessorABC):
                         and "PFCands" in events.fields
                         and histname.split("_")[1] in events.PFCands.fields
                     ):
-                        print(
-                            "PFCands in histname, PFCands in events.fields, histname.split_[1] in events.PFCands.fields",
-                            histname,
-                        )
                         h.fill(
                             syst,
                             flatten(
@@ -550,13 +541,6 @@ class NanoProcessor(processor.ProcessorABC):
                         )
                     elif "btag" in histname:
                         sel_jet = scjets
-                        print("btag in histname", histname, scjets)
-                        if "c_btag" in histname and "Trans" not in histname:
-                            print(
-                                "c_btag in histname",
-                                histname,
-                                scjets[histname.replace(f"c_", "")],
-                            )
                         if histname.replace(f"c_", "") in events.Jet.fields:
                             h.fill(
                                 syst="noSF",
@@ -580,13 +564,7 @@ class NanoProcessor(processor.ProcessorABC):
                     elif (
                         "mu_" in histname and histname.replace("mu_", "") in smu.fields
                     ):
-                        print(
-                            "mu_ in histname",
-                            histname,
-                            smu[histname.replace("mu_", "")],
-                        )
                         mu_array = flatten(smu[histname.replace("mu_", "")])
-                        print("Lengths:", len(syst), len(mu_array), len(weight))
                         h.fill(
                             syst,
                             flatten(smu[histname.replace("mu_", "")]),
@@ -598,19 +576,7 @@ class NanoProcessor(processor.ProcessorABC):
                         and "njet" != histname
                     ):
                         if "c" in histname:
-                            print(
-                                "jet in histname",
-                                histname,
-                                scjets[histname.replace(f"cjet_", "")],
-                            )
                             jet_array = flatten(scjets[histname.replace(f"cjet_", "")])
-                            print(
-                                "Lengths:",
-                                len(syst),
-                                len(flatten(genflavor_c)),
-                                len(jet_array),
-                                len(weight),
-                            )
 
                             h.fill(
                                 syst,
