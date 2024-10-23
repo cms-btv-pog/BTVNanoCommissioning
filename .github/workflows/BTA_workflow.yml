@@ -37,6 +37,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     
+    - name: Merge PR locally
+      if: github.event_name == 'pull_request_target'
+      run: |
+        git fetch origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
+        git checkout ${{ github.event.pull_request.base.ref }}
+        git merge --no-ff ${{ github.event.pull_request.head.sha }}
+
+
     - uses: cvmfs-contrib/github-action-cvmfs@v4
       with:
         cvmfs_repositories: 'grid.cern.ch'

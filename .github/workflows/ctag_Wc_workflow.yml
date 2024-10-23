@@ -11,7 +11,7 @@ on:
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/ctag_Wc_workflow.yml'
     
-  pull_request_target:
+  pull_request:
     branches: [ master ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/ctag_*Wc*'
