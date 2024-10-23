@@ -39,10 +39,16 @@ jobs:
     
     - name: Merge PR locally
       if: github.event_name == 'pull_request_target'
+      id: merge
+      continue-on-error: true
+
       run: |
-        git fetch origin ${{ github.event.pull_request.base.ref }}:refs/remotes/origin/${{ github.event.pull_request.base.ref }}
-        git checkout ${{ github.event.pull_request.base.ref }}
-        git merge --no-ff ${{ github.event.pull_request.head.sha }}
+        git fetch origin pull/${{ github.event.pull_request.number }}/head:MR
+        git checkout -b ATTEMPT_MERGE
+        git merge MR
+        git branch -vv 
+        git remote -v 
+        git diff master
 
 
     - uses: cvmfs-contrib/github-action-cvmfs@v4
