@@ -44,7 +44,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         ## Load corrections
-        self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign)
         self.selMod = selectionModifier
 
     @property

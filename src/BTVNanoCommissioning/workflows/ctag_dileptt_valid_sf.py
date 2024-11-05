@@ -46,7 +46,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.chunksize = chunksize
         self.selMod = selectionModifier
         ## Load corrections
-        self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign)
 
     @property
     def accumulator(self):

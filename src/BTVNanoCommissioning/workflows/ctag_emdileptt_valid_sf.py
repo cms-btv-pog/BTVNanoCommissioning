@@ -42,7 +42,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         ## Load corrections
-        self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign)
 
     @property
     def accumulator(self):
@@ -127,27 +127,26 @@ class NanoProcessor(processor.ProcessorABC):
         iso_mu = ak.pad_none(iso_mu, 1)
 
         ## Jet cuts
-        event_jet = events.Jet[
-            ak.fill_none(
-                jet_id(events, self._campaign)
-                & (
-                    ak.all(
-                        events.Jet.metric_table(iso_ele) > 0.4,
-                        axis=2,
-                        mask_identity=True,
-                    )
+        jetsel = ak.fill_none(
+            jet_id(events, self._campaign)
+            & (
+                ak.all(
+                    events.Jet.metric_table(iso_ele) > 0.4,
+                    axis=2,
+                    mask_identity=True,
                 )
-                & (
-                    ak.all(
-                        events.Jet.metric_table(iso_mu) > 0.4,
-                        axis=2,
-                        mask_identity=True,
-                    )
-                ),
-                False,
-                axis=-1,
             )
-        ]
+            & (
+                ak.all(
+                    events.Jet.metric_table(iso_mu) > 0.4,
+                    axis=2,
+                    mask_identity=True,
+                )
+            ),
+            False,
+            axis=-1,
+        )
+        event_jet = events.Jet[jetsel]
         req_jets = ak.count(event_jet.pt, axis=1) >= 2
 
         ## Soft Muon cuts
@@ -158,16 +157,16 @@ class NanoProcessor(processor.ProcessorABC):
         mujetsel = ak.fill_none(
             (
                 ak.all(
-                    event_jet.metric_table(soft_muon) <= 0.4,
+                    events.Jet.metric_table(soft_muon) <= 0.4,
                     axis=2,
                     mask_identity=True,
                 )
             )
-            & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1)),
+            & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1)),
             False,
             axis=-1,
         )
-        mu_jet = event_jet[jetsel]
+        mu_jet = events.Jet[mujetsel & jetsel]
         req_mujet = ak.count(mu_jet.pt, axis=1) >= 1
 
         ## store jet index for PFCands, create mask on the jet index

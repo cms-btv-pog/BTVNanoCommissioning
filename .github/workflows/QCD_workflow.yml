@@ -134,5 +134,5 @@ jobs:
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
 
-        python runner.py --workflow QCD_smu_sf --json metadata/test_bta_run3.json --executor iterative  --overwrite $opts
+        python runner.py --workflow QCD_smu_sf --json metadata/test_bta_run3.json --executor iterative  --campaign Summer23 --year 2023 --overwrite $opts
 
