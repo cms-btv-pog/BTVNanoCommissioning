@@ -61,7 +61,7 @@ parser.add_argument(
 parser.add_argument(
     "--whitelist_sites",
     help="White list fot sites",
-    default="T2_DE_DESY,T2_DE_RWTH,T2_CH_CERN",
+    default=None,
 )
 parser.add_argument(
     "--blacklist_sites",
@@ -197,7 +197,7 @@ def getFilesFromDas(args):
             .read()
             .split("\n")
         )
-
+        print("Number of files: ", len(flist))
         import json
 
         dataset = dataset[:-1] if "\n" in dataset else dataset

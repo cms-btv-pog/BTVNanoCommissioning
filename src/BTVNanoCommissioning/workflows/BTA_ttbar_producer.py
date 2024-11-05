@@ -30,7 +30,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.chunksize = chunksize
         self.syst = isSyst
         self.name = name
-        self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign)
 
         ### Custom initialzations for BTA_ttbar workflow ###
 

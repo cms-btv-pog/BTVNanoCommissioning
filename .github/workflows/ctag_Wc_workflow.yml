@@ -147,7 +147,7 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ctag_Wc_WP_sf --json metadata/test_bta_run3.json  --executor iterative  $opts
+        python runner.py --workflow ctag_Wc_WP_sf --json metadata/test_bta_run3.json  --executor iterative  --overwrite  --campaign Summer23 --year 2023 $opts
     
     - name: ctag electron W+c fixed WP workflows with correctionlib
       run: |
@@ -162,4 +162,4 @@ jobs:
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
-        python runner.py --workflow ectag_Wc_WP_sf --json metadata/test_bta_run3.json --executor iterative  --overwrite $opts
+        python runner.py --workflow ectag_Wc_WP_sf --json metadata/test_bta_run3.json --executor iterative  --overwrite  --campaign Summer23 --year 2023 $opts

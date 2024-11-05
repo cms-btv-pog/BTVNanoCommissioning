@@ -48,7 +48,7 @@ class NanoProcessor(processor.ProcessorABC):
         ### Added selection for ttbar semileptonic
         self.ttaddsel = selectionModifier
         ## Load corrections
-        self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign)
 
     @property
     def accumulator(self):

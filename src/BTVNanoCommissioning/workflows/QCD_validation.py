@@ -38,7 +38,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         ## Load corrections
-        self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign)
 
     @property
     def accumulator(self):
@@ -180,7 +180,6 @@ class NanoProcessor(processor.ProcessorABC):
                 ak.values_astype(pruned_ev.luminosityBlock, np.float32),
             )
             weights.add("psweight", psweight)
-            genflavor = ak.zeros_like(sjets.pt, dtype=int)
         if "JetSVs" in events.fields:
             if len(lj_matched_JetSVs) > 0:
                 lj_matched_JetSVs_genflav = ak.zeros_like(

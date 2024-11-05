@@ -46,7 +46,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         ## Load corrections
-        self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign)
         self.selMod = selectionModifier
 
     @property
@@ -100,7 +100,9 @@ class NanoProcessor(processor.ProcessorABC):
         _hist_event_dict = (
             {"": None}
             if self.noHist
-            else histogrammer(events, histoname[self.selMod], self._campaign)
+            else histogrammer(
+                events, histoname[self.selMod], self._year, self._campaign
+            )
         )
 
         output = {
@@ -352,14 +354,16 @@ class NanoProcessor(processor.ProcessorABC):
         c_wps = []
         if "cutbased_Wc" in self.selMod:
             osss = shmu.charge * ssmu.charge * -1
-            c_algos = btag_wp_dict[self._campaign].keys()
+            c_algos = btag_wp_dict[self._year + "_" + self._campaign].keys()
             for c_algo in c_algos:
                 smuon_jet_passc[c_algo] = {}
-                c_wps = btag_wp_dict[self._campaign][c_algo]["c"].keys()
+                c_wps = btag_wp_dict[self._year + "_" + self._campaign][c_algo][
+                    "c"
+                ].keys()
                 for c_wp in c_wps:
                     if not "No" in c_wp:
                         smuon_jet_passc[c_algo][c_wp] = btag_wp(
-                            smuon_jet, self._campaign, c_algo, "c", c_wp
+                            smuon_jet, self._year, self._campaign, c_algo, "c", c_wp
                         )
         njet = ak.count(sjets.pt, axis=1)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand

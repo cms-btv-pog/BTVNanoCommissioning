@@ -9,7 +9,7 @@ import awkward as ak
 from BTVNanoCommissioning.helpers.func import flatten
 
 
-def histogrammer(events, workflow, campaign="Summer22"):
+def histogrammer(events, workflow, year="2022", campaign="Summer22"):
     _hist_dict = {}
     ## Common variables
     flav_axis = Hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour")
@@ -389,7 +389,8 @@ def histogrammer(events, workflow, campaign="Summer22"):
             Hist.storage.Weight(),
         )
         _hist_dict["dr_poslnegl"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
-        _hist_dict["dr_mujet0"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_posljet"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_negljet"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["posl", "negl"]:
             if "m" in workflow:
                 _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
@@ -453,8 +454,8 @@ def histogrammer(events, workflow, campaign="Summer22"):
         for obj in obj_list:
             # mujet pt passing tagger WPs
             if "mujet" in obj:
-                for tagger in btag_wp_dict[campaign].keys():
-                    for wp in btag_wp_dict[campaign][tagger]["c"].keys():
+                for tagger in btag_wp_dict[year + "_" + campaign].keys():
+                    for wp in btag_wp_dict[year + "_" + campaign][tagger]["c"].keys():
                         if not "No" in wp:
                             _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
                                 syst_axis,
@@ -899,7 +900,11 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             )
 
         if "MuonJet" in pruned_ev.fields:
-            if "hl" not in pruned_ev.fields:
+            if (
+                "hl" not in pruned_ev.fields
+                and "SelElectron" in pruned_ev.fields
+                and "SelMuon" in pruned_ev.fields
+            ):
                 pruned_ev["hl"] = ak.zip(
                     {
                         "pt": (
@@ -937,9 +942,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 dr=pruned_ev.MuonJet.delta_r(pruned_ev.SoftMuon),
                 weight=weight,
             )
-            if "SelMuon" in pruned_ev.fields:
-                if ak.all(ak.count(pruned_ev.SelMuon.pt, axis=-1) > 1):
-                    pruned_ev.SelMuon = pruned_ev.SelMuon[:, 0]
+            if "SelMuon" in pruned_ev.fields and "hl" not in pruned_ev.fields:
                 output["dr_lmujethmu"].fill(
                     syst,
                     flav=smflav,
@@ -949,6 +952,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 output["dr_hmusmu"].fill(
                     syst, pruned_ev.SelMuon.delta_r(pruned_ev.SoftMuon), weight=weight
                 )
+
         if "dilep" in pruned_ev.fields:
             output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.pt), weight=weight)
             output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.eta), weight=weight)

@@ -133,7 +133,7 @@ def btag_wp(jets, year, campaign, tagger, borc, wp):
 
 
 btag_wp_dict = {
-    "Summer22": {
+    "2022_Summer22": {
         "DeepFlav": {
             "b": {
                 "No": 0.0,
@@ -183,7 +183,7 @@ btag_wp_dict = {
             },
         },
     },
-    "Summer22EE": {
+    "2022_Summer22EE": {
         "DeepFlav": {
             "b": {
                 "No": 0.0,
@@ -233,7 +233,7 @@ btag_wp_dict = {
             },
         },
     },
-    "Summer23": {
+    "2023_Summer23": {
         "DeepFlav": {
             "b": {
                 "No": 0.0,
@@ -286,7 +286,7 @@ btag_wp_dict = {
             },
         },
     },
-    "Summer23BPix": {
+    "2023_Summer23BPix": {
         "DeepFlav": {
             "b": {
                 "No": 0.0,
