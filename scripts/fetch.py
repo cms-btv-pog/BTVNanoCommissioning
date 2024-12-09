@@ -5,6 +5,8 @@ import argparse
 from collections import defaultdict
 import uproot
 import numpy as np
+from BTVNanoCommissioning.workflows import workflows
+from BTVNanoCommissioning.utils.sample import predefined_sample
 
 # Adapt some developments from Andrey Pozdnyakov in CoffeaRunner https://github.com/cms-rwth/CoffeaRunner/blob/master/filefetcher/fetch.py
 parser = argparse.ArgumentParser(
@@ -15,7 +17,7 @@ parser.add_argument(
     "--input",
     default=None,
     type=str,
-    required=True,
+    # required=True,
     help="List of samples in DAS (default: %(default)s)",
 )
 parser.add_argument(
@@ -38,6 +40,19 @@ parser.add_argument(
     default=False,
 )
 parser.add_argument(
+    "--from_dataset",
+    help="input dataset only",
+    action="store_true",
+    default=False,
+)
+parser.add_argument(
+    "-wf",
+    "--from_workflow",
+    help="Use the predefined workflows",
+    choices=list(workflows.keys()),
+    default=None,
+)
+parser.add_argument(
     "--testfile",
     action="store_true",
     help="Construct file list in the test directory. Specify the test directory path, create the json file for individual dataset",
@@ -56,12 +71,7 @@ parser.add_argument(
 parser.add_argument(
     "--limit", help="Limit numbers of file to create json", default=None, type=int
 )
-parser.add_argument(
-    "--from_dataset",
-    help="input dataset only",
-    action="store_true",
-    default=False,
-)
+
 parser.add_argument(
     "-r",
     "--redirector",
@@ -78,9 +88,27 @@ parser.add_argument(
     help="If true, the readability of files will not be validated.",
     default=False,
 )
+parser.add_argument(
+    "--overwrite",
+    action="store_true",
+    help="Overwrite existing file?",
+    default=False,
+)
 
-parser.add_argument("--campaign", help="campaign info", default=None, type=str)
-
+parser.add_argument(
+    "--DAS_campaign",
+    help="campaign info, specifying dataset name in DAS. If you are running with ```from_workflow`` option, please do ```data_camapgin,mc_campaign``` split by ,",
+    default=None,
+    type=str,
+)
+parser.add_argument(
+    "-c",
+    "--campaign",
+    help="campaign name (same as the campaign in runner.py)",
+    default=None,
+    type=str,
+)
+parser.add_argument("--year", help="year", default=None, type=str)
 
 args = parser.parse_args()
 
@@ -169,7 +197,7 @@ def getFilesFromDas(args):
             .read()
             .split("\n")
         )
-
+        print("Number of files: ", len(flist))
         import json
 
         dataset = dataset[:-1] if "\n" in dataset else dataset
@@ -212,6 +240,7 @@ def getFilesFromDas(args):
                         or site == "T2_IT_Bari"
                         or site == "T2_BE_UCL"
                         or site == "T2_IT_Rome"
+                        or site == "T2_FR_GRIF"
                     ):
                         continue
                     if (
@@ -388,44 +417,111 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
 
 
 def main(args):
-    if args.from_dataset:
-        f = open(args.input)
-        if args.campaign is None:
+
+    if args.from_workflow:
+        for sample in predefined_sample[args.from_workflow].keys():
+            if (
+                os.path.exists(
+                    f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json"
+                )
+                and args.overwrite == False
+            ):
+                raise Exception(
+                    f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json exists"
+                )
+    elif os.path.exists(args.output) and args.overwrite == False:
+        raise Exception(f"{args.output} exists")
+
+    ## If you only provide dataset from the dataset name(DAS) or do from_workflow
+    if args.from_dataset or args.from_workflow is not None:
+        if args.from_dataset:
+            f = open(args.input)
+            lines = f.readlines()
+        else:
+            lines = []
+            for sample in predefined_sample[args.from_workflow].keys():
+                lines += predefined_sample[args.from_workflow][sample]
+            args.input = args.from_workflow + "_predef"
+            data_campaign, mc_campaign = (
+                args.DAS_campaign.split(",")[0],
+                args.DAS_campaign.split(",")[1],
+            )
+
+        if args.DAS_campaign is None:
             raise ("Please provide the campaign info when input dataset")
-        outf = open(args.input + "_DAS_" + args.campaign, "w")
-        short_campaign = args.campaign
-        for l in f.readlines():
-            print(l)
+        args.input = args.input + "_DAS_" + args.campaign
+        outf = open(args.input, "w")
+
+        for l in lines:
             l = l.replace("\n", "")
+            # read campaigns from two inputs
+            if args.from_workflow is not None:
+                args.DAS_campaign = (
+                    data_campaign
+                    if l in predefined_sample[args.from_workflow]["data"]
+                    else mc_campaign
+                )
+
             dataset = (
                 os.popen(
-                    f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.campaign}*/NANOAODSIM'"
+                    f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
                 )
                 .read()[:-1]
                 .split("\n")
             )
             if dataset[0] == "":
-                print(l, "not Found!")
-                continue
-            campaigns = [d.split("/")[2] for d in dataset]
-            if len(dataset) > 1:
-                args.campaign = input(f"which campaign? \n {campaigns} \n")
+                print(l, "not Found! List all campaigns")
                 dataset = (
                     os.popen(
-                        f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.campaign}*/NANOAODSIM'"
+                        f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/**/NANOAOD*'"
+                    )
+                    .read()[:-1]
+                    .split("\n")
+                )
+                if dataset[0] == "":
+                    print(f"{l} is not a valid dataset")
+                    continue
+                campaigns = [
+                    d.split("/")[2]
+                    for d in dataset
+                    if "CMSSW" not in d and "Tier0" not in d and "ECAL" not in d
+                ]
+                args.DAS_campaign = input(f"which campaign? \n {campaigns} \n")
+                dataset = (
+                    os.popen(
+                        f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
                     )
                     .read()[:-1]
                     .split("\n")
                 )
 
                 outf.write(dataset[0] + "\n")
+                # continue
+
+            elif len(dataset) > 1:
+                campaigns = [d.split("/")[2] for d in dataset]
+                if args.from_workflow is None or dataset[0].endswith("SIM"):
+                    args.DAS_campaign = input(
+                        f"{l} is which campaign? \n {campaigns} \n"
+                    )
+
+                    dataset = (
+                        os.popen(
+                            f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
+                        )
+                        .read()[:-1]
+                        .split("\n")
+                    )
+
+                    outf.write(dataset[0] + "\n")
+                else:
+                    for d in dataset:
+                        outf.write(d + "\n")
 
             else:
                 outf.write(dataset[0] + "\n")
         outf.close()
-
-        args.input = args.input + "_DAS_" + short_campaign
-
+    ## If put the path
     if args.from_path:
         print("do it from path: ")
         fdict = getFilesFromPath(args)
@@ -440,12 +536,34 @@ def main(args):
             print(dsname, "is empty!!!!")
             empty = False
     assert empty, "you have empty lists"
-    output_file = "./%s" % (args.output)
+    ## Remove files if not exist
     if not args.skipvalidation:
         fdict = remove_bad_files(fdict, args.output, True)  # remove bad files
-    with open(output_file, "w") as fp:
-        json.dump(fdict, fp, indent=4)
-        print("The file is saved at: ", output_file)
+
+    ## Create JSONs
+    # create according to workflow
+    if args.from_workflow:
+        os.system(f"mkdir -p metadata/{args.campaign}/")
+        for sample in predefined_sample[args.from_workflow].keys():
+            reduced_fdict = {}
+            for dataset in fdict.keys():
+                for s in predefined_sample[args.from_workflow][sample]:
+
+                    if s in dataset:
+                        reduced_fdict[dataset] = fdict[dataset]
+
+            with open(
+                f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json",
+                "w",
+            ) as fp:
+
+                json.dump(reduced_fdict, fp, indent=4)
+
+    else:
+        output_file = args.output
+        with open(output_file, "w") as fp:
+            json.dump(fdict, fp, indent=4)
+            print("The file is saved at: ", output_file)
 
 
 if __name__ == "__main__":

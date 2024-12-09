@@ -15,6 +15,8 @@ WORKDIR=`pwd`
 # Set up mamba environment
 ## Interactive bash script with fallback pointing to $HOME, hence setting $PWD of worker node as $HOME
 export HOME=`pwd`
+
+if ${ARGS[remoteRepo]}!="":
 wget -L micro.mamba.pm/install.sh
 chmod +x install.sh
 ## FIXME parsing arguments does not work. will use defaults in install.sh instead, see https://github.com/mamba-org/micromamba-releases/blob/main/install.sh 
@@ -32,7 +34,7 @@ fi
 
 # Get arguments
 declare -A ARGS
-for key in workflow output samplejson year campaign isSyst isArray noHist overwrite voms chunk skipbadfiles outputXrootdDir remoteRepo; do
+for key in workflow output samplejson year campaign isSyst isArray noHist overwrite voms chunk skipbadfiles outputDir remoteRepo; do
     ARGS[$key]=$(jq -r ".$key" $WORKDIR/arguments.json)
 done
 
@@ -86,17 +88,17 @@ echo "Now launching: python runner.py $OPTS"
 python runner.py $OPTS
 
 # Transfer output
-if [[ ${ARGS[outputXrootdDir]} == root://* ]]; then
+if [[ ${ARGS[outputDir]} == root://* ]]; then
 
-    xrdcp --silent -p -f -r hists_* ${ARGS[outputXrootdDir]}/
+    xrdcp --silent -p -f -r hists_* ${ARGS[outputDir]}/
     if [[ "$OPTS" == *"isArray"* ]]; then
-	xrdcp --silent -p -f -r arrays_* ${ARGS[outputXrootdDir]}/
+	xrdcp --silent -p -f -r arrays_* ${ARGS[outputDir]}/
     fi
 else
-    mkdir -p ${ARGS[outputXrootdDir]}
-    cp -p -f -r hists_* ${ARGS[outputXrootdDir]}/
+    mkdir -p ${ARGS[outputDir]}
+    cp -p -f -r hists_* ${ARGS[outputDir]}/
     if [[ "$OPTS" == *"isArray"* ]]; then
-	cp -p -f -r arrays_* ${ARGS[outputXrootdDir]}/
+	cp -p -f -r arrays_* ${ARGS[outputDir]}/
     fi
 fi
 
@@ -104,7 +106,7 @@ fi
 # for filename in `\ls *.root`; do
 #     SAMPLENAME=$(echo "$filename" | sed -E 's/(.*)_f[0-9-]+_[0-9]+\.root/\1/')
 #     # SAMPLENAME=$(echo "$filename" | sed -E 's/(.*)_[0-9a-z]{9}-[0-9a-z]{4}-.*\.root/\1/')
-#     xrdcp --silent -p -f $filename ${ARGS[outputXrootdDir]}/$SAMPLENAME/
+#     xrdcp --silent -p -f $filename ${ARGS[outputDir]}/$SAMPLENAME/
 # done
 
 touch $WORKDIR/.success

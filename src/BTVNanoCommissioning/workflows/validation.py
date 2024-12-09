@@ -6,28 +6,19 @@ import uproot
 from coffea import processor
 from coffea.analysis_tools import Weights
 
-from BTVNanoCommissioning.helpers.func import flatten, update
-from BTVNanoCommissioning.helpers.definitions import definitions
-from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.correction import (
     load_lumi,
     load_SF,
-    puwei,
-    btagSFs,
-    JME_shifts,
-    Roccor_shifts,
+    weight_manager,
+    common_shifts,
 )
 
-from BTVNanoCommissioning.helpers.func import (
-    flatten,
-    update,
-    dump_lumi,
-)
+from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link, flatten
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-
-from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
+    HLT_helper,
     jet_id,
     mu_idiso,
     ele_mvatightid,
@@ -57,44 +48,15 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         ## Load corrections
-        self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign)
 
     @property
     def accumulator(self):
         return self._accumulator
 
     def process(self, events):
-        isRealData = not hasattr(events, "genWeight")
-        dataset = events.metadata["dataset"]
         events = missing_branch(events)
-        shifts = []
-        if "JME" in self.SF_map.keys():
-            syst_JERC = self.isSyst
-            if self.isSyst == "JERC_split":
-                syst_JERC = "split"
-            shifts = JME_shifts(
-                shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
-            )
-        else:
-            if int(self._year) < 2020:
-                shifts = [
-                    ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
-                ]
-            else:
-                shifts = [
-                    (
-                        {
-                            "Jet": events.Jet,
-                            "MET": events.PuppiMET,
-                            "Muon": events.Muon,
-                        },
-                        None,
-                    )
-                ]
-        if "roccor" in self.SF_map.keys():
-            shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
-        else:
-            shifts[0][0]["Muon"] = events.Muon
+        shifts = common_shifts(self, events)
 
         return processor.accumulate(
             self.process_shift(update(events, collections), name)
@@ -132,17 +94,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## HLT
         triggers = ["IsoMu24"]
-        checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
-        if ak.all(checkHLT == False):
-            raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
-        elif ak.any(checkHLT == False):
-            print(np.array(triggers)[~checkHLT], " not exist in", dataset)
-        trig_arrs = [
-            events.HLT[_trig] for _trig in triggers if hasattr(events.HLT, _trig)
-        ]
-        req_trig = np.zeros(len(events), dtype="bool")
-        for t in trig_arrs:
-            req_trig = req_trig | t
+        req_trig = HLT_helper(events, triggers)
 
         ## Jet cuts
         event_jet = events.Jet[
@@ -171,8 +123,6 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         # Selected objects #
         ####################
-        sjets = event_jet[event_level]
-        sjets = sjets[:, :2]
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
             jetindx0 = jetindx[:, 0]
@@ -192,48 +142,43 @@ class NanoProcessor(processor.ProcessorABC):
                 ]
                 .pFCandsIdx
             ]
+        # Keep the structure of events and pruned the object size
+        pruned_ev = events[event_level]
+        pruned_ev["SelJet"] = event_jet[event_level][:, :2]
 
         ####################
-        # Weight & Geninfo #
+        #     Output       #
         ####################
-
-        weights = Weights(len(events[event_level]), storeIndividual=True)
-        if not isRealData:
-            weights.add("genweight", events[event_level].genWeight)
-            par_flav = (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
-            genflavor = ak.values_astype(sjets.hadronFlavour + 1 * par_flav, int)
-            genweiev = ak.flatten(
-                ak.broadcast_arrays(events[event_level].genWeight, sjets["pt"])[0]
-            )
-            if len(self.SF_map.keys()) > 0:
-                syst_wei = True if self.isSyst == True else False
-                if "PU" in self.SF_map.keys():
-                    puwei(
-                        events[event_level].Pileup.nTrueInt,
-                        self.SF_map,
-                        weights,
-                        syst_wei,
-                    )
-                if "BTV" in self.SF_map.keys():
-                    btagSFs(sjets, self.SF_map, weights, "DeepJetC", syst_wei)
-                    btagSFs(sjets, self.SF_map, weights, "DeepJetB", syst_wei)
-                    btagSFs(sjets, self.SF_map, weights, "DeepCSVB", syst_wei)
-                    btagSFs(sjets, self.SF_map, weights, "DeepCSVC", syst_wei)
-        else:
-            genflavor = ak.zeros_like(sjets.pt, dtype=int)
-
-        # Systematics information
+        # Configure SFs
+        weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
+        # Configure systematics
         if shift_name is None:
             systematics = ["nominal"] + list(weights.variations)
         else:
             systematics = [shift_name]
-        exclude_btv = [
-            "DeepCSVC",
-            "DeepCSVB",
-            "DeepJetB",
-            "DeepJetC",
-        ]  # exclude b-tag SFs for btag inputs
-
+        if not isRealData:
+            pruned_ev["weight"] = weights.weight()
+            for ind_wei in weights.weightStatistics.keys():
+                pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
+                    include=[ind_wei]
+                )
+        # Configure histograms
+        if not self.noHist:
+            exclude_btv = [
+                "DeepCSVC",
+                "DeepCSVB",
+                "DeepJetB",
+                "DeepJetC",
+            ]  # exclude b-tag SFs for btag inputs
+        if isRealData:
+            genflavor = ak.zeros_like(pruned_ev.SelJet.pt, axis=-1)
+        else:
+            genflavor = ak.values_astype(
+                pruned_ev.SelJet.hadronFlavour
+                + 1 * (pruned_ev.SelJet.partonFlavour == 0)
+                & (pruned_ev.SelJet.hadronFlavour == 0),
+                int,
+            )
         ####################
         #  Fill histogram  #
         ####################
@@ -256,15 +201,16 @@ class NanoProcessor(processor.ProcessorABC):
                     h.fill(
                         syst,
                         flatten(genflavor),
-                        flatten(sjets[histname]),
+                        flatten(pruned_ev.SelJet[histname]),
                         weight=flatten(
                             ak.broadcast_arrays(
-                                weights.partial_weight(exclude=exclude_btv), sjets["pt"]
+                                weights.partial_weight(exclude=exclude_btv),
+                                pruned_ev.SelJet["pt"],
                             )[0]
                         ),
                     )
                 elif "WP" in histname:
-                    jet = sjets[:, 0]
+                    jet = pruned_ev.SelJet[:, 0]
 
                     for tagger in btag_wp_dict[self._campaign].keys():
                         if "bjet" in histname:
@@ -344,9 +290,12 @@ class NanoProcessor(processor.ProcessorABC):
                                     )
                 elif "jet" in histname:
                     for i in range(2):
-                        if histname.replace(f"jet{i}_", "") not in sjets.fields:
+                        if (
+                            histname.replace(f"jet{i}_", "")
+                            not in pruned_ev.SelJet.fields
+                        ):
                             continue
-                        jet = sjets[:, i]
+                        jet = pruned_ev.SelJet[:, i]
                         h.fill(
                             syst,
                             flatten(genflavor[:, i]),
@@ -355,31 +304,21 @@ class NanoProcessor(processor.ProcessorABC):
                         )
                 elif "btag" in histname:
                     for i in range(2):
-                        if histname.replace(f"_{i}", "") not in sjets.fields:
+                        if histname.replace(f"_{i}", "") not in pruned_ev.SelJet.fields:
                             continue
-                        # print(histname.replace(f"_{i}", ""))
-                        jet = sjets[:, i]
+                        jet = pruned_ev.SelJet[:, i]
                         h.fill(
                             "noSF",
                             flav=flatten(genflavor[:, i]),
                             discr=jet[histname.replace(f"_{i}", "")],
                             weight=weight,
                         )
-        #######################
-        #  Create root files  #
-        #######################
-        if self.isArray:
-            # Keep the structure of events and pruned the object size
-            pruned_ev = events[event_level]
-            pruned_ev["SelJet"] = sjets
 
             # Add custom variables
-            if not isRealData:
-                pruned_ev["weight"] = weights.weight()
-                for ind_wei in weights.weightStatistics.keys():
-                    pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
-                        include=[ind_wei]
-                    )
+
+        # Output arrays
+        if self.isArray:
+
             array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
         return {dataset: output}
 
