@@ -19,3 +19,4 @@ dask-worker-space/
 .job_wrapper_failure
 jobs_*
 .success
+btv_coffea/
