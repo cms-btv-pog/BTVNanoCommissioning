@@ -9,7 +9,7 @@ dependencies:
   - ca-certificates
   - xrootd
   - openssl
-  - coffea==0.7.22
+  - coffea==2024.11.0
   - vector
   - fsspec[version='>=0.3.3']
   - psutil

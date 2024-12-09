@@ -59,6 +59,7 @@ def array_writer(
         )
 
         # Handle kinOnly vars
+        remove = remove + ["PFCands", "hl", "sl", "posl", "negl"]
         for v in remove:
             out_branch = np.delete(out_branch, np.where((out_branch == v)))
 
@@ -66,7 +67,7 @@ def array_writer(
             for obj in kinOnly:
                 if "MET" in obj and ("pt" != kin or "phi" != kin):
                     continue
-                if (obj != "Muon" and obj != "SoftMuon") and (
+                if (obj != "SelMuon" and obj != "SoftMuon") and (
                     "pfRelIso04_all" == kin or "d" in kin
                 ):
                     continue
@@ -79,7 +80,7 @@ def array_writer(
             out_branch = np.append(out_branch, othersMC)
 
     # Write to root files
-    # print("Branches to write:", out_branch)
+    print("Branches to write:", out_branch)
     outdir = f"{processor_class.name}/{systname}/{dataset}/"
     os.system(f"mkdir -p {outdir}")
 

@@ -103,9 +103,9 @@ jobs:
         pip install -e .
 
    
-    - name: btag dileptonic ttbar workflows with correctionlib
+    - name: btag dileptonic ttbar workflows 
       run: |
         string=$(git log -1 --pretty=format:'%s')
         
-        python runner.py --workflow ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative $opts
+        python runner.py --workflow ttdilep_sf --json metadata/test_bta_run3.json --limit 1 --executor iterative --year 2023 --campaign Summer23 $opts
 

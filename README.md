@@ -16,13 +16,18 @@ Detailed documentation in [btv-wiki](https://btv-wiki.docs.cern.ch/SoftwareAlgor
 ### Setup 
 
 :heavy_exclamation_mark: suggested to install under `bash` environment
-:heavy_exclamation_mark: :heavy_exclamation_mark: not fully supported in EL9 machines yet, recommended to run in EL7 or EL8
+
 ```
 # only first time, including submodules
 git clone --recursive git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
 
 # activate enviroment once you have coffea framework 
 conda activate btv_coffea
+# Or if you are using lxplus, can use exist framework
+conda activate /eos/user/m/milee/miniconda3/envs/btv_coffea
+
+# when modifying the framework
+pip install -e .
 ```
 ### Coffea installation with Micromamba
 For installing Micromamba, see [[here](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html)]

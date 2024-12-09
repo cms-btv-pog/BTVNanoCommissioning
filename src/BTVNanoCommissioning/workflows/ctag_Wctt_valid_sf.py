@@ -7,22 +7,15 @@ from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.utils.correction import (
     load_lumi,
     load_SF,
-    muSFs,
-    eleSFs,
-    puwei,
-    btagSFs,
-    JME_shifts,
-    Roccor_shifts,
+    weight_manager,
+    common_shifts,
 )
-from BTVNanoCommissioning.helpers.func import (
-    flatten,
-    update,
-    dump_lumi,
-)
+from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link, flatten
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.histogrammer import histogrammer
+from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
+    HLT_helper,
     jet_id,
     mu_idiso,
     ele_mvatightid,
@@ -51,7 +44,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         ## Load corrections
-        self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign)
         self.selMod = selectionModifier
 
     @property
@@ -59,37 +52,8 @@ class NanoProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
-        isRealData = not hasattr(events, "genWeight")
-        dataset = events.metadata["dataset"]
         events = missing_branch(events)
-        shifts = []
-        if "JME" in self.SF_map.keys():
-            syst_JERC = self.isSyst
-            if self.isSyst == "JERC_split":
-                syst_JERC = "split"
-            shifts = JME_shifts(
-                shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
-            )
-        else:
-            if int(self._year) < 2020:
-                shifts = [
-                    ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
-                ]
-            else:
-                shifts = [
-                    (
-                        {
-                            "Jet": events.Jet,
-                            "MET": events.PuppiMET,
-                            "Muon": events.Muon,
-                        },
-                        None,
-                    )
-                ]
-        if "roccor" in self.SF_map.keys():
-            shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
-        else:
-            shifts[0][0]["Muon"] = events.Muon
+        shifts = common_shifts(self, events)
 
         return processor.accumulate(
             self.process_shift(update(events, collections), name)
@@ -150,17 +114,7 @@ class NanoProcessor(processor.ProcessorABC):
             output = dump_lumi(events[req_lumi], output)
 
         ## HLT
-        checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
-        if ak.all(checkHLT == False):
-            raise ValueError("HLT paths:", triggers, " are all invalid in", dataset)
-        elif ak.any(checkHLT == False):
-            print(np.array(triggers)[~checkHLT], " not exist in", dataset)
-        trig_arrs = [
-            events.HLT[_trig] for _trig in triggers if hasattr(events.HLT, _trig)
-        ]
-        req_trig = np.zeros(len(events), dtype="bool")
-        for t in trig_arrs:
-            req_trig = req_trig | t
+        req_trig = HLT_helper(events, triggers)
 
         ## Lepton cuts
         if isMu:
@@ -389,50 +343,69 @@ class NanoProcessor(processor.ProcessorABC):
         njet = ak.count(sjets.pt, axis=1)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
-            spfcands = events[event_level].PFCands[
-                events[event_level]
-                .JetPFCands[
-                    events[event_level].JetPFCands.jetIdx == jetindx[event_level]
-                ]
-                .pFCandsIdx
-            ]
+            spfcands = PFCand_link(events, event_level, jetindx)
 
+        # Keep the structure of events and pruned the object size
+        pruned_ev = events[event_level]
+        pruned_ev["SelJet"] = sjets
+        if self.selMod.endswith("M"):
+            pruned_ev["SelMuon"] = shmu
+        else:
+            pruned_ev["SelElectron"] = shmu
+        pruned_ev["MuonJet"] = smuon_jet
+        pruned_ev["SoftMuon"] = ssmu
+        pruned_ev["OtherJets"] = sotherjets
+        if "Wc" in self.selMod:
+            pruned_ev["osss"] = osss
+        else:
+            pruned_ev["osss"] = ossswrite
+        pruned_ev["njet"] = njet
+        pruned_ev["W_transmass"] = wm
+        pruned_ev["W_pt"] = wp
+        pruned_ev["dilep_mass"] = sdilep.mass
+        pruned_ev["dilep_pt"] = sdilep.pt
+        if "PFCands" in events.fields:
+            pruned_ev.PFCands = spfcands
+        # Add custom variables
+
+        pruned_ev["dr_mujet_softmu"] = ssmu.delta_r(smuon_jet)
+        pruned_ev["dr_mujet_lep1"] = shmu.delta_r(smuon_jet)
+        pruned_ev["dr_lep1_softmu"] = shmu.delta_r(ssmu)
+        pruned_ev["soft_l_ptratio"] = ssmu.pt / smuon_jet.pt
+        pruned_ev["l1_ptratio"] = shmu.pt / smuon_jet.pt
+        pruned_ev["MuonJet_beta"] = smuon_jet.pt / smuon_jet.E
+        pruned_ev["MuonJet_muneuEF"] = smuon_jet.muEF + smuon_jet.neEmEF
+        if "hadronFlavour" in pruned_ev.SelJet.fields:
+            isRealData = False
+            genflavor = ak.values_astype(
+                pruned_ev.SelJet.hadronFlavour
+                + 1 * (pruned_ev.SelJet.partonFlavour == 0)
+                & (pruned_ev.SelJet.hadronFlavour == 0),
+                int,
+            )
+            if "MuonJet" in pruned_ev.fields:
+                smflav = ak.values_astype(
+                    1 * (pruned_ev.MuonJet.partonFlavour == 0)
+                    & (pruned_ev.MuonJet.hadronFlavour == 0)
+                    + pruned_ev.MuonJet.hadronFlavour,
+                    int,
+                )
+        else:
+            isRealData = True
+            genflavor = ak.ones_like(pruned_ev.SelJet.pt, dtype=int)
+            if "MuonJet" in pruned_ev.fields:
+                smflav = ak.ones_like(pruned_ev.MuonJet.pt, dtype=int)
         ####################
         # Weight & Geninfo #
         ####################
-        weights = Weights(len(events[event_level]), storeIndividual=True)
+
+        weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
         if not isRealData:
-            weights.add("genweight", events[event_level].genWeight)
-            genflavor = sjets.hadronFlavour + 1 * (
-                (sjets.partonFlavour == 0) & (sjets.hadronFlavour == 0)
-            )
-            smflav = smuon_jet.hadronFlavour + 1 * (
-                (smuon_jet.partonFlavour == 0) & (smuon_jet.hadronFlavour == 0)
-            )
-            if len(self.SF_map.keys()) > 0:
-                syst_wei = True if self.isSyst != False else False
-                if "PU" in self.SF_map.keys():
-                    puwei(
-                        events[event_level].Pileup.nTrueInt,
-                        self.SF_map,
-                        weights,
-                        syst_wei,
-                    )
-                if isMu and "MUO" in self.SF_map.keys():
-                    muSFs(shmu, self.SF_map, weights, syst_wei, False)
-                if isEle and "EGM" in self.SF_map.keys():
-                    eleSFs(shmu, self.SF_map, weights, syst_wei, False)
-                if "BTV" in self.SF_map.keys():
-                    btagSFs(smuon_jet, self.SF_map, weights, "DeepJetC", syst_wei)
-                    btagSFs(smuon_jet, self.SF_map, weights, "DeepJetB", syst_wei)
-                    btagSFs(smuon_jet, self.SF_map, weights, "DeepCSVB", syst_wei)
-                    btagSFs(smuon_jet, self.SF_map, weights, "DeepCSVC", syst_wei)
-
-        else:
-            genflavor = ak.zeros_like(sjets.pt, dtype=int)
-            smflav = ak.zeros_like(smuon_jet.pt, dtype=int)
-
-        # Systematics information
+            pruned_ev["weight"] = weights.weight()
+            for ind_wei in weights.weightStatistics.keys():
+                pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
+                    include=[ind_wei]
+                )
         if shift_name is None:
             systematics = ["nominal"] + list(weights.variations)
         else:
@@ -443,7 +416,6 @@ class NanoProcessor(processor.ProcessorABC):
             "DeepJetB",
             "DeepJetC",
         ]  # exclude b-tag SFs for btag inputs
-
         ####################
         #  Fill histogram  #
         ####################
@@ -599,71 +571,26 @@ class NanoProcessor(processor.ProcessorABC):
                 dr=smuon_jet.delta_r(shmu),
                 weight=weight,
             )
-            output["dr_lmusmu"].fill(
+            output["dr_hmusmu"].fill(
                 syst,
                 osss=osss,
                 dr=shmu.delta_r(ssmu),
                 weight=weight,
             )
-            output["z_pt"].fill(syst, osss, flatten(sz.pt), weight=weight)
-            output["z_eta"].fill(syst, osss, flatten(sz.eta), weight=weight)
-            output["z_phi"].fill(syst, osss, flatten(sz.phi), weight=weight)
-            output["z_mass"].fill(syst, osss, flatten(sz.mass), weight=weight)
+            output["dilep_pt"].fill(syst, osss, flatten(sz.pt), weight=weight)
+            output["dilep_eta"].fill(syst, osss, flatten(sz.eta), weight=weight)
+            output["dilep_phi"].fill(syst, osss, flatten(sz.phi), weight=weight)
+            output["dilep_mass"].fill(syst, osss, flatten(sz.mass), weight=weight)
             output["w_pt"].fill(syst, osss, flatten(sw.pt), weight=weight)
-            output["w_eta"].fill(syst, osss, flatten(sw.eta), weight=weight)
             output["w_phi"].fill(syst, osss, flatten(sw.phi), weight=weight)
             output["w_mass"].fill(syst, osss, flatten(sw.mass), weight=weight)
             output["MET_pt"].fill(syst, osss, flatten(smet.pt), weight=weight)
             output["MET_phi"].fill(syst, osss, flatten(smet.phi), weight=weight)
-            output["npvs"].fill(
-                syst,
-                events[event_level].PV.npvs,
-                weight=weight,
-            )
-            if not isRealData:
-                output["pu"].fill(
-                    syst,
-                    ak.values_astype(events[event_level].Pileup.nTrueInt, int),
-                    weight=weight,
-                )
+
         #######################
         #  Create root files  #
         #######################
         if self.isArray:
-            # Keep the structure of events and pruned the object size
-            pruned_ev = events[event_level]
-            pruned_ev["SelJet"] = sjets
-            pruned_ev["Muon"] = shmu
-            pruned_ev["MuonJet"] = smuon_jet
-            pruned_ev["SoftMuon"] = ssmu
-            pruned_ev["OtherJets"] = sotherjets
-            if "Wc" in self.selMod:
-                pruned_ev["osss"] = osss
-            else:
-                pruned_ev["osss"] = ossswrite
-            pruned_ev["njet"] = njet
-            pruned_ev["W_transmass"] = wm
-            pruned_ev["W_pt"] = wp
-            pruned_ev["dilep_mass"] = sdilep.mass
-            pruned_ev["dilep_pt"] = sdilep.pt
-            if "PFCands" in events.fields:
-                pruned_ev.PFCands = spfcands
-            # Add custom variables
-            if not isRealData:
-                pruned_ev["weight"] = weights.weight()
-                for ind_wei in weights.weightStatistics.keys():
-                    pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
-                        include=[ind_wei]
-                    )
-
-            pruned_ev["dr_mujet_softmu"] = ssmu.delta_r(smuon_jet)
-            pruned_ev["dr_mujet_lep1"] = shmu.delta_r(smuon_jet)
-            pruned_ev["dr_lep1_softmu"] = shmu.delta_r(ssmu)
-            pruned_ev["soft_l_ptratio"] = ssmu.pt / smuon_jet.pt
-            pruned_ev["l1_ptratio"] = shmu.pt / smuon_jet.pt
-            pruned_ev["MuonJet_beta"] = smuon_jet.pt / smuon_jet.E
-            pruned_ev["MuonJet_muneuEF"] = smuon_jet.muEF + smuon_jet.neEmEF
-
             array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
 
         return {dataset: output}
