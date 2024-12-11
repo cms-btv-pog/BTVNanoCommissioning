@@ -31,6 +31,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
+        addsel=False,
     ):
         self._year = year
         self._campaign = campaign
@@ -141,11 +142,67 @@ class NanoProcessor(processor.ProcessorABC):
         # Selected SV #
         ###############
         selev = events[event_level]
-        if "JetSVs" in events.Jet.fields:
-            matched_JetSVs = selev.Jet[selev.JetSVs.jetIdx]
-            lj_matched_JetSVs = matched_JetSVs[selev.JetSVs.jetIdx == 0]
-            lj_SVs = selev.JetSVs[selev.JetSVs.jetIdx == 0]
-            nJetSVs = ak.count(lj_SVs.pt, axis=1)
+
+        ###FIXME: https://gitlab.cern.ch/cms-btv-coordination/tasks/-/issues/188
+        if "JetSVs" in events.fields:
+            valid_events = (ak.count(selev.Jet.pt, axis=1) > 0) & (
+                ak.count(selev.JetSVs.pt, axis=1) > 0
+            )
+            print("valid_events", valid_events, len(valid_events), len(events))
+            filtered_events = selev[valid_events]
+
+            # Pad selev.JetSVs.jetIdx to match the length of selev.Jet
+            filtered_events.JetSVs.jetIdx = ak.pad_none(
+                filtered_events.JetSVs.jetIdx, len(filtered_events.Jet), clip=True
+            )
+
+            # Print the initial state of selev.Jet and selev.JetSVs.jetIdx
+            # print("selev.Jet", filtered_events.Jet)
+            # print("selev.JetSVs.jetIdx", filtered_events.JetSVs.jetIdx)
+
+            # Filter events where the number of Jet and JetSVs are the same
+            # equal_length_events = ak.count(filtered_events.Jet.pt, axis=1) == ak.count(filtered_events.JetSVs.pt, axis=1)
+            # same_length_events = filtered_events[equal_length_events]
+            # print("Number of events with equal number of Jet and JetSVs:", len(same_length_events))
+            # print("Same length selev.Jet", same_length_events.Jet)
+            # print("Same length selev.JetSVs.jetIdx", same_length_events.JetSVs.jetIdx)
+
+            # Count and print the number of events where JetSVs is longer than Jet
+            # longer_jetSVs_events = ak.count(events.JetSVs.pt, axis=1) > ak.count(events.Jet.pt, axis=1)
+            # longer_jetSVs_events = longer_jetSVs_events & (ak.count(events.Jet.pt, axis=1) == 0)
+            # num_longer_jetSVs_events = ak.sum(longer_jetSVs_events)
+            # print("Number of events where JetSVs is longer than Jet:", num_longer_jetSVs_events)
+            # print("Longer SV selev.Jet", events.Jet[longer_jetSVs_events])
+            # print("Longer SV selev.JetSVs.jetIdx", events.JetSVs.jetIdx[longer_jetSVs_events])
+
+            # Ensure that all indices are within the valid range for selev.Jet
+            valid_indices = (filtered_events.JetSVs.jetIdx >= 0) & (
+                filtered_events.JetSVs.jetIdx < ak.num(filtered_events.Jet)
+            )
+            if not np.all(valid_indices):
+                print("Warning: Some indices in selev.JetSVs.jetIdx are out of range.")
+                # Filter out invalid indices
+                filtered_events.JetSVs = filtered_events.JetSVs[valid_indices]
+
+            # Check if selev.JetSVs.jetIdx is empty after filtering
+            if len(filtered_events.JetSVs.jetIdx) == 0:
+                print("Warning: selev.JetSVs.jetIdx is empty after filtering.")
+                matched_JetSVs = ak.Array([])
+                lj_matched_JetSVs = ak.Array([])
+                lj_SVs = ak.Array([])
+                nJetSVs = ak.Array([])
+            else:
+                # Proceed with the assignment
+                matched_JetSVs = filtered_events.Jet[filtered_events.JetSVs.jetIdx]
+                lj_matched_JetSVs = matched_JetSVs[filtered_events.JetSVs.jetIdx == 0]
+                lj_SVs = filtered_events.JetSVs[filtered_events.JetSVs.jetIdx == 0]
+                nJetSVs = ak.count(lj_SVs.pt, axis=1)
+
+            # Print the final state of the variables
+            print("matched_JetSVs:", matched_JetSVs)
+            print("lj_matched_JetSVs:", lj_matched_JetSVs)
+            print("lj_SVs:", lj_SVs)
+            print("nJetSVs:", nJetSVs)
 
         ####################
         # Weight & Geninfo #
@@ -158,13 +215,16 @@ class NanoProcessor(processor.ProcessorABC):
             # genweiev = ak.flatten(
             # ak.broadcast_arrays(weights.weight()[event_level], sjets["pt"])[0]
             # )
-            if "JetSVs" in events.Jet.fields:
-                lj_matched_JetSVs_par_flav = (lj_matched_JetSVs.partonFlavour == 0) & (
-                    lj_matched_JetSVs.hadronFlavour == 0
-                )
-                lj_matched_JetSVs_genflav = (
-                    lj_matched_JetSVs.hadronFlavour + 1 * lj_matched_JetSVs_par_flav
-                )
+            if "JetSVs" in events.fields:
+                if len(lj_matched_JetSVs) > 0:
+                    lj_matched_JetSVs_par_flav = (
+                        lj_matched_JetSVs.partonFlavour == 0
+                    ) & (lj_matched_JetSVs.hadronFlavour == 0)
+                    lj_matched_JetSVs_genflav = (
+                        lj_matched_JetSVs.hadronFlavour + 1 * lj_matched_JetSVs_par_flav
+                    )
+                else:
+                    lj_matched_JetSVs_genflav = ak.Array([])
             syst_wei = True if self.isSyst != None else False
             if "PU" in self.SF_map.keys():
                 puwei(
@@ -196,10 +256,13 @@ class NanoProcessor(processor.ProcessorABC):
             )
             weights.add("psweight", psweight)
             genflavor = ak.zeros_like(sjets.pt, dtype=int)
-            if "JetSVs" in events.Jet.fields:
-                lj_matched_JetSVs_genflav = ak.zeros_like(
-                    lj_matched_JetSVs.pt, dtype=int
-                )
+            if "JetSVs" in events.fields:
+                if len(lj_matched_JetSVs) > 0:
+                    lj_matched_JetSVs_genflav = ak.zeros_like(
+                        lj_matched_JetSVs.pt, dtype=int
+                    )
+                else:
+                    lj_matched_JetSVs_genflav = ak.Array([])
 
         # Systematics information
         if shift_name is None:
@@ -229,7 +292,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
             for histname, h in output.items():
                 if (
-                    "DeepCSV" in histname
+                    "Deep" in histname
                     and "btag" not in histname
                     and histname in events.Jet.fields
                 ):
@@ -248,15 +311,18 @@ class NanoProcessor(processor.ProcessorABC):
                         flatten(sjets[:, 0][histname.replace(f"jet0_", "")]),
                         weight=weight,
                     )
-                elif "JetSVs_" in histname and "JetSVs" in events.Jet.fields:
-                    h.fill(
-                        syst,
-                        flatten(lj_matched_JetSVs_genflav),
-                        flatten(lj_SVs[histname.replace("JetSVs_", "")]),
-                        weight=flatten(
-                            ak.broadcast_arrays(weight, lj_matched_JetSVs["pt"])[0]
-                        ),
-                    )
+                elif "JetSVs_" in histname and "JetSVs" in events.fields:
+                    if len(lj_matched_JetSVs) > 0:
+                        h.fill(
+                            syst,
+                            flatten(lj_matched_JetSVs_genflav),
+                            flatten(lj_SVs[histname.replace("JetSVs_", "")]),
+                            weight=flatten(
+                                ak.broadcast_arrays(
+                                    weight[valid_events], lj_matched_JetSVs["pt"]
+                                )[0]
+                            ),
+                        )
                 elif (
                     "btag" in histname
                     and "0" in histname
@@ -287,31 +353,31 @@ class NanoProcessor(processor.ProcessorABC):
                         )
 
             output["njet"].fill(syst, njet, weight=weight)
-            if "JetSVs" in events.Jet.fields:
-                output["nJetSVs"].fill(syst, nJetSVs, weight=weight)
-
-                output["dr_SVjet0"].fill(
-                    syst,
-                    flatten(lj_matched_JetSVs_genflav),
-                    flatten(abs(lj_SVs.deltaR) - 0.1),
-                    weight=flatten(
-                        ak.broadcast_arrays(weight, lj_matched_JetSVs["pt"])[0]
-                    ),
-                )
+            if "JetSVs" in events.fields:
+                if len(lj_matched_JetSVs) > 0:
+                    output["nJetSVs"].fill(syst, nJetSVs, weight=weight[valid_events])
+                    output["dr_SVjet0"].fill(
+                        syst,
+                        flatten(lj_matched_JetSVs_genflav),
+                        flatten(abs(lj_SVs.deltaR) - 0.1),
+                        weight=flatten(
+                            ak.broadcast_arrays(
+                                weight[valid_events], lj_matched_JetSVs["pt"]
+                            )[0]
+                        ),
+                    )
             output["npvs"].fill(syst, flatten(selev.PV.npvsGood), weight=weight)
             if not isRealData:
                 if syst == "nominal":
-                    output["pu"].fill(
-                        "noPU",
-                        flatten(selev.Pileup.nTrueInt),
-                        weight=np.ones_like(weight),
-                    )
-                    output["npvs"].fill(
-                        "noPU",
-                        flatten(selev.Pileup.nTrueInt),
-                        weight=np.ones_like(weight),
-                    )
                     output["pu"].fill(syst, flatten(selev.PV.npvsGood), weight=weight)
+        #######################
+        #  Create root files  #
+        #######################
+        if self.isArray:
+            # Keep the structure of events and pruned the object size
+            pruned_ev = events[event_level]
+            pruned_ev["SelJet"] = sjets
+            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
 
         return {dataset: output}
 
