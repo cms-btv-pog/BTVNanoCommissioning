@@ -31,6 +31,9 @@ from BTVNanoCommissioning.workflows.ctag_DY_valid_sf import (
 from BTVNanoCommissioning.workflows.QCD_validation import (
     NanoProcessor as QCDValidProcessor,
 )
+from BTVNanoCommissioning.workflows.QCD_soft_mu_validation import (
+    NanoProcessor as QCDsmuValidProcessor,
+)
 
 ## BTA - for SFs
 from BTVNanoCommissioning.workflows.BTA_producer import (
@@ -51,7 +54,12 @@ workflows["validation"] = ValidationProcessor
 
 # TTBar
 workflows["ttdilep_sf"] = TTdilepValidSFProcessor
-workflows["ttsemilep_sf"] = TTsemilepValidSFProcessor
+workflows["ttsemilep_sf"] = partial(
+    TTsemilepValidSFProcessor, selectionModifier="tt_semilep"
+)
+workflows["c_ttsemilep_sf"] = partial(
+    TTsemilepValidSFProcessor, selectionModifier="c_tt_semilep"
+)
 
 workflows["emctag_ttdilep_sf"] = CTAGEMDilepttValidSFProcessor
 workflows["ctag_ttdilep_sf"] = partial(
@@ -69,6 +77,7 @@ workflows["ectag_ttsemilep_sf"] = partial(
 
 ##QCD
 workflows["QCD_sf"] = QCDValidProcessor
+workflows["QCD_smu_sf"] = QCDsmuValidProcessor
 
 # W+c
 workflows["ctag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcM")
