@@ -128,8 +128,8 @@ class NanoProcessor(processor.ProcessorABC):
         histoname = {
             "WcM": "ctag_Wc_sf",
             "WcE": "ectag_Wc_sf",
-            "cutbased_WcM": "ctag_Wc_sf",
-            "cutbased_WcE": "ectag_Wc_sf",
+            "cutbased_WcM": "ctag_cutbased_Wc_sf",
+            "cutbased_WcE": "ectag_cutbased_Wc_sf",
             "semittM": "ctag_Wc_sf",  # same histogram representation as W+c
             "semittE": "ectag_Wc_sf",  # same histogram representation as W+c
         }
@@ -396,7 +396,7 @@ class NanoProcessor(processor.ProcessorABC):
         smuon_jet_passc = {}
         c_algos = []
         c_wps = []
-        if "Wc" in self.selMod:
+        if "cutbased_Wc" in self.selMod:
             osss = shmu.charge * ssmu.charge * -1
             c_algos = btag_wp_dict[self._campaign].keys()
             for c_algo in c_algos:
@@ -649,7 +649,7 @@ class NanoProcessor(processor.ProcessorABC):
                     ak.values_astype(events[event_level].Pileup.nTrueInt, int),
                     weight=weight,
                 )
-            if "Wc" in self.selMod:
+            if "cutbased_Wc" in self.selMod:
                 for c_algo in c_algos:
                     for c_wp in c_wps:
                         if not "No" in c_wp:
