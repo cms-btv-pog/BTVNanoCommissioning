@@ -115,7 +115,6 @@ class NanoProcessor(processor.ProcessorABC):
         ### remove muNeEmSum for cutbased
         if "cutbased_WcM" == self.selMod:
             muNeEmSum = 1.0
-            muonpTratioCut = 0.4
         elif "WcE" in self.selMod or "semittE" in self.selMod:
             triggers = ["Ele32_WPTight_Gsf_L1DoubleEG"]
             isEle = True
