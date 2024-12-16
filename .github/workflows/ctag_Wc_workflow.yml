@@ -134,3 +134,33 @@ jobs:
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
         python runner.py --workflow ectag_Wc_sf --json metadata/test_bta_run3.json --executor iterative  --overwrite $opts
+
+    - name: ctag muon W+c fixed WP workflows with correctionlib
+      run: |
+        string=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi
+        python runner.py --workflow ctag_Wc_WP_sf --json metadata/test_bta_run3.json  --executor iterative  $opts
+    
+    - name: ctag electron W+c fixed WP workflows with correctionlib
+      run: |
+        message=$(git log -1 --pretty=format:'%s')
+        if [[ $string == *"ci:skip array"* ]]; then
+        opts=$(echo "$opts" | sed 's/--isArray //g')
+        fi
+        if [[ $string == *"ci:skip syst"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all//g')
+        elif [[ $string == *"ci:JERC_split"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:weight_only"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
+        fi
+        python runner.py --workflow ectag_Wc_WP_sf --json metadata/test_bta_run3.json --executor iterative  --overwrite $opts

@@ -1,3 +1,4 @@
+from BTVNanoCommissioning.utils.selection import btag_wp_dict
 from BTVNanoCommissioning.helpers.definitions import (
     definitions,
     SV_definitions,
@@ -6,7 +7,7 @@ from BTVNanoCommissioning.helpers.definitions import (
 import hist as Hist
 
 
-def histogrammer(events, workflow):
+def histogrammer(events, workflow, campaign="Summer22"):
     _hist_dict = {}
     ## Common variables
     flav_axis = Hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour")
@@ -462,7 +463,21 @@ def histogrammer(events, workflow):
         _hist_dict["nsoftmu"] = Hist.Hist(
             syst_axis, osss_axis, n_axis, Hist.storage.Weight()
         )
+
         for obj in obj_list:
+            # mujet pt passing tagger WPs
+            if "mujet" in obj:
+                for tagger in btag_wp_dict[campaign].keys():
+                    for wp in btag_wp_dict[campaign][tagger]["c"].keys():
+                        if not "No" in wp:
+                            _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
+                                syst_axis,
+                                flav_axis,
+                                osss_axis,
+                                jpt_axis,
+                                Hist.storage.Weight(),
+                            )
+
             if "jet" in obj or "soft_l" in obj:
                 if obj == "soft_l":
                     _hist_dict["soft_l_pt"] = Hist.Hist(
