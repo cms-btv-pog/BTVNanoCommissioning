@@ -538,7 +538,10 @@ class NanoProcessor(processor.ProcessorABC):
                         flatten(ssmu[histname.replace("soft_l_", "")]),
                         weight=weight,
                     )
-                elif "mujet_" in histname and histname.replace("mujet_", "") in smuon_jet.fields:
+                elif (
+                    "mujet_" in histname
+                    and histname.replace("mujet_", "") in smuon_jet.fields
+                ):
                     h.fill(
                         syst,
                         smflav,
