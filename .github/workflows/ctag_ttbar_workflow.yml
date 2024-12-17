@@ -35,7 +35,7 @@ jobs:
         shell: "bash -l {0}"
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Merge PR locally
       if: github.event_name == 'pull_request_target'
@@ -55,10 +55,9 @@ jobs:
         cvmfs_repositories: 'grid.cern.ch'
 
     - name: Set conda environment
-      uses: conda-incubator/setup-miniconda@v2
+      uses: conda-incubator/setup-miniconda@v3
       with:
         python-version: ${{ matrix.python-version }}
-        miniforge-variant: Mambaforge
         channels: conda-forge,defaults
         channel-priority: true
         activate-environment: btv_coffea
@@ -96,7 +95,7 @@ jobs:
         chmod 400 $HOME/.globus/userkey.pem
         openssl rand -out $HOME/.rnd  -hex 256
         printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms  --debug --pwstdin -certdir $X509_CERT_DIR  -vomses $X509_VOMSES
-        chmod 755 /usr/share/miniconda3/envs/btv_coffea/etc/grid-security/certificates
+        chmod 755 /usr/share/miniconda/envs/btv_coffea/etc/grid-security/certificates
         
     
     - name: Install Repo
