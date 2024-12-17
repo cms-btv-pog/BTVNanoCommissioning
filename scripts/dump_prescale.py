@@ -29,7 +29,7 @@ def get_prescale(HLT, lumimask, verbose=False):
         for run in runs:
 
             os.system(
-                f"brilcalc trg --prescale --hltpath 'HLT_{HLT}*'  -r {run}  --output-style csv &>tmp.csv"
+                f"export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:$PATH; brilcalc trg --prescale --hltpath 'HLT_{HLT}*'  -r {run}  --output-style csv &>tmp.csv"
             )
             ps = pandas.read_csv("tmp.csv")
             prescales = prescales._append(ps)

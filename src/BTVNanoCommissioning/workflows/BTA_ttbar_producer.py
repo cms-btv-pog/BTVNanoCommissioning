@@ -30,7 +30,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.chunksize = chunksize
         self.syst = isSyst
         self.name = name
-        self.SF_map = load_SF(self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign)
 
         ### Custom initialzations for BTA_ttbar workflow ###
 
@@ -593,7 +593,7 @@ class NanoProcessor(processor.ProcessorABC):
             f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
         )
         os.system(f"rm {fname}")
-        print("rm")
+
         return {dataset: len(events)}
 
     def postprocess(self, accumulator):
