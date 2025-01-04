@@ -100,9 +100,8 @@ elif "*" in args.input:
 else:
     output = {args.input: load(args.input)}
 mergemap = {}
-time = arrow.now().format("YY_MM_DD")
-if not os.path.isdir(f"plot/BTV/{args.phase}_{args.ext}_{time}/"):
-    os.makedirs(f"plot/BTV/{args.phase}_{args.ext}_{time}/")
+if not os.path.isdir(f"plot/{args.phase}_{args.ext}/"):
+    os.makedirs(f"plot/{args.phase}_{args.ext}/")
 if args.mergemap is None:
     if not any(".coffea" in o for o in output.keys()):
         mergemap[args.ref] = [m for m in output.keys() if args.ref == m]
@@ -407,10 +406,10 @@ for index, discr in enumerate(var_set):
         if args.log:
             ax.set_yscale("log")
         fig.savefig(
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discrs}.png"
+            f"plot/{args.phase}_{args.ext}/compare_{args.phase}_inclusive{discrs}.png"
         )
         fig.savefig(
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discrs}.pdf"
+            f"plot/{args.phase}_{args.ext}/compare_{args.phase}_inclusive{discrs}.pdf"
         )
 
     else:
@@ -485,11 +484,11 @@ for index, discr in enumerate(var_set):
             hep.mpl_magic(ax=ax)
         print(
             "creating:",
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png",
+            f"plot/{args.phase}_{args.ext}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png",
         )
         fig.savefig(
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.pdf"
+            f"plot/{args.phase}_{args.ext}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.pdf"
         )
         fig.savefig(
-            f"plot/BTV/{args.phase}_{args.ext}_{time}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png"
+            f"plot/{args.phase}_{args.ext}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png"
         )

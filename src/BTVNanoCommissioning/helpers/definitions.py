@@ -6382,14 +6382,12 @@ def axes_name(var):
         elif "UParT" in var:
             unit = unit + " UParTAK4"
         else:
-            unit = unit + " DeepCSV"
+            unit = unit
         # output node
         if "CvL" in var:
             unit = unit + " CvL"
         elif "CvB" in var:
             unit = unit + " CvB"
-        elif "CvNotB" in var:
-            unit = unit + " CvNotB"
         elif "B_b" in var or "ProbB" in var:
             unit = unit + " Prob(b)"
         elif "B_bb" in var:
@@ -6427,7 +6425,6 @@ def axes_name(var):
         elif "Bprob" in var:
             unit = "b-Jet Probability"
     label = obj + unit
-    print(obj)
     if var.endswith("0") or "jet0" in var:
         if "btagDeepFlav" not in var:
             label = label.replace("Jet", "$1^{st}$-Jet")

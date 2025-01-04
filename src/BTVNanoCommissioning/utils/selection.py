@@ -1,4 +1,23 @@
 import awkward as ak
+import numpy as np
+
+
+def HLT_helper(events, triggers):
+
+    checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
+    if ak.all(checkHLT == False):
+        raise ValueError(
+            "HLT paths:", triggers, " are all invalid in", events.metadata["dataset"]
+        )
+    elif ak.any(checkHLT == False):
+        print(
+            np.array(triggers)[~checkHLT], " not exist in", events.metadata["dataset"]
+        )
+    trig_arrs = [events.HLT[_trig] for _trig in triggers if hasattr(events.HLT, _trig)]
+    req_trig = np.zeros(len(events), dtype="bool")
+    for t in trig_arrs:
+        req_trig = req_trig | t
+    return req_trig
 
 
 ## Jet pu ID not exist in Winter22Run3 sample
@@ -78,7 +97,6 @@ def jet_cut(events, campaign):
 def MET_filters(events, campaign):
     # apply MET filter
     metfilter = ak.ones_like(events.run, dtype=bool)
-    print(metfilter)
     for flag in met_filters[campaign]["data" if "Run" else "mc"]:
         metfilter = events.Flag[flag] & metfilter
     ## Flag_ecalBadCalibFilter
@@ -102,9 +120,10 @@ def MET_filters(events, campaign):
     return metfilter
 
 
-def btag_wp(jets, campaign, tagger, borc, wp):
-    WP = btag_wp_dict[campaign]
+def btag_wp(jets, year, campaign, tagger, borc, wp):
+    WP = wp_dict(year, campaign)
     if borc == "b":
+
         jet_mask = jets[f"btag{tagger}B"] > WP[tagger]["b"][wp]
     else:
         jet_mask = (jets[f"btag{tagger}CvB"] > WP[tagger]["c"][wp][1]) & (
@@ -114,7 +133,7 @@ def btag_wp(jets, campaign, tagger, borc, wp):
 
 
 btag_wp_dict = {
-    "Summer22": {
+    "2022_Summer22": {
         "DeepFlav": {
             "b": {
                 "No": 0.0,
@@ -164,7 +183,7 @@ btag_wp_dict = {
             },
         },
     },
-    "Summer22EE": {
+    "2022_Summer22EE": {
         "DeepFlav": {
             "b": {
                 "No": 0.0,
@@ -214,7 +233,7 @@ btag_wp_dict = {
             },
         },
     },
-    "Summer23": {
+    "2023_Summer23": {
         "DeepFlav": {
             "b": {
                 "No": 0.0,
@@ -267,7 +286,7 @@ btag_wp_dict = {
             },
         },
     },
-    "Summer23BPix": {
+    "2023_Summer23BPix": {
         "DeepFlav": {
             "b": {
                 "No": 0.0,
@@ -321,6 +340,60 @@ btag_wp_dict = {
         },
     },
 }
+
+import os, correctionlib
+
+
+def wp_dict(year, campaign):
+    """
+    year :
+    """
+    global btag_wp_dict
+    cache_key = f"{year}_{campaign}"
+
+    if cache_key in btag_wp_dict:
+        return btag_wp_dict[cache_key]
+    name_map = {
+        "deepJet": "DeepFlav",
+        "robustParticleTransformer": "RobustParTAK4",
+        "particleNet": "PNet",
+    }
+
+    wps_dict = {}
+    if os.path.exists(
+        f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{year}_{campaign}"
+    ):
+        btag = correctionlib.CorrectionSet.from_file(
+            f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{year}_{campaign}/btagging.json.gz"
+        )
+        ctag = correctionlib.CorrectionSet.from_file(
+            f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{year}_{campaign}/ctagging.json.gz"
+        )
+        tagger_list = [i for i in list(btag.keys()) if "wp_values" in i]
+
+        if len(tagger_list) == 0:
+            btag_wp_dict[cache_key] = wps_dict
+            return wps_dict
+
+        for tagger in tagger_list:
+            wps_dict[name_map[tagger.replace("_wp_values", "")]] = {"b": {}, "c": {}}
+            bwp = btag[tagger].inputs[0].description.split("/")
+            # Get b WPs
+            wps_dict[name_map[tagger.replace("_wp_values", "")]]["b"] = {
+                wp: btag[tagger].evaluate(wp) for wp in bwp
+            }
+            cwp = ctag[tagger].inputs[0].description.split("/")
+            wps_dict[name_map[tagger.replace("_wp_values", "")]]["c"] = {
+                wp: [ctag[tagger].evaluate(wp, "CvL"), ctag[tagger].evaluate(wp, "CvB")]
+                for wp in cwp
+            }  # [CvL, CvB]
+        btag_wp_dict[cache_key] = wps_dict
+        return wps_dict
+
+    else:
+        btag_wp_dict[cache_key] = wps_dict
+        return wps_dict
+
 
 met_filters = {
     "2016preVFP_UL": {
