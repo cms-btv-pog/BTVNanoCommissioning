@@ -4,6 +4,34 @@ import numpy as np
 
 
 def missing_branch(events):
+    """
+    Add missing branches or rename branches in the `events` object.
+
+    This function adds missing branches or renames existing branches in the `events` object using the `missing_branch` parameter.
+
+    Usage:
+    Use the `hasattr` function to check for missing branches.
+
+    Deprecated:
+    The `add_jec` function is deprecated. Please use the `JME_shifts` function in the `correction` module instead.
+
+    Example:
+    ```python
+    events.fixedGridRhoFastjetAll = (
+        events.fixedGridRhoFastjetAll
+        if hasattr(events, "fixedGridRhoFastjetAll")
+        else events.Rho.fixedGridRhoFastjetAll
+    )
+    ```
+
+    Parameters:
+    events (coffea.nanoaodevents): The events object to update.
+    missing_branch (str): The name of the missing branch to add or rename.
+
+    Returns:
+    events (coffea.nanoaodevents): Events with updated branches.
+    """
+    # Function implementation here
     events["fixedGridRhoFastjetAll"] = (
         events.fixedGridRhoFastjetAll
         if hasattr(events, "fixedGridRhoFastjetAll")
@@ -118,8 +146,12 @@ def missing_branch(events):
         events.PuppiMET, "MetUnclustEnUpDeltaX"
     ):
         met = events.PuppiMET
-        met["MetUnclustEnUpDeltaX"] = met.ptUnclusteredUp * np.cos(met.phiUnclusteredUp)
-        met["MetUnclustEnUpDeltaY"] = met.ptUnclusteredUp * np.sin(met.phiUnclusteredUp)
+        met["MetUnclustEnUpDeltaX"] = (met.ptUnclusteredUp - met.pt) * np.cos(
+            met.phiUnclusteredUp
+        )
+        met["MetUnclustEnUpDeltaY"] = (met.ptUnclusteredUp - met.pt) * np.sin(
+            met.phiUnclusteredUp
+        )
         events.PuppiMET = update(
             events.PuppiMET,
             {

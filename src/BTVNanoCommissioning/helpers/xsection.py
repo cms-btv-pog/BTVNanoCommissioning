@@ -1,3 +1,25 @@
+"""
+This module provides functions to handle cross section information used to normalize data and MC when making plots.
+
+Cross section information is crucial for normalizing data and Monte Carlo (MC) simulations to ensure accurate comparisons and analyses.
+
+To add a new dictionary to the cross section list, you can obtain the necessary information from the [XSDB](https://cms-gen-dev.cern.ch/xsdb/).
+
+Example of a cross section dictionary:
+
+```python
+{
+    "id": "61641f28294617432cff1379",
+    "process_name": "QCD_Pt-30to50_EMEnriched_TuneCP5_13TeV_pythia8",
+    "cross_section": "6447000.0",
+    "total_uncertainty": "19870.0",
+    "equivalent_lumi": "0.0001551",
+    "matrix_generator": "none",
+    "energy": "13",
+}
+```
+"""
+
 xsection = [
     {
         "process_name": "DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8",

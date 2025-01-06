@@ -135,7 +135,10 @@ _coverage1sd = scipy.stats.norm.cdf(1) - scipy.stats.norm.cdf(-1)
 
 
 def compatible(self, other):
-    """Checks if this histogram is compatible with another, i.e. they have identical binning"""
+    """
+    Checks if this histogram is compatible with another, i.e. they have identical binning
+    """
+
     if len(self.axes) != len(other.axes):
         return False
     if set(self.axes.name) != set(other.axes.name):
@@ -146,7 +149,8 @@ def compatible(self, other):
 
 
 def poisson_interval(sumw, sumw2, coverage=_coverage1sd):
-    """Frequentist coverage interval for Poisson-distributed observations
+    """
+    Frequentist coverage interval for Poisson-distributed observations
     Parameters
     ----------
         sumw : numpy.ndarray
@@ -164,6 +168,7 @@ def poisson_interval(sumw, sumw2, coverage=_coverage1sd):
     When a bin is zero, the scale of the nearest nonzero bin is substituted to scale the nominal upper bound.
     If all bins zero, a warning is generated and interval is set to ``sumw``.
     """
+
     scale = np.empty_like(sumw)
     scale[sumw != 0] = sumw2[sumw != 0] / sumw[sumw != 0]
     if np.sum(sumw == 0) > 0:
@@ -189,7 +194,8 @@ def poisson_interval(sumw, sumw2, coverage=_coverage1sd):
 
 
 def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
-    """Compute errors based on the expansion of pass/(pass + fail), possibly weighted
+    """
+    Compute errors based on the expansion of pass/(pass + fail), possibly weighted
     Parameters
     ----------
     pw : np.ndarray
@@ -221,7 +227,8 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
 
 
 def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
-    """Compute Clopper-Pearson coverage interval for a binomial distribution
+    """
+    Compute Clopper-Pearson coverage interval for a binomial distribution
     Parameters
     ----------
         num : numpy.ndarray
@@ -232,6 +239,7 @@ def clopper_pearson_interval(num, denom, coverage=_coverage1sd):
             Central coverage interval, defaults to 68%
     c.f. http://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval
     """
+
     if np.any(num > denom):
         raise ValueError(
             "Found numerator larger than denominator while calculating binomial uncertainty"
@@ -259,7 +267,8 @@ def plotratio(
     label=None,
     ext_denom_error=None,
 ):
-    """Create a ratio plot, dividing two compatible histograms
+    """
+    Create a ratio plot, dividing two compatible histograms
     Parameters
     ----------
         num : Hist

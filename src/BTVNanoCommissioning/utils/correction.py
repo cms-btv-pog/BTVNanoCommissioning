@@ -21,7 +21,29 @@ from BTVNanoCommissioning.utils.AK4_parameters import correction_config as confi
 
 
 def load_SF(year, campaign, syst=False):
+    """
+    Load scale factors (SF) for a given year and campaign.
+
+    This function reads scale factors from the specified campaign configuration and returns them in a suitable format.
+    It handles different types of scale factors, such as pileup weights, and checks for the existence of files in
+    the jsonpog-integration directory or custom files.
+
+    Parameters:
+    year (str): The year for which to load the scale factors.
+    campaign (str): The name of the campaign for which to load the scale factors.
+    syst (bool, optional): A flag to indicate whether to load systematic variations. Default is False.
+
+    Returns:
+    dict: A dictionary containing the scale factors, where keys are the relevant identifiers and values are the scale factors.
+
+    Raises:
+    FileNotFoundError: If the specified file does not exist.
+    ValueError: If the file content is not in the expected format.
+    KeyError: If the specified campaign or year is not found in the configuration.
+    """
+    # read the configuration file to get the correct SFs
     correct_map = {"campaign": campaign}
+
     for SF in config[campaign].keys():
         if SF == "lumiMask":
             continue
@@ -324,13 +346,106 @@ def load_SF(year, campaign, syst=False):
 
 
 def load_lumi(campaign):
+    """
+    Load luminosity mask for a given campaign.
+
+    This function reads the luminosity mask file for the specified campaign and returns a `LumiMask` object.
+
+    Parameters:
+    campaign (str): The name of the campaign for which to load the luminosity mask.
+
+    Returns:
+    LumiMask: An object representing the luminosity mask for the specified campaign.
+
+    Raises:
+    KeyError: If the specified campaign is not found in the configuration.
+    FileNotFoundError: If the luminosity mask file does not exist.
+    """
+
     _lumi_path = "BTVNanoCommissioning.data.lumiMasks"
     with importlib.resources.path(_lumi_path, config[campaign]["lumiMask"]) as filename:
         return LumiMask(filename)
 
 
 # wrapped up common shifts
+"""
+BTVNanoCommissioning.utils.correction
+
+This module provides functions to handle corrections and uncertainties for scaling factors and weight variables in the BTVNanoCommissioning framework.
+
+Features:
+- Scaling factors and weight variables:
+    - Corrections are wrapped with `weights` from the `coffea.analysis_tools.Weights` class along the event axis.
+    - Standardized correction files are handled using `correctionlib`.
+    - Additional methods for applying corrections can be found in the `coffea` documentation.
+    - Uncertainties are added using up/down variations, except for btag SFs which use `add_multivariation`.
+
+Example for Scaling Factors (SFs):
+```python
+## Initialization, add EGM map from correctionlib
+correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
+                f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
+            )
+## Initialization, add EGM map from custom file by extractor 
+ ext = extractor()
+ ext.add_weight_sets(["eleID EGamma2D {filename}.root"])
+ ext.finalize()
+ correction_map["EGM"] = ext.make_evaluator()
+
+ # evaluation depends on file types...ignore here!
+ ## add SFs & uncertainties to weight function
+weights.add(sf.split(" ")[0], sfs_alle, sfs_alle_up, sfs_alle_down) 
+```
+
+"""
+
+
 def common_shifts(self, events):
+    """
+    Apply common shifts to a events(mostly affect energy resolution/scale of objects).
+
+    This function applies common shifts to the input DataFrame based on the specified shift type.
+    It modifies the DataFrame in place to reflect the systematic variations/dedicated corrections.
+    This includes JERC corrections, rochester corrections.
+
+
+    - Scale/Resolution Corrections:
+    Construct a shift list with tuples of (obj_dict, shift_name).
+    These corrections are applied independently on all objects by updating the contents of the branch.
+    Normally done before selection to apply updated objects.
+    Uncertainties are handled by updating object collections with up/down variations.
+    Example for Shift List:
+    ```python
+    # nominal correction
+    shift = [({"Jet": jets, "MET": met, "Muon" : muon}, None)]
+    # add variations
+    shifts += [
+                    (
+                        {
+                            "Jet": jets.JES_Total.up,
+                            "MET": met.JES_Total.up,
+                        },
+                        "JESUp",
+                    )]
+    shifts += [
+                    (
+                        {
+                            "Jet": jets.JES_Total.down,
+                            "MET": met.JES_Total.down,
+                        },
+                        "JESDown",
+                    )]
+    ``
+    Different treatment for weights and scale/resolution shifts is necessary to ensure accurate corrections and uncertainties are applied to the data.
+
+    Parameters:
+    self (dict): The configuration dictionary from SF_map containing the scale factors and other settings.
+    events (events): The input events containing the data to be shifted.
+
+    Returns:
+    pandas.DataFrame: The DataFrame with the applied systematic shifts.
+    """
+
     isRealData = not hasattr(events, "genWeight")
     dataset = events.metadata["dataset"]
     shifts = []
@@ -383,6 +498,23 @@ def add_jec_variables(jets, event_rho):
 
 ## Jet Veto
 def jetveto(jets, correct_map):
+    """
+    Apply a veto to jets based on predefined transverse momentum (pt) and pseudorapidity (eta) thresholds.
+
+    This function filters out jets that do not meet the predefined pt and eta criteria. It also utilizes a correction map
+    to apply additional corrections or selections to the jets.
+
+    Parameters:
+    jets (iterable): A collection of jet objects or dictionaries containing jet properties.
+    correct_map (dict): A dictionary containing correction factors or additional selection criteria for the jets.
+
+    Returns:
+    jets: A jets of jets that pass the predefined pt and eta criteria and any additional criteria from the correction map.
+
+    Raises:
+    TypeError: If the jets parameter is not an iterable.
+    KeyError: If the jet objects do not contain the required 'pt' or 'eta' properties.
+    """
     return ak.where(
         correct_map["jetveto"][list(correct_map["jetveto"].keys())[0]](
             jets.phi, jets.eta
@@ -403,7 +535,28 @@ def JME_shifts(
     systematic=False,
     exclude_jetveto=False,
 ):
+    """
+    Apply Jet Energy Corrections (JEC) and Jet Energy Resolutions (JER) shifts to events.
 
+    This function applies JEC and JER shifts to the jets in the events based on the provided correction map and campaign.
+    It handles both real data and simulated data, and can optionally apply systematic variations and exclude jet vetoes.
+
+    Parameters:
+    shifts (list): A list of shift types to apply (e.g., 'up', 'down').
+    correct_map (dict): A dictionary containing correction factors and settings for JEC and JER.
+    events (awkward.Array): An array of events containing jet information.
+    campaign (str): The name of the campaign for which to apply the corrections.
+    isRealData (bool): A flag indicating whether the data is real or simulated.
+    systematic (bool, optional): A flag to indicate whether to apply systematic variations. Default is False.
+    exclude_jetveto (bool, optional): A flag to indicate whether to exclude jet vetoes. Default is False.
+
+    Returns:
+    awkward.Array: The events array with applied JEC and JER shifts.
+
+    Raises:
+    KeyError: If required keys are missing in the correct_map.
+    ValueError: If the campaign is not recognized or supported.
+    """
     dataset = events.metadata["dataset"]
     jecname = ""
     # https://cms-jerc.web.cern.ch/JECUncertaintySources/, currently no recommendation of reduced/ full split sources
@@ -645,6 +798,27 @@ def JME_shifts(
 
 ## Muon Rochester correction
 def Roccor_shifts(shifts, correct_map, events, isRealData, systematic=False):
+    """
+    Apply Rochester corrections (Roccor) shifts to muons in events.
+
+    This function applies Rochester corrections to the muons in the events based on the provided correction map and campaign.
+    It handles both real data and simulated data, and can optionally apply systematic variations.
+
+    Parameters:
+    shifts (list): A list of shift types to apply (e.g., 'up', 'down').
+    correct_map (dict): A dictionary containing correction factors and settings for Rochester corrections.
+    events (awkward.Array): An array of events containing muon information.
+    campaign (str): The name of the campaign for which to apply the corrections.
+    isRealData (bool): A flag indicating whether the data is real or simulated.
+    systematic (bool, optional): A flag to indicate whether to apply systematic variations. Default is False.
+
+    Returns:
+    awkward.Array: The events array with applied Rochester corrections.
+
+    Raises:
+    KeyError: If required keys are missing in the correct_map.
+    ValueError: If the campaign is not recognized or supported.
+    """
     mu = events.Muon
     if isRealData:
         SF = correct_map["roccor"].kScaleDT(
@@ -730,13 +904,33 @@ def Roccor_shifts(shifts, correct_map, events, isRealData, systematic=False):
 
 def puwei(nPU, correct_map, weights, syst=False):
     """
-    Return pileup weight
-    Parameters
-    ----------
-    nPU: ak.Array
-    correct_map : dict
-    weights : coffea.analysis_tool.weights
-    syst: "split", "weight_only"
+    <<<<<<< HEAD
+        Return pileup weight
+        Parameters
+        ----------
+        nPU: ak.Array
+        correct_map : dict
+        weights : coffea.analysis_tool.weights
+        syst: "split", "weight_only"
+    =======
+        Apply pileup weights to events based on the number of primary vertices (nPU).
+
+        This function applies pileup weights to the events using the provided correction map and weights.
+        It can optionally apply systematic variations.
+
+        Parameters:
+        nPU (awkward.Array(int)): The number of primary vertices in the event.
+        correct_map (dict): A dictionary containing correction factors and settings for pileup weights.
+        weights (): A dictionary to store the calculated weights.
+        syst (bool, optional): A flag to indicate whether to apply systematic variations. Default is False.
+
+        Returns:
+        None: The function modifies the weights dictionary in place.
+
+        Raises:
+        KeyError: If required keys are missing in the correct_map.
+        ValueError: If the nPU value is not recognized or supported.
+    >>>>>>> doc
     """
     if "correctionlib" in str(type(correct_map["PU"])):
         if syst:
@@ -772,6 +966,26 @@ def puwei(nPU, correct_map, weights, syst=False):
 
 
 def btagSFs(jet, correct_map, weights, SFtype, syst=False):
+    """
+    Apply b-tagging scale factors (SFs) to a single jet.
+
+    This function applies b-tagging scale factors to the given jet based on the provided correction map, weights, and scale factor type.
+    It can optionally apply systematic variations.
+
+    Parameters:
+    jet (dict): A dictionary containing the properties of the jet.
+    correct_map (dict): A dictionary containing correction factors and settings for b-tagging scale factors.x
+    weights (coffea.weight.Weight): An instance of coffea's Weight class to store the calculated weights.
+    SFtype (str): The type of scale factor to apply , only shape-based C, B are supported.
+    syst (bool, optional): A flag to indicate whether to apply systematic variations. Default is False.
+
+    Returns:
+    None: The function modifies the weights instance in place.
+
+    Raises:
+    KeyError: If required keys are missing in the correct_map.
+    ValueError: If the SFtype is not recognized or supported.
+    """
     if SFtype.endswith("C"):
         systlist = [
             "Extrap",
@@ -1643,7 +1857,7 @@ class JPCalibHandler(object):
         self.edges = templates["histoCat0"].axes[0].edges()
 
     def flatten(self, array):
-        r"""
+        """
         Get the fully flattened array and its layout for each layer
         """
         layouts = []
@@ -1654,16 +1868,17 @@ class JPCalibHandler(object):
         return array_fl, layouts
 
     def unflatten(self, array_fl, layouts):
-        r"""
+        """
         Recover a flattened array using the original layouts
         """
+
         array = array_fl
         for layout in layouts[::-1]:
             array = ak.unflatten(array, layout)
         return array
 
     def calc_track_proba(self, ipsig: ak.Array, cat: ak.Array):
-        r"""
+        """
         Calculate the track probability from the integral of the track IPsig templates, given the IPsig and category.
         Reference code: https://github.com/cms-sw/cmssw/blob/CMSSW_13_0_X/RecoBTag/TrackProbability/src/HistogramProbabilityEstimator.cc
             ipsig: IP significance array
