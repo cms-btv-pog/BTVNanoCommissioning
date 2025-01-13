@@ -217,6 +217,14 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             )
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
 
+    elif "btag_ttbar_sf" == workflow:
+        obj_list = [
+            "jet",
+            "mu",
+        ]  # store basic 4-vector, pt,eta, phi, mass for the object
+        _hist_dict["dr_mujet"] = Hist.Hist(
+            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+        )  # create cutstomize histogram
     elif "c_ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
         obj_list.append("cjet")
@@ -608,6 +616,8 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                     Hist.axis.Regular(40, 0, 2, name="discr", label=disc),
                     Hist.storage.Weight(),
                 )
+        elif "btag_ttbar" in workflow:
+            njet = 2
         for i in range(njet):
             if "Wc_sf" in workflow:
                 if "btag" in disc or "ProbaN" == disc:

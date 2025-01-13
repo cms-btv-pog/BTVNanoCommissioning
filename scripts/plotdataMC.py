@@ -152,6 +152,10 @@ elif "semilep" in args.phase:
 elif "dilep" in args.phase:
     input_txt = r"t$\bar{t}$ dileptonic"
     nj = 2
+# TODO: check nj and label
+elif "btag_ttbar" in args.phase:
+    input_txt = r"t$\bar{t}$ dileptonic"
+    nj = 2
 if (
     "njet" in args.variable.split(",")
     or "nbjet" in args.variable.split(",")
