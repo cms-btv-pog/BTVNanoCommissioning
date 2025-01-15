@@ -992,87 +992,11 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             if "correctionlib" in str(type(correct_map["EGM"])):
                 ## Reco SF -splitted pT
                 if "Reco" in sf:
-                    if "Summer22" not in correct_map["campaign"]:
-                        ele_pt = np.where(ele.pt < 20.0, 20.0, ele.pt)
-                        ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
-                        sfs_low = np.where(
-                            (~mask) & (~masknone),
-                            correct_map["EGM"][correct_map["EGM_cfg"][sf]].evaluate(
-                                sf.split(" ")[1],
-                                "sf",
-                                "RecoBelow20",
-                                ele_eta,
-                                ele_pt_low,
-                                ele.phi,
-                            ),
-                            1.0,
-                        )
-                        sfs = np.where(
-                            mask & (~masknone),
-                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                sf.split(" ")[1], "sf", "RecoAbove20", ele_eta, ele_pt
-                            ),
-                            sfs_low,
-                        )
-                        sfs = np.where(masknone, 1.0, sfs)
-
-                        if syst:
-                            sfs_up_low = np.where(
-                                ~mask & ~masknone,
-                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                    sf.split(" ")[1],
-                                    "sfup",
-                                    "RecoBelow20",
-                                    ele_eta,
-                                    ele_pt_low,
-                                    ele.phi,
-                                ),
-                                0.0,
-                            )
-                            sfs_down_low = np.where(
-                                ~mask & ~masknone,
-                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                    sf.split(" ")[1],
-                                    "sfdown",
-                                    "RecoBelow20",
-                                    ele_eta,
-                                    ele_pt_low,
-                                    ele.phi,
-                                ),
-                                0.0,
-                            )
-                            sfs_up = np.where(
-                                mask & ~masknone,
-                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                    sf.split(" ")[1],
-                                    "sfup",
-                                    "RecoAbove20",
-                                    ele_eta,
-                                    ele_pt,
-                                    ele.phi,
-                                ),
-                                sfs_up_low,
-                            )
-                            sfs_down = np.where(
-                                mask & ~masknone,
-                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                    sf.split(" ")[1],
-                                    "sfdown",
-                                    "RecoAbove20",
-                                    ele_eta,
-                                    ele_pt,
-                                    ele.phi,
-                                ),
-                                sfs_down_low,
-                            )
-                            sfs_up, sfs_down = np.where(
-                                masknone, 1.0, sfs_up
-                            ), np.where(masknone, 1.0, sfs_down)
-                    else:
-                        ele_pt = np.clip(ele.pt, 20.1, 74.9)
-                        ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
-                        ele_pt_high = np.clip(ele.pt, 75.0, 500.0)
-
+                    ## phi is used in Summer23
+                    ele_pt = np.clip(ele.pt, 20.1, 74.9)
+                    ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
+                    ele_pt_high = np.clip(ele.pt, 75.0, 500.0)
+                    if "Summer23" in correct_map["campaign"]:
                         sfs_low = np.where(
                             (ele.pt <= 20.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
@@ -1100,7 +1024,12 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         sfs = np.where(
                             (ele.pt > 20.0) & (ele.pt <= 75.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                sf.split(" ")[1], "sf", "Reco20to75", ele_eta, ele_pt
+                                sf.split(" ")[1],
+                                "sf",
+                                "Reco20to75",
+                                ele_eta,
+                                ele_pt,
+                                ele.phi,
                             ),
                             sfs_high,
                         )
@@ -1140,6 +1069,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoAbove75",
                                     ele_eta,
                                     ele_pt_high,
+                                    ele.phi,
                                 ),
                                 sfs_up_low,
                             )
@@ -1179,49 +1109,193 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 ),
                                 sfs_down_high,
                             )
+                            sfs_up, sfs_down = np.where(
+                                masknone, 1.0, sfs_up
+                            ), np.where(masknone, 1.0, sfs_down)
+
+                    else:
+
+                        sfs_low = np.where(
+                            (ele.pt <= 20.0) & (~masknone),
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1],
+                                "sf",
+                                "RecoBelow20",
+                                ele_eta,
+                                ele_pt_low,
+                            ),
+                            1.0,
+                        )
+                        sfs_high = np.where(
+                            (ele.pt > 75.0) & (~masknone),
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1],
+                                "sf",
+                                "RecoAbove75",
+                                ele_eta,
+                                ele_pt_high,
+                            ),
+                            sfs_low,
+                        )
+                        sfs = np.where(
+                            (ele.pt > 20.0) & (ele.pt <= 75.0) & (~masknone),
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1], "sf", "Reco20to75", ele_eta, ele_pt
+                            ),
+                            sfs_high,
+                        )
+
+                        sfs = np.where(masknone, 1.0, sfs)
+
+                        if syst:
+                            sfs_up_low = np.where(
+                                (ele.pt <= 20.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "RecoBelow20",
+                                    ele_eta,
+                                    ele_pt_low,
+                                ),
+                                0.0,
+                            )
+                            sfs_down_low = np.where(
+                                (ele.pt <= 20.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "RecoBelow20",
+                                    ele_eta,
+                                    ele_pt_low,
+                                ),
+                                0.0,
+                            )
+                            sfs_up_high = np.where(
+                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "RecoAbove75",
+                                    ele_eta,
+                                    ele_pt_high,
+                                ),
+                                sfs_up_low,
+                            )
+                            sfs_down_high = np.where(
+                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "RecoAbove75",
+                                    ele_eta,
+                                    ele_pt_high,
+                                ),
+                                sfs_down_low,
+                            )
+                            sfs_up = np.where(
+                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "Reco20to75",
+                                    ele_eta,
+                                    ele_pt,
+                                ),
+                                sfs_up_high,
+                            )
+                            sfs_down = np.where(
+                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "Reco20to75",
+                                    ele_eta,
+                                    ele_pt,
+                                ),
+                                sfs_down_high,
+                            )
 
                             sfs_up, sfs_down = np.where(
                                 masknone, 1.0, sfs_up
                             ), np.where(masknone, 1.0, sfs_down)
                 ## Other files
                 else:
-                    sfs = np.where(
-                        masknone,
-                        1.0,
-                        correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                            sf.split(" ")[1],
-                            "sf",
-                            correct_map["EGM_cfg"][sf],
-                            ele_eta,
-                            ele_pt,
-                            ele.phi,
-                        ),
-                    )
-
-                    if syst:
-                        sfs_up = np.where(
+                    if "Summer23" in correct_map["campaign"]:
+                        sfs = np.where(
                             masknone,
                             1.0,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
-                                "sfup",
+                                "sf",
                                 correct_map["EGM_cfg"][sf],
                                 ele_eta,
                                 ele_pt,
                                 ele.phi,
                             ),
                         )
-                        sfs_down = np.where(
+
+                        if syst:
+                            sfs_up = np.where(
+                                masknone,
+                                1.0,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    correct_map["EGM_cfg"][sf],
+                                    ele_eta,
+                                    ele_pt,
+                                    ele.phi,
+                                ),
+                            )
+                            sfs_down = np.where(
+                                masknone,
+                                1.0,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    correct_map["EGM_cfg"][sf],
+                                    ele_eta,
+                                    ele_pt,
+                                    ele.phi,
+                                ),
+                            )
+                    else:
+                        sfs = np.where(
                             masknone,
                             1.0,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
-                                "sfdown",
+                                "sf",
                                 correct_map["EGM_cfg"][sf],
                                 ele_eta,
                                 ele_pt,
                             ),
                         )
+
+                        if syst:
+                            sfs_up = np.where(
+                                masknone,
+                                1.0,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    correct_map["EGM_cfg"][sf],
+                                    ele_eta,
+                                    ele_pt,
+                                ),
+                            )
+                            sfs_down = np.where(
+                                masknone,
+                                1.0,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    correct_map["EGM_cfg"][sf],
+                                    ele_eta,
+                                    ele_pt,
+                                ),
+                            )
+
             else:
                 if "ele_Trig" in sf:
                     sfs = np.where(
@@ -1681,9 +1755,9 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                 syst_wei,
             )
         if "MUO" in SF_map.keys() and "SelMuon" in pruned_ev.fields:
-            muSFs(pruned_ev.Muon, SF_map, weights, syst_wei, False)
+            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, False)
         if "EGM" in SF_map.keys() and "SelElectron" in pruned_ev.fields:
-            eleSFs(pruned_ev.Electron, SF_map, weights, syst_wei, False)
+            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, False)
         if "BTV" in SF_map.keys() and "SelJet" in pruned_ev.fields:
             btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepJetC", syst_wei)
             btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepJetB", syst_wei)
