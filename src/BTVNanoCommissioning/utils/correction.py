@@ -1236,13 +1236,14 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             if "correctionlib" in str(type(correct_map["EGM"])):
                 ## Reco SF -splitted pT
                 if "Reco" in sf:
-                    ## phi is used in Summer23
-                    ele_pt = np.clip(ele.pt, 20.1, 74.9)
-                    ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
-                    ele_pt_high = np.clip(ele.pt, 75.0, 500.0)
-                    if "Summer23" in correct_map["campaign"]:
+                    if not any(
+                        campaign in correct_map["campaign"]
+                        for campaign in ["Summer22", "Summer23"]
+                    ):
+                        ele_pt = np.where(ele.pt < 20.0, 20.0, ele.pt)
+                        ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
                         sfs_low = np.where(
-                            (ele.pt <= 20.0) & (~masknone),
+                            (~mask) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1256,12 +1257,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         sfs_high = np.where(
                             (ele.pt > 75.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                sf.split(" ")[1],
-                                "sf",
-                                "RecoAbove75",
-                                ele_eta,
-                                ele_pt_high,
-                                ele.phi,
+                                sf.split(" ")[1], "sf", "RecoAbove20", ele_eta, ele_pt, ele.phi
                             ),
                             sfs_low,
                         )
@@ -1383,7 +1379,12 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         sfs = np.where(
                             (ele.pt > 20.0) & (ele.pt <= 75.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                sf.split(" ")[1], "sf", "Reco20to75", ele_eta, ele_pt
+                                sf.split(" ")[1],
+                                "sf",
+                                "Reco20to75",
+                                ele_eta,
+                                ele_pt,
+                                ele.phi,
                             ),
                             sfs_high,
                         )
