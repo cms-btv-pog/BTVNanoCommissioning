@@ -455,6 +455,7 @@ if __name__ == "__main__":
             condor_extra.append(f"export PATH={pathvar}:$PATH")
         else:
             condor_extra.append(f"cd {os.getcwd()}")
+            condor_extra.insert(0, f"export PATH={pathvar}:$PATH")
 
             # Check if Conda is available
             conda_check_command = "command -v conda"
