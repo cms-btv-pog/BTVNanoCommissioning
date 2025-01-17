@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
+from mplhep.plot import ylow, yscale_legend, yscale_anchored_text
 
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.workflows import workflows
@@ -23,6 +24,22 @@ from BTVNanoCommissioning.utils.plot_utils import (
     sample_mergemap,
     color_map,
 )
+
+# patch mplhep mpl_magic function to allow soft_fail=True
+def mpl_magic(ax=None, info=True, soft_fail=True):
+    """
+    Consolidate all ex-post style adjustments:
+        ylow
+        yscale_legend
+    """
+    if ax is None:
+        ax = plt.gca()
+    if info:
+        pass
+
+    ax = ylow(ax)
+    ax = yscale_legend(ax, soft_fail=soft_fail)
+    return yscale_anchored_text(ax)
 
 bininfo = definitions()
 SV_bininfo = SV_definitions()
@@ -611,7 +628,7 @@ for index, discr in enumerate(var_set):
     name = "all"
     if args.split == "sample":
         name = name + "_sample"
-    hep.mpl_magic(ax=ax)
+    mpl_magic(ax=ax)
     if args.log:
         print(
             "creating:",
@@ -620,10 +637,10 @@ for index, discr in enumerate(var_set):
         ax.set_yscale("log")
         name = "log"
         ax.set_ylim(bottom=0.1)
-        hep.mpl_magic(ax=ax)
-        fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
-        )
+        mpl_magic(ax=ax)
+        # fig.savefig(
+        #     f"plot/BTV/{args.phase}_{args.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"
+        # )
         fig.savefig(
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
         )
