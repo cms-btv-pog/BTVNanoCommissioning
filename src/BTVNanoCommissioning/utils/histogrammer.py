@@ -219,8 +219,11 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
 
     elif "btag_ttbar_sf" == workflow:
         obj_list = [
-            "jet",
+            "jet0",
+            "jet1",
             "mu",
+            "ele",
+            "MET",
         ]  # store basic 4-vector, pt,eta, phi, mass for the object
         _hist_dict["dr_mujet"] = Hist.Hist(
             syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
