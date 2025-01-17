@@ -193,7 +193,7 @@ if "ctag" in args.phase and "DY" not in args.phase:
     input_txt = input_txt + "\nw/ soft-$\mu$"
 if args.variable == "all":
     var_set = [var for var in collated["mc"].keys()]
-elif "*" in args.variable:
+elif ("*" in args.variable) and not ("," in args.variable):
     if args.variable.count("*") > 1:
         var_set = [
             var
@@ -217,8 +217,15 @@ elif "*" in args.variable:
             != None
         ]
 
+elif ("*" in args.variable) and ("," in args.variable):
+    var_set = []
+    for wildcard in args.variable.split(","):
+        for var in collated["mc"].keys():
+            if re.match(f"^{wildcard.replace('*', '.*')}$", var):
+                var_set.append(var)
 else:
     var_set = args.variable.split(",")
+print("plotting variables:", var_set)
 for index, discr in enumerate(var_set):
     try:
         if not isinstance(collated["mc"][discr], hist.hist.Hist):
@@ -230,10 +237,14 @@ for index, discr in enumerate(var_set):
     if (
         discr not in collated["mc"].keys()
         or discr not in collated["data"].keys()
-        or (collated["mc"][discr].values() == 0).all()
+    ):
+        print(discr, "not in file")
+        continue
+    elif (
+        (collated["mc"][discr].values() == 0).all()
         or (collated["data"][discr].values() == 0).all()
     ):
-        print(discr, "not in file or empty")
+        print(discr, "empty")
         continue
 
     ## axis info
