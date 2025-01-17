@@ -5,18 +5,16 @@ import copy, os, re
 import numpy as np
 import awkward as ak
 import uproot
+import correctionlib
+
 from coffea.lookup_tools import extractor, txt_converters, rochester_lookup
 from coffea.lumi_tools import LumiMask
-
 from coffea.jetmet_tools.CorrectedMETFactory import corrected_polar_met
-
 from coffea.analysis_tools import Weights
-
 from coffea.btag_tools import BTagScaleFactor
-import correctionlib
+
 from BTVNanoCommissioning.helpers.func import update, _compile_jec_, _load_jmefactory
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
-
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
 
 
@@ -327,20 +325,28 @@ def load_SF(year, campaign, syst=False):
                     f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jmar.json.gz"
                 )
         elif SF == "jetveto":
-            ext = extractor()
-            with contextlib.ExitStack() as stack:
-                ext.add_weight_sets(
-                    [
-                        f"{run} {stack.enter_context(importlib.resources.path(f'BTVNanoCommissioning.data.JME.{year}_{campaign}',file))}"
-                        for run, file in config[campaign]["jetveto"].items()
-                    ]
+            if os.path.exists(
+                f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jetvetomaps.json.gz"
+            ):
+                correct_map["jetveto"] = correctionlib.CorrectionSet.from_file(
+                    f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jetvetomaps.json.gz"
                 )
 
-            ext.finalize()
-            correct_map["jetveto_cfg"] = {
-                j: f for j, f in config[campaign]["jetveto"].items()
-            }
-            correct_map["jetveto"] = ext.make_evaluator()
+            else:
+                ext = extractor()
+                with contextlib.ExitStack() as stack:
+                    ext.add_weight_sets(
+                        [
+                            f"{run} {stack.enter_context(importlib.resources.path(f'BTVNanoCommissioning.data.JME.{year}_{campaign}',file))}"
+                            for run, file in config[campaign]["jetveto"].items()
+                        ]
+                    )
+
+                    ext.finalize()
+                    correct_map["jetveto_cfg"] = {
+                        j: f for j, f in config[campaign]["jetveto"].items()
+                    }
+                    correct_map["jetveto"] = ext.make_evaluator()
 
     return correct_map
 
@@ -515,14 +521,69 @@ def jetveto(jets, correct_map):
     TypeError: If the jets parameter is not an iterable.
     KeyError: If the jet objects do not contain the required 'pt' or 'eta' properties.
     """
-    return ak.where(
-        correct_map["jetveto"][list(correct_map["jetveto"].keys())[0]](
-            jets.phi, jets.eta
+
+    if "correctionlib" in str(
+        type(correct_map["jetveto"][list(correct_map["jetveto"].keys())[0]])
+    ):
+        j, nj = ak.flatten(jets), ak.num(jets)
+        return ak.unflatten(
+            correct_map["jetveto"][list(correct_map["jetveto"].keys())[0]].evaluate(
+                "jetvetomap",
+                np.clip(j.eta, -5.191, 5.191),
+                np.clip(j.phi, -3.141592, 3.141592),
+            ),
+            nj,
         )
-        > 0,
-        ak.ones_like(jets.eta),
-        ak.zeros_like(jets.eta),
+
+    else:
+        return ak.where(
+            correct_map["jetveto"][list(correct_map["jetveto"].keys())[0]](
+                jets.phi, jets.eta
+            )
+            > 0,
+            ak.ones_like(jets.eta),
+            ak.zeros_like(jets.eta),
+        )
+
+
+# from https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/blob/master/examples/jercExample.py
+def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
+    """
+    Helper function for getting values of input variables
+    given a dictionary and a correction object.
+    """
+    input_values = []
+    for inputs in corr_obj.inputs:
+        if "systematic" in inputs.name:
+            input_values.append(jersyst)
+        else:
+
+            input_values.append(
+                np.array(
+                    input_dict[
+                        inputs.name.replace("Jet", "")
+                        .replace("Pt", "pt")
+                        .replace("Phi", "phi")
+                        .replace("Eta", "eta")
+                        .replace("Mass", "mass")
+                        .replace("Rho", "rho")
+                        .replace("A", "area")
+                    ]
+                )
+            )
+    return input_values
+
+
+cset_jersmear = (
+    correctionlib.CorrectionSet.from_file(
+        f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/jer_smear.json.gz"
     )
+    if os.path.exists(
+        f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/jer_smear.json.gz"
+    )
+    else {"JERSmear": None}
+)
+sf_jersmear = cset_jersmear["JERSmear"]
 
 
 ## JERC
@@ -576,36 +637,54 @@ def JME_shifts(
                 ]
                 if len(jecname) > 1:
                     raise ("Multiple uncertainties match to this era")
+                elif len(jecname) == 0:
+                    raise ("no uncertainty match to this era")
                 else:
                     jecname = jecname[0] + "_DATA"
             else:
-                jecname = correct_map["JME_cfg"]["MC"] + "_MC"
-            corr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
+                jecname = correct_map["JME_cfg"]["MC"].split(" ")[0] + "_MC"
+                jrname = correct_map["JME_cfg"]["MC"].split(" ")[1] + "_MC"
+
+            # store the original jet info
             nocorrjet = events.Jet
             nocorrjet["pt_raw"] = (1 - nocorrjet["rawFactor"]) * nocorrjet["pt"]
             nocorrjet["mass_raw"] = (1 - nocorrjet["rawFactor"]) * nocorrjet["mass"]
             nocorrjet["rho"] = ak.broadcast_arrays(
                 events.fixedGridRhoFastjetAll, nocorrjet.pt
             )[0]
-            j, nj = ak.flatten(nocorrjet), ak.num(nocorrjet)
-            values = [
-                np.array(
-                    j[
-                        inputs.name.replace("Jet", "")
-                        .replace("Pt", "pt")
-                        .replace("Phi", "phi")
-                        .replace("Eta", "eta")
-                        .replace("Mass", "mass")
-                        .replace("Rho", "rho")
-                        .replace("A", "area")
-                    ]
-                )
-                for inputs in corr.inputs
-            ]
-            flatCorrFactor = corr.evaluate(*values)
-            corrFactor = ak.unflatten(flatCorrFactor, nj)
+            nocorrjet["EventID"] = ak.broadcast_arrays(events.event, nocorrjet.pt)[0]
+            nocorrjet["Genpt"] = events.GenJet[nocorrjet.genJetIdx].pt
             jets = copy.copy(nocorrjet)
             jets["pt_orig"] = ak.values_astype(nocorrjet["pt"], np.float32)
+
+            ## flatten jets
+            j, nj = ak.flatten(nocorrjet), ak.num(nocorrjet)
+
+            # JEC
+            JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
+            JEC_input = get_corr_inputs(j, JECcorr)
+            JECflatCorrFactor = JECcorr.evaluate(*JEC_input)
+            ## JER
+            if isRealData:
+                # In data only the JEC is applied
+                corrFactor = JECflatCorrFactor
+
+            else:
+
+                JERSF = correct_map["JME"][f"{jrname}_ScaleFactor_AK4PFPuppi"]
+                JERptres = correct_map["JME"][f"{jrname}_PtResolution_AK4PFPuppi"]
+                ## For MC, correct the jet pT with JEC first
+                j["pt"] = j["pt_raw"] * JECflatCorrFactor
+                j["mass"] = j["mass_raw"] * JECflatCorrFactor
+                JERSF_input = get_corr_inputs(j, JERSF)
+                JERptres_input = get_corr_inputs(j, JERptres)
+                j["JER"] = JERptres.evaluate(*JERptres_input)
+                j["JERSF"] = JERSF.evaluate(*JERSF_input)
+                JERsmear_input = get_corr_inputs(j, sf_jersmear)
+                corrFactor = JECflatCorrFactor * sf_jersmear.evaluate(*JERsmear_input)
+
+            corrFactor = ak.unflatten(corrFactor, nj)
+
             jets["pt"] = ak.values_astype(nocorrjet["pt_raw"] * corrFactor, np.float32)
             jets["mass"] = ak.values_astype(
                 nocorrjet["mass_raw"] * corrFactor, np.float32
@@ -632,12 +711,10 @@ def JME_shifts(
             )
             met["orig_pt"], met["orig_phi"] = nocorrmet["pt"], nocorrmet["phi"]
             if systematic != False:
-
                 if systematic != "JERC_split":
+                    ## JEC variations
                     jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
-
                     jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
-
                     jets["JES_Total"] = ak.zip(
                         {
                             "up": ak.copy(jets),
@@ -650,16 +727,28 @@ def JME_shifts(
                             "down": ak.copy(met),
                         }
                     )
+                    jets["JER"] = ak.zip(
+                        {
+                            "up": ak.copy(jets),
+                            "down": ak.copy(jets),
+                        }
+                    )
+                    met["JER"] = ak.zip(
+                        {
+                            "up": ak.copy(met),
+                            "down": ak.copy(met),
+                        }
+                    )
+
                     for var in ["up", "down"]:
                         fac = 1.0 if var == "up" else -1.0
 
                         jets["JES_Total"][var]["pt"] = jets["pt"] * (
-                            corrFactor + fac * jesunc
+                            ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc
                         )
                         jets["JES_Total"][var]["mass"] = jets["mass"] * (
-                            corrFactor + fac * jesunc
+                            ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc
                         )
-
                         met["JES_Total"][var]["pt"] = corrected_polar_met(
                             nocorrmet.pt,
                             nocorrmet.phi,
@@ -674,6 +763,39 @@ def JME_shifts(
                             jets.phi,
                             jets.pt_raw,
                         ).phi
+
+                        JERSF_input_var = get_corr_inputs(j, JERSF, var)
+
+                        j["JERSF"] = JERSF.evaluate(*JERSF_input_var)
+                        JERsmear_input_var = get_corr_inputs(j, sf_jersmear)
+
+                        jets["JER"][var]["pt"] = jets["pt"] * ak.unflatten(
+                            JECflatCorrFactor
+                            * sf_jersmear.evaluate(*JERsmear_input_var),
+                            nj,
+                        )
+                        jets["JER"][var]["mass"] = jets["mass"] * ak.unflatten(
+                            JECflatCorrFactor
+                            * sf_jersmear.evaluate(*JERsmear_input_var),
+                            nj,
+                        )
+                        met["JER"][var]["pt"] = corrected_polar_met(
+                            nocorrmet.pt,
+                            nocorrmet.phi,
+                            jets.JER[var]["pt"],
+                            jets.phi,
+                            jets.pt_raw,
+                        ).pt
+                        met["JER"][var]["phi"] = corrected_polar_met(
+                            nocorrmet.pt,
+                            nocorrmet.phi,
+                            jets.JER[var]["pt"],
+                            jets.phi,
+                            jets.pt_raw,
+                        ).phi
+
+                else:
+                    raise NotImplementedError
 
         else:
             if isRealData:
@@ -712,7 +834,6 @@ def JME_shifts(
                     for jes in met.fields:
                         if "JES" not in jes or "Total" in jes:
                             continue
-
                         shifts += [
                             (
                                 {
@@ -904,33 +1025,30 @@ def Roccor_shifts(shifts, correct_map, events, isRealData, systematic=False):
 
 def puwei(nPU, correct_map, weights, syst=False):
     """
-    <<<<<<< HEAD
-        Return pileup weight
-        Parameters
-        ----------
-        nPU: ak.Array
-        correct_map : dict
-        weights : coffea.analysis_tool.weights
-        syst: "split", "weight_only"
-    =======
-        Apply pileup weights to events based on the number of primary vertices (nPU).
+    Return pileup weight
+    Parameters
+    ----------
+    nPU: ak.Array
+    correct_map : dict
+    weights : coffea.analysis_tool.weights
+    syst: "split", "weight_only"
+    Apply pileup weights to events based on the number of primary vertices (nPU).
 
-        This function applies pileup weights to the events using the provided correction map and weights.
-        It can optionally apply systematic variations.
+    This function applies pileup weights to the events using the provided correction map and weights.
+    It can optionally apply systematic variations.
 
-        Parameters:
-        nPU (awkward.Array(int)): The number of primary vertices in the event.
-        correct_map (dict): A dictionary containing correction factors and settings for pileup weights.
-        weights (): A dictionary to store the calculated weights.
-        syst (bool, optional): A flag to indicate whether to apply systematic variations. Default is False.
+    Parameters:
+    nPU (awkward.Array(int)): The number of primary vertices in the event.
+    correct_map (dict): A dictionary containing correction factors and settings for pileup weights.
+    weights (): A dictionary to store the calculated weights.
+    syst (bool, optional): A flag to indicate whether to apply systematic variations. Default is False.
 
-        Returns:
-        None: The function modifies the weights dictionary in place.
+    Returns:
+    None: The function modifies the weights dictionary in place.
 
-        Raises:
-        KeyError: If required keys are missing in the correct_map.
-        ValueError: If the nPU value is not recognized or supported.
-    >>>>>>> doc
+    Raises:
+    KeyError: If required keys are missing in the correct_map.
+    ValueError: If the nPU value is not recognized or supported.
     """
     if "correctionlib" in str(type(correct_map["PU"])):
         if syst:
