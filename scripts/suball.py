@@ -58,8 +58,8 @@ def get_lumi_from_web(year):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Mastering workflow submission")
     parser = config_parser(parser)
-    paser = scaleout_parser(parser)
-    paser = debug_parser(parser)
+    parser = scaleout_parser(parser)
+    parser = debug_parser(parser)
     parser.add_argument(
         "-sc",
         "--scheme",
