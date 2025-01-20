@@ -1,9 +1,9 @@
-## Scripts for prepre input & process output
+# Scripts for prepre input & process output
 
 Here lists scripts can be used for BTV tasks
 
 
-### `fetch.py` : create input json 
+## `fetch.py` : create input json 
 
 
 Use `fetch.py` in folder `scripts/` to obtain your samples json files. You can create `$input_list` ,which can be a list of datasets taken from CMS DAS or names of dataset(need to specify campaigns explicity), and create the json contains `dataset_name:[filelist]`. One can specify the local path in that input list for samples not published in CMS DAS.
@@ -13,10 +13,7 @@ The `--whitelist_sites, --blacklist_sites` are considered for fetch dataset if m
 
 
  
-
-
-
-### `dump_prescale.py`: Get Prescale weights
+## `dump_prescale.py`: Get Prescale weights
 
 :::{caution}
 Only works if `/cvmfs` is binding in the system
@@ -24,14 +21,14 @@ Only works if `/cvmfs` is binding in the system
 
 Generate prescale weights using `brilcalc`
 
-```python
+```bash
 python scripts/dump_prescale.py --HLT $HLT --lumi $LUMIMASK
 # HLT : put prescaled triggers
 # lumi: golden lumi json
 ```
 
 
-### Get processed information
+## Get processed information
 
 Get the run & luminosity information for the processed events from the coffea output files. When you use `--skipbadfiles`, the submission will ignore files not accesible(or time out) by `xrootd`. This script helps you to dump the processed luminosity into a json file which can be calculated by `brilcalc` tool and provide a list of failed lumi sections by comparing the original json input to the one from the `.coffea` files.
 
@@ -41,7 +38,7 @@ Get the run & luminosity information for the processed events from the coffea ou
 python scripts/dump_processed.py -c $COFFEA_FILES -n $OUTPUT_NAME (-j $ORIGINAL_JSON -t [all,lumi,failed])
 ```
 
-### `make_template.py`: Store histograms from coffea file
+## `make_template.py`: Store histograms from coffea file
 
 Use `scripts/make_template.py` to dump 1D/2D histogram from `.coffea` to `TH1D/TH2D` with hist. MC histograms can be reweighted to according to luminosity value given via `--lumi`. You can also merge several files 
 
@@ -65,25 +62,62 @@ python scripts/make_template.py -i "testfile/*.coffea" --lumi 7650 -o test.root 
 
 
 
-### Plotting code
-#### data/MC comparisons
-:exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
+## Plotting code
+### data/MC comparisons
 
-You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
-
-:new: non-uniform rebinning is possible, specify the bins with  list of edges `--autorebin 50,80,81,82,83,100.5`
+Obtain the data MC comparisons from the input coffea files by normalized MC to corresponding luminosity.
+You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`). Individual variables can be also specify by splitting with `,`.
 
 ```bash
+python scripts/plotdataMC.py -i $COFFEA --lumi $LUMI_IN_invPB -p $WORKFLOW -v $VARIABLE --autorebin $REBIN_OPTION --split $SPLIT_OPTION 
 python scripts/plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p ttdilep_sf -v z_mass,z_pt  
 python scripts/plotdataMC.py -i "test*.coffea" --lumi 41500 -p ttdilep_sf -v z_mass,z_pt # with wildcard option need ""
 ```
 
+There are a few options supply for the splitting scheme based on jet flavor or sample. 
+
+<div style="display: flex; justify-content: space-around; align-items: center;">
+  <figure style="text-align: center;">
+    <img src="_static/figs/example_rebin_jetpt.png" alt="Picture 1" width="300" height="auto" style="display: block; margin: 0 auto" />
+    <figcaption>Default: split by jet flavor</figcaption>
+  </figure>
+
+  <figure style="text-align: center;">
+    <img src="_static/figs/example_sample_jetpt.png" alt="Picture 2" width="300" height="auto" style="display: block; margin: 0 auto" />
+    <figcaption>--split sample: split by MC samples</figcaption>
+  </figure>
+
+  <figure style="text-align: center;">
+    <img src="_static/figs/example_samplesplit_jetpt.png" alt="Picture 3" width="300" height="auto" style="display: block; margin: 0 auto" />
+    <figcaption>--split sample: split by MC samples</figcaption>
+  </figure>
+
+</div>
+
+It also supports rebinning. Integer input refers the the rebinning through merging bins `--rebin 2`.  It also supports non-uniform rebinning, specify the bins with a list of edges `--autorebin 30,36,42,48,54,60,66,72,78,84,90,96,102,114,126,144,162,180,210,240,300`
+
+<div style="display: flex; justify-content: space-around; align-items: center;">
+  <figure style="text-align: center;">
+    <img src="_static/figs/example_rebin_jetpt.png" alt="Picture 1" width="300" height="auto" style="display: block; margin: 0 auto" />
+    <figcaption>Default</figcaption>
+  </figure>
+  <figure style="text-align: center;">
+    <img src="_static/figs/example_rebin2_jetpt.png" alt="Picture 1" width="300" height="auto" style="display: block; margin: 0 auto" />
+    <figcaption>merge neighboring bins</figcaption>
+  </figure>
+  <figure style="text-align: center;">
+    <img src="_static/figs/example_rebin_jetpt.png" alt="Picture 2" width="300" height="auto" style="display: block; margin: 0 auto" />
+    <figcaption>non-uniform rebin</figcaption>
+  </figure>
+</div>
 
 
-```
+
+
+
+```python
 
 options:
-  -h, --help            show this help message and exit
   --lumi LUMI           luminosity in /pb
   --com COM             sqrt(s) in TeV
   -p {ttdilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}, --phase {dilep_sf,ttsemilep_sf,ctag_Wc_sf,ctag_DY_sf,ctag_ttsemilep_sf,ctag_ttdilep_sf}
@@ -112,10 +146,10 @@ options:
 
 
 
-#### data/data, MC/MC comparisons
+### data/data, MC/MC comparisons
 
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
-:exclamation_mark: If using wildcard for input, do not forget the quoatation marks! (see 2nd example below)
+
 
 ```bash
 # with merge map, compare ttbar with data
@@ -158,17 +192,13 @@ options:
 
 
 
-#### ROCs & efficiency plots
+### ROCs & efficiency plots
 
 Extract the ROCs for different tagger and efficiencies from validation workflow
 
-```python
+```bash
 python scripts/validation_plot.py -i  $INPUT_COFFEA -v $VERSION
 ```
-
-
-
-
 
 
 ```json
@@ -181,7 +211,7 @@ python scripts/validation_plot.py -i  $INPUT_COFFEA -v $VERSION
 }
 ```
 
-#### `correlation_plots.py` : get linear correlation from arrays
+### `correlation_plots.py` : get linear correlation from arrays
 
 You can perform a study of linear correlations of b-tagging input variables. Additionally, soft muon variables may be added into the study by requesting `--SMu` argument. If you wan to limit the outputs only to DeepFlavB, PNetB and RobustParTAK4B, you can use the `--limit_outputs` option. If you want to use only the set of variables used for tagger training, not just all the input variables, then use the option `--limit_inputs`. To limit number of files read, make use of option `--max_files`. In case your study requires splitting samples by flavour, use `--flavour_split`. `--split_region_b` performs a sample splitting based on the DeepFlavB >/< 0.5. 
 
@@ -189,7 +219,7 @@ You can perform a study of linear correlations of b-tagging input variables. Add
 For Data/MC comparison purpose pay attention - change ranking factors (xs/sumw) in L420! 
 :::
 
-```python
+```bash
 python correlation_plots.py $input_folder [--max_files $nmax_files --SMu --limit_inputs --limit_outputs --specify_MC --flavour_split --split_region_b]
 ```
 
@@ -198,6 +228,6 @@ python correlation_plots.py $input_folder [--max_files $nmax_files --SMu --limit
 
 To further investigate the correlations, one can create the 2D plots of the variables used in this study. Inputs and optional arguments are the same as for the correlation plots study.
 
-```python
+```bash
 python 2Dhistogramms.py $input_folder [--max_files $nmax_files --SMu --limit_inputs --limit_outputs --specify_MC --flavour_split --split_region_b]
 ```

@@ -421,6 +421,7 @@ def common_shifts(self, events):
     Normally done before selection to apply updated objects.
     Uncertainties are handled by updating object collections with up/down variations.
     Example for Shift List:
+
     ```python
     # nominal correction
     shift = [({"Jet": jets, "MET": met, "Muon" : muon}, None)]
@@ -441,7 +442,8 @@ def common_shifts(self, events):
                         },
                         "JESDown",
                     )]
-    ``
+    ```
+
     Different treatment for weights and scale/resolution shifts is necessary to ensure accurate corrections and uncertainties are applied to the data.
 
     Parameters:
@@ -1999,8 +2001,9 @@ class JPCalibHandler(object):
         """
         Calculate the track probability from the integral of the track IPsig templates, given the IPsig and category.
         Reference code: https://github.com/cms-sw/cmssw/blob/CMSSW_13_0_X/RecoBTag/TrackProbability/src/HistogramProbabilityEstimator.cc
-            ipsig: IP significance array
-            cat: category array (0-9)
+
+        ipsig: IP significance array
+        cat: category array (0-9)
         """
 
         if ak.any(cat < 0) or ak.any(cat > 9):

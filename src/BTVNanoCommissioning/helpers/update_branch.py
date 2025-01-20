@@ -30,6 +30,7 @@ def missing_branch(events):
 
     Returns:
     events (coffea.nanoaodevents): Events with updated branches.
+
     """
     # Function implementation here
     events["fixedGridRhoFastjetAll"] = (

@@ -1,10 +1,10 @@
-## Structure of the framework 
+# Index of the framework 
 
 <!-- Need a figure?  -->
 
 The main ingredients of the framework are wrapped in `src/` directories with supported directories in the root path. 
 
-### `src/data` : custom correctiosn
+## `src/data` : custom corrections
 
 Stores the customize corrections used in analysis. e.g. jet probality calibration, custom scale factors...etc. It has a structure similar to [`jsonpog-intergration`](https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/) split by POGs, corrections.
 | Type        | File type |  Comments|
@@ -17,7 +17,7 @@ Stores the customize corrections used in analysis. e.g. jet probality calibratio
 | `JME` | `.txt` | JER, JEC files|
 | `JPCalib` | `.root` | Jet probablity calibration, used in LTSV methods|
 
-### `src/utils`: configurations of frameworks
+## `src/utils`: configurations of frameworks
 
 - `histogrammer.py`: collections of hisograms & hisogram writter
 - `selection.py`: collections of common selections
@@ -27,7 +27,7 @@ Stores the customize corrections used in analysis. e.g. jet probality calibratio
 - `plot_utils.py`: plotting utilities
 - `array_writter.py`: write out events into root file
 
-### `src/helpers`: functionalities of the framework
+## `src/helpers`: functionalities of the framework
 
 - `xsection(_13TeV).py`: xsection diectionary
 - `particle*.csv`: particle mass info
@@ -37,17 +37,17 @@ Stores the customize corrections used in analysis. e.g. jet probality calibratio
 - `update_branch.py`: update missing branch (tagger likelihood ratio)
 - `cTagSFReader.py`(deprecated): csv reader of cSF
 
-### `src/workflows`: collections of workflow
+## `src/workflows`: collections of workflow
 
 Collections of different selections used in commissioning and scale factor. Find the detail in [workflow section](./wf.md).
 
 
-### `runner.py`: running coffea jobs
-### `condor/`: standalone submission
+## `runner.py`: running coffea jobs
+## `condor/`: standalone submission
 
 standalone condor submission script with futures executor. See the [details](scaleout.md#standalone-condor-jobs@lxplus/cmsconnect)
 
-### `scripts`: plotting, post-processing, all in one scripts
+## `scripts`: plotting, post-processing, all in one scripts
 
 - `fetch.py`: obtain dataset json file 
 - `suball.py`: all in one script to run commissioning/ quick data MC check....
@@ -65,11 +65,11 @@ standalone condor submission script with futures executor. See the [details](sca
     - `2Dhistograms.py`: plot 2D histogram from root file
     - `correction_plot.py`: plot  corelation matrix from root file
 
-### `metadata`: collections of dataset json files
+## `metadata`: collections of dataset json files
 
 Collections of json file for different campaigns. Split directory by campaign name.
 
-### `testfile`: example coffea files
+## `testfile`: example coffea files
 
 
 

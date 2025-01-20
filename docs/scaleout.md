@@ -27,14 +27,14 @@ WJets_inc (Nano_v11)|1183MB	|630MB	|1180MB|
 
 
 
-#### Condor@FNAL (CMSLPC)
+#### dask: Condor@FNAL (CMSLPC)
 Follow setup instructions at https://github.com/CoffeaTeam/lpcjobqueue. After starting 
 the singularity container run with 
 ```bash
 python runner.py --wf ttcom --executor dask/lpc
 ```
 
-#### Condor@CERN (lxplus)
+#### daskLCondor@CERN (lxplus)
 Only one port is available per node, so its possible one has to try different nodes until hitting
 one with `8786` being open. Other than that, no additional configurations should be necessary.
 
@@ -62,7 +62,7 @@ python runner.py --wf ttcom --executor dask/casa
 Authentication is handled automatically via login auth token instead of a proxy. File paths need to replace xrootd redirector with "xcache", `runner.py` does this automatically.
 
 
-#### Condor@DESY 
+#### parsl/dask with Condor 
 ```bash
 python runner.py --wf ttcom --executor dask/condor(parsl/condor)
 ```
@@ -95,8 +95,6 @@ After executing the command, a new folder will be created, preparing the submiss
 
 ::: {admonition} Frequent issues for standalone condor jobs submission
 
-
-
 1. CMS Connect provides a condor interface where one can submit jobs to all resources available in the CMS Global Pool. See [WorkBookCMSConnect Twiki](https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCMSConnect#Requesting_different_Operative_S) for the instructions if you use it for the first time.
 2. The submitted jobs are of the kind which requires a proper setup of the X509 proxy, to use the XRootD service to access and store data. In the generated `.jdl` file, you may see a line configured for this purpose `use_x509userproxy = true`. If you have not submitted jobs of this kind on lxplus condor, we recommend you to add a line
    ```bash
@@ -104,3 +102,14 @@ After executing the command, a new folder will be created, preparing the submiss
    ```
    to `.bashrc` and run it so the proxy file will be stored in your AFS folder instead of in your `/tmp/USERNAME` folder. For submission on cmsconnect, no specific action is required.
 :::
+
+
+### FAQ for submission
+
+- All jobs held: might indicate environment setup issue→ check out the condor err/out for parsl jobs the info are in `runinfo/JOBID/submit_scripts/`
+- Exit without complain: might be huge memory consumption: 
+   - Reduce `--chunk`, especially JERC variation are memory intense
+   - check the memory usage by calling `memory_usage_psutil`
+- partially failed/held: 	
+   - could be temporarily unavailable of the files/site. If the retries not work, considering obtained failure file list and resubmit.
+   - error of certain files→ check the failed files and run it locally with `--executor iterative`

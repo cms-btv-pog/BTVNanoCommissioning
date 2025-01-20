@@ -170,12 +170,13 @@ Other options detail can be found here
 #   --campaign CAMPAIGN   Dataset campaign, change the corresponding correction files
 
 #=======Optional======
+# ==> configurations for storing info
 #   --isSyst {False,all,weight_only,JERC_split,JP_MC}
 #                         Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None
 #   --isArray             Output root files
 #   --noHist              Not output coffea histogram
 #   --overwrite           Overwrite existing files
-
+# ==> scale out options
 #   --executor {iterative,futures,parsl/slurm,parsl/condor,parsl/condor/naf_lite,dask/condor,dask/condor/brux,dask/slurm,dask/lpc,dask/lxplus,dask/casa,condor_standalone}
 #                         The type of executor to use (default: futures). Other options can be implemented. For example see https://parsl.readthedocs.io/en/stable/userguide/configuring.html-
 #                         `parsl/slurm` - tested at DESY/Maxwell- `parsl/condor` - tested at DESY, RWTH- `parsl/condor/naf_lite` - tested at DESY- `dask/condor/brux` - tested at BRUX (Brown U)-
@@ -194,6 +195,7 @@ Other options detail can be found here
 #   --index INDEX         (Specific for dask/lxplus file splitting, default: 0,0) Format: $dict_index_start,$file_index_start,$dict_index_stop,$file_index_stop. Stop indices are optional. $dict_index
 #                         refers to the index, splitted $dict_index and $file_index with ','$dict_index refers to the sample dictionary of the samples json file. $file_index refers to the N-th batch
 #                         of files per dask-worker, with its size being defined by the option --index. The job will start (stop) submission from (with) the corresponding indices.
+# ==> debug option
 #   --validate            Do not process, just check all files are accessible
 #   --skipbadfiles        Skip bad files.
 #   --only ONLY           Only process specific dataset or file

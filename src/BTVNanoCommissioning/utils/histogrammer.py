@@ -19,6 +19,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
     workflow (str): The workflow identifier to determine specific histogramming logic.
 
     Example:
+
     ```python
     # axis example
     mass_axis = Hist.axis.Regular(50, 0, 300, name="mass", label=" $p_{T}$ [GeV]")

@@ -198,6 +198,7 @@ def normal_interval(pw, tw, pw2, tw2, coverage=_coverage1sd):
     Compute errors based on the expansion of pass/(pass + fail), possibly weighted
     Parameters
     ----------
+
     pw : np.ndarray
         Numerator, or number of (weighted) successes, vectorized
     tw : np.ndarray

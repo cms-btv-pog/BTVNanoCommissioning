@@ -1,4 +1,4 @@
-## For developers: Add new workflow
+# For developers: Add new workflow
 
 
 The BTV tutorial for coffea part is under [`notebooks`](https://github.com/cms-btv-pog/BTVNanoCommissioning/tree/master/notebooks) and the template to construct new workflow is [`src/BTVNanoCommissioning/workflows/example.py`](https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/master/src/BTVNanoCommissioning/workflows/example.py)
@@ -8,7 +8,7 @@ The BTV tutorial for coffea part is `notebooks/BTV_commissiong_tutorial-coffea.i
 
 Use the `example.py` as template to develope new workflow.
 
-### 0. Add new workflow info to `workflows/__init__.py` 
+## 0. Add new workflow info to `workflows/__init__.py` 
 
 
 ```python
@@ -25,7 +25,7 @@ workflows["ctag_ttsemilep_sf"] = partial(
 ```
 Notice that if you are working on a WP SFs, please put **WP** in the name.
 
-### 1. Add histogram collections to `utils/histogrammer.py`
+## 1. Add histogram collections to `utils/histogrammer.py`
 
 The histograms are use the [`hist`](https://hist.readthedocs.io/en/latest/) in this framework. This can be easily to convert to root histogram by `uproot` or numpy histograms.  For quick start of hist can be found [here](https://hist.readthedocs.io/en/latest/user-guide/quickstart.html)
 
@@ -46,7 +46,7 @@ _hist_dict["mujet_pt"] = Hist.Hist(
 The kinematic variables/workflow specific variables are defined first, then it takes the common collections of input variables from the common defintion. 
 In case you want to add common variables use for all the workflow, you can go to [`helper/definition.py`](#add-new-common-variables)
 
-###  2. Selections: Implemented selections on events (`workflow/`)
+##  2. Selections: Implemented selections on events (`workflow/`)
 
 Create `boolean` arrays along event axis. Also check whether some common selctions already in `utils/selection.py`
 
@@ -83,7 +83,7 @@ if self.selMod=="WcM":
   event_level = req_trig & req_lumi & req_jet & req_muon & req_ele & req_leadlep_pt& req_Wc
 ```
 
-###  3. Selected objects: Pruned objects with reduced event_level
+##  3. Selected objects: Pruned objects with reduced event_level
 Store the selected objects to event-based arrays. The selected object must contains **Sel**, for the muon-enriched jet and soft muon is **MuonJet** and **SoftMu**, the kinematics will store. The cross-object variables need to create entry specifically. 
 
 ```python
@@ -136,7 +136,7 @@ if self.isArray:
 </details>
 
 
-### 4. Setup CI pipeline `.github/workflow`
+## 4. Setup CI pipeline `.github/workflow`
 
 The actions are checking the changes would break the framework. The actions are collected in `.github/workflow`
 You can simply include a workflow by adding the entries with name
@@ -187,7 +187,7 @@ Yout can find the secret configuration in the direcotry : `Settings>>Secrets>>Ac
 </details>
 
 
-### 5. Refine used MC as input `sample.py`
+## 5. Refine used MC as input `sample.py`
 The `sample.py` collects the samples (dataset name) used in the workflow. This collections are use to create the dataset json file.
 - `data` : data sample (MuonEG, Muon0....)
 - `MC`: main MC used for the workflow
@@ -223,8 +223,8 @@ Here's the example for BTA_ttbar
     },
 ```
 
-### Optional changes
-#### Add workflow to `scripts/suball.py` 
+## Optional changes
+### Add workflow to `scripts/suball.py` 
 The `suball.py` summarize the steps to obtain the result.
 In case your task requires to run several workflows, you can wrapped them as `dict` of the workflows
 ```python
@@ -244,7 +244,7 @@ scheme = {
         ],
     }
 ```
-#### Add new common variables in `helper/definition.py`
+### Add new common variables in `helper/definition.py`
 
 In the `definition.py` we collect the axis definition, name and label of tagger scores/input variables 
 ```python
@@ -263,7 +263,7 @@ definitions_dict = {
     ...
 }
 ```
-#### Additional corrections and uncertainty variations not in the framework
+### Additional corrections and uncertainty variations not in the framework
 The corrections are collected in `utils/correction.py`.  There are two types of the variation: weight varations, i.e. SFs, ueps weight, or object energy scale/resolution variations: JES/JER. Here's an example to add new corrections 
 
 1. Add new info `utils/AK4_parameter.py` 

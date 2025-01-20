@@ -40,9 +40,10 @@ Currently the available workflows are summarized
 installation.md
 user.md
 developer.md
+structure.md
+scaleout.md
 wf.md
 scripts.md
-scaleout.md
 auto.md
 api.rst
 ```
