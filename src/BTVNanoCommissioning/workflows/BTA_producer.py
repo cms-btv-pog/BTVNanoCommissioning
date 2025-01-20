@@ -34,6 +34,7 @@ class NanoProcessor(processor.ProcessorABC):
         chunksize=75000,
         addPFMuons=False,  # BTA custom argument
         addAllTracks=False,  # BTA custom argument
+        base_file_path="root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee",      
     ):
         self._year = year
         self._campaign = campaign
@@ -46,6 +47,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.addPFMuons = addPFMuons
         self.addAllTracks = addAllTracks
         self.isSyst = isSyst
+        self.base_file_path = base_file_path
 
     @property
     def accumulator(self):
@@ -65,7 +67,7 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isSyst:
             fname = "systematic/" + fname
         checkf = os.popen(
-            f"gfal-ls root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
+            f"gfal-ls {self.base_file_path}/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
         ).read()
         if len(checkf) > 0:
             print("skip ", checkf)
@@ -1156,7 +1158,7 @@ class NanoProcessor(processor.ProcessorABC):
                     output_root[bname] = ak.zip(b_nest)
             fout["btagana/ttree"] = output_root
         os.system(
-            f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
+            f"xrdcp -p --silent {fname} {self.base_file_path}/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
         )
         os.system(f"rm {fname}")
 

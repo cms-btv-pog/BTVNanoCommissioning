@@ -24,6 +24,8 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=True,
         noHist=False,
         chunksize=75000,
+        base_file_path="root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee",
+        output_dir="/tmp/{user}/phys_btag/btv_nano_commissioning",
     ):
         self._year = year
         self._campaign = campaign
@@ -37,6 +39,8 @@ class NanoProcessor(processor.ProcessorABC):
         # note: in BTA TTbarSelectionProducer it says "disable trigger selection in MC"
         # for consistency, we will disable both trigger selection in MC and data here
         self.do_trig_sel = False
+        self.base_file_path = base_file_path
+        self.output_dir = output_dir.format(user=os.environ["USER"]) if "{user}" in output_dir else output_dir
 
     @property
     def accumulator(self):
@@ -65,10 +69,10 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
 
         fname = f"{dataset}_{shift_name}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        outfile_path = f"{self.base_file_path}/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
 
-        checkf = os.popen(
-            f"gfal-ls root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
-        ).read()
+        gfal_ls_command = f"gfal-ls {outfile_path}"
+        checkf = os.popen(gfal_ls_command).read()
         if len(checkf) > 0:
             return {dataset: len(events)}
 
@@ -380,8 +384,13 @@ class NanoProcessor(processor.ProcessorABC):
             # store weights according to BTA code
             # note: in original BTA code, all weights are appended in a same variable ttbar_w. Here we separate them according to the logic in NanoAOD
             basic_vars["ttbar_w"] = events.genWeight
+            # LHE pdf variation weights (w_var / w_nominal) for LHA IDs 325300 - 325402
             lhe_pdf_w_arrays = getattr(events, "LHEPdfWeight", None)
+            # [0] is renscfact=0.5d0 facscfact=0.5d0 ; [1] is renscfact=0.5d0 facscfact=1d0 ; [2] is renscfact=0.5d0 facscfact=2d0 ; [3] is renscfact=1d0 facscfact=0.5d0 ;
+            # [4] is renscfact=1d0 facscfact=1d0 ; [5] is renscfact=1d0 facscfact=2d0 ; [6] is renscfact=2d0 facscfact=0.5d0 ; [7] is renscfact=2d0 facscfact=1d0 ;
+            # [8] is renscfact=2d0 facscfact=2d0
             lhe_scale_w_arrays = getattr(events, "LHEScaleWeight", None)
+            # [0] is ISR=2 FSR=1; [1] is ISR=1 FSR=2[2] is ISR=0.5 FSR=1; [3] is ISR=1 FSR=0.5;
             ps_w_arrays = getattr(events, "PSWeight", None)
 
         ###############
@@ -515,7 +524,10 @@ class NanoProcessor(processor.ProcessorABC):
         passJetSel = (
             ((abs(chsel) == 11) | (abs(chsel) == 13)) & (ak.num(Jet_clean) >= 4)
         ) | ((abs(chsel) > 13) & (ak.num(Jet_clean) >= 1))
-        passMetSel = events.PuppiMET.pt > 0
+        if "Run3" in self._campaign:
+            passMetSel = events.PuppiMET.pt > 0
+        else:
+            passMetSel = events.MET.pt > 0
 
         # and the channel selection, configured in TTbarSelectionFilter
         # https://github.com/cms-btv-pog/RecoBTag-PerformanceMeasurements/blob/10_6_X/python/TTbarSelectionFilter_cfi.py#L4
@@ -527,10 +539,12 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         #  Write root #
         ###############
-        fname = f"{dataset}_{shift_name}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
-        os.system(f"mkdir -p {dataset}_{shift_name}")
+        local_outdir = f"{self.output_dir}/BTA_ttbar/{self._campaign.replace('Run3','')}"
+        # fname is composed of {dataset}_{shift_name}/ and filename
+        os.system(f"mkdir -p {local_outdir}/{dataset}_{shift_name}")
+        local_outfile_path = f"{local_outdir}/{fname}"
         if ak.any(passEvent) == False:
-            with uproot.recreate(fname) as fout:
+            with uproot.recreate(local_outfile_path) as fout:
                 fout["sumw"] = {
                     "total_events": ak.Array([len(events)]),
                 }
@@ -546,6 +560,19 @@ class NanoProcessor(processor.ProcessorABC):
                     fout["total_negwei_events"] = ak.Array(
                         [ak.sum(events.genWeight[events.genWeight < 0.0])]
                     )
+                    fout["total_lhe_scaleweights_0"] = ak.Array([ak.sum(lhe_scale_w_arrays[:, 0] * events.genWeight)])
+                    fout["total_lhe_scaleweights_1"] = ak.Array([ak.sum(lhe_scale_w_arrays[:, 1] * events.genWeight)])
+                    fout["total_lhe_scaleweights_2"] = ak.Array([ak.sum(lhe_scale_w_arrays[:, 2] * events.genWeight)])
+                    fout["total_lhe_scaleweights_3"] = ak.Array([ak.sum(lhe_scale_w_arrays[:, 3] * events.genWeight)])
+                    fout["total_lhe_scaleweights_4"] = ak.Array([ak.sum(lhe_scale_w_arrays[:, 4] * events.genWeight)])
+                    fout["total_lhe_scaleweights_5"] = ak.Array([ak.sum(lhe_scale_w_arrays[:, 5] * events.genWeight)])
+                    fout["total_lhe_scaleweights_6"] = ak.Array([ak.sum(lhe_scale_w_arrays[:, 6] * events.genWeight)])
+                    fout["total_lhe_scaleweights_7"] = ak.Array([ak.sum(lhe_scale_w_arrays[:, 7] * events.genWeight)])
+                    fout["total_lhe_scaleweights_8"] = ak.Array([ak.sum(lhe_scale_w_arrays[:, 8] * events.genWeight)])
+                    fout["total_psweights_0"] = ak.Array([ak.sum(ps_w_arrays[:, 0] * events.genWeight)])
+                    fout["total_psweights_1"] = ak.Array([ak.sum(ps_w_arrays[:, 1] * events.genWeight)])
+                    fout["total_psweights_2"] = ak.Array([ak.sum(ps_w_arrays[:, 2] * events.genWeight)])
+                    fout["total_psweights_3"] = ak.Array([ak.sum(ps_w_arrays[:, 3] * events.genWeight)])
             return {dataset: 0}
 
         output = {
@@ -563,7 +590,7 @@ class NanoProcessor(processor.ProcessorABC):
                 output["ttbar_ps_w"] = ps_w_arrays[passEvent]
 
         # customize output file name: <dataset>_<nanoAOD file name>_<chunk index>.root
-        with uproot.recreate(fname) as fout:
+        with uproot.recreate(local_outfile_path) as fout:
             output_root = {}
             for bname in output.keys():
                 if not output[bname].fields:
@@ -588,11 +615,23 @@ class NanoProcessor(processor.ProcessorABC):
                     "total_negwei_events": ak.Array(
                         [ak.sum(events.genWeight[events.genWeight < 0.0])]
                     ),
+                    "total_lhe_scaleweights_0": ak.Array([ak.sum(lhe_scale_w_arrays[:, 0] * events.genWeight)]),
+                    "total_lhe_scaleweights_1": ak.Array([ak.sum(lhe_scale_w_arrays[:, 1] * events.genWeight)]),
+                    "total_lhe_scaleweights_2": ak.Array([ak.sum(lhe_scale_w_arrays[:, 2] * events.genWeight)]),
+                    "total_lhe_scaleweights_3": ak.Array([ak.sum(lhe_scale_w_arrays[:, 3] * events.genWeight)]),
+                    "total_lhe_scaleweights_4": ak.Array([ak.sum(lhe_scale_w_arrays[:, 4] * events.genWeight)]),
+                    "total_lhe_scaleweights_5": ak.Array([ak.sum(lhe_scale_w_arrays[:, 5] * events.genWeight)]),
+                    "total_lhe_scaleweights_6": ak.Array([ak.sum(lhe_scale_w_arrays[:, 6] * events.genWeight)]),
+                    "total_lhe_scaleweights_7": ak.Array([ak.sum(lhe_scale_w_arrays[:, 7] * events.genWeight)]),
+                    "total_lhe_scaleweights_8": ak.Array([ak.sum(lhe_scale_w_arrays[:, 8] * events.genWeight)]),
+                    "total_psweights_0": ak.Array([ak.sum(ps_w_arrays[:, 0] * events.genWeight)]),
+                    "total_psweights_1": ak.Array([ak.sum(ps_w_arrays[:, 1] * events.genWeight)]),
+                    "total_psweights_2": ak.Array([ak.sum(ps_w_arrays[:, 2] * events.genWeight)]),
+                    "total_psweights_3": ak.Array([ak.sum(ps_w_arrays[:, 3] * events.genWeight)]),
                 }
-        os.system(
-            f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
-        )
-        os.system(f"rm {fname}")
+        transfer_command = f"xrdcp -p --silent {local_outfile_path} {outfile_path}"
+        os.system(transfer_command)
+        os.system(f"rm {local_outfile_path}")
 
         return {dataset: len(events)}
 
