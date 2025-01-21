@@ -97,18 +97,13 @@ class NanoProcessor(processor.ProcessorABC):
             "semittM": "ctag_Wc_sf",  # same histogram representation as W+c
             "semittE": "ectag_Wc_sf",  # same histogram representation as W+c
         }
-        _hist_event_dict = (
+        output = (
             {"": None}
             if self.noHist
             else histogrammer(
                 events, histoname[self.selMod], self._year, self._campaign
             )
         )
-
-        output = {
-            "sumw": processor.defaultdict_accumulator(float),
-            **_hist_event_dict,
-        }
 
         if isRealData:
             output["sumw"] = len(events)

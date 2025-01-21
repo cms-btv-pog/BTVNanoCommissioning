@@ -1,6 +1,6 @@
 import importlib.resources
 import cloudpickle, gzip, contextlib
-import copy, os, re
+import copy, os, re, warnings
 
 import numpy as np
 import awkward as ak
@@ -25,6 +25,19 @@ def load_SF(year, campaign, syst=False):
     This function reads scale factors from the specified campaign configuration and returns them in a suitable format.
     It handles different types of scale factors, such as pileup weights, and checks for the existence of files in
     the jsonpog-integration directory or custom files.
+
+    Example:
+    ```python
+    ## Initialization, add EGM map from correctionlib
+    correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
+                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
+                )
+    ## Initialization, add EGM map from custom file by extractor
+    ext = extractor()
+    ext.add_weight_sets(["eleID EGamma2D {filename}.root"])
+    ext.finalize()
+    correction_map["EGM"] = ext.make_evaluator()
+    ```
 
     Parameters:
     year (str): The year for which to load the scale factors.
@@ -371,118 +384,6 @@ def load_lumi(campaign):
     _lumi_path = "BTVNanoCommissioning.data.lumiMasks"
     with importlib.resources.path(_lumi_path, config[campaign]["lumiMask"]) as filename:
         return LumiMask(filename)
-
-
-# wrapped up common shifts
-"""
-BTVNanoCommissioning.utils.correction
-
-This module provides functions to handle corrections and uncertainties for scaling factors and weight variables in the BTVNanoCommissioning framework.
-
-Features:
-- Scaling factors and weight variables:
-    - Corrections are wrapped with `weights` from the `coffea.analysis_tools.Weights` class along the event axis.
-    - Standardized correction files are handled using `correctionlib`.
-    - Additional methods for applying corrections can be found in the `coffea` documentation.
-    - Uncertainties are added using up/down variations, except for btag SFs which use `add_multivariation`.
-
-Example for Scaling Factors (SFs):
-```python
-## Initialization, add EGM map from correctionlib
-correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
-                f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
-            )
-## Initialization, add EGM map from custom file by extractor 
- ext = extractor()
- ext.add_weight_sets(["eleID EGamma2D {filename}.root"])
- ext.finalize()
- correction_map["EGM"] = ext.make_evaluator()
-
- # evaluation depends on file types...ignore here!
- ## add SFs & uncertainties to weight function
-weights.add(sf.split(" ")[0], sfs_alle, sfs_alle_up, sfs_alle_down) 
-```
-
-"""
-
-
-def common_shifts(self, events):
-    """
-    Apply common shifts to a events(mostly affect energy resolution/scale of objects).
-
-    This function applies common shifts to the input DataFrame based on the specified shift type.
-    It modifies the DataFrame in place to reflect the systematic variations/dedicated corrections.
-    This includes JERC corrections, rochester corrections.
-
-
-    - Scale/Resolution Corrections:
-    Construct a shift list with tuples of (obj_dict, shift_name).
-    These corrections are applied independently on all objects by updating the contents of the branch.
-    Normally done before selection to apply updated objects.
-    Uncertainties are handled by updating object collections with up/down variations.
-    Example for Shift List:
-    ```python
-    # nominal correction
-    shift = [({"Jet": jets, "MET": met, "Muon" : muon}, None)]
-    # add variations
-    shifts += [
-                    (
-                        {
-                            "Jet": jets.JES_Total.up,
-                            "MET": met.JES_Total.up,
-                        },
-                        "JESUp",
-                    )]
-    shifts += [
-                    (
-                        {
-                            "Jet": jets.JES_Total.down,
-                            "MET": met.JES_Total.down,
-                        },
-                        "JESDown",
-                    )]
-    ``
-    Different treatment for weights and scale/resolution shifts is necessary to ensure accurate corrections and uncertainties are applied to the data.
-
-    Parameters:
-    self (dict): The configuration dictionary from SF_map containing the scale factors and other settings.
-    events (events): The input events containing the data to be shifted.
-
-    Returns:
-    pandas.DataFrame: The DataFrame with the applied systematic shifts.
-    """
-
-    isRealData = not hasattr(events, "genWeight")
-    dataset = events.metadata["dataset"]
-    shifts = []
-    if "JME" in self.SF_map.keys():
-        syst_JERC = self.isSyst
-        if self.isSyst == "JERC_split":
-            syst_JERC = "split"
-        shifts = JME_shifts(
-            shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
-        )
-    else:
-        if int(self._year) < 2020:
-            shifts = [
-                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
-            ]
-        else:
-            shifts = [
-                (
-                    {
-                        "Jet": events.Jet,
-                        "MET": events.PuppiMET,
-                        "Muon": events.Muon,
-                    },
-                    None,
-                )
-            ]
-    if "roccor" in self.SF_map.keys():
-        shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
-    else:
-        shifts[0][0]["Muon"] = events.Muon
-    return shifts
 
 
 ##JEC
@@ -913,7 +814,7 @@ def JME_shifts(
 
         if "Summer22" in campaign:
             jets = jets[jets.veto != 1]
-    shifts += [({"Jet": jets, "MET": met}, None)]
+    shifts.insert(0, ({"Jet": jets, "MET": met}, None))
     return shifts
 
 
@@ -1673,11 +1574,12 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             if syst:
                 sfs_alle_down = sfs_alle_down * sfs_down
                 sfs_alle_up = sfs_alle_up * sfs_up
-
+        sfname = "ele_Reco" if "Reco" in sf else sf.split(" ")[0]
         if syst:
-            weights.add(sf.split(" ")[0], sfs_alle, sfs_alle_up, sfs_alle_down)
+
+            weights.add(sfname, sfs_alle, sfs_alle_up, sfs_alle_down)
         else:
-            weights.add(sf.split(" ")[0], sfs_alle)
+            weights.add(sfname, sfs_alle)
     return weights
 
 
@@ -1813,7 +1715,7 @@ def jmar_sf(jet, correct_map, weights, syst=False):
             weights.add(sf, sfs_all)
 
 
-def add_pdf_weight(weights, pdf_weights):
+def add_pdf_weight(weights, pdf_weights, isSyst=False):
     nom = np.ones(len(weights.weight()))
     up = np.ones(len(weights.weight()))
     down = np.ones(len(weights.weight()))
@@ -1826,19 +1728,25 @@ def add_pdf_weight(weights, pdf_weights):
         arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
         summed = ak.sum(np.square(arg), axis=1)
         pdf_unc = np.sqrt((1.0 / 99.0) * summed)
-        weights.add("PDF_weight", nom, pdf_unc + nom)
 
         # alpha_S weights
         # Eq. 27 of same ref
         as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
-        weights.add("aS_weight", nom, as_unc + nom)
 
         # PDF + alpha_S weights
         # Eq. 28 of same ref
         pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
-        weights.add("PDFaS_weight", nom, pdfas_unc + nom)
+        if isSyst != False:
+            weights.add("PDF_weight", nom, pdf_unc + nom)
+            weights.add("aS_weight", nom, as_unc + nom)
+            weights.add("PDFaS_weight", nom, pdfas_unc + nom)
 
+        else:
+            weights.add("PDF_weight", nom)
+            weights.add("aS_weight", nom)
+            weights.add("PDFaS_weight", nom)
     else:
+        warnings.warn("PDF weights are not available")
         weights.add("aS_weight", nom, up, down)
         weights.add("PDF_weight", nom, up, down)
         weights.add("PDFaS_weight", nom, up, down)
@@ -1866,74 +1774,76 @@ def top_pT_reweighting(gen):
 
 # Jennet adds PS weights
 # https://github.com/andrzejnovak/boostedhiggs/blob/master/boostedhiggs/corrections.py#L88-L108
-def add_ps_weight(weights, ps_weights):
+def add_ps_weight(weights, ps_weights, isSyst=False):
     nom = np.ones(len(weights.weight()))
     up_isr = np.ones(len(weights.weight()))
     down_isr = np.ones(len(weights.weight()))
     up_fsr = np.ones(len(weights.weight()))
     down_fsr = np.ones(len(weights.weight()))
 
-    if ps_weights is not None:
+    if ps_weights is not None and isSyst != False:
         if len(ps_weights[0]) == 4:
             up_isr = ps_weights[:, 0]
             down_isr = ps_weights[:, 2]
             up_fsr = ps_weights[:, 1]
             down_fsr = ps_weights[:, 3]
-        # else:
-        #   warnings.warn(f"PS weight vector has length {len(ps_weights[0])}")
+            weights.add("UEPS_ISR", nom, up_isr, down_isr)
+            weights.add("UEPS_FSR", nom, up_fsr, down_fsr)
 
-    weights.add("UEPS_ISR", nom, up_isr, down_isr)
-    weights.add("UEPS_FSR", nom, up_fsr, down_fsr)
+        else:
+            warnings.warn(f"PS weight vector has length {len(ps_weights[0])}")
+            weights.add("UEPS_FSR", nom, nom, nom)
 
 
-def add_scalevar_7pt(weights, lhe_weights):
+def add_scalevar_weight(weights, lhe_weights, isSyst=False):
+    """
+    Twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopSystematics#Factorization_and_renormalizatio
+
+    __doc__:
+    ['LHE scale variation weights (w_var / w_nominal)',
+    ' [0] is renscfact=0.5d0 facscfact=0.5d0 ',
+    ' [1] is renscfact=0.5d0 facscfact=1d0 ',
+    ' [2] is renscfact=0.5d0 facscfact=2d0 ',
+    ' [3] is renscfact=1d0 facscfact=0.5d0 ',
+    ' [4] is renscfact=1d0 facscfact=1d0 ',
+    ' [5] is renscfact=1d0 facscfact=2d0 ',
+    ' [6] is renscfact=2d0 facscfact=0.5d0 ',
+    ' [7] is renscfact=2d0 facscfact=1d0 ',
+    ' [8] is renscfact=2d0 facscfact=2d0 ']
+    """
+
     nom = np.ones(len(weights.weight()))
-
-    if len(lhe_weights) > 0:
-        if len(lhe_weights[0]) == 9:
-            up = np.maximum.reduce(
-                [
-                    lhe_weights[:, 0],
-                    lhe_weights[:, 1],
-                    lhe_weights[:, 3],
-                    lhe_weights[:, 5],
-                    lhe_weights[:, 7],
-                    lhe_weights[:, 8],
-                ]
+    if isSyst != False:
+        if len(lhe_weights) > 0:
+            if len(lhe_weights[0]) == 9:
+                nom = lhe_weights[:, 4]
+                weights.add(
+                    "scalevar_muR",
+                    nom,
+                    lhe_weights[:, 1] / nom,
+                    lhe_weights[:, 7] / nom,
+                )
+                weights.add(
+                    "scalevar_muF",
+                    nom,
+                    lhe_weights[:, 3] / nom,
+                    lhe_weights[:, 5] / nom,
+                )
+                weights.add(
+                    "scalevar_muR_muF", nom, lhe_weights[:, 0], lhe_weights[:, 8]
+                )
+            elif len(lhe_weights[0]) > 1:
+                print("Scale variation vector has length ", len(lhe_weights[0]))
+        else:
+            warnings.warn(
+                "LHE scale variation weights are not available, put nominal weights"
             )
-            down = np.minimum.reduce(
-                [
-                    lhe_weights[:, 0],
-                    lhe_weights[:, 1],
-                    lhe_weights[:, 3],
-                    lhe_weights[:, 5],
-                    lhe_weights[:, 7],
-                    lhe_weights[:, 8],
-                ]
-            )
-        elif len(lhe_weights[0]) > 1:
-            print("Scale variation vector has length ", len(lhe_weights[0]))
+            weights.add("scalevar_muR", nom, nom, nom)
+            weights.add("scalevar_muF", nom, nom, nom)
+            weights.add("scalevar_muR_muF", nom, nom, nom)
+
     else:
-        up = np.ones(len(weights.weight()))
-        down = np.ones(len(weights.weight()))
-
-    weights.add("scalevar_7pt", nom, up, down)
-
-
-def add_scalevar_3pt(weights, lhe_weights):
-    nom = np.ones(len(weights.weight()))
-
-    if len(lhe_weights) > 0:
-        if len(lhe_weights[0]) == 9:
-            up = np.maximum(lhe_weights[:, 0], lhe_weights[:, 8])
-            down = np.minimum(lhe_weights[:, 0], lhe_weights[:, 8])
-        elif len(lhe_weights[0]) > 1:
-            print("Scale variation vector has length ", len(lhe_weights[0]))
-    else:
-        up = np.ones(len(weights.weight()))
-        down = np.ones(len(weights.weight()))
-
-    weights.add("scalevar_3pt", nom, up, down)
+        weights.add("scalevar_3pt", nom)
 
 
 # JP calibration utility
@@ -2071,11 +1981,121 @@ class JPCalibHandler(object):
         return prob_jet
 
 
+# wrapped up common shifts
+
+
+def common_shifts(self, events):
+    """
+    Apply common shifts to a events(mostly affect energy resolution/scale of objects).
+
+    This function applies common shifts to the input DataFrame based on the specified shift type.
+    It modifies the DataFrame in place to reflect the systematic variations/dedicated corrections.
+    This includes JERC corrections, rochester corrections.
+
+
+    - Scale/Resolution Corrections:
+    Construct a shift list with tuples of (obj_dict, shift_name).
+    These corrections are applied independently on all objects by updating the contents of the branch.
+    Normally done before selection to apply updated objects.
+    Uncertainties are handled by updating object collections with up/down variations.
+    Example for Shift List:
+    ```python
+    # nominal correction
+    shift = [({"Jet": jets, "MET": met, "Muon" : muon}, None)]
+    # add variations
+    shifts += [
+                    (
+                        {
+                            "Jet": jets.JES_Total.up,
+                            "MET": met.JES_Total.up,
+                        },
+                        "JESUp",
+                    )]
+    shifts += [
+                    (
+                        {
+                            "Jet": jets.JES_Total.down,
+                            "MET": met.JES_Total.down,
+                        },
+                        "JESDown",
+                    )]
+    ``
+    Different treatment for weights and scale/resolution shifts is necessary to ensure accurate corrections and uncertainties are applied to the data.
+
+    Parameters:
+    self (dict): The configuration dictionary from SF_map containing the scale factors and other settings.
+    events (events): The input events containing the data to be shifted.
+
+    Returns:
+    pandas.DataFrame: The DataFrame with the applied systematic shifts.
+    """
+
+    isRealData = not hasattr(events, "genWeight")
+    dataset = events.metadata["dataset"]
+    shifts = []
+    if "JME" in self.SF_map.keys():
+        syst_JERC = self.isSyst
+        if self.isSyst == "JERC_split":
+            syst_JERC = "split"
+        shifts = JME_shifts(
+            shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
+        )
+    else:
+        ## Using PFMET
+        if int(self._year) < 2020:
+            shifts = [
+                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
+            ]
+        else:
+            ## Using PuppiMET
+            shifts = [
+                (
+                    {
+                        "Jet": events.Jet,
+                        "MET": events.PuppiMET,
+                        "Muon": events.Muon,
+                    },
+                    None,
+                )
+            ]
+    if "roccor" in self.SF_map.keys():
+        shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
+    return shifts
+
+
 def weight_manager(pruned_ev, SF_map, isSyst):
+    """
+    Example for Scaling Factors (SFs):
+    ```python
+    # evaluation depends on file types...
+    ## add SFs & uncertainties to weight function
+    weights.add(sf.split(" ")[0], sfs_alle, sfs_alle_up, sfs_alle_down)
+    """
     weights = Weights(len(pruned_ev), storeIndividual=True)
+    # Gen info
     if len(SF_map.keys()) == 0:
         if "genWeight" in pruned_ev.fields:
             weights.add("genweight", pruned_ev.genWeight)
+        if "PSWeight" in pruned_ev.fields:
+            # PS ISR/FSR weights
+            add_ps_weight(weights, pruned_ev.PSWeight, isSyst)
+        if "LHEPdfWeight" in pruned_ev.fields:
+            add_pdf_weight(weights, pruned_ev.LHEPdfWeight, isSyst)
+        if "LHEScaleWeight" in pruned_ev.fields:
+            add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
+        if "TTTo" in pruned_ev.metadata["dataset"]:
+            weights.add(
+                "ttbar_weight",
+                top_pT_reweighting(pruned_ev.GenPart),
+                (
+                    top_pT_reweighting(pruned_ev.GenPart)
+                    - ak.ones_like(top_pT_reweighting(pruned_ev.GenPart))
+                )
+                * 2.0
+                + ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
+                ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
+            )
+
         return weights
     if "hadronFlavour" in pruned_ev.Jet.fields:
 

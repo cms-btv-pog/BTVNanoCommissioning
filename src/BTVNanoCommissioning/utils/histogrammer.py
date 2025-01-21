@@ -919,18 +919,12 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     else:
                         flav, seljet = flavs, seljets
                     h.fill(
-                        syst="nominal",
+                        syst=syst,
                         flav=flav,
                         discr=seljet[histname.replace(f"_{i}", "")],
                         weight=weights.partial_weight(exclude=exclude_btv),
                     )
-                    if not isRealData and "btag" in SF_map.keys():
-                        h.fill(
-                            syst=syst,
-                            flav=flav,
-                            discr=seljet[histname.replace(f"_{i}", "")],
-                            weight=weight,
-                        )
+
         # pT ratio
         if "hl" in pruned_ev.fields:
             output["hl_ptratio"].fill(

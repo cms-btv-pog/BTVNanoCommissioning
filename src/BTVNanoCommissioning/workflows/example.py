@@ -75,16 +75,9 @@ class NanoProcessor(processor.ProcessorABC):
         ######################
         #  Create histogram  # : Get the histogram dict from `histogrammer`
         ######################
-        _hist_event_dict = (
-            {"": None}
-            if self.noHist
-            else histogrammer(events, "example")  # this is the place to modify
-        )
+        # this is the place to modify
+        output = {"": None} if self.noHist else histogrammer(events, "example")
 
-        output = {
-            "sumw": processor.defaultdict_accumulator(float),
-            **_hist_event_dict,
-        }
         if shift_name is None:
             if isRealData:
                 output["sumw"] = len(events)
