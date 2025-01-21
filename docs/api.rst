@@ -1,22 +1,3 @@
-API
-===
-
-.. autosummary::
-   :toctree: generated
-   BTVNanoCommissioning.utils.correction
-   BTVNanoCommissioning.utils.selection
-   BTVNanoCommissioning.utils.array_writer
-   BTVNanoCommissioning.utils.histogrammer
-   BTVNanoCommissioning.utils.sample
-   BTVNanoCommissioning.utils.plot_utils
-   BTVNanoCommissioning.helpers.update_branch
-   BTVNanoCommissioning.helpers.func
-   BTVNanoCommissioning.helpers.BTA_helper
-   BTVNanoCommissioning.helpers.xs_scaler
-
-   
-
-   
 Details
 =======
 
