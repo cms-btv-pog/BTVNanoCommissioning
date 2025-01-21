@@ -28,7 +28,7 @@ python scripts/dump_prescale.py --HLT $HLT --lumi $LUMIMASK
 ```
 
 
-## Get processed information
+## `dump_processed.py` Get processed information
 
 Get the run & luminosity information for the processed events from the coffea output files. When you use `--skipbadfiles`, the submission will ignore files not accesible(or time out) by `xrootd`. This script helps you to dump the processed luminosity into a json file which can be calculated by `brilcalc` tool and provide a list of failed lumi sections by comparing the original json input to the one from the `.coffea` files.
 
@@ -79,17 +79,17 @@ There are a few options supply for the splitting scheme based on jet flavor or s
 <div style="display: flex; justify-content: space-around; align-items: center;">
   <figure style="text-align: center;">
     <img src="_static/figs/example_rebin_jetpt.png" alt="Picture 1" width="300" height="auto" style="display: block; margin: 0 auto" />
-    <figcaption>Default: split by jet flavor</figcaption>
+    <figcaption>Default(`--split flav`): split by jet flavor</figcaption>
   </figure>
 
   <figure style="text-align: center;">
     <img src="_static/figs/example_sample_jetpt.png" alt="Picture 2" width="300" height="auto" style="display: block; margin: 0 auto" />
-    <figcaption>--split sample: split by MC samples</figcaption>
+    <figcaption>`--split sample`: split by MC samples</figcaption>
   </figure>
 
   <figure style="text-align: center;">
     <img src="_static/figs/example_samplesplit_jetpt.png" alt="Picture 3" width="300" height="auto" style="display: block; margin: 0 auto" />
-    <figcaption>--split sample: split by MC samples</figcaption>
+    <figcaption>`--split sample_flav`: split by MC samples & jet flavor</figcaption>
   </figure>
 
 </div>
@@ -103,11 +103,11 @@ It also supports rebinning. Integer input refers the the rebinning through mergi
   </figure>
   <figure style="text-align: center;">
     <img src="_static/figs/example_rebin2_jetpt.png" alt="Picture 1" width="300" height="auto" style="display: block; margin: 0 auto" />
-    <figcaption>merge neighboring bins</figcaption>
+    <figcaption>merge neighboring bins `--autoerbin 2`</figcaption>
   </figure>
   <figure style="text-align: center;">
     <img src="_static/figs/example_rebin_jetpt.png" alt="Picture 2" width="300" height="auto" style="display: block; margin: 0 auto" />
-    <figcaption>non-uniform rebin</figcaption>
+    <figcaption>non-uniform rebin `--autorebin $LIST` </figcaption>
   </figure>
 </div>
 
