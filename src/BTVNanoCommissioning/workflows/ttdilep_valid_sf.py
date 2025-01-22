@@ -186,7 +186,6 @@ class NanoProcessor(processor.ProcessorABC):
             systematics = ["nominal"] + list(weights.variations)
         else:
             systematics = [shift_name]
-        print(systematics)
         if not isRealData:
             pruned_ev["weight"] = weights.weight()
             for ind_wei in weights.weightStatistics.keys():
@@ -201,7 +200,6 @@ class NanoProcessor(processor.ProcessorABC):
         # Output arrays
         if self.isArray:
             array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
-        print(output)
         return {dataset: output}
 
     def postprocess(self, accumulator):

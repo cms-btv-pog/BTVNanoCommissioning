@@ -492,6 +492,7 @@ def JME_shifts(
     shifts,
     correct_map,
     events,
+    year,
     campaign,
     isRealData,
     systematic=False,
@@ -507,6 +508,7 @@ def JME_shifts(
     shifts (list): A list of shift types to apply (e.g., 'up', 'down').
     correct_map (dict): A dictionary containing correction factors and settings for JEC and JER.
     events (awkward.Array): An array of events containing jet information.
+    year (str): The year for which to apply the corrections.
     campaign (str): The name of the campaign for which to apply the corrections.
     isRealData (bool): A flag indicating whether the data is real or simulated.
     systematic (bool, optional): A flag to indicate whether to apply systematic variations. Default is False.
@@ -556,7 +558,7 @@ def JME_shifts(
             nocorrjet["EventID"] = ak.broadcast_arrays(events.event, nocorrjet.pt)[0]
             nocorrjet["Genpt"] = events.GenJet[nocorrjet.genJetIdx].pt
             jets = copy.copy(nocorrjet)
-            jets["pt_orig"] = ak.values_astype(nocorrjet["pt"], np.float32)
+            jets["orig_pt"] = ak.values_astype(nocorrjet["pt"], np.float32)
 
             ## flatten jets
             j, nj = ak.flatten(nocorrjet), ak.num(nocorrjet)
@@ -594,9 +596,7 @@ def JME_shifts(
             # MET correction, from MET correct factory
             # https://github.com/CoffeaTeam/coffea/blob/d7d02634a8d268b130a4d71f76d8eba6e6e27b96/coffea/jetmet_tools/CorrectedMETFactory.py#L105
 
-            nocorrmet = (
-                events.PuppiMET if "22" in campaign or "23" in campaign else events.MET
-            )
+            nocorrmet = events.PuppiMET if int(year) > 2020 else events.MET
             form = ak.forms.RecordForm(
                 {
                     "pt": nocorrmet.pt.layout.form,
@@ -616,85 +616,95 @@ def JME_shifts(
                     ## JEC variations
                     jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
                     jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
-                    jets["JES_Total"] = ak.zip(
-                        {
-                            "up": ak.copy(jets),
-                            "down": ak.copy(jets),
-                        }
-                    )
-                    met["JES_Total"] = ak.zip(
-                        {
-                            "up": ak.copy(met),
-                            "down": ak.copy(met),
-                        }
-                    )
-                    jets["JER"] = ak.zip(
-                        {
-                            "up": ak.copy(jets),
-                            "down": ak.copy(jets),
-                        }
-                    )
-                    met["JER"] = ak.zip(
-                        {
-                            "up": ak.copy(met),
-                            "down": ak.copy(met),
-                        }
-                    )
+                    unc_jets, unc_met = {}, {}
 
                     for var in ["up", "down"]:
                         fac = 1.0 if var == "up" else -1.0
+                        # JES total
+                        unc_jets[f"JES_Total{var}"] = copy.copy(nocorrjet)
+                        unc_met[f"JES_Total{var}"] = copy.copy(nocorrmet)
 
-                        jets["JES_Total"][var]["pt"] = jets["pt"] * (
-                            ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc
+                        unc_jets[f"JES_Total{var}"]["pt"] = ak.values_astype(
+                            jets["pt"]
+                            * (ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc),
+                            np.float32,
                         )
-                        jets["JES_Total"][var]["mass"] = jets["mass"] * (
-                            ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc
+                        unc_jets[f"JES_Total{var}"]["mass"] = ak.values_astype(
+                            jets["mass"]
+                            * (ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc),
+                            np.float32,
                         )
-                        met["JES_Total"][var]["pt"] = corrected_polar_met(
+                        unc_met[f"JES_Total{var}"]["pt"] = corrected_polar_met(
                             nocorrmet.pt,
                             nocorrmet.phi,
-                            jets.JES_Total[var]["pt"],
+                            unc_jets[f"JES_Total{var}"]["pt"],
                             jets.phi,
                             jets.pt_raw,
                         ).pt
-                        met["JES_Total"][var]["phi"] = corrected_polar_met(
+                        unc_met[f"JES_Total{var}"]["phi"] = corrected_polar_met(
                             nocorrmet.pt,
                             nocorrmet.phi,
-                            jets.JES_Total[var]["pt"],
+                            unc_jets[f"JES_Total{var}"]["pt"],
                             jets.phi,
                             jets.pt_raw,
                         ).phi
 
                         JERSF_input_var = get_corr_inputs(j, JERSF, var)
 
+                        ## JER variations
+                        unc_jets[f"JER{var}"] = copy.copy(nocorrjet)
+                        unc_met[f"JER{var}"] = copy.copy(nocorrmet)
                         j["JERSF"] = JERSF.evaluate(*JERSF_input_var)
                         JERsmear_input_var = get_corr_inputs(j, sf_jersmear)
 
-                        jets["JER"][var]["pt"] = jets["pt"] * ak.unflatten(
+                        unc_jets[f"JER{var}"]["pt"] = jets["pt"] * ak.unflatten(
                             JECflatCorrFactor
                             * sf_jersmear.evaluate(*JERsmear_input_var),
                             nj,
                         )
-                        jets["JER"][var]["mass"] = jets["mass"] * ak.unflatten(
+                        unc_jets[f"JER{var}"]["mass"] = jets["mass"] * ak.unflatten(
                             JECflatCorrFactor
                             * sf_jersmear.evaluate(*JERsmear_input_var),
                             nj,
                         )
-                        met["JER"][var]["pt"] = corrected_polar_met(
+                        unc_met[f"JER{var}"]["pt"] = corrected_polar_met(
                             nocorrmet.pt,
                             nocorrmet.phi,
-                            jets.JER[var]["pt"],
+                            unc_jets[f"JER{var}"]["pt"],
                             jets.phi,
                             jets.pt_raw,
                         ).pt
-                        met["JER"][var]["phi"] = corrected_polar_met(
+                        unc_met[f"JER{var}"]["phi"] = corrected_polar_met(
                             nocorrmet.pt,
                             nocorrmet.phi,
-                            jets.JER[var]["pt"],
+                            unc_jets[f"JER{var}"]["pt"],
                             jets.phi,
                             jets.pt_raw,
                         ).phi
-
+                    jets["JES_Total"] = ak.zip(
+                        {
+                            "up": unc_jets["JES_Totalup"],
+                            "down": unc_jets["JES_Totaldown"],
+                        }
+                    )
+                    jets["JER"] = ak.zip(
+                        {
+                            "up": unc_jets["JERup"],
+                            "down": unc_jets["JERdown"],
+                        }
+                    )
+                    met["JES_Total"] = ak.zip(
+                        {
+                            "up": unc_met["JES_Totalup"],
+                            "down": unc_met["JES_Totaldown"],
+                        }
+                    )
+                    met["JER"] = ak.zip(
+                        {
+                            "up": unc_met["JERup"],
+                            "down": unc_met["JERdown"],
+                        }
+                    )
                 else:
                     raise NotImplementedError
 
@@ -1268,8 +1278,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         )
 
                         sfs = np.where(masknone, 1.0, sfs)
-
-                        if syst:
+                        if syst != False:
                             sfs_up_low = np.where(
                                 (ele.pt <= 20.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
@@ -1295,7 +1304,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 0.0,
                             )
                             sfs_up_high = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele.pt > 75.0) & (~masknone),
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -1307,7 +1316,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_up_low,
                             )
                             sfs_down_high = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele.pt > 75.0) & (~masknone),
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -1404,7 +1413,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 0.0,
                             )
                             sfs_up_high = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele.pt > 75.0) & (~masknone),
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -1415,7 +1424,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_up_low,
                             )
                             sfs_down_high = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele.pt > 75.0) & (~masknone),
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -2038,7 +2047,13 @@ def common_shifts(self, events):
         if self.isSyst == "JERC_split":
             syst_JERC = "split"
         shifts = JME_shifts(
-            shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
+            shifts,
+            self.SF_map,
+            events,
+            self._year,
+            self._campaign,
+            isRealData,
+            syst_JERC,
         )
     else:
         ## Using PFMET
@@ -2073,30 +2088,28 @@ def weight_manager(pruned_ev, SF_map, isSyst):
     """
     weights = Weights(len(pruned_ev), storeIndividual=True)
     # Gen info
-    if len(SF_map.keys()) == 0:
-        if "genWeight" in pruned_ev.fields:
-            weights.add("genweight", pruned_ev.genWeight)
-        if "PSWeight" in pruned_ev.fields:
-            # PS ISR/FSR weights
-            add_ps_weight(weights, pruned_ev.PSWeight, isSyst)
-        if "LHEPdfWeight" in pruned_ev.fields:
-            add_pdf_weight(weights, pruned_ev.LHEPdfWeight, isSyst)
-        if "LHEScaleWeight" in pruned_ev.fields:
-            add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
-        if "TTTo" in pruned_ev.metadata["dataset"]:
-            weights.add(
-                "ttbar_weight",
-                top_pT_reweighting(pruned_ev.GenPart),
-                (
-                    top_pT_reweighting(pruned_ev.GenPart)
-                    - ak.ones_like(top_pT_reweighting(pruned_ev.GenPart))
-                )
-                * 2.0
-                + ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
-                ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
+    if "genWeight" in pruned_ev.fields:
+        weights.add("genweight", pruned_ev.genWeight)
+    if "PSWeight" in pruned_ev.fields:
+        # PS ISR/FSR weights
+        add_ps_weight(weights, pruned_ev.PSWeight, isSyst)
+    if "LHEPdfWeight" in pruned_ev.fields:
+        add_pdf_weight(weights, pruned_ev.LHEPdfWeight, isSyst)
+    if "LHEScaleWeight" in pruned_ev.fields:
+        add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
+    if "TTTo" in pruned_ev.metadata["dataset"]:
+        weights.add(
+            "ttbar_weight",
+            top_pT_reweighting(pruned_ev.GenPart),
+            (
+                top_pT_reweighting(pruned_ev.GenPart)
+                - ak.ones_like(top_pT_reweighting(pruned_ev.GenPart))
             )
+            * 2.0
+            + ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
+            ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
+        )
 
-        return weights
     if "hadronFlavour" in pruned_ev.Jet.fields:
 
         syst_wei = True if isSyst != False else False
