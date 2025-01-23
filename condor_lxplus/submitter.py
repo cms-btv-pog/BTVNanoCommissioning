@@ -153,7 +153,7 @@ if __name__ == "__main__":
     print(args)
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    base_dir = current_dir.replace("/condor", "")
+    base_dir = current_dir.replace("/condor_lxplus", "")
     """
     if args.remoteRepo is not None:
         print("Will use a remote path to access BTVNanoCommissioning:", args.remoteRepo)
