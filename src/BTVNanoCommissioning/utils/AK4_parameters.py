@@ -61,7 +61,7 @@ correction_config = {
             "Run2022D": "calibeHistoWrite_Data2022D_NANO130X_v1.root",
             "MC": "calibeHistoWrite_MC2022_NANO130X_v2.root",
         },
-        "jetveto": {"Run2022CD jetvetomap": "Winter22Run3_RunCD_v1.histo.root"},
+        "jetveto": {"Run2022CD jetvetomap": "Summer22_23Sep2023_RunCD_v1.root"},
     },
     "Summer22EE": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
@@ -80,7 +80,7 @@ correction_config = {
             "ele_Reco_med 2022Re-recoE+PromptFG Electron-ID-SF": "Reco20to75",
             "ele_Reco_high 2022Re-recoE+PromptFG Electron-ID-SF": "RecoAbove75",
         },
-        "jetveto": {"Run2022E jetvetomap_eep": "Winter22Run3_RunE_v1.histo.root"},
+        "jetveto": {"Run2022E jetvetomap_eep": "Summer22EE_23Sep2023_RunEFG_v1.root"},
         # use for BTA production, jet probablity
         "JPCalib": {
             "Run2022E": "calibeHistoWrite_Data2022F_NANO130X_v1.root",

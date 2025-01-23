@@ -257,5 +257,6 @@ def uproot_writeable(events, include=["events", "run", "luminosityBlock"]):
                 b_nest[n] = ak.fill_none(
                     ak.packed(ak.without_parameters(events[bname][n])), -99
                 )
-            ev[bname] = ak.zip(b_nest)
+            if bool(b_nest):
+                ev[bname] = ak.zip(b_nest)
     return ev

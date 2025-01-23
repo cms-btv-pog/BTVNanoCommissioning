@@ -539,9 +539,11 @@ def JME_shifts(
                     if k in events.metadata["dataset"]
                 ]
                 if len(jecname) > 1:
-                    raise ("Multiple uncertainties match to this era")
+                    raise ValueError("Multiple uncertainties match to this era")
                 elif len(jecname) == 0:
-                    raise ("no uncertainty match to this era")
+                    raise ValueError(
+                        "Available JEC variations in this era are not compatible with this file. Did you choose the correct dataset-era combination?"
+                    )
                 else:
                     jecname = jecname[0] + "_DATA"
             else:
