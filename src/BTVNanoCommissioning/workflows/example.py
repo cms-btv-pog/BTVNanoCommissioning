@@ -75,16 +75,9 @@ class NanoProcessor(processor.ProcessorABC):
         ######################
         #  Create histogram  # : Get the histogram dict from `histogrammer`
         ######################
-        _hist_event_dict = (
-            {"": None}
-            if self.noHist
-            else histogrammer(events, "example")  # this is the place to modify
-        )
+        # this is the place to modify
+        output = {"": None} if self.noHist else histogrammer(events, "example")
 
-        output = {
-            "sumw": processor.defaultdict_accumulator(float),
-            **_hist_event_dict,
-        }
         if shift_name is None:
             if isRealData:
                 output["sumw"] = len(events)
@@ -169,25 +162,29 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         #     Output       #
         ####################
-        # Configure SFs
+        # Configure SFs - read pruned objects from the pruned_ev and apply SFs and call the systematics
         weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
-        # Configure systematics
+        # Configure systematics shifts
         if shift_name is None:
-            systematics = ["nominal"] + list(weights.variations)
+            systematics = ["nominal"] + list(
+                weights.variations
+            )  # nominal + weight variation systematics
         else:
-            systematics = [shift_name]
+            systematics = [shift_name]  # JES/JER systematics
+
+        # Fill the weight to output arrys
         if not isRealData:
             pruned_ev["weight"] = weights.weight()
             for ind_wei in weights.weightStatistics.keys():
                 pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
                     include=[ind_wei]
                 )
-        # Configure histograms
+        # Configure histograms- fill the histograms with pruned objects
         if not self.noHist:
             output = histo_writter(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
-        # Output arrays
+        # Output arrays - store the pruned objects in the output arrays
         if self.isArray:
             array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
 

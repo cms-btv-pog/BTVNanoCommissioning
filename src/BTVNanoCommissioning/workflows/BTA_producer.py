@@ -73,7 +73,14 @@ class NanoProcessor(processor.ProcessorABC):
 
         if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
             shifts = JME_shifts(
-                shifts, self.SF_map, events, self._campaign, isRealData, False, True
+                shifts,
+                self.SF_map,
+                events,
+                self._year,
+                self._campaign,
+                isRealData,
+                False,
+                True,
             )
         else:
             if int(self._year) < 2020:

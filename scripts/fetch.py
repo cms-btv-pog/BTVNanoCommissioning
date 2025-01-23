@@ -106,6 +106,7 @@ parser.add_argument(
     "--campaign",
     help="campaign name (same as the campaign in runner.py)",
     default=None,
+    require=True,
     type=str,
 )
 parser.add_argument("--year", help="year", default=None, type=str)
@@ -560,10 +561,12 @@ def main(args):
                 json.dump(reduced_fdict, fp, indent=4)
 
     else:
-        output_file = args.output
-        with open(output_file, "w") as fp:
+        os.system(f"mkdir -p metadata/{args.campaign}/")
+        with open(f"metadata/{args.campaign}/{args.output}", "w") as fp:
             json.dump(fdict, fp, indent=4)
-            print("The file is saved at: ", output_file)
+            print(
+                "The file is saved at: metadata/", {args.campaign}, "/", {args.output}
+            )
 
 
 if __name__ == "__main__":

@@ -68,15 +68,8 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
         ## Create histograms
-        _hist_event_dict = (
-            {"": None} if self.noHist else histogrammer(events, "ttdilep_sf")
-        )
-        if _hist_event_dict == None:
-            _hist_event_dict[""]
-        output = {
-            "sumw": processor.defaultdict_accumulator(float),
-            **_hist_event_dict,
-        }
+        output = {"": None} if self.noHist else histogrammer(events, "ttdilep_sf")
+
         if shift_name is None:
             if isRealData:
                 output["sumw"] = len(events)
@@ -207,7 +200,6 @@ class NanoProcessor(processor.ProcessorABC):
         # Output arrays
         if self.isArray:
             array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
-
         return {dataset: output}
 
     def postprocess(self, accumulator):

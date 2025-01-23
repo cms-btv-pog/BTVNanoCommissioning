@@ -1,2 +1,4 @@
 Sphinx>=5,<6
 sphinx_rtd_theme
+sphinx_copybutton
+myst-parser

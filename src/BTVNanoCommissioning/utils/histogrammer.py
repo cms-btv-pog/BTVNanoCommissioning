@@ -10,6 +10,27 @@ from BTVNanoCommissioning.helpers.func import flatten
 
 
 def histogrammer(events, workflow, year="2022", campaign="Summer22"):
+    """
+    Most of workflows require same set of variables. Collect axis, histograms definition in single file
+    To contribute: Add additional axis, histogram using [hist](https://hist.readthedocs.io/en/latest/) for dedicated workflow into the `_hist_dict`. For the new histogram, please have the `syst_axis` as first axis, and `Weight` as last axis.
+
+    Parameters:
+    events (awkward.Array): The events data to be histogrammed.
+    workflow (str): The workflow identifier to determine specific histogramming logic.
+
+    Example:
+
+    ```python
+    # axis example
+    mass_axis = Hist.axis.Regular(50, 0, 300, name="mass", label=" $p_{T}$ [GeV]")
+    # hist example
+    _hist_dict["dr_lmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+    ```
+
+    Returns:
+    dict: A dictionary containing the defined histograms.
+    """
+
     _hist_dict = {}
     ## Common axis
     flav_axis = Hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour")
@@ -504,6 +525,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             syst_axis, flav_axis, jpt_axis, Hist.storage.Weight()
         )
     ### Btag input variables & PFCands
+
     bininfo = definitions()
     for d in bininfo.keys():
         if d not in events.Jet.fields:
@@ -515,6 +537,8 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             if bininfo[d]["inputVar_units"] is not None
             else bininfo[d]["displayname"]
         )
+        if "WP" not in workflow:
+            break
         if "Wc_sf" in workflow:
             _hist_dict[d] = Hist.Hist(
                 syst_axis,
@@ -653,6 +677,27 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
 
 # Filled common histogram
 def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
+    """
+    Write histograms to the output dictionary based on pruned events and other parameters.
+
+    This function processes the pruned events and writes the histograms to the `output` dictionary. It takes into account the weights, systematics, and scale factors.
+
+    Parameters:
+    pruned_ev (coffea.nanoaodevents): The pruned events data to be histogrammed.
+    output (dict): The output dictionary where histograms will be stored.
+    weights (coffea.analysis_tools.Weights): The weights object for the events.
+    systematics (list): A list of systematic variations to be considered.
+    isSyst (str,bool): Indicating whether systematic variations are to be applied.
+    SF_map (dict): A dictionary containing scale factors for different variables.
+
+    Example:
+    ```python
+    histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map)
+    ```
+
+    Returns:
+    None
+    """
     exclude_btv = [
         "DeepCSVC",
         "DeepCSVB",
@@ -874,18 +919,12 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     else:
                         flav, seljet = flavs, seljets
                     h.fill(
-                        syst="nominal",
+                        syst=syst,
                         flav=flav,
                         discr=seljet[histname.replace(f"_{i}", "")],
                         weight=weights.partial_weight(exclude=exclude_btv),
                     )
-                    if not isRealData and "btag" in SF_map.keys():
-                        h.fill(
-                            syst=syst,
-                            flav=flav,
-                            discr=seljet[histname.replace(f"_{i}", "")],
-                            weight=weight,
-                        )
+
         # pT ratio
         if "hl" in pruned_ev.fields:
             output["hl_ptratio"].fill(

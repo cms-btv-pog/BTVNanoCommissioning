@@ -72,7 +72,7 @@ if __name__ == "__main__":
         "-dc",
         "--DAS_campaign",
         required=True,
-        help="Input the campaign name for DAS to search appropriate campaigns, use in dataset construction , please do `data_camapgin,mc_campaign` split by `,`",
+        help="Input the campaign name for DAS to search appropriate campaigns, use in dataset construction , please do `data_camapgin,mc_campaign` split by `,`, e.g. `*Run2023D*Sep2023*,*Run3Summer23BPixNanoAODv12-130X*` ",
     )
     parser.add_argument("-v", "--version", default="", help="version postfix")
     parser.add_argument(
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     # summarize diffeerent group for study
-    workflow_group = {
+    scheme = {
         # scale factor workflows
         "SF": ["BTA_ttbar", "BTA_addPFMuons"],
         # Use for prompt data MC checks for analysis
@@ -100,11 +100,11 @@ if __name__ == "__main__":
             "ctag_Wc_sf",
             "ctag_DY_sf",
             "QCD_sf",
-            # "QCD_mu_sf"
+            "QCD_mu_sf",
         ],
     }
     if args.scheme in workflows.keys():
-        workflow_group["test"] = [args.scheme]
+        scheme["test"] = [args.scheme]
         args.scheme = "test"
     # Check lumiMask exists and replace the Validation
     input_lumi_json = correction_config[args.campaign]["lumiMask"]
@@ -123,7 +123,7 @@ if __name__ == "__main__":
         )
         print(f"======>{input_lumi_json} is used for {args.year}")
 
-    for wf in workflow_group[args.scheme]:
+    for wf in scheme[args.scheme]:
         if args.debug:
             print(f"======{wf} in {args.scheme}=====")
         overwrite = "--overwrite" if args.overwrite else ""

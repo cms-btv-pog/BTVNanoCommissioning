@@ -50,7 +50,14 @@ class NanoProcessor(processor.ProcessorABC):
 
         if "JME" in self.SF_map.keys():
             shifts = JME_shifts(
-                shifts, self.SF_map, events, self._campaign, isRealData, self.syst, True
+                shifts,
+                self.SF_map,
+                events,
+                self._year,
+                self._campaign,
+                isRealData,
+                self.syst,
+                True,
             )
         else:
             shifts = [

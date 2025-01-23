@@ -44,7 +44,7 @@ correction_config = {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
         "PU": "puwei_2022_preEE.histo.root",  # new PU files, based on preEE
         "JME": {
-            "MC": "Summer22_22Sep2023_V2",
+            "MC": "Summer22_22Sep2023_V2 Summer22_22Sep2023_JRV1",
             "Run2022C": "Summer22_22Sep2023_RunCD_V2",
             "Run2022D": "Summer22_22Sep2023_RunCD_V2",
         },  # update to latest JEC
@@ -67,7 +67,7 @@ correction_config = {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
         "PU": "puwei_2022_postEE.histo.root",  # new PU file, post EE
         "JME": {
-            "MC": "Summer22EE_22Sep2023_V2",
+            "MC": "Summer22EE_22Sep2023_V2 Summer22EE_22Sep2023_JRV1",
             "Run2022E": "Summer22EE_22Sep2023_RunE_V2",
             "Run2022F": "Summer22EE_22Sep2023_RunF_V2",
             "Run2022G": "Summer22EE_22Sep2023_RunG_V2",
