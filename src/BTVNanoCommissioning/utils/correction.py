@@ -539,9 +539,11 @@ def JME_shifts(
                     if k in events.metadata["dataset"]
                 ]
                 if len(jecname) > 1:
-                    raise ("Multiple uncertainties match to this era")
+                    raise ValueError("Multiple uncertainties match to this era")
                 elif len(jecname) == 0:
-                    raise ("no uncertainty match to this era")
+                    raise ValueError(
+                        "Available JEC variations in this era are not compatible with this file. Did you choose the correct dataset-era combination?"
+                    )
                 else:
                     jecname = jecname[0] + "_DATA"
             else:
@@ -556,10 +558,11 @@ def JME_shifts(
                 events.fixedGridRhoFastjetAll, nocorrjet.pt
             )[0]
             nocorrjet["EventID"] = ak.broadcast_arrays(events.event, nocorrjet.pt)[0]
-            if "GenJet" in events.fields:
-                nocorrjet["Genpt"] = events.GenJet[nocorrjet.genJetIdx].pt
-            else:
-                nocorrjet["Genpt"] = ak.zeros_like(nocorrjet.pt)
+            if not isRealData:
+                genjetidx = ak.where(nocorrjet.genJetIdx == -1, 0, nocorrjet.genJetIdx)
+                nocorrjet["Genpt"] = ak.where(
+                    nocorrjet.genJetIdx == -1, -1, events.GenJet[genjetidx].pt
+                )
             jets = copy.copy(nocorrjet)
             jets["orig_pt"] = ak.values_astype(nocorrjet["pt"], np.float32)
 
@@ -600,12 +603,6 @@ def JME_shifts(
             # https://github.com/CoffeaTeam/coffea/blob/d7d02634a8d268b130a4d71f76d8eba6e6e27b96/coffea/jetmet_tools/CorrectedMETFactory.py#L105
 
             nocorrmet = events.PuppiMET if int(year) > 2020 else events.MET
-            form = ak.forms.RecordForm(
-                {
-                    "pt": nocorrmet.pt.layout.form,
-                    "phi": nocorrmet.phi.layout.form,
-                }
-            )
 
             met = copy.copy(nocorrmet)
             metinfo = [nocorrmet.pt, nocorrmet.phi, jets.pt, jets.phi, jets.pt_raw]
@@ -614,6 +611,8 @@ def JME_shifts(
                 ak.values_astype(corrected_polar_met(*metinfo).phi, np.float32),
             )
             met["orig_pt"], met["orig_phi"] = nocorrmet["pt"], nocorrmet["phi"]
+
+            ## JEC variations
             if systematic != False:
                 if systematic != "JERC_split":
                     ## JEC variations
