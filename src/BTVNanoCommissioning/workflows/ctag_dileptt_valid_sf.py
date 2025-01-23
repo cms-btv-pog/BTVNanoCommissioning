@@ -192,14 +192,10 @@ class NanoProcessor(processor.ProcessorABC):
             "dilepttM": "ctag_ttdilep_sf",
             "dilepttE": "ectag_ttdilep_sf",
         }
-        _hist_event_dict = (
+        output = (
             {"": None} if self.noHist else histogrammer(events, histname[self.selMod])
         )
 
-        output = {
-            "sumw": processor.defaultdict_accumulator(float),
-            **_hist_event_dict,
-        }
         if shift_name is None:
             if isRealData:
                 output["sumw"] = len(events)
