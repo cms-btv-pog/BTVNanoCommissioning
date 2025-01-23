@@ -556,7 +556,10 @@ def JME_shifts(
                 events.fixedGridRhoFastjetAll, nocorrjet.pt
             )[0]
             nocorrjet["EventID"] = ak.broadcast_arrays(events.event, nocorrjet.pt)[0]
-            nocorrjet["Genpt"] = events.GenJet[nocorrjet.genJetIdx].pt
+            if "GenJet" in events.fields:
+                nocorrjet["Genpt"] = events.GenJet[nocorrjet.genJetIdx].pt
+            else:
+                nocorrjet["Genpt"] = ak.zeros_like(nocorrjet.pt)
             jets = copy.copy(nocorrjet)
             jets["orig_pt"] = ak.values_astype(nocorrjet["pt"], np.float32)
 
@@ -822,7 +825,7 @@ def JME_shifts(
     if "jetveto" in correct_map.keys():
         jets = update(jets, {"veto": jetveto(jets, correct_map)})
 
-        if "Summer22" in campaign:
+        if "Summer22" in str(campaign):
             jets = jets[jets.veto != 1]
     shifts.insert(0, ({"Jet": jets, "MET": met}, None))
     return shifts

@@ -24,7 +24,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=True,
         noHist=False,
         chunksize=75000,
-        base_file_path="root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee",
+        base_file_path="root://dcache-cms-xrootd.desy.de//pnfs/desy.de/cms/tier2/store/user/pgadow/phys_btag/btv_nano_commissioning",
         output_dir="/tmp/{user}/phys_btag/btv_nano_commissioning",
     ):
         self._year = year
@@ -54,7 +54,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         if "JME" in self.SF_map.keys():
             shifts = JME_shifts(
-                shifts, self.SF_map, events, self._campaign, isRealData, self.syst, True
+                shifts, self.SF_map, events, self._year, self._campaign, isRealData, self.syst, True
             )
         else:
             shifts = [
