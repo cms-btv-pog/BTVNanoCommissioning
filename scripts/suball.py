@@ -74,6 +74,16 @@ if __name__ == "__main__":
         required=True,
         help="Input the campaign name for DAS to search appropriate campaigns, use in dataset construction , please do `data_camapgin,mc_campaign` split by `,`",
     )
+    parser.add_argument(
+        "--whitelist_sites",
+        help="White list fot sites",
+        default=None,
+    )
+    parser.add_argument(
+        "--blacklist_sites",
+        help="Black list for sites",
+        default=None,
+    )
     parser.add_argument("-v", "--version", default="", help="version postfix")
     parser.add_argument(
         "--local",
@@ -134,14 +144,17 @@ if __name__ == "__main__":
             )
             or args.overwrite
         ):
+            command = f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation"
+            if args.whitelist_sites is not None:
+                command += f" --whitelist_sites {args.whitelist_sites}"
+            if args.blacklist_sites is not None:
+                command += f" --blacklist_sites {args.blacklist_sites}"
             if args.debug:
                 print(
-                    f"Creating MC dataset: python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation"
+                    f"Creating MC dataset: {command}"
                 )
 
-            os.system(
-                f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation"
-            )
+            os.system(command)
             if args.debug:
                 os.system(f"ls metadata/{args.campaign}/*.json")
 
@@ -179,6 +192,8 @@ if __name__ == "__main__":
                         "version",
                         "local",
                         "debug",
+                        "whitelist_sites",
+                        "blacklist_sites",
                     ]:
                         continue
                     if key in [
