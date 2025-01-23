@@ -6,7 +6,29 @@ import awkward as ak
 
 
 def getSF(flav, CvL, CvB, file="DeepCSV_ctagSF_MiniAOD94X_2017_pTincl.root", syst=""):
-    # _btag_path = "BTVNanoCommissioning.data.BTV.Rereco17_94X"
+    """
+    Retrieve the scale factor (SF) for c-tagging based on the given parameters.
+
+    This function retrieves the scale factor (SF) for c-tagging using the specified flavor, CvL, CvB, and systematic variation. The SF is read from a ROOT file and returned as a dense lookup table.
+
+    Parameters:
+    flav (numpy.ndarray): Array of jet flavors. Typically, 4 for charm, 5 for bottom, and other values for light jets.
+    CvL (float): The CvL parameter value.
+    CvB (float): The CvB parameter value.
+    file (str, optional): The path to the ROOT file containing the scale factors. Defaults to "DeepCSV_ctagSF_MiniAOD94X_2017_pTincl.root".
+    syst (str, optional): The systematic variation to apply. Defaults to an empty string for the central value.
+
+    Returns:
+    dense_lookup: A dense lookup table containing the scale factors.
+
+    Example:
+    ```python
+    sf_lookup = getSF(flav_array, CvL_value, CvB_value)
+    ```
+
+    Deprecated:
+    This function is deprecated. Please use the BTVNanoCommissiong.correction.btagSFs  module instead.
+    """
     with importlib.resources.path(
         file[: file.rfind("/")].replace("/", "."), file[file.rfind("/") + 1 :]
     ) as filename:

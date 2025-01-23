@@ -62,12 +62,12 @@ BTA_ttbar_HLT_chns = [
 #  Mass table  #
 ################
 # mass table from https://github.com/scikit-hep/particle/blob/master/src/particle/data/particle2022.csv and https://gitlab.cern.ch/lhcb-conddb/DDDB/-/blob/master/param/ParticleTable.txt
-df_main = pd.read_csv(
-    "src/BTVNanoCommissioning/helpers/particle2022.csv", delimiter=",", skiprows=1
+path = os.path.dirname(os.path.abspath(__file__))
+maincsv, backcsv = os.path.join(path, "particle2022.csv"), os.path.join(
+    path, "ParticleTable.csv"
 )
-df_back = pd.read_csv(
-    "src/BTVNanoCommissioning/helpers/ParticleTable.csv", delimiter=",", skiprows=4
-)
+df_main = pd.read_csv(maincsv, delimiter=",", skiprows=1)
+df_back = pd.read_csv(backcsv, delimiter=",", skiprows=4)
 df_main, df_back = df_main.astype({"ID": int}), df_back.astype({"PDGID": int})
 main = dict(zip(df_main.ID, df_main.Mass / 1000.0))
 backup = dict(zip(df_back.PDGID, df_back["MASS(GeV)"]))

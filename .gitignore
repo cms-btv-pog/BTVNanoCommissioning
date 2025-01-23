@@ -5,6 +5,7 @@
 .ipynb_checkpoints/
 \#*
 
+docs/_build/
 runinfo/
 plot/
 plotting/plot/
