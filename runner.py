@@ -103,6 +103,11 @@ def IO_parser(parser):
         help="Output histogram filename (default: %(default)s)",
     )
     parser.add_argument(
+        "--outputdir",
+        default=None,
+        help="Output directory name (default: %(default)s)",
+    )
+    parser.add_argument(
         "--json",
         dest="samplejson",
         default="dummy_samples.json",
@@ -275,8 +280,11 @@ if __name__ == "__main__":
     print(args)
     ogoutput = args.output
     histoutdir = ogoutput.split(".")[0]
-    coffeaoutput = f"{histoutdir}/{ogoutput}"
     outdir = "arrays_" + histoutdir
+    if args.outputdir:
+        histoutdir = f"{args.outputdir}/{histoutdir}"
+        outdir = f"{args.outputdir}/{outdir}"
+    coffeaoutput = f"{histoutdir}/{ogoutput}"
     basename = ogoutput.replace(".coffea", "").replace("hists_", "")
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
