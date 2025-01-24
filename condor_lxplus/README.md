@@ -6,6 +6,11 @@ The jobs submitted by this script rely on eos/afs being mounted on the condor no
 - It does not create a tarball of the BTVNanoComm code either, simply `cd`s to the working directory in eos/afs.
 - Copies the proxy locally and reads it directly from the condor node.
 
+## Example
+```
+python condor_lxplus/submitter.py --workflow ctag_DY_sf --json fetched_list.json --campaign Summer22 --year 2022 --isArray --skipbadfiles --jobName condor_1 --outputDir output_1 --submit
+```
+
 ## Pros
 - This is likely faster and will run out of the box.
 - Proxy handling works even if condor's native `user_proxy` method fails.
