@@ -262,7 +262,7 @@ transfer_output_files   = .success
 
 Queue JOBNUM from {jobnum_file}
 """.format(
-        executable=f"{base_dir}/condor/execute.sh",
+        executable=f"{base_dir}/condor_lxplus/execute.sh",
         base_dir=base_dir,
         outputDir=args.outputDir,
         log_dir=f"{base_dir}/{job_dir}/log",
