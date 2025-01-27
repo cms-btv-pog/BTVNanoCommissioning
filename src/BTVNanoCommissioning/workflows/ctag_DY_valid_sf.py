@@ -198,7 +198,8 @@ class NanoProcessor(processor.ProcessorABC):
                     self,
                     events[event_level],
                     events,
-                    "nominal",
+                    None,
+                    ["nominal"],
                     dataset,
                     isRealData,
                     empty=True,
@@ -222,7 +223,7 @@ class NanoProcessor(processor.ProcessorABC):
         )
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
-        pruned_ev["SelJet"] = event_jet[event_level][:, 0]
+        pruned_ev["SelJet"] = event_jet[event_level]
         if isMu:
             pruned_ev["MuonPlus"] = sposmu
             pruned_ev["MuonMinus"] = snegmu

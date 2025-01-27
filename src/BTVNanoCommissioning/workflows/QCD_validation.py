@@ -96,7 +96,6 @@ class NanoProcessor(processor.ProcessorABC):
             valid_events = (ak.count(pruned_ev.Jet.pt, axis=1) > 0) & (
                 ak.count(pruned_ev.JetSVs.pt, axis=1) > 0
             )
-            print("valid_events", valid_events, len(valid_events), len(events))
             filtered_events = pruned_ev[valid_events]
 
             # Pad pruned_ev.JetSVs.jetIdx to match the length of pruned_ev.Jet

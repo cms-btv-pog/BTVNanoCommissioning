@@ -705,18 +705,38 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
         "DeepJetC",
     ]  # exclude b-tag SFs for btag inputs
     # define Jet flavor
-    nj = 1 if type(pruned_ev.SelJet.pt[0]) == float else len(pruned_ev.SelJet.pt[0])
+
+    # find out minimum length of jets
+    nj = (
+        min(ak.min(ak.num(pruned_ev.SelJet.pt, axis=-1)), 4)
+        if len(flatten(pruned_ev.SelJet.pt)) != len(pruned_ev)
+        else 1
+    )  # set maximum 4 jets
+    pruned_ev.SelJet = (
+        pruned_ev.SelJet
+        if nj == 1 and len(flatten(pruned_ev.SelJet)) == len(pruned_ev)
+        else pruned_ev.SelJet[:, :nj]
+    )
+    if "var" in str(ak.type(pruned_ev.SelJet.pt)) and nj == 1:
+        pruned_ev.SelJet = pruned_ev.SelJet[:, 0]
     if "hadronFlavour" in pruned_ev.SelJet.fields:
         isRealData = False
         genflavor = ak.values_astype(
-            pruned_ev.SelJet.hadronFlavour + 1 * (pruned_ev.SelJet.partonFlavour == 0)
-            & (pruned_ev.SelJet.hadronFlavour == 0),
+            pruned_ev.SelJet.hadronFlavour
+            + 1
+            * (
+                (pruned_ev.SelJet.partonFlavour == 0)
+                & (pruned_ev.SelJet.hadronFlavour == 0)
+            ),
             int,
         )
         if "MuonJet" in pruned_ev.fields:
             smflav = ak.values_astype(
-                1 * (pruned_ev.MuonJet.partonFlavour == 0)
-                & (pruned_ev.MuonJet.hadronFlavour == 0)
+                1
+                * (
+                    (pruned_ev.MuonJet.partonFlavour == 0)
+                    & (pruned_ev.MuonJet.hadronFlavour == 0)
+                )
                 + pruned_ev.MuonJet.hadronFlavour,
                 int,
             )
@@ -888,6 +908,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                                 weight=weight,
                             )
                         else:
+                            print(weight, flav, genflavor)
                             h.fill(
                                 syst,
                                 flatten(flav),
@@ -945,10 +966,16 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 syst, pruned_ev.posl.delta_r(pruned_ev.negl), weight=weight
             )
             output["dr_posljet"].fill(
-                syst, genflavor, pruned_ev.posl.delta_r(pruned_ev.SelJet), weight=weight
+                syst,
+                genflavor,
+                pruned_ev.posl.delta_r(pruned_ev.SelJet),
+                weight=weight,
             )
             output["dr_negljet"].fill(
-                syst, genflavor, pruned_ev.negl.delta_r(pruned_ev.SelJet), weight=weight
+                syst,
+                genflavor,
+                pruned_ev.negl.delta_r(pruned_ev.SelJet),
+                weight=weight,
             )
         # Muon enriched jet histograms
         if "MuonJet" in pruned_ev.fields:
