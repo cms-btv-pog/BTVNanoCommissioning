@@ -273,8 +273,8 @@ Queue JOBNUM from {jobnum_file}
         f.write(jdl_template)
 
     if args.submit:
-        os.system(f"condor_submit {job_dir}/submit.jdl")
+        os.system(f"condor_submit -spool {job_dir}/submit.jdl")
     else:
         print(
-            f"Setup completed. Now submit the condor jobs by:\n  condor_submit {job_dir}/submit.jdl"
+            f"Setup completed. Now submit the condor jobs by:\n  condor_submit -spool {job_dir}/submit.jdl"
         )
