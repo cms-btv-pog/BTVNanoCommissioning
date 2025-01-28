@@ -9,7 +9,7 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     to_bitwise_trigger,
 )
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts
+from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts, common_shifts
 import os
 
 
@@ -30,7 +30,7 @@ class NanoProcessor(processor.ProcessorABC):
         self._year = year
         self._campaign = campaign
         self.chunksize = chunksize
-        self.syst = isSyst
+        self.isSyst = isSyst
         self.name = name
         self.SF_map = load_SF(self._year, self._campaign)
 
@@ -52,6 +52,10 @@ class NanoProcessor(processor.ProcessorABC):
         events = missing_branch(events)
         shifts = []
 
+        syst_JERC = self.isSyst
+        if self.isSyst == "JERC_split":
+            syst_JERC = "split"
+
         if "JME" in self.SF_map.keys():
             shifts = JME_shifts(
                 shifts,
@@ -60,8 +64,7 @@ class NanoProcessor(processor.ProcessorABC):
                 self._year,
                 self._campaign,
                 isRealData,
-                self.syst,
-                True,
+                syst_JERC,
             )
         else:
             shifts = [
@@ -157,7 +160,7 @@ class NanoProcessor(processor.ProcessorABC):
             (muons.pt > 20)
             & (abs(muons.eta) < 2.4)
             & muons.tightId  # pass cut-based tight ID
-            & (muons.pfRelIso04_all < 0.12)  # muon isolation cut
+            & (muons.pfRelIso04_all < 0.15)  # muon isolation cut (tight: https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Particle_Flow_isolation and https://github.com/cms-sw/cmssw/blob/75451d59a7acc30aec874be9a6b9a8835f2f7b3e/PhysicsTools/NanoAOD/python/muons_cff.py#L249)
         ]
 
         # assign channels: 13, 11, 13*13, 13*11, 11*11
@@ -516,12 +519,9 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         #     MET     #
         ###############
-        if "Run3" in self._campaign:
-            basic_vars["ttbar_met_pt"] = events.PuppiMET.pt
-            basic_vars["ttbar_met_phi"] = events.PuppiMET.phi
-        else:
-            basic_vars["ttbar_met_pt"] = events.MET.pt
-            basic_vars["ttbar_met_phi"] = events.MET.phi
+        # already corrected PuppiMET from JME shifts for Run 3
+        basic_vars["ttbar_met_pt"] = events.MET.pt
+        basic_vars["ttbar_met_phi"] = events.MET.phi
 
         ###############
         #  Selection  #
@@ -593,7 +593,19 @@ class NanoProcessor(processor.ProcessorABC):
                     }
             # transfer file for bookkeeping
             transfer_command = f"xrdcp -p --silent {local_outfile_path} {outfile_path}"
-            os.system(transfer_command)
+            result = os.system(transfer_command)
+            # Check if xrdcp failed
+            if result != 0:
+                print("xrdcp failed, attempting to transfer with gfal-copy")
+                transfer_command = f"gfal-copy -p -f -t 4200 {local_outfile_path} {outfile_path}"
+                result = os.system(transfer_command)
+                if result == 0:
+                    print("File transferred successfully with gfal-copy")
+                else:
+                    print("gfal-copy also failed")
+            else:
+                print("File transferred successfully with xrdcp")
+
             os.system(f"rm {local_outfile_path}")
             return {dataset: 0}
 
