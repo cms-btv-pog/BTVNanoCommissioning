@@ -573,7 +573,6 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
     #     )
     ### discriminators
     for disc in disc_list:
-        print("disc", disc)
         if disc not in events.Jet.fields:
             continue
         njet = 1
