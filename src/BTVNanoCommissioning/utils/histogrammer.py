@@ -76,7 +76,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         # _hist_dict["nJetSVs"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
 
     elif "QCD_smu" == workflow:
-        obj_list = ["jet0", "hl", "soft_l"]
+        obj_list = ["mujet", "hl", "soft_l"]
         # _hist_dict["dr_SVjet0"] = Hist.Hist(
         #     syst_axis, flav_axis, dr_SV_axis, Hist.storage.Weight()
         # )
@@ -708,11 +708,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
 
     # Reduce the jet to the correct dimension in the plot
     nj = 4 if "jet4" in output.keys() else 2 if "jet2" in output.keys() else 1
-    pruned_ev.SelJet = (
-        pruned_ev.SelJet
-        if nj == 1 and len(flatten(pruned_ev.SelJet)) == len(pruned_ev)
-        else pruned_ev.SelJet[:, :nj]
-    )
+    pruned_ev.SelJet = pruned_ev.SelJet if nj == 1 else pruned_ev.SelJet[:, :nj]
     if "var" in str(ak.type(pruned_ev.SelJet.pt)) and nj == 1:
         pruned_ev.SelJet = pruned_ev.SelJet[:, 0]
     if "hadronFlavour" in pruned_ev.SelJet.fields:
@@ -941,22 +937,8 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         weight=weights.partial_weight(exclude=exclude_btv),
                     )
 
-        # pT ratio
-        if "hl" in pruned_ev.fields:
-            output["hl_ptratio"].fill(
-                syst,
-                genflavor[:, 0],
-                ratio=pruned_ev.hl.pt / pruned_ev.SelJet[:, 0].pt,
-                weight=weight,
-            )
-        if "sl" in pruned_ev.fields:
-            output["sl_ptratio"].fill(
-                syst,
-                genflavor[:, 0],
-                ratio=pruned_ev.sl.pt / pruned_ev.SelJet[:, 0].pt,
-                weight=weight,
-            )
         if "dr_poslnegl" in output.keys():
+            # DY histograms
             output["dr_poslnegl"].fill(
                 syst, pruned_ev.posl.delta_r(pruned_ev.negl), weight=weight
             )
@@ -1016,6 +998,21 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 dr=pruned_ev.MuonJet.delta_r(pruned_ev.SoftMuon),
                 weight=weight,
             )
+            if "hl" in pruned_ev.fields:
+                output["hl_ptratio"].fill(
+                    syst,
+                    smflav,
+                    ratio=pruned_ev.hl.pt / pruned_ev.MuonJet.pt,
+                    weight=weight,
+                )
+            if "sl" in pruned_ev.fields:
+                output["sl_ptratio"].fill(
+                    syst,
+                    smflav,
+                    ratio=pruned_ev.sl.pt / pruned_ev.MuonJet.pt,
+                    weight=weight,
+                )
+
             if "SelMuon" in pruned_ev.fields and "hl" not in pruned_ev.fields:
                 output["dr_lmujethmu"].fill(
                     syst,

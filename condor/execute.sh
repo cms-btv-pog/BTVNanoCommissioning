@@ -11,32 +11,33 @@ env
 
 WORKDIR=`pwd`
 
-
-# Set up mamba environment
-## Interactive bash script with fallback pointing to $HOME, hence setting $PWD of worker node as $HOME
-export HOME=`pwd`
-
-if ${ARGS[remoteRepo]}!="":
-wget -L micro.mamba.pm/install.sh
-chmod +x install.sh
-## FIXME parsing arguments does not work. will use defaults in install.sh instead, see https://github.com/mamba-org/micromamba-releases/blob/main/install.sh 
-## Tried solutions listed in https://stackoverflow.com/questions/14392525/passing-arguments-to-an-interactive-program-non-interactively
-./install.sh <<< $'bin\nY\nY\nmicromamba\n' 
-source .bashrc
-
-export PATH=$WORKDIR:$PATH
-
-
-if [ ! -d /afs/cern.ch/user/${USER:0:1}/$USER ]; then
-    ## install necessary packages if on cmsconnect
-    micromamba install -c conda-forge jq --yes
-fi
-
 # Get arguments
 declare -A ARGS
 for key in workflow output samplejson year campaign isSyst isArray noHist overwrite voms chunk skipbadfiles outputDir remoteRepo; do
     ARGS[$key]=$(jq -r ".$key" $WORKDIR/arguments.json)
 done
+
+# Set up mamba environment
+## Interactive bash script with fallback pointing to $HOME, hence setting $PWD of worker node as $HOME
+export HOME=`pwd`
+
+echo "Setting up mamba environment"
+if [[ ${ARGS[remoteRepo]} != "" ]]; then
+    echo "remoteRepo is set to ${ARGS[remoteRepo]}"
+    wget -L micro.mamba.pm/install.sh
+    chmod +x install.sh
+    ## FIXME parsing arguments does not work. will use defaults in install.sh instead, see https://github.com/mamba-org/micromamba-releases/blob/main/install.sh 
+    ## Tried solutions listed in https://stackoverflow.com/questions/14392525/passing-arguments-to-an-interactive-program-non-interactively
+    ./install.sh <<< $'bin\nY\nY\nmicromamba\n' 
+    source .bashrc
+fi
+
+export PATH=$WORKDIR:$PATH
+
+if [ ! -d /afs/cern.ch/user/${USER:0:1}/$USER ]; then
+    ## install necessary packages if on cmsconnect
+    micromamba install -c conda-forge jq --yes
+fi
 
 # Create base env with python=3.10 and setuptools<=70.1.1
 micromamba activate 
