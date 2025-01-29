@@ -120,12 +120,12 @@ After executing the command, a new folder will be created, preparing the submiss
    ```
 
    **Pros:**
-      - This is likely faster and will run out of the box.
-      - Proxy handling works even if condor's native user_proxy method fails.
+   - This is likely faster and will run out of the box.
+   - Proxy handling works even if condor's native user_proxy method fails.
 
    **Cons:**
-      - Relies on eos/afs mount, hence jobs will fail to run on condor nodes where the mount is unstable.
-      - Will not work where eos is not mounted, e.g. on CMSConnect nodes.
+   - Relies on eos/afs mount, hence jobs will fail to run on condor nodes where the mount is unstable.
+   - Will not work where eos is not mounted, e.g. on CMSConnect nodes.
 
 </details>
 

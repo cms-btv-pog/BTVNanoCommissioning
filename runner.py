@@ -291,7 +291,9 @@ if __name__ == "__main__":
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
-        histoutdir = f"{outdirprefix}hists_{args.workflow}_{sample_json.rstrip('.json')}"
+        histoutdir = (
+            f"{outdirprefix}hists_{args.workflow}_{sample_json.rstrip('.json')}"
+        )
         outdir = f"{outdirprefix}arrays_{args.workflow}_{sample_json.rstrip('.json')}"
         coffeaoutput = (
             f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
