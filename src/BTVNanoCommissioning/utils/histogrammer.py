@@ -709,8 +709,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
     if "hadronFlavour" in pruned_ev.SelJet.fields:
         isRealData = False
         genflavor = ak.values_astype(
-            pruned_ev.SelJet.hadronFlavour + 1 * (pruned_ev.SelJet.partonFlavour == 0)
-            & (pruned_ev.SelJet.hadronFlavour == 0),
+            pruned_ev.SelJet.hadronFlavour + (1 * (pruned_ev.SelJet.partonFlavour == 0) & (pruned_ev.SelJet.hadronFlavour == 0)),
             int,
         )
         if "MuonJet" in pruned_ev.fields:
