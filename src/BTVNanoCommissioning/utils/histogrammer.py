@@ -706,12 +706,8 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
     ]  # exclude b-tag SFs for btag inputs
     # define Jet flavor
 
-    # find out minimum length of jets
-    nj = (
-        min(ak.min(ak.num(pruned_ev.SelJet.pt, axis=-1)), 4)
-        if len(flatten(pruned_ev.SelJet.pt)) != len(pruned_ev)
-        else 1
-    )  # set maximum 4 jets
+    # Reduce the jet to the correct dimension in the plot
+    nj = 4 if "jet4" in output.keys() else 2 if "jet2" in output.keys() else 1
     pruned_ev.SelJet = (
         pruned_ev.SelJet
         if nj == 1 and len(flatten(pruned_ev.SelJet)) == len(pruned_ev)
@@ -908,7 +904,6 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                                 weight=weight,
                             )
                         else:
-                            print(weight, flav, genflavor)
                             h.fill(
                                 syst,
                                 flatten(flav),
