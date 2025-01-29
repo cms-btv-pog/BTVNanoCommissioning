@@ -281,16 +281,18 @@ if __name__ == "__main__":
     ogoutput = args.output
     histoutdir = ogoutput.split(".")[0]
     outdir = "arrays_" + histoutdir
+    outdirprefix = ""
     if args.outputdir:
-        histoutdir = f"{args.outputdir}/{histoutdir}"
-        outdir = f"{args.outputdir}/{outdir}"
+        outdirprefix = f"{args.outputdir}/"
+        histoutdir = f"{outdirprefix}{histoutdir}"
+        outdir = f"{outdirprefix}{outdir}"
     coffeaoutput = f"{histoutdir}/{ogoutput}"
     basename = ogoutput.replace(".coffea", "").replace("hists_", "")
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
-        histoutdir = f"hists_{args.workflow}_{sample_json.rstrip('.json')}"
-        outdir = f"arrays_{args.workflow}_{sample_json.rstrip('.json')}"
+        histoutdir = f"{outdirprefix}hists_{args.workflow}_{sample_json.rstrip('.json')}"
+        outdir = f"{outdirprefix}arrays_{args.workflow}_{sample_json.rstrip('.json')}"
         coffeaoutput = (
             f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
         )
@@ -405,7 +407,7 @@ if __name__ == "__main__":
 
     if args.isArray:
         if path.exists(outdir) and args.overwrite == False and args.only is None:
-            raise Exception("Directory exists")
+            raise Exception(f"Directory {outdir} exists")
         else:
             os.system(f"mkdir -p {outdir}")
 
@@ -440,7 +442,7 @@ if __name__ == "__main__":
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
             f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
         ]
-        pathvar = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea/" in i][
+        pathvar = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea" in i][
             0
         ]
         condor_extra = [
