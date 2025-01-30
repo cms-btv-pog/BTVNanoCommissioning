@@ -159,5 +159,25 @@ correction_config = {
             "MC": "calibeHistoWrite_MC2023_Summer23BPix.root",
         },
     },
+    "Winter24": {
+        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
+        # "JME": {
+        #     "MC": "Winter24Prompt24_V1_MC",
+        #     "Run2024BCD": "Winter24Prompt24_RunBCD_V1_DATA",
+        #     "Run2024E": "Winter24Prompt24_RunE_V1_DATA",
+        # },
+        # "JME": "jec_compiled.pkl.gz",
+        # "LSF": {
+        #     "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+        #     "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        #     "ele_ID 2023PromptD Electron-ID-SF": "Tight",
+        #     "ele_Reco_low 2023PromptD Electron-ID-SF": "RecoBelow20",
+        #     "ele_Reco_med 2023PromptD Electron-ID-SF": "Reco20to75",
+        #     "ele_Reco_high 2023PromptD Electron-ID-SF": "RecoAbove75",
+        # },
+        # "jetveto": {
+        #     "Run2023D jetvetomap_all": "Summer23BPixPrompt23_RunD_v1.histo.root"
+        # },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
+    },
     "prompt_dataMC": {"lumiMask": "$PROMPT_DATAMC"},
 }

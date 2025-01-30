@@ -613,7 +613,7 @@ def JME_shifts(
             met["orig_pt"], met["orig_phi"] = nocorrmet["pt"], nocorrmet["phi"]
 
             ## JEC variations
-            if systematic != False:
+            if not isRealData and systematic != False:
                 if systematic != "JERC_split":
                     jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
                     jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
@@ -2079,6 +2079,7 @@ def common_shifts(self, events):
     return shifts
 
 
+# common weights
 def weight_manager(pruned_ev, SF_map, isSyst):
     """
     Example for Scaling Factors (SFs):
@@ -2098,7 +2099,7 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         add_pdf_weight(weights, pruned_ev.LHEPdfWeight, isSyst)
     if "LHEScaleWeight" in pruned_ev.fields:
         add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
-    if "TTTo" in pruned_ev.metadata["dataset"]:
+    if "TT" in pruned_ev.metadata["dataset"]:
         weights.add(
             "ttbar_weight",
             top_pT_reweighting(pruned_ev.GenPart),
@@ -2108,8 +2109,18 @@ def weight_manager(pruned_ev, SF_map, isSyst):
             )
             * 2.0
             + ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
-            ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
         )
+        if isSyst != False:
+            weights.add(
+                "ttbar_weight",
+                top_pT_reweighting(pruned_ev.GenPart),
+                (
+                    top_pT_reweighting(pruned_ev.GenPart)
+                    - ak.ones_like(top_pT_reweighting(pruned_ev.GenPart))
+                )
+                * 2.0,
+                ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
+            )
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
 
