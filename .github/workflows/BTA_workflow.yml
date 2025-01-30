@@ -107,7 +107,7 @@ jobs:
          python runner.py --wf BTA_addAllTracks --json metadata/test_bta_run3.json --executor iterative --overwrite --campaign Summer23 --year 2023
     - name: BTA addPFMuons workflow test(BTA for SF)
       run: |
-         python runner.py --wf BTA_addPFMuons --json metadata/test_bta_run3.json --executor iterative --overwrite --campaign Summer23 --year 2023
+         python runner.py --wf BTA_addPFMuons --json metadata/test_bta_run3.json --executor iterative --overwrite --campaign Summer23 --year 2023 
     
     - name: BTA_ttbar workflow test
       run: |

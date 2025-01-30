@@ -8,6 +8,7 @@ def array_writer(
     processor_class,  # the NanoProcessor class ("self")
     pruned_event,  # the event with specific calculated variables stored
     nano_event,  # entire NanoAOD/PFNano event with many variables
+    weights,  # weight for the event
     systname,  # name of systematic shift
     dataset,  # dataset name
     isRealData,  # boolean
@@ -49,6 +50,16 @@ def array_writer(
     othersMC=["Pileup_nTrueInt", "Pileup_nPU"],  # other fields, for MC only
     empty=False,
 ):
+    if not isRealData and systname != ["nominal"]:
+        pruned_event["weight"] = weights.weight()
+        for ind_wei in weights.weightStatistics.keys():
+            pruned_event[f"{ind_wei}_weight"] = weights.partial_weight(
+                include=[ind_wei]
+            )
+        if len(systname) > 1:
+            for syst in systname[1:]:
+                pruned_event[f"weight_syst_{syst}"] = weights.weight(modifier=syst)
+
     if empty:
         print("WARNING: No events selected. Writing blank file.")
         out_branch = []
@@ -81,7 +92,7 @@ def array_writer(
 
     # Write to root files
     print("Branches to write:", out_branch)
-    outdir = f"{processor_class.name}/{systname}/{dataset}/"
+    outdir = f"{processor_class.name}/{systname[0]}/{dataset}/"
     os.system(f"mkdir -p {outdir}")
 
     with uproot.recreate(

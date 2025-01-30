@@ -96,7 +96,6 @@ class NanoProcessor(processor.ProcessorABC):
             valid_events = (ak.count(pruned_ev.Jet.pt, axis=1) > 0) & (
                 ak.count(pruned_ev.JetSVs.pt, axis=1) > 0
             )
-            print("valid_events", valid_events, len(valid_events), len(events))
             filtered_events = pruned_ev[valid_events]
 
             # Pad pruned_ev.JetSVs.jetIdx to match the length of pruned_ev.Jet
@@ -190,12 +189,7 @@ class NanoProcessor(processor.ProcessorABC):
             systematics = ["nominal"] + list(weights.variations)
         else:
             systematics = [shift_name]
-        if not isRealData:
-            pruned_ev["weight"] = weights.weight()
-            for ind_wei in weights.weightStatistics.keys():
-                pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
-                    include=[ind_wei]
-                )
+
         # Configure histograms
         if not self.noHist:
             output = histo_writter(
@@ -203,7 +197,9 @@ class NanoProcessor(processor.ProcessorABC):
             )
         # Output arrays
         if self.isArray:
-            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
+            array_writer(
+                self, pruned_ev, events, weights, systematics, dataset, isRealData
+            )
 
         return {dataset: output}
 

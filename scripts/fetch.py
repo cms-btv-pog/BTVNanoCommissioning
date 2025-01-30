@@ -17,7 +17,6 @@ parser.add_argument(
     "--input",
     default=None,
     type=str,
-    # required=True,
     help="List of samples in DAS (default: %(default)s)",
 )
 parser.add_argument(
@@ -106,7 +105,7 @@ parser.add_argument(
     "--campaign",
     help="campaign name (same as the campaign in runner.py)",
     default=None,
-    require=True,
+    required=True,
     type=str,
 )
 parser.add_argument("--year", help="year", default=None, type=str)
