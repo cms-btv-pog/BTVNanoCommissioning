@@ -948,8 +948,10 @@ if __name__ == "__main__":
             shutil.make_archive("workflows", "zip", base_dir="workflows")
             client.upload_file("workflows.zip")
         else:
-            if "brux" in args.executor: cluster.adapt(minimum=args.scaleout,maximum=336)
-            else: cluster.adapt(minimum=args.scaleout)
+            if "brux" in args.executor:
+                cluster.adapt(minimum=args.scaleout, maximum=336)
+            else:
+                cluster.adapt(minimum=args.scaleout)
             client = Client(cluster)
             print("Waiting for at least one worker...")
             client.wait_for_workers(1)
