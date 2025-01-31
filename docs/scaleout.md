@@ -116,6 +116,8 @@ After executing the command, a new folder will be created, preparing the submiss
 
    **Example:**
    ```
+   voms-proxy-init --voms cms --valid 192:00
+   conda activate btv_coffea   # Or conda activate /eos/home-m/milee/miniforge3/envs/btv_coffea
    python condor_lxplus/submitter.py --workflow ctag_DY_sf --json fetched_list.json --campaign Summer22 --year 2022 --isArray --skipbadfiles --jobName condor_1 --outputDir output_1 --submit
    ```
 
