@@ -129,7 +129,7 @@ if not self.noHist:
     )
 # Output arrays - store the pruned objects in the output arrays
 if self.isArray:
-    array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
+    array_writer(self, pruned_ev, events, weights, systematics,dataset, isRealData)
   ```
 
 </p>

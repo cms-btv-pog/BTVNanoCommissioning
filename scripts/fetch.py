@@ -17,7 +17,6 @@ parser.add_argument(
     "--input",
     default=None,
     type=str,
-    # required=True,
     help="List of samples in DAS (default: %(default)s)",
 )
 parser.add_argument(

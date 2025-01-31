@@ -140,7 +140,8 @@ class NanoProcessor(processor.ProcessorABC):
                     self,
                     events[event_level],
                     events,
-                    "nominal",
+                    None,
+                    ["nominal"],
                     dataset,
                     isRealData,
                     empty=True,
@@ -173,12 +174,7 @@ class NanoProcessor(processor.ProcessorABC):
             systematics = [shift_name]  # JES/JER systematics
 
         # Fill the weight to output arrys
-        if not isRealData:
-            pruned_ev["weight"] = weights.weight()
-            for ind_wei in weights.weightStatistics.keys():
-                pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
-                    include=[ind_wei]
-                )
+
         # Configure histograms- fill the histograms with pruned objects
         if not self.noHist:
             output = histo_writter(
@@ -186,7 +182,9 @@ class NanoProcessor(processor.ProcessorABC):
             )
         # Output arrays - store the pruned objects in the output arrays
         if self.isArray:
-            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
+            array_writer(
+                self, pruned_ev, events, weights, systematics, dataset, isRealData
+            )
 
         return {dataset: output}
 
