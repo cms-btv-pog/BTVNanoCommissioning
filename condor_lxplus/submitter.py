@@ -201,17 +201,22 @@ if __name__ == "__main__":
     envpath = "/eos/home-m/milee/miniforge3/envs/btv_coffea/bin"
     pathvarlist = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea" in i]
     if len(pathvarlist) == 0:
-        print(f"You did not source the btv_coffea conda/mamba environment. Proceed with the central conda environment:\n{envpath} ?")
+        print(
+            f"You did not source the btv_coffea conda/mamba environment. Proceed with the central conda environment:\n{envpath} ?"
+        )
         response = input("(y/yes): ").strip().lower()
         if response == "y" or response == "yes":
             pass
         else:
-            print("First source the conda environment with which 'pip install -e .' was run. Then proceed again.")
+            print(
+                "First source the conda environment with which 'pip install -e .' was run. Then proceed again."
+            )
             exit()
     else:
         envpath = pathvarlist[0]
-        print(f"Using conda installation in\n{envpath}.\nThis has to be the conda installation with which 'pip install -e .' was run.")
-
+        print(
+            f"Using conda installation in\n{envpath}.\nThis has to be the conda installation with which 'pip install -e .' was run. If not, please source the correct environment and run again."
+        )
 
     # Store job submission files
 
