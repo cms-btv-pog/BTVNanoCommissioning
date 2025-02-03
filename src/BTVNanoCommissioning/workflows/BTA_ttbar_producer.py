@@ -9,7 +9,7 @@ from BTVNanoCommissioning.helpers.BTA_helper import (
     to_bitwise_trigger,
 )
 from BTVNanoCommissioning.helpers.func import update
-from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts, common_shifts
+from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts
 import os
 
 
@@ -25,12 +25,15 @@ class NanoProcessor(processor.ProcessorABC):
         noHist=False,
         chunksize=75000,
         base_file_path="root://dcache-cms-xrootd.desy.de//pnfs/desy.de/cms/tier2/store/user/pgadow/phys_btag/btv_nano_commissioning",
-        output_dir="/tmp/{user}/phys_btag/btv_nano_commissioning",
+        # output_dir="/tmp/{user}/phys_btag/btv_nano_commissioning",
+        output_dir="/data/dust/user/{user}/btv/phys_btag/sfb-ttkinfit/bta_ntuples",
+        transfer_files=False,
     ):
         self._year = year
         self._campaign = campaign
         self.chunksize = chunksize
         self.isSyst = isSyst
+        if self.isSyst == "False": self.isSyst = False
         self.name = name
         self.SF_map = load_SF(self._year, self._campaign)
 
@@ -41,6 +44,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.do_trig_sel = False
         self.base_file_path = base_file_path
         self.output_dir = output_dir.format(user=os.environ["USER"]) if "{user}" in output_dir else output_dir
+        self.transfer_files = transfer_files
 
     @property
     def accumulator(self):
@@ -50,12 +54,8 @@ class NanoProcessor(processor.ProcessorABC):
         isRealData = not hasattr(events, "genWeight")
         dataset = events.metadata["dataset"]
         events = missing_branch(events)
+
         shifts = []
-
-        syst_JERC = self.isSyst
-        if self.isSyst == "JERC_split":
-            syst_JERC = "split"
-
         if "JME" in self.SF_map.keys():
             shifts = JME_shifts(
                 shifts,
@@ -64,7 +64,7 @@ class NanoProcessor(processor.ProcessorABC):
                 self._year,
                 self._campaign,
                 isRealData,
-                syst_JERC,
+                self.isSyst,
             )
         else:
             shifts = [
@@ -78,13 +78,28 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
 
+        # file name (in case of transfer of files to grid resource)
         fname = f"{dataset}_{shift_name}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
         outfile_path = f"{self.base_file_path}/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
 
-        gfal_ls_command = f"gfal-ls {outfile_path}"
-        checkf = os.popen(gfal_ls_command).read()
-        if len(checkf) > 0:
-            return {dataset: len(events)}
+        # local filename and directory
+        local_outdir = f"{self.output_dir}/BTA_ttbar/{self._campaign.replace('Run3','')}"
+        # fname is composed of {dataset}_{shift_name}/ and filename
+        os.system(f"mkdir -p {local_outdir}/{dataset}_{shift_name}")
+        local_outfile_path = f"{local_outdir}/{fname}"
+
+
+        # check if the file already exists
+        if self.transfer_files:
+            gfal_ls_command = f"gfal-ls {outfile_path}"
+            checkf = os.popen(gfal_ls_command).read()
+            if len(checkf) > 0:
+                return {dataset: len(events)}
+        else:
+            # local check if file exists
+            if os.path.exists(local_outfile_path):
+                print(f"Already exists: {local_outfile_path}, skipping...")
+                return {dataset: len(events)}
 
         isRealData = not hasattr(events, "genWeight")
 
@@ -546,10 +561,6 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         #  Write root #
         ###############
-        local_outdir = f"{self.output_dir}/BTA_ttbar/{self._campaign.replace('Run3','')}"
-        # fname is composed of {dataset}_{shift_name}/ and filename
-        os.system(f"mkdir -p {local_outdir}/{dataset}_{shift_name}")
-        local_outfile_path = f"{local_outdir}/{fname}"
         # no events pass selection, just write bookkeeping metadata to file
         if ak.any(passEvent) == False:
             with uproot.recreate(local_outfile_path) as fout:
@@ -591,22 +602,8 @@ class NanoProcessor(processor.ProcessorABC):
                         "total_psweights_2": ak.Array([ak.sum(ps_w_arrays[:, 2] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 2 else ak.Array([0.]),
                         "total_psweights_3": ak.Array([ak.sum(ps_w_arrays[:, 3] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 3 else ak.Array([0.]),
                     }
-            # transfer file for bookkeeping
-            transfer_command = f"xrdcp -p --silent {local_outfile_path} {outfile_path}"
-            result = os.system(transfer_command)
-            # Check if xrdcp failed
-            if result != 0:
-                print("xrdcp failed, attempting to transfer with gfal-copy")
-                transfer_command = f"gfal-copy -p -f -t 4200 {local_outfile_path} {outfile_path}"
-                result = os.system(transfer_command)
-                if result == 0:
-                    print("File transferred successfully with gfal-copy")
-                else:
-                    print("gfal-copy also failed")
-            else:
-                print("File transferred successfully with xrdcp")
-
-            os.system(f"rm {local_outfile_path}")
+            # transfer file to permanent storage
+            if self.transfer_files: self.transfer_file(local_outfile_path, outfile_path)
             return {dataset: 0}
 
         output = {
@@ -673,11 +670,31 @@ class NanoProcessor(processor.ProcessorABC):
                     "total_psweights_2": ak.Array([ak.sum(ps_w_arrays[:, 2] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 2 else ak.Array([0.]),
                     "total_psweights_3": ak.Array([ak.sum(ps_w_arrays[:, 3] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 3 else ak.Array([0.]),
                 }
-        transfer_command = f"xrdcp -p --silent {local_outfile_path} {outfile_path}"
-        os.system(transfer_command)
-        os.system(f"rm {local_outfile_path}")
+        if self.transfer_files: self.transfer_file(local_outfile_path, outfile_path)
 
         return {dataset: len(events)}
 
     def postprocess(self, accumulator):
         return accumulator
+
+    def transfer_file(self, local_outfile_path, outfile_path):
+        transfer_command = f"xrdcp -p --silent {local_outfile_path} {outfile_path}"
+        result = os.system(transfer_command)
+        # Check if xrdcp failed
+        if result != 0:
+            print("xrdcp failed, attempting to transfer with gfal-copy")
+            transfer_command = f"gfal-copy -p -f -t 4200 {local_outfile_path} {outfile_path}"
+            result = os.system(transfer_command)
+            if result == 0:
+                print("File transferred successfully with gfal-copy")
+            else:
+                print("gfal-copy also failed")
+        else:
+            print("File transferred successfully with xrdcp")
+        if result == 0:
+            os.system(f"rm {local_outfile_path}")
+        else:
+            print("File transfer failed, need to transfer manually")
+            # append file path to a list for manual transfer which is stored in output_dir
+            with open(f"{self.output_dir}/manual_transfer.txt", "a") as f:
+                f.write(f"{transfer_command}\n") 
