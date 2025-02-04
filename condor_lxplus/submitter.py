@@ -197,6 +197,27 @@ if __name__ == "__main__":
     os.system(f"scp {proxy_file} proxy")
     print(f"Copied proxy file {proxy_file} to local directory.")
 
+    # Find conda/mamba environment
+    envpath = "/eos/home-m/milee/miniforge3/envs/btv_coffea/bin"
+    pathvarlist = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea" in i]
+    if len(pathvarlist) == 0:
+        print(
+            f"You did not source the btv_coffea conda/mamba environment. Proceed with the central conda environment:\n{envpath} ?"
+        )
+        response = input("(y/yes): ").strip().lower()
+        if response == "y" or response == "yes":
+            pass
+        else:
+            print(
+                "First source the conda environment with which 'pip install -e .' was run. Then proceed again."
+            )
+            exit()
+    else:
+        envpath = pathvarlist[0]
+        print(
+            f"Using conda installation in\n{envpath}.\nThis has to be the conda installation with which 'pip install -e .' was run. If not, please source the correct environment and run again."
+        )
+
     # Store job submission files
 
     ## store parser arguments
@@ -244,7 +265,7 @@ if __name__ == "__main__":
 Executable = {executable}
 
 
-Arguments = $(JOBNUM) {base_dir} {outputDir}
+Arguments = $(JOBNUM) {base_dir} {outputDir} {envpath}
 
 request_cpus = 1
 request_memory = 2000
@@ -265,6 +286,7 @@ Queue JOBNUM from {jobnum_file}
         executable=f"{base_dir}/condor_lxplus/execute.sh",
         base_dir=base_dir,
         outputDir=args.outputDir,
+        envpath=envpath,
         log_dir=f"{base_dir}/{job_dir}/log",
         transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt",
         jobnum_file=f"{base_dir}/{job_dir}/jobnum_list.txt",

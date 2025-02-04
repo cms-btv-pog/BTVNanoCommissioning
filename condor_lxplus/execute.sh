@@ -15,7 +15,7 @@ cd $COMMDIR
 export X509_USER_PROXY=$COMMDIR/proxy
 voms-proxy-info
 
-export PATH="/eos/home-m/milee/miniforge3/envs/btv_coffea/bin:$PATH" 
+export PATH="$4:$PATH" 
 
 # Build the sample json given the job id
 python -c "import json; json.dump(json.load(open('$WORKDIR/split_samples.json'))['$JOBID'], open('$WORKDIR/sample.json', 'w'), indent=4)"
