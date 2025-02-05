@@ -103,6 +103,11 @@ def IO_parser(parser):
         help="Output histogram filename (default: %(default)s)",
     )
     parser.add_argument(
+        "--outputdir",
+        default=None,
+        help="Output directory name (default: %(default)s)",
+    )
+    parser.add_argument(
         "--json",
         dest="samplejson",
         default="dummy_samples.json",
@@ -275,14 +280,21 @@ if __name__ == "__main__":
     print(args)
     ogoutput = args.output
     histoutdir = ogoutput.split(".")[0]
-    coffeaoutput = f"{histoutdir}/{ogoutput}"
     outdir = "arrays_" + histoutdir
+    outdirprefix = ""
+    if args.outputdir:
+        outdirprefix = f"{args.outputdir}/"
+        histoutdir = f"{outdirprefix}{histoutdir}"
+        outdir = f"{outdirprefix}{outdir}"
+    coffeaoutput = f"{histoutdir}/{ogoutput}"
     basename = ogoutput.replace(".coffea", "").replace("hists_", "")
     if args.output == parser.get_default("output"):
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
-        histoutdir = f"hists_{args.workflow}_{sample_json.rstrip('.json')}"
-        outdir = f"arrays_{args.workflow}_{sample_json.rstrip('.json')}"
+        histoutdir = (
+            f"{outdirprefix}hists_{args.workflow}_{sample_json.rstrip('.json')}"
+        )
+        outdir = f"{outdirprefix}arrays_{args.workflow}_{sample_json.rstrip('.json')}"
         coffeaoutput = (
             f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
         )
@@ -397,7 +409,7 @@ if __name__ == "__main__":
 
     if args.isArray:
         if path.exists(outdir) and args.overwrite == False and args.only is None:
-            raise Exception("Directory exists")
+            raise Exception(f"Directory {outdir} exists")
         else:
             os.system(f"mkdir -p {outdir}")
 
@@ -432,7 +444,7 @@ if __name__ == "__main__":
             f'export X509_CERT_DIR={os.environ["X509_CERT_DIR"]}',
             f"export PYTHONPATH=$PYTHONPATH:{os.getcwd()}",
         ]
-        pathvar = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea/" in i][
+        pathvar = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea" in i][
             0
         ]
         condor_extra = [
@@ -936,7 +948,10 @@ if __name__ == "__main__":
             shutil.make_archive("workflows", "zip", base_dir="workflows")
             client.upload_file("workflows.zip")
         else:
-            cluster.adapt(minimum=args.scaleout)
+            if "brux" in args.executor:
+                cluster.adapt(minimum=args.scaleout, maximum=336)
+            else:
+                cluster.adapt(minimum=args.scaleout)
             client = Client(cluster)
             print("Waiting for at least one worker...")
             client.wait_for_workers(1)
