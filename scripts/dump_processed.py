@@ -44,12 +44,12 @@ def dump_dataset(output, fname, alljson):
         for o in old.keys():
             if o not in original_list.keys():
                 original_list[o] = []
-            original_list[o].append(old[o])
+            original_list[o].extend(old[o])
 
     for m in output.keys():
         for f in output[m].keys():
             if f not in list_from_coffea.keys():
-                list_from_coffea[f] = []
+                list_from_coffea[f] = list(output[m][f]["fname"])
             else:
                 list_from_coffea[f] += list(set(output[m][f]["fname"]))
     failed = {}
@@ -59,7 +59,7 @@ def dump_dataset(output, fname, alljson):
             failed[t] = original_list[t]
             continue
         for f in original_list[t]:
-            if not f in list_from_coffea[t]:
+            if f not in list_from_coffea[t]:
                 failed[t].append(f)
 
     with open(f"{fname}_failed_dataset.json", "w") as outfile:
