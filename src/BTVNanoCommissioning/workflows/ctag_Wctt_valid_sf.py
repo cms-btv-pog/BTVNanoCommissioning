@@ -74,10 +74,14 @@ class NanoProcessor(processor.ProcessorABC):
             isMu = True
             dxySigcut = 1.0
             muNeEmSum = 0.7
-            ### remove muNeEmSum for cutbased
-            if "cutbased_WcM" == self.selMod:
-                muNeEmSum = 1.0
             muonpTratioCut = 0.4
+            ### remove muNeEmSum for cutbased
+            if "cutbased" in self.selMod:
+                muNeEmSum = 1.0
+            ### remove muNeEmSum and loosen muon EF for noMuVeto
+            if "noMuVeto" in self.selMod:
+                muNeEmSum = 1.0
+                muonpTratioCut = 0.6            
             isolepdz, isolepdxy, isolepsip3d = 0.01, 0.002, 2
         elif "WcE" in self.selMod or "semittE" in self.selMod:
             triggers = ["Ele32_WPTight_Gsf_L1DoubleEG"]
@@ -96,6 +100,8 @@ class NanoProcessor(processor.ProcessorABC):
             "cutbased_WcE": "ectag_cutbased_Wc_sf",
             "semittM": "ctag_Wc_sf",  # same histogram representation as W+c
             "semittE": "ectag_Wc_sf",  # same histogram representation as W+c
+            "WcM_noMuVeto": "ctag_Wc_sf",
+            "semittM_noMuVeto": "ctag_Wc_sf"
         }
         output = (
             {"": None}
@@ -246,11 +252,11 @@ class NanoProcessor(processor.ProcessorABC):
         )
 
         dilep_mass = iso_lep + soft_muon[:, 0]
-        if isMu:
+        if isMu and "noMuVeto" not in self.selMod:
             req_dilepmass = (dilep_mass.mass > 12.0) & (
                 (dilep_mass.mass < 80) | (dilep_mass.mass > 100)
             )
-        elif isEle:
+        else:
             req_dilepmass = iso_lep.pt > 0
         iso_lep_trans = ak.zip(
             {
