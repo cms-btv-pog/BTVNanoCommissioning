@@ -12,7 +12,9 @@ for subdir in subdirs:
     for syst in systs:
         roots = glob(f"{indir}/{subdir}/{syst}/*/*.root")
         if len(roots) == 0:
-            print(f"Skipping {indir}/{subdir}/{syst}. Not the right directory structure.")
+            print(
+                f"Skipping {indir}/{subdir}/{syst}. Not the right directory structure."
+            )
             continue
         samps = os.listdir(f"{indir}/{subdir}/{syst}")
         for samp in samps:
