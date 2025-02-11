@@ -78,7 +78,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
         output = (
-            {"": None} if self.noHist else histogrammer(events, histname[self.selMod])
+            {} if self.noHist else histogrammer(events, histname[self.selMod])
         )
 
         if isRealData:

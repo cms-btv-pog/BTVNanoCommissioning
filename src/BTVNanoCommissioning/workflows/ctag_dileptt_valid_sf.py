@@ -193,7 +193,7 @@ class NanoProcessor(processor.ProcessorABC):
             "dilepttE": "ectag_ttdilep_sf",
         }
         output = (
-            {"": None} if self.noHist else histogrammer(events, histname[self.selMod])
+            {} if self.noHist else histogrammer(events, histname[self.selMod])
         )
 
         if shift_name is None:
