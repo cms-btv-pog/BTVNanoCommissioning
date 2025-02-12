@@ -1,4 +1,6 @@
-import collections, awkward as ak, numpy as np
+import collections
+import awkward as ak
+import numpy as np
 import os
 import uproot
 from coffea import processor
@@ -45,7 +47,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         self.selMod = selectionModifier
-        ## Load corrections
+        # Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
 
     @property
@@ -68,12 +70,12 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         #    Selections    #
         ####################
-        ## Lumimask
+        # Lumimask
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
 
-        ## HLT
+        # HLT
         if self.selMod == "dilepttM":
             triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
         elif self.selMod == "dilepttE":
@@ -111,7 +113,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_dilepmass = (dilep_mass.mass > 12.0) & (
             (dilep_mass.mass < 75) | (dilep_mass.mass > 105)
         )
-        ## Jet cuts
+        # Jet cuts
         event_jet = events.Jet[
             ak.fill_none(
                 jet_id(events, self._campaign)
@@ -124,11 +126,11 @@ class NanoProcessor(processor.ProcessorABC):
         ]
         req_jets = ak.count(event_jet.pt, axis=1) >= 2
 
-        ## Soft Muon cuts
+        # Soft Muon cuts
         soft_muon = events.Muon[softmu_mask(events, self._campaign)]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
 
-        ## Muon jet cuts
+        # Muon jet cuts
         mu_jet = events.Jet[
             ak.fill_none(
                 (
@@ -146,7 +148,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_mujet = ak.count(mu_jet.pt, axis=1) >= 1
 
-        ## store jet index for PFCands, create mask on the jet index
+        # store jet index for PFCands, create mask on the jet index
         jetindx = ak.mask(
             ak.local_index(events.Jet.pt),
             (

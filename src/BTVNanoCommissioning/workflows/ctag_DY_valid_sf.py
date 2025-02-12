@@ -1,4 +1,6 @@
-import collections, awkward as ak, numpy as np
+import collections
+import awkward as ak
+import numpy as np
 import os
 import uproot
 from coffea import processor
@@ -45,7 +47,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         self.selMod = selectionModifier
-        ## Load corrections
+        # Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
 
     @property
@@ -66,13 +68,13 @@ class NanoProcessor(processor.ProcessorABC):
         isRealData = not hasattr(events, "genWeight")
 
         isMu = False
-        isEle = False
+        # isEle = False
         if "DYM" in self.selMod:
             triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
             isMu = True
         elif "DYE" in self.selMod:
             triggers = ["Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"]
-            isEle = True
+            # isEle = True
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
@@ -89,7 +91,8 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         #    Selections    #
         ####################
-        ## Lumimask
+
+        # Lumimask
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
@@ -97,13 +100,14 @@ class NanoProcessor(processor.ProcessorABC):
         if shift_name is None:
             output = dump_lumi(events[req_lumi], output)
 
-        ## HLT
+        # HLT
         req_trig = HLT_helper(events, triggers)
         req_metfilter = MET_filters(events, self._campaign)
 
-        ## Muon cuts
+        # Muon cuts
         dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
-        ## Electron cuts
+
+        # Electron cuts
         dilep_ele = events.Electron[
             (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
         ]
@@ -113,7 +117,8 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             thisdilep = dilep_ele
             otherdilep = dilep_mu
-        ## dilepton
+
+        # dilepton
         pos_dilep = thisdilep[thisdilep.charge > 0]
         neg_dilep = thisdilep[thisdilep.charge < 0]
         req_dilep = ak.fill_none(
@@ -155,7 +160,7 @@ class NanoProcessor(processor.ProcessorABC):
             (dilep_mass.mass > 81) & (dilep_mass.mass < 101) & (dilep_mass.pt > 15)
         )
 
-        ## Jet cuts
+        # Jet cuts
         event_jet = events.Jet[
             ak.fill_none(
                 jet_id(events, self._campaign)
@@ -180,7 +185,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_jets = ak.count(event_jet.pt, axis=1) >= 1
         # event_jet = ak.pad_none(event_jet, 1, axis=1)
 
-        ## store jet index for PFCands, create mask on the jet index
+        # store jet index for PFCands, create mask on the jet index
         jetindx = ak.mask(
             ak.local_index(events.Jet.pt),
             jet_sel == 1,
@@ -230,14 +235,14 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["posl"] = sposmu
             pruned_ev["negl"] = snegmu
             pruned_ev["SelMuon"] = smu
-            kinOnly = ["SelMuon", "MuonPlus", "MuonMinus"]
+            # kinOnly = ["SelMuon", "MuonPlus", "MuonMinus"]
         else:
             pruned_ev["ElectronPlus"] = sposmu
             pruned_ev["ElectronMinus"] = snegmu
             pruned_ev["posl"] = sposmu
             pruned_ev["negl"] = snegmu
             pruned_ev["SelElectron"] = smu
-            kinOnly = ["SelElectron", "ElectronPlus", "ElectronMinus"]
+            # kinOnly = ["SelElectron", "ElectronPlus", "ElectronMinus"]
         pruned_ev["dilep"] = sz
         pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
         pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta
