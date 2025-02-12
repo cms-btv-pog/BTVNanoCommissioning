@@ -140,7 +140,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_mujet = ak.count(mu_jet.pt, axis=1) >= 1
 
         # store jet index for PFCands, create mask on the jet index
-        softmu_iso = ak.all(events.Jet.metric_table.metric_table(soft_muon) <= 0.4, axis=2, mask_identity=True)
+        softmu_iso = ak.all(events.Jet.metric_table(soft_muon) <= 0.4, axis=2, mask_identity=True)
         jetindx = ak.mask(
             ak.local_index(events.Jet.pt),
             (
