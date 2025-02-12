@@ -154,8 +154,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Other cuts
         req_dilepmass = ((iso_mu[:, 0] + iso_ele[:, 0]).mass > 12.0) & (
-            ((iso_mu[:, 0] + iso_ele[:, 0]).mass < 75) |
-            ((iso_mu[:, 0] + iso_ele[:, 0]).mass > 105)
+            ((iso_mu[:, 0] + iso_ele[:, 0]).mass < 75) | ((iso_mu[:, 0] + iso_ele[:, 0]).mass > 105)
         )
 
         MET = ak.zip(
@@ -170,13 +169,8 @@ class NanoProcessor(processor.ProcessorABC):
         req_MET = MET.pt > 40
 
         event_level = (
-            req_lumi &
-            req_MET &
-            req_jets &
-            req_softmu &
-            req_mujet &
-            req_dilepmass &
-            ((req_trig_ele & req_ele) | (req_trig_mu & req_mu))
+            req_lumi & req_MET & req_jets & req_softmu & req_mujet & req_dilepmass & (
+                (req_trig_ele & req_ele) | (req_trig_mu & req_mu))
         )
         event_level = ak.fill_none(event_level, False)
         if len(events[event_level]) == 0:

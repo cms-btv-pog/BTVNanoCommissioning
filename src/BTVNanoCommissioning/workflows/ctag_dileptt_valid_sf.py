@@ -116,7 +116,7 @@ class NanoProcessor(processor.ProcessorABC):
         lep_iso = ak.all(events.Jet.metric_table(iso_lep) > 0.4, axis=2, mask_identity=True)
         event_jet = events.Jet[
             ak.fill_none(
-                jet_id(events, self._campaign) & lep_iso, 
+                jet_id(events, self._campaign) & lep_iso,
                 False,
                 axis=-1
             )
@@ -145,8 +145,7 @@ class NanoProcessor(processor.ProcessorABC):
             ak.local_index(events.Jet.pt),
             (
                 jet_id(events, self._campaign) & softmu_iso & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
-            )
-            == 1,
+            ) == 1,
         )
         jetindx = ak.pad_none(jetindx, 1)
         jetindx = jetindx[:, 0]
