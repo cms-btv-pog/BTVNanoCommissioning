@@ -1,4 +1,3 @@
-import collections
 import awkward as ak
 import numpy as np
 import os
@@ -164,15 +163,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_MET = MET.pt > 40
 
         event_level = (
-            req_trig &
-            req_lumi &
-            req_lep & 
-            req_dilepveto &
-            req_dilepmass &
-            req_MET &
-            req_jets & 
-            req_softmu &
-            req_mujet
+            req_trig & req_lumi & req_lep & req_dilepveto & req_dilepmass & req_MET & req_jets & req_softmu & req_mujet
         )
         event_level = ak.fill_none(event_level, False)
         histname = {

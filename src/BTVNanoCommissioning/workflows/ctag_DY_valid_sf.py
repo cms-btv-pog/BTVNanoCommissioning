@@ -1,4 +1,3 @@
-import collections
 import awkward as ak
 import numpy as np
 import os
@@ -121,13 +120,12 @@ class NanoProcessor(processor.ProcessorABC):
         # dilepton
         pos_dilep = thisdilep[thisdilep.charge > 0]
         neg_dilep = thisdilep[thisdilep.charge < 0]
+        req_pl = ak.count(pos_dilep.pt, axis=1) >= 1
+        req_nl = ak.count(neg_dilep.pt, axis=1) >= 1
+        req_dilep_chrg = ak.num(thisdilep.charge) >= 2
+        req_otherdilep_chrg = ak.num(otherdilep.charge) == 0
         req_dilep = ak.fill_none(
-            (
-                (ak.num(pos_dilep.pt) >= 1) &
-                (ak.num(neg_dilep.pt) >= 1) &
-                (ak.num(thisdilep.charge) >= 2) &
-                (ak.num(otherdilep.charge) == 0)
-            ),
+            req_pl & req_nl & req_dilep_chrg & req_otherdilep_chrg,
             False,
             axis=-1,
         )
