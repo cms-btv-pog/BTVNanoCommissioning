@@ -12,10 +12,16 @@ def dump_lumi(output, fname):
             lumi.extend(output[m][f]["lumi"].value)
             run.extend(output[m][f]["run"].value)
 
-    lumi, run = np.array(sorted(lumi)), np.array(sorted(run))
+    # Sort runs and keep lumisections matched
+    run, lumi = np.array(run), np.array(lumi)
+    sorted_indices = np.lexsort((lumi, run))  # Sort by run first, then lumi
+    run = run[sorted_indices]
+    lumi = lumi[sorted_indices]
+    # Create dictionary with ls values for each run
     dicts = {}
-    for r in list(set(run)):
-        dicts[str(r)] = lumi[r == run]
+    for r in np.unique(run):
+        dicts[str(r)] = lumi[run == r]
+    # Convert to format for brilcalc
     for r in dicts.keys():
         ar = ak.singletons(ak.Array(dicts[r]))
         ars = ak.concatenate([ar, ar], axis=-1)
@@ -44,12 +50,12 @@ def dump_dataset(output, fname, alljson):
         for o in old.keys():
             if o not in original_list.keys():
                 original_list[o] = []
-            original_list[o].append(old[o])
+            original_list[o].extend(old[o])
 
     for m in output.keys():
         for f in output[m].keys():
             if f not in list_from_coffea.keys():
-                list_from_coffea[f] = []
+                list_from_coffea[f] = list(output[m][f]["fname"])
             else:
                 list_from_coffea[f] += list(set(output[m][f]["fname"]))
     failed = {}
@@ -59,7 +65,7 @@ def dump_dataset(output, fname, alljson):
             failed[t] = original_list[t]
             continue
         for f in original_list[t]:
-            if not f in list_from_coffea[t]:
+            if f not in list_from_coffea[t]:
                 failed[t].append(f)
 
     with open(f"{fname}_failed_dataset.json", "w") as outfile:
