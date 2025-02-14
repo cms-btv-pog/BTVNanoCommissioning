@@ -41,7 +41,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
-        selectionModifier="ZB",
+        selectionModifier="PFJet",
     ):
         self._year = year
         self._campaign = campaign
@@ -53,6 +53,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.chunksize = chunksize
         ## Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
+        self.selectionModifier = selectionModifier
 
     @property
     def accumulator(self):
@@ -144,14 +145,14 @@ class NanoProcessor(processor.ProcessorABC):
 
         ##### Add some selections
         ## Jet cuts
-        jet_sel = (events.Jet.pt > 30) & (jet_id(events, self._campaign))
+        jet_sel = (events.Jet.pt >= 30) & (abs(events.Jet.eta) < 5.31) & (events.Jet.jetId >= 4)
 
         if self._year == "2016":
             jet_puid = events.Jet.puId >= 1
         elif self._year in ["2017", "2018"]:
             jet_puid = events.Jet.puId >= 4
         else:
-            jet_puid = True
+            jet_puid = ak.ones_like(jet_sel)
 
         jet_sel = jet_sel & jet_puid
         event_jet = ak.mask(events.Jet, jet_sel)
@@ -248,7 +249,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
         # Output arrays
         if self.isArray:
-            array_writer(self, pruned_ev, events, systematics[0], dataset, isRealData)
+            array_writer(self, pruned_ev, events, weights, systematics[0], dataset, isRealData)
 
         return {dataset: output}
 
