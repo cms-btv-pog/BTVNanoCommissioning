@@ -295,7 +295,9 @@ Queue JOBNUM from {jobnum_file}
         f.write(jdl_template)
 
     if "/eos/" in base_dir:
-        print("WARNING: Submitting from /eos. Log files will NOT be created.")
+        print(
+            "WARNING: Submitting from /eos. Log files will NOT be created.\nTo debug/retrieve logs, use `condor_transfer_data <job id>` after a job fails/terminates."
+        )
         spool = "-spool"
     else:
         spool = ""
