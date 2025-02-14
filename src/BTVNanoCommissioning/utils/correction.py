@@ -615,6 +615,7 @@ def JME_shifts(
             ## JEC variations
             if not isRealData and systematic != False:
                 if systematic != "JERC_split":
+                    ## JEC variations
                     jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
                     jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
                     unc_jets, unc_met = {}, {}
@@ -823,7 +824,7 @@ def JME_shifts(
     if "jetveto" in correct_map.keys():
         jets = update(jets, {"veto": jetveto(jets, correct_map)})
 
-        if "Summer22" in campaign:
+        if "Summer22" in str(campaign):
             jets = jets[jets.veto != 1]
     shifts.insert(0, ({"Jet": jets, "MET": met}, None))
     return shifts

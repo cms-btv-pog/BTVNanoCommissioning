@@ -24,11 +24,16 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=True,
         noHist=False,
         chunksize=75000,
+        base_file_path="root://dcache-cms-xrootd.desy.de//pnfs/desy.de/cms/tier2/store/user/pgadow/phys_btag/btv_nano_commissioning",
+        # output_dir="/tmp/{user}/phys_btag/btv_nano_commissioning",
+        output_dir="/data/dust/user/{user}/btv/phys_btag/sfb-ttkinfit/bta_ntuples",
+        transfer_files=False,
     ):
         self._year = year
         self._campaign = campaign
         self.chunksize = chunksize
-        self.syst = isSyst
+        self.isSyst = isSyst
+        if self.isSyst == "False": self.isSyst = False
         self.name = name
         self.SF_map = load_SF(self._year, self._campaign)
 
@@ -37,6 +42,9 @@ class NanoProcessor(processor.ProcessorABC):
         # note: in BTA TTbarSelectionProducer it says "disable trigger selection in MC"
         # for consistency, we will disable both trigger selection in MC and data here
         self.do_trig_sel = False
+        self.base_file_path = base_file_path
+        self.output_dir = output_dir.format(user=os.environ["USER"]) if "{user}" in output_dir else output_dir
+        self.transfer_files = transfer_files
 
     @property
     def accumulator(self):
@@ -46,8 +54,8 @@ class NanoProcessor(processor.ProcessorABC):
         isRealData = not hasattr(events, "genWeight")
         dataset = events.metadata["dataset"]
         events = missing_branch(events)
-        shifts = []
 
+        shifts = []
         if "JME" in self.SF_map.keys():
             shifts = JME_shifts(
                 shifts,
@@ -56,8 +64,7 @@ class NanoProcessor(processor.ProcessorABC):
                 self._year,
                 self._campaign,
                 isRealData,
-                self.syst,
-                True,
+                self.isSyst,
             )
         else:
             shifts = [
@@ -71,13 +78,28 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
 
+        # file name (in case of transfer of files to grid resource)
         fname = f"{dataset}_{shift_name}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
+        outfile_path = f"{self.base_file_path}/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
 
-        checkf = os.popen(
-            f"gfal-ls root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
-        ).read()
-        if len(checkf) > 0:
-            return {dataset: len(events)}
+        # local filename and directory
+        local_outdir = f"{self.output_dir}/BTA_ttbar/{self._campaign.replace('Run3','')}"
+        # fname is composed of {dataset}_{shift_name}/ and filename
+        os.system(f"mkdir -p {local_outdir}/{dataset}_{shift_name}")
+        local_outfile_path = f"{local_outdir}/{fname}"
+
+
+        # check if the file already exists
+        if self.transfer_files:
+            gfal_ls_command = f"gfal-ls {outfile_path}"
+            checkf = os.popen(gfal_ls_command).read()
+            if len(checkf) > 0:
+                return {dataset: len(events)}
+        else:
+            # local check if file exists
+            if os.path.exists(local_outfile_path):
+                print(f"Already exists: {local_outfile_path}, skipping...")
+                return {dataset: len(events)}
 
         isRealData = not hasattr(events, "genWeight")
 
@@ -153,7 +175,7 @@ class NanoProcessor(processor.ProcessorABC):
             (muons.pt > 20)
             & (abs(muons.eta) < 2.4)
             & muons.tightId  # pass cut-based tight ID
-            & (muons.pfRelIso04_all < 0.12)  # muon isolation cut
+            & (muons.pfRelIso04_all < 0.15)  # muon isolation cut (tight: https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Particle_Flow_isolation and https://github.com/cms-sw/cmssw/blob/75451d59a7acc30aec874be9a6b9a8835f2f7b3e/PhysicsTools/NanoAOD/python/muons_cff.py#L249)
         ]
 
         # assign channels: 13, 11, 13*13, 13*11, 11*11
@@ -387,8 +409,13 @@ class NanoProcessor(processor.ProcessorABC):
             # store weights according to BTA code
             # note: in original BTA code, all weights are appended in a same variable ttbar_w. Here we separate them according to the logic in NanoAOD
             basic_vars["ttbar_w"] = events.genWeight
+            # LHE pdf variation weights (w_var / w_nominal) for LHA IDs 325300 - 325402
             lhe_pdf_w_arrays = getattr(events, "LHEPdfWeight", None)
+            # [0] is renscfact=0.5d0 facscfact=0.5d0 ; [1] is renscfact=0.5d0 facscfact=1d0 ; [2] is renscfact=0.5d0 facscfact=2d0 ; [3] is renscfact=1d0 facscfact=0.5d0 ;
+            # [4] is renscfact=1d0 facscfact=1d0 ; [5] is renscfact=1d0 facscfact=2d0 ; [6] is renscfact=2d0 facscfact=0.5d0 ; [7] is renscfact=2d0 facscfact=1d0 ;
+            # [8] is renscfact=2d0 facscfact=2d0
             lhe_scale_w_arrays = getattr(events, "LHEScaleWeight", None)
+            # [0] is ISR=2 FSR=1; [1] is ISR=1 FSR=2[2] is ISR=0.5 FSR=1; [3] is ISR=1 FSR=0.5;
             ps_w_arrays = getattr(events, "PSWeight", None)
 
         ###############
@@ -507,12 +534,9 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         #     MET     #
         ###############
-        if "Run3" in self._campaign:
-            basic_vars["ttbar_met_pt"] = events.PuppiMET.pt
-            basic_vars["ttbar_met_phi"] = events.PuppiMET.phi
-        else:
-            basic_vars["ttbar_met_pt"] = events.MET.pt
-            basic_vars["ttbar_met_phi"] = events.MET.phi
+        # already corrected PuppiMET from JME shifts for Run 3
+        basic_vars["ttbar_met_pt"] = events.MET.pt
+        basic_vars["ttbar_met_phi"] = events.MET.phi
 
         ###############
         #  Selection  #
@@ -522,7 +546,10 @@ class NanoProcessor(processor.ProcessorABC):
         passJetSel = (
             ((abs(chsel) == 11) | (abs(chsel) == 13)) & (ak.num(Jet_clean) >= 4)
         ) | ((abs(chsel) > 13) & (ak.num(Jet_clean) >= 1))
-        passMetSel = events.PuppiMET.pt > 0
+        if "Run3" in self._campaign:
+            passMetSel = events.PuppiMET.pt > 0
+        else:
+            passMetSel = events.MET.pt > 0
 
         # and the channel selection, configured in TTbarSelectionFilter
         # https://github.com/cms-btv-pog/RecoBTag-PerformanceMeasurements/blob/10_6_X/python/TTbarSelectionFilter_cfi.py#L4
@@ -534,25 +561,49 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         #  Write root #
         ###############
-        fname = f"{dataset}_{shift_name}/{events.metadata['filename'].split('/')[-1].replace('.root','')}_{int(events.metadata['entrystop']/self.chunksize)}.root"
-        os.system(f"mkdir -p {dataset}_{shift_name}")
+        # no events pass selection, just write bookkeeping metadata to file
         if ak.any(passEvent) == False:
-            with uproot.recreate(fname) as fout:
-                fout["sumw"] = {
-                    "total_events": ak.Array([len(events)]),
-                }
-                if not isRealData:
-                    fout["total_pos_events"] = ak.Array([ak.sum(events.genWeight > 0)])
-                    fout["total_neg_events"] = ak.Array(
-                        [-1.0 * ak.sum(events.genWeight < 0)]
-                    )
-                    fout["total_wei_events"] = ak.Array([ak.sum(events.genWeight)])
-                    fout["total_poswei_events"] = ak.Array(
-                        [ak.sum(events.genWeight[events.genWeight > 0.0])]
-                    )
-                    fout["total_negwei_events"] = ak.Array(
-                        [ak.sum(events.genWeight[events.genWeight < 0.0])]
-                    )
+            with uproot.recreate(local_outfile_path) as fout:
+                if isRealData:
+                    fout["sumw"] = {"total_events": ak.Array([len(events)])}
+                else:
+                    # add counters for systematic variations of lhe and parton shower weights
+                    # (this is not pretty but uproot wants fixed structure of branches)
+                    try:
+                        number_lhe_scaleweights = len(lhe_scale_w_arrays) / len(lhe_scale_w_arrays[:,0])
+                    except TypeError:
+                        number_lhe_scaleweights = 0
+                    try:
+                        number_of_psweights = len(ps_w_arrays) / len(ps_w_arrays[:,0])
+                    except TypeError:
+                        number_of_psweights = 0
+                    fout["sumw"] = {
+                        "total_events": ak.Array([len(events)]),
+                        "total_pos_events": ak.Array([ak.sum(events.genWeight > 0)]),
+                        "total_neg_events": ak.Array([-1.0 * ak.sum(events.genWeight < 0)]),
+                        "total_wei_events": ak.Array([ak.sum(events.genWeight)]),
+                        "total_poswei_events": ak.Array(
+                            [ak.sum(events.genWeight[events.genWeight > 0.0])]
+                        ),
+                        "total_negwei_events": ak.Array(
+                            [ak.sum(events.genWeight[events.genWeight < 0.0])]
+                        ),
+                        "total_lhe_scaleweights_0": ak.Array([ak.sum(lhe_scale_w_arrays[:, 0] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 0 else ak.Array([0.]),
+                        "total_lhe_scaleweights_1": ak.Array([ak.sum(lhe_scale_w_arrays[:, 1] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 1 else ak.Array([0.]),
+                        "total_lhe_scaleweights_2": ak.Array([ak.sum(lhe_scale_w_arrays[:, 2] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 2 else ak.Array([0.]),
+                        "total_lhe_scaleweights_3": ak.Array([ak.sum(lhe_scale_w_arrays[:, 3] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 3 else ak.Array([0.]),
+                        "total_lhe_scaleweights_4": ak.Array([ak.sum(lhe_scale_w_arrays[:, 4] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 4 else ak.Array([0.]),
+                        "total_lhe_scaleweights_5": ak.Array([ak.sum(lhe_scale_w_arrays[:, 5] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 5 else ak.Array([0.]),
+                        "total_lhe_scaleweights_6": ak.Array([ak.sum(lhe_scale_w_arrays[:, 6] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 6 else ak.Array([0.]),
+                        "total_lhe_scaleweights_7": ak.Array([ak.sum(lhe_scale_w_arrays[:, 7] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 7 else ak.Array([0.]),
+                        "total_lhe_scaleweights_8": ak.Array([ak.sum(lhe_scale_w_arrays[:, 8] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 8 else ak.Array([0.]),
+                        "total_psweights_0": ak.Array([ak.sum(ps_w_arrays[:, 0] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 0 else ak.Array([0.]),
+                        "total_psweights_1": ak.Array([ak.sum(ps_w_arrays[:, 1] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 1 else ak.Array([0.]),
+                        "total_psweights_2": ak.Array([ak.sum(ps_w_arrays[:, 2] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 2 else ak.Array([0.]),
+                        "total_psweights_3": ak.Array([ak.sum(ps_w_arrays[:, 3] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 3 else ak.Array([0.]),
+                    }
+            # transfer file to permanent storage
+            if self.transfer_files: self.transfer_file(local_outfile_path, outfile_path)
             return {dataset: 0}
 
         output = {
@@ -570,7 +621,7 @@ class NanoProcessor(processor.ProcessorABC):
                 output["ttbar_ps_w"] = ps_w_arrays[passEvent]
 
         # customize output file name: <dataset>_<nanoAOD file name>_<chunk index>.root
-        with uproot.recreate(fname) as fout:
+        with uproot.recreate(local_outfile_path) as fout:
             output_root = {}
             for bname in output.keys():
                 if not output[bname].fields:
@@ -584,6 +635,16 @@ class NanoProcessor(processor.ProcessorABC):
             if isRealData:
                 fout["sumw"] = {"total_events": ak.Array([len(events)])}
             else:
+                # add counters for systematic variations of lhe and parton shower weights
+                # (this is not pretty but uproot wants fixed structure of branches)
+                try:
+                    number_lhe_scaleweights = len(lhe_scale_w_arrays) / len(lhe_scale_w_arrays[:,0])
+                except TypeError:
+                    number_lhe_scaleweights = 0
+                try:
+                    number_of_psweights = len(ps_w_arrays) / len(ps_w_arrays[:,0])
+                except TypeError:
+                    number_of_psweights = 0
                 fout["sumw"] = {
                     "total_events": ak.Array([len(events)]),
                     "total_pos_events": ak.Array([ak.sum(events.genWeight > 0)]),
@@ -595,13 +656,45 @@ class NanoProcessor(processor.ProcessorABC):
                     "total_negwei_events": ak.Array(
                         [ak.sum(events.genWeight[events.genWeight < 0.0])]
                     ),
+                    "total_lhe_scaleweights_0": ak.Array([ak.sum(lhe_scale_w_arrays[:, 0] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 0 else ak.Array([0.]),
+                    "total_lhe_scaleweights_1": ak.Array([ak.sum(lhe_scale_w_arrays[:, 1] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 1 else ak.Array([0.]),
+                    "total_lhe_scaleweights_2": ak.Array([ak.sum(lhe_scale_w_arrays[:, 2] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 2 else ak.Array([0.]),
+                    "total_lhe_scaleweights_3": ak.Array([ak.sum(lhe_scale_w_arrays[:, 3] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 3 else ak.Array([0.]),
+                    "total_lhe_scaleweights_4": ak.Array([ak.sum(lhe_scale_w_arrays[:, 4] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 4 else ak.Array([0.]),
+                    "total_lhe_scaleweights_5": ak.Array([ak.sum(lhe_scale_w_arrays[:, 5] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 5 else ak.Array([0.]),
+                    "total_lhe_scaleweights_6": ak.Array([ak.sum(lhe_scale_w_arrays[:, 6] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 6 else ak.Array([0.]),
+                    "total_lhe_scaleweights_7": ak.Array([ak.sum(lhe_scale_w_arrays[:, 7] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 7 else ak.Array([0.]),
+                    "total_lhe_scaleweights_8": ak.Array([ak.sum(lhe_scale_w_arrays[:, 8] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 8 else ak.Array([0.]),
+                    "total_psweights_0": ak.Array([ak.sum(ps_w_arrays[:, 0] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 0 else ak.Array([0.]),
+                    "total_psweights_1": ak.Array([ak.sum(ps_w_arrays[:, 1] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 1 else ak.Array([0.]),
+                    "total_psweights_2": ak.Array([ak.sum(ps_w_arrays[:, 2] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 2 else ak.Array([0.]),
+                    "total_psweights_3": ak.Array([ak.sum(ps_w_arrays[:, 3] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 3 else ak.Array([0.]),
                 }
-        os.system(
-            f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
-        )
-        os.system(f"rm {fname}")
+        if self.transfer_files: self.transfer_file(local_outfile_path, outfile_path)
 
         return {dataset: len(events)}
 
     def postprocess(self, accumulator):
         return accumulator
+
+    def transfer_file(self, local_outfile_path, outfile_path):
+        transfer_command = f"xrdcp -p --silent {local_outfile_path} {outfile_path}"
+        result = os.system(transfer_command)
+        # Check if xrdcp failed
+        if result != 0:
+            print("xrdcp failed, attempting to transfer with gfal-copy")
+            transfer_command = f"gfal-copy -p -f -t 4200 {local_outfile_path} {outfile_path}"
+            result = os.system(transfer_command)
+            if result == 0:
+                print("File transferred successfully with gfal-copy")
+            else:
+                print("gfal-copy also failed")
+        else:
+            print("File transferred successfully with xrdcp")
+        if result == 0:
+            os.system(f"rm {local_outfile_path}")
+        else:
+            print("File transfer failed, need to transfer manually")
+            # append file path to a list for manual transfer which is stored in output_dir
+            with open(f"{self.output_dir}/manual_transfer.txt", "a") as f:
+                f.write(f"{transfer_command}\n") 
