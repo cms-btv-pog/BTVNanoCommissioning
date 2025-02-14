@@ -294,9 +294,14 @@ Queue JOBNUM from {jobnum_file}
     with open(os.path.join(job_dir, "submit.jdl"), "w") as f:
         f.write(jdl_template)
 
+    if "/eos/" in log_dir:
+        print("WARNING: Submitting from /eos. Log files will NOT be created.")
+        spool = "-spool"
+    else:
+        spool = ""
     if args.submit:
-        os.system(f"condor_submit -spool {job_dir}/submit.jdl")
+        os.system(f"condor_submit {spool} {job_dir}/submit.jdl")
     else:
         print(
-            f"Setup completed. Now submit the condor jobs by:\n  condor_submit -spool {job_dir}/submit.jdl"
+            f"Setup completed. Now submit the condor jobs by:\n  condor_submit {spool} {job_dir}/submit.jdl"
         )
