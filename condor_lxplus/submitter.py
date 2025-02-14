@@ -294,7 +294,7 @@ Queue JOBNUM from {jobnum_file}
     with open(os.path.join(job_dir, "submit.jdl"), "w") as f:
         f.write(jdl_template)
 
-    if "/eos/" in log_dir:
+    if "/eos/" in base_dir:
         print("WARNING: Submitting from /eos. Log files will NOT be created.")
         spool = "-spool"
     else:
