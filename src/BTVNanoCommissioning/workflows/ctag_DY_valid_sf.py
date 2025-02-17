@@ -127,8 +127,13 @@ class NanoProcessor(processor.ProcessorABC):
             axis=-1,
         )
 
+        if self.selMod == "QG":
+            jetmask = events.Jet.pt > 15 & events.Jet.jetId >= 4
+        else:
+            jetmask = jet_id(events, self._campaign)
+
         jet_sel = ak.fill_none(
-            jet_id(events, self._campaign)
+            jetmask
             & (
                 ak.all(
                     events.Jet.metric_table(pos_dilep) > 0.4,
