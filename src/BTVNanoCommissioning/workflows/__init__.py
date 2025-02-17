@@ -97,6 +97,7 @@ workflows["ectag_Wc_WP_sf"] = partial(
 # DY
 workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
 workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
+workflows["qgtag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="QG")
 
 # QG
 workflows["qgtag_dijet"] = partial(QGtagDijetProcessor, selectionModifier="DiPFJetAve")
