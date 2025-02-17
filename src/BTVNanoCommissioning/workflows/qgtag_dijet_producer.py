@@ -28,6 +28,7 @@ from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
     ele_cuttightid,
+    MET_filters,
 )
 
 
@@ -41,7 +42,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
-        selectionModifier="PFJet",
+        selectionModifier="DiPFJetAve",
     ):
         self._year = year
         self._campaign = campaign
@@ -110,6 +111,7 @@ class NanoProcessor(processor.ProcessorABC):
             ]
         elif self.selectionModifier == "PFJet":
             triggers = [
+                "ZeroBias",
                 "PFJet40",
                 "PFJet60",
                 "PFJet80",
@@ -125,6 +127,7 @@ class NanoProcessor(processor.ProcessorABC):
             ]
         elif self.selectionModifier == "DiPFJetAve":
             triggers = [
+                "ZeroBias",
                 "DiPFJetAve40",
                 "DiPFJetAve60",
                 "DiPFJetAve80",
@@ -139,13 +142,13 @@ class NanoProcessor(processor.ProcessorABC):
             raise ValueError(self.selectionModifier, "is not a valid selection modifier.")
 
         req_trig = HLT_helper(events, triggers)
+        req_metfilter = MET_filters(events, self._campaign)
 
-        # events = events[req_trig & req_lumi]
-        event_level = req_trig & req_lumi
+        event_level = req_trig & req_lumi & req_metfilter
 
         ##### Add some selections
         ## Jet cuts
-        jet_sel = (events.Jet.pt >= 30) & (abs(events.Jet.eta) < 5.31) & (events.Jet.jetId >= 4)
+        jet_sel = (events.Jet.pt >= 15) & (abs(events.Jet.eta) < 5.31) & (events.Jet.jetId >= 4)
 
         if self._year == "2016":
             jet_puid = events.Jet.puId >= 1
@@ -160,7 +163,7 @@ class NanoProcessor(processor.ProcessorABC):
         events.Jet = ak.pad_none(events.Jet, 3) # Make sure that the shape is consistent
         
         req_jet = ak.count(event_jet.pt, axis=1) > 1
-        req_dphi = event_jet[:, 0].delta_phi(event_jet[:, 1]) > 2.7
+        req_dphi = abs(event_jet[:, 0].delta_phi(event_jet[:, 1])) > 2.7
         req_subjet = ak.where(ak.count(event_jet.pt, axis=1) > 2, event_jet[:, 2].pt / (0.5*(event_jet[:,0] + event_jet[:,1])).pt < 1.0, ak.ones_like(req_jet))
         req_tagjet = ak.where(req_jet,
                             ak.fill_none(np.abs(event_jet.eta[:,0]) < 1.3, False) | ak.fill_none(np.abs(event_jet.eta[:,1]) < 1.3, False),
