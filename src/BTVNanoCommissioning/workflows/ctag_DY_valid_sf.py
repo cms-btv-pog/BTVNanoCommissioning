@@ -78,9 +78,7 @@ class NanoProcessor(processor.ProcessorABC):
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
         histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
-        output = (
-            {} if self.noHist else histogrammer(events, histname[self.selMod])
-        )
+        output = {} if self.noHist else histogrammer(events, histname[self.selMod])
 
         if isRealData:
             output["sumw"] = len(events)
@@ -130,8 +128,12 @@ class NanoProcessor(processor.ProcessorABC):
             axis=-1,
         )
 
-        pl_iso = ak.all(events.Jet.metric_table(pos_dilep) > 0.4, axis=2, mask_identity=True)
-        nl_iso = ak.all(events.Jet.metric_table(neg_dilep) > 0.4, axis=2, mask_identity=True)
+        pl_iso = ak.all(
+            events.Jet.metric_table(pos_dilep) > 0.4, axis=2, mask_identity=True
+        )
+        nl_iso = ak.all(
+            events.Jet.metric_table(neg_dilep) > 0.4, axis=2, mask_identity=True
+        )
         jet_sel = ak.fill_none(
             jet_id(events, self._campaign) & pl_iso & nl_iso,
             False,
@@ -147,8 +149,12 @@ class NanoProcessor(processor.ProcessorABC):
         )
 
         # Jet cuts
-        pl_iso = ak.all(events.Jet.metric_table(pos_dilep[:, 0]) > 0.4, axis=2, mask_identity=True)
-        nl_iso = ak.all(events.Jet.metric_table(neg_dilep[:, 0]) > 0.4, axis=2, mask_identity=True)
+        pl_iso = ak.all(
+            events.Jet.metric_table(pos_dilep[:, 0]) > 0.4, axis=2, mask_identity=True
+        )
+        nl_iso = ak.all(
+            events.Jet.metric_table(neg_dilep[:, 0]) > 0.4, axis=2, mask_identity=True
+        )
         event_jet = events.Jet[
             ak.fill_none(
                 jet_id(events, self._campaign) & pl_iso & nl_iso,

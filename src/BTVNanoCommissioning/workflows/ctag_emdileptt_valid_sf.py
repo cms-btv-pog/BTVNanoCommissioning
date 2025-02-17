@@ -61,9 +61,7 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        output = (
-            {} if self.noHist else histogrammer(events, "emctag_ttdilep_sf")
-        )
+        output = {} if self.noHist else histogrammer(events, "emctag_ttdilep_sf")
 
         if shift_name is None:
             if isRealData:
@@ -123,8 +121,12 @@ class NanoProcessor(processor.ProcessorABC):
         iso_mu = ak.pad_none(iso_mu, 1)
 
         # Jet cuts
-        req_ele_iso = ak.all(events.Jet.metric_table(iso_ele) > 0.4, axis=2, mask_identity=True)
-        req_mu_iso = ak.all(events.Jet.metric_table(iso_mu) > 0.4, axis=2, mask_identity=True)
+        req_ele_iso = ak.all(
+            events.Jet.metric_table(iso_ele) > 0.4, axis=2, mask_identity=True
+        )
+        req_mu_iso = ak.all(
+            events.Jet.metric_table(iso_mu) > 0.4, axis=2, mask_identity=True
+        )
         jetsel = ak.fill_none(
             jet_id(events, self._campaign) & req_ele_iso & req_mu_iso,
             False,
@@ -138,7 +140,9 @@ class NanoProcessor(processor.ProcessorABC):
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
 
         # Muon jet cuts
-        smu_iso = ak.all(events.Jet.metric_table(soft_muon) > 0.4, axis=2, mask_identity=True)
+        smu_iso = ak.all(
+            events.Jet.metric_table(soft_muon) > 0.4, axis=2, mask_identity=True
+        )
         mujetsel = ak.fill_none(
             smu_iso & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1)),
             False,
@@ -154,7 +158,8 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Other cuts
         req_dilepmass = ((iso_mu[:, 0] + iso_ele[:, 0]).mass > 12.0) & (
-            ((iso_mu[:, 0] + iso_ele[:, 0]).mass < 75) | ((iso_mu[:, 0] + iso_ele[:, 0]).mass > 105)
+            ((iso_mu[:, 0] + iso_ele[:, 0]).mass < 75)
+            | ((iso_mu[:, 0] + iso_ele[:, 0]).mass > 105)
         )
 
         MET = ak.zip(
@@ -169,8 +174,13 @@ class NanoProcessor(processor.ProcessorABC):
         req_MET = MET.pt > 40
 
         event_level = (
-            req_lumi & req_MET & req_jets & req_softmu & req_mujet & req_dilepmass & (
-                (req_trig_ele & req_ele) | (req_trig_mu & req_mu))
+            req_lumi
+            & req_MET
+            & req_jets
+            & req_softmu
+            & req_mujet
+            & req_dilepmass
+            & ((req_trig_ele & req_ele) | (req_trig_mu & req_mu))
         )
         event_level = ak.fill_none(event_level, False)
         if len(events[event_level]) == 0:

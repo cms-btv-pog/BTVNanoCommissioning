@@ -113,13 +113,11 @@ class NanoProcessor(processor.ProcessorABC):
             (dilep_mass.mass < 75) | (dilep_mass.mass > 105)
         )
         # Jet cuts
-        lep_iso = ak.all(events.Jet.metric_table(iso_lep) > 0.4, axis=2, mask_identity=True)
+        lep_iso = ak.all(
+            events.Jet.metric_table(iso_lep) > 0.4, axis=2, mask_identity=True
+        )
         event_jet = events.Jet[
-            ak.fill_none(
-                jet_id(events, self._campaign) & lep_iso,
-                False,
-                axis=-1
-            )
+            ak.fill_none(jet_id(events, self._campaign) & lep_iso, False, axis=-1)
         ]
         req_jets = ak.count(event_jet.pt, axis=1) >= 2
 
@@ -128,7 +126,9 @@ class NanoProcessor(processor.ProcessorABC):
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
 
         # Muon jet cuts
-        mu_iso = ak.all(event_jet.metric_table(soft_muon) > 0.4, axis=2, mask_identity=True)
+        mu_iso = ak.all(
+            event_jet.metric_table(soft_muon) > 0.4, axis=2, mask_identity=True
+        )
         mu_jet = events.Jet[
             ak.fill_none(
                 mu_iso & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1)),
@@ -140,12 +140,17 @@ class NanoProcessor(processor.ProcessorABC):
         req_mujet = ak.count(mu_jet.pt, axis=1) >= 1
 
         # store jet index for PFCands, create mask on the jet index
-        softmu_iso = ak.all(events.Jet.metric_table(soft_muon) <= 0.4, axis=2, mask_identity=True)
+        softmu_iso = ak.all(
+            events.Jet.metric_table(soft_muon) <= 0.4, axis=2, mask_identity=True
+        )
         jetindx = ak.mask(
             ak.local_index(events.Jet.pt),
             (
-                jet_id(events, self._campaign) & softmu_iso & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
-            ) == 1,
+                jet_id(events, self._campaign)
+                & softmu_iso
+                & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
+            )
+            == 1,
         )
         jetindx = ak.pad_none(jetindx, 1)
         jetindx = jetindx[:, 0]
@@ -162,16 +167,22 @@ class NanoProcessor(processor.ProcessorABC):
         req_MET = MET.pt > 40
 
         event_level = (
-            req_trig & req_lumi & req_lep & req_dilepveto & req_dilepmass & req_MET & req_jets & req_softmu & req_mujet
+            req_trig
+            & req_lumi
+            & req_lep
+            & req_dilepveto
+            & req_dilepmass
+            & req_MET
+            & req_jets
+            & req_softmu
+            & req_mujet
         )
         event_level = ak.fill_none(event_level, False)
         histname = {
             "dilepttM": "ctag_ttdilep_sf",
             "dilepttE": "ectag_ttdilep_sf",
         }
-        output = (
-            {} if self.noHist else histogrammer(events, histname[self.selMod])
-        )
+        output = {} if self.noHist else histogrammer(events, histname[self.selMod])
 
         if shift_name is None:
             if isRealData:
