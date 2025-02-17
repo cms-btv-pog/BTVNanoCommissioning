@@ -76,7 +76,7 @@ class NanoProcessor(processor.ProcessorABC):
         #  Create histogram  # : Get the histogram dict from `histogrammer`
         ######################
         # this is the place to modify
-        output = {"": None} if self.noHist else histogrammer(events, "example")
+        output = {} if self.noHist else histogrammer(events, "example")
 
         if shift_name is None:
             if isRealData:

@@ -98,7 +98,7 @@ class NanoProcessor(processor.ProcessorABC):
             "semittE": "ectag_Wc_sf",  # same histogram representation as W+c
         }
         output = (
-            {"": None}
+            {}
             if self.noHist
             else histogrammer(
                 events, histoname[self.selMod], self._year, self._campaign
