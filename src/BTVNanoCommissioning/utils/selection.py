@@ -20,21 +20,73 @@ def HLT_helper(events, triggers):
     return req_trig
 
 
-## Jet pu ID not exist in Winter22Run3 sample
-def jet_id(events, campaign):
+def jet_id(events, campaign, max_eta=2.5, min_pt=20):
+    # Run 3 NanoAODs have a bug in jetId,
+    # Implement fix from:
+    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13p6TeV#nanoAOD_Flags
+    # Note: this is only the jetId==6, ie. passJetIdTightLepVeto. Looser selection is not implemented.
+    if campaign in ["Summer22", "Summer22EE", "Summer23", "Summer23BPix"]:
+        # NanoV12
+        jetid = ak.where(
+            abs(events.Jet.eta) <= 2.7,
+            (events.Jet.jetId >= 2)
+            & (events.Jet.muEF < 0.8)
+            & (events.Jet.chEmEF < 0.8),
+            ak.where(
+                (abs(events.Jet.eta) > 2.7) & (abs(events.Jet.eta) <= 3.0),
+                (events.Jet.jetId >= 2) & (events.Jet.neHEF < 0.99),
+                ak.where(
+                    (abs(events.Jet.eta) > 3.0),
+                    (events.Jet.jetId & (1 << 1)) & (events.Jet.neEmEF < 0.4),
+                    ak.zeros_like(events.Jet.pt, dtype=bool),
+                ),
+            ),
+        )
+    elif campaign in ["Winter24", "Summer24"]:
+        # NanoV13 & NanoV14
+        barrel = (
+            (events.Jet.neHEF < 0.99)
+            & (events.Jet.neEmEF < 0.9)
+            & (events.Jet.chMultiplicity + events.Jet.neMultiplicity > 1)
+            & (events.Jet.chHEF > 0.01)
+            & (events.Jet.chMultiplicity > 0)
+        )
+        t1 = (events.Jet.neHEF < 0.9) & (events.Jet.neEmEF < 0.99)
+        t2 = events.Jet.neHEF < 0.99
+        endcap = (events.Jet.neMultiplicity >= 2) & (events.Jet.neEmEF < 0.4)
+
+        jetid = ak.where(
+            abs(events.Jet.eta) <= 2.6,
+            barrel,
+            ak.where(
+                (abs(events.Jet.eta) > 2.6) & (abs(events.Jet.eta) <= 2.7),
+                t1,
+                ak.where(
+                    (abs(events.Jet.eta) > 2.7) & (abs(events.Jet.eta) <= 3.0),
+                    t2,
+                    ak.where(
+                        (abs(events.Jet.eta) > 3.0),
+                        endcap,
+                        ak.zeros_like(events.Jet.pt, dtype=bool),
+                    ),
+                ),
+            ),
+        )
+    else:
+        jetid = events.Jet.jetId >= 5
+
+    jetid = ak.values_astype(jetid, np.bool)
+
     if campaign == "Rereco17_94X":
+        # Use puId for Run2
         jetmask = (
-            (events.Jet.pt > 20)
-            & (abs(events.Jet.eta) <= 2.5)
-            & (events.Jet.jetId >= 5)
+            (events.Jet.pt > min_pt)
+            & (abs(events.Jet.eta) <= max_eta)
+            & (jetid)
             & ((events.Jet.pt > 50) | (events.Jet.puId >= 7))
         )
     else:
-        jetmask = (
-            (events.Jet.pt > 20)
-            & (abs(events.Jet.eta) <= 2.5)
-            & (events.Jet.jetId >= 5)
-        )
+        jetmask = (events.Jet.pt > min_pt) & (abs(events.Jet.eta) <= max_eta) & (jetid)
     return jetmask
 
 
