@@ -252,7 +252,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
         # Output arrays
         if self.isArray:
-            array_writer(self, pruned_ev, events, weights, systematics[0], dataset, isRealData)
+            array_writer(self, pruned_ev, events, weights, systematics, dataset, isRealData)
 
         return {dataset: output}
 
