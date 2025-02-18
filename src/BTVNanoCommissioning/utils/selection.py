@@ -21,7 +21,7 @@ def HLT_helper(events, triggers):
 
 
 def jet_id(events, campaign, max_eta=2.5, min_pt=20):
-    # NanoV12 and NanoV13 have a bug in jetId,
+    # Run 3 NanoAODs have a bug in jetId,
     # Implement fix from:
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13p6TeV#nanoAOD_Flags
     # Note: this is only the jetId==6, ie. passJetIdTightLepVeto. Looser selection is not implemented.
