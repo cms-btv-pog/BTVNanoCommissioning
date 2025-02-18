@@ -29,12 +29,12 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
         # NanoV12
         jetid = ak.where(
             abs(events.Jet.eta) <= 2.7,
-            (events.Jet.jetId & (1 << 1))
+            (events.Jet.jetId >= 2)
             & (events.Jet.muEF < 0.8)
             & (events.Jet.chEmEF < 0.8),
             ak.where(
                 (abs(events.Jet.eta) > 2.7) & (abs(events.Jet.eta) <= 3.0),
-                (events.Jet.jetId & (1 << 1)) & (events.Jet.neHEF < 0.99),
+                (events.Jet.jetId >= 2) & (events.Jet.neHEF < 0.99),
                 ak.where(
                     (abs(events.Jet.eta) > 3.0),
                     (events.Jet.jetId & (1 << 1)) & (events.Jet.neEmEF < 0.4),
