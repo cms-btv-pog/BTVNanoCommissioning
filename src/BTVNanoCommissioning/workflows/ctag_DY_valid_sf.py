@@ -67,13 +67,13 @@ class NanoProcessor(processor.ProcessorABC):
         isRealData = not hasattr(events, "genWeight")
 
         isMu = False
-        # isEle = False
+        isEle = False
         if "DYM" in self.selMod:
             triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
             isMu = True
         elif "DYE" in self.selMod:
             triggers = ["Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"]
-            # isEle = True
+            isEle = True
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
