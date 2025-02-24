@@ -126,12 +126,16 @@ class NanoProcessor(processor.ProcessorABC):
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
 
         # Muon jet cuts
-        mu_iso = ak.all(
-            event_jet.metric_table(soft_muon) > 0.4, axis=2, mask_identity=True
-        )
         mu_jet = events.Jet[
             ak.fill_none(
-                mu_iso & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1)),
+                (
+                    ak.all(
+                        event_jet.metric_table(soft_muon) <= 0.4,
+                        axis=2,
+                        mask_identity=True,
+                    )
+                )
+                & ((event_jet.muonIdx1 != -1) | (event_jet.muonIdx2 != -1)),
                 False,
                 axis=-1,
             )
