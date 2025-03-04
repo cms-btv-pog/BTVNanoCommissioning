@@ -179,5 +179,8 @@ correction_config = {
         #     "Run2023D jetvetomap_all": "Summer23BPixPrompt23_RunD_v1.histo.root"
         # },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
     },
+    "Summer24": { # FIXME: need to add stuff later
+        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
+    },
     "prompt_dataMC": {"lumiMask": "$PROMPT_DATAMC"},
 }

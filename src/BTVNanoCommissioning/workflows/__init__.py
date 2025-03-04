@@ -60,6 +60,9 @@ workflows["ttsemilep_sf"] = partial(
 workflows["c_ttsemilep_sf"] = partial(
     TTsemilepValidSFProcessor, selectionModifier="c_tt_semilep"
 )
+workflows["TT1L"] = partial(
+    TTsemilepValidSFProcessor, selectionModifier="TT1L"
+)
 
 workflows["emctag_ttdilep_sf"] = CTAGEMDilepttValidSFProcessor
 workflows["ctag_ttdilep_sf"] = partial(

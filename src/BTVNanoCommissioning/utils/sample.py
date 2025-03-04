@@ -1,4 +1,11 @@
 predefined_sample = {
+    "TT1L": {
+        "data": ["Muon0"], # FIXME: for some reason fetch.py isn't working with 2024 data
+        "MC": [ # FIXME: add more MC once NanoAOD v15 is out
+            "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        ],
+    },
+
     ## Commissioning WF
     "QCD_sf": {
         "data": ["JetMET0", "JetMET1"],

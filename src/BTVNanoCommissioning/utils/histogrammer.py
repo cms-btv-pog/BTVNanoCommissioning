@@ -195,7 +195,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                 syst_axis, dxy_axis, Hist.storage.Weight()
             )
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
-    elif "ttsemilep_sf" == workflow:
+    elif "ttsemilep_sf" == workflow or "TT1L_ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
         obj_list.append("cjet")
         _hist_dict["dr_cjet"] = Hist.Hist(
@@ -573,8 +573,18 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
     #     )
     ### discriminators
     for disc in disc_list:
-        if disc not in events.Jet.fields:
-            continue
+        if "TT1L" not in workflow:
+            if disc not in events.Jet.fields:
+                continue
+        else:
+            if (
+                disc not in events.Jet.fields and
+                "BvC" not in disc and "HFvLF" not in disc and
+                # "probs" not in disc and "probbbblepb" not in disc and # Needed for UParT v2
+                "probc" not in disc and "probudsg" not in disc and "probbc" not in disc
+            ):
+                continue
+
         njet = 1
         if "ttdilep_sf" in workflow:
             njet = 2
@@ -938,12 +948,24 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         flav, seljet = flavs[:, i], seljets[:, i]
                     else:
                         flav, seljet = flavs, seljets
-                    h.fill(
-                        syst=syst,
-                        flav=flav,
-                        discr=seljet[histname.replace(f"_{i}", "")],
-                        weight=weights.partial_weight(exclude=exclude_btv),
-                    )
+                    if (
+                        "BvC" in histname or "HFvLF" in histname or
+                        # "probs" in histname or "probbbblepb" in histname or # Needed for UParT v2
+                        "probc" in histname or "probudsg" in histname or "probbc" in histname
+                    ):
+                        h.fill(
+                            syst=syst,
+                            flav=flav,
+                            discr=pruned_ev[histname],
+                            weight=weights.partial_weight(exclude=exclude_btv),
+                        )
+                    else:
+                        h.fill(
+                            syst=syst,
+                            flav=flav,
+                            discr=seljet[histname.replace(f"_{i}", "")],
+                            weight=weights.partial_weight(exclude=exclude_btv),
+                        )
 
         if "dr_poslnegl" in output.keys():
             # DY histograms

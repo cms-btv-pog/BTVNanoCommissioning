@@ -146,7 +146,7 @@ elif "DY" in args.phase:
     input_txt = "DY+jets"
 elif "QCD" in args.phase:
     input_txt = "QCD"
-elif "semilep" in args.phase:
+elif "semilep" in args.phase or "TT1L" in args.phase:
     input_txt = r"t$\bar{t}$ semileptonic"
     nj = 4
 elif "dilep" in args.phase:
@@ -607,7 +607,7 @@ for index, discr in enumerate(var_set):
     name = "all"
     if args.split == "sample":
         name = name + "_sample"
-    hep.mpl_magic(ax=ax)
+    # hep.mpl_magic(ax=ax) # FIXME: doesn't work when plotting with flavor split option
     if args.log:
         print(
             "creating:",

@@ -232,7 +232,6 @@ Error      = {log_dir}/job.err_$(Cluster)-$(Process)
 should_transfer_files   = YES
 when_to_transfer_output = ON_EXIT_OR_EVICT
 transfer_input_files    = {transfer_input_files}
-transfer_output_files   = .success
 
 Queue JOBNUM from {jobnum_file}
 """.format(
