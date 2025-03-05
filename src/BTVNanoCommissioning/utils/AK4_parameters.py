@@ -138,7 +138,7 @@ correction_config = {
         "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
         "PU": "puwei_Summer23BPix.histo.root",
         "JME": {
-            "MC": "Summer23BPixPrompt23_V1",
+            "MC": "Summer23BPixPrompt23_V1 Summer23BPixPrompt23_RunD_JRV1",
             "Run2023D": "Summer23BPixPrompt23_RunD_V1",
         },
         # "JME": "jec_compiled.pkl.gz",
