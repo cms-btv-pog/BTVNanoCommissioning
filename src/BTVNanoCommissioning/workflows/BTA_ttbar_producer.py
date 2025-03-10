@@ -24,7 +24,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=True,
         noHist=False,
         chunksize=75000,
-        base_file_path="root://dcache-cms-xrootd.desy.de//pnfs/desy.de/cms/tier2/store/user/pgadow/phys_btag/btv_nano_commissioning",
+        base_file_path="root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee",
         # output_dir="/tmp/{user}/phys_btag/btv_nano_commissioning",
         output_dir="/data/dust/user/{user}/btv/phys_btag/sfb-ttkinfit/bta_ntuples",
         transfer_files=False,
@@ -67,9 +67,14 @@ class NanoProcessor(processor.ProcessorABC):
                 self.isSyst,
             )
         else:
-            shifts = [
-                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
-            ]
+            if int(self._year) < 2020:
+                shifts = [
+                    ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
+                ]
+            else:
+                shifts = [
+                    ({"Jet": events.Jet, "MET": events.PuppiMET, "Muon": events.Muon}, None)
+                ]
         return processor.accumulate(
             self.process_shift(update(events, collections), name)
             for collections, name in shifts
@@ -87,7 +92,6 @@ class NanoProcessor(processor.ProcessorABC):
         # fname is composed of {dataset}_{shift_name}/ and filename
         os.system(f"mkdir -p {local_outdir}/{dataset}_{shift_name}")
         local_outfile_path = f"{local_outdir}/{fname}"
-
 
         # check if the file already exists
         if self.transfer_files:
