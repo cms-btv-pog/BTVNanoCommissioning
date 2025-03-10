@@ -25,8 +25,7 @@ class NanoProcessor(processor.ProcessorABC):
         noHist=False,
         chunksize=75000,
         base_file_path="root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee",
-        # output_dir="/tmp/{user}/phys_btag/btv_nano_commissioning",
-        output_dir="/data/dust/user/{user}/btv/phys_btag/sfb-ttkinfit/bta_ntuples",
+        output_dir="/tmp/{user}/phys_btag/btv_nano_commissioning",
         transfer_files=False,
     ):
         self._year = year
