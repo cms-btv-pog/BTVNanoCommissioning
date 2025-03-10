@@ -33,7 +33,8 @@ class NanoProcessor(processor.ProcessorABC):
         self._campaign = campaign
         self.chunksize = chunksize
         self.isSyst = isSyst
-        if self.isSyst == "False": self.isSyst = False
+        if self.isSyst == "False":
+            self.isSyst = False
         self.name = name
         self.SF_map = load_SF(self._year, self._campaign)
 
@@ -43,7 +44,11 @@ class NanoProcessor(processor.ProcessorABC):
         # for consistency, we will disable both trigger selection in MC and data here
         self.do_trig_sel = False
         self.base_file_path = base_file_path
-        self.output_dir = output_dir.format(user=os.environ["USER"]) if "{user}" in output_dir else output_dir
+        self.output_dir = (
+            output_dir.format(user=os.environ["USER"])
+            if "{user}" in output_dir
+            else output_dir
+        )
         self.transfer_files = transfer_files
 
     @property
@@ -73,7 +78,14 @@ class NanoProcessor(processor.ProcessorABC):
                 ]
             else:
                 shifts = [
-                    ({"Jet": events.Jet, "MET": events.PuppiMET, "Muon": events.Muon}, None)
+                    (
+                        {
+                            "Jet": events.Jet,
+                            "MET": events.PuppiMET,
+                            "Muon": events.Muon,
+                        },
+                        None,
+                    )
                 ]
         return processor.accumulate(
             self.process_shift(update(events, collections), name)
@@ -88,7 +100,9 @@ class NanoProcessor(processor.ProcessorABC):
         outfile_path = f"{self.base_file_path}/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
 
         # local filename and directory
-        local_outdir = f"{self.output_dir}/BTA_ttbar/{self._campaign.replace('Run3','')}"
+        local_outdir = (
+            f"{self.output_dir}/BTA_ttbar/{self._campaign.replace('Run3','')}"
+        )
         # fname is composed of {dataset}_{shift_name}/ and filename
         os.system(f"mkdir -p {local_outdir}/{dataset}_{shift_name}")
         local_outfile_path = f"{local_outdir}/{fname}"
@@ -179,7 +193,9 @@ class NanoProcessor(processor.ProcessorABC):
             (muons.pt > 20)
             & (abs(muons.eta) < 2.4)
             & muons.tightId  # pass cut-based tight ID
-            & (muons.pfRelIso04_all < 0.15)  # muon isolation cut (tight: https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Particle_Flow_isolation and https://github.com/cms-sw/cmssw/blob/75451d59a7acc30aec874be9a6b9a8835f2f7b3e/PhysicsTools/NanoAOD/python/muons_cff.py#L249)
+            & (
+                muons.pfRelIso04_all < 0.15
+            )  # muon isolation cut (tight: https://twiki.cern.ch/twiki/bin/viewauth/CMS/SWGuideMuonIdRun2#Particle_Flow_isolation and https://github.com/cms-sw/cmssw/blob/75451d59a7acc30aec874be9a6b9a8835f2f7b3e/PhysicsTools/NanoAOD/python/muons_cff.py#L249)
         ]
 
         # assign channels: 13, 11, 13*13, 13*11, 11*11
@@ -574,17 +590,21 @@ class NanoProcessor(processor.ProcessorABC):
                     # add counters for systematic variations of lhe and parton shower weights
                     # (this is not pretty but uproot wants fixed structure of branches)
                     try:
-                        number_lhe_scaleweights = len(lhe_scale_w_arrays) / len(lhe_scale_w_arrays[:,0])
+                        number_lhe_scaleweights = len(lhe_scale_w_arrays) / len(
+                            lhe_scale_w_arrays[:, 0]
+                        )
                     except TypeError:
                         number_lhe_scaleweights = 0
                     try:
-                        number_of_psweights = len(ps_w_arrays) / len(ps_w_arrays[:,0])
+                        number_of_psweights = len(ps_w_arrays) / len(ps_w_arrays[:, 0])
                     except TypeError:
                         number_of_psweights = 0
                     fout["sumw"] = {
                         "total_events": ak.Array([len(events)]),
                         "total_pos_events": ak.Array([ak.sum(events.genWeight > 0)]),
-                        "total_neg_events": ak.Array([-1.0 * ak.sum(events.genWeight < 0)]),
+                        "total_neg_events": ak.Array(
+                            [-1.0 * ak.sum(events.genWeight < 0)]
+                        ),
                         "total_wei_events": ak.Array([ak.sum(events.genWeight)]),
                         "total_poswei_events": ak.Array(
                             [ak.sum(events.genWeight[events.genWeight > 0.0])]
@@ -592,22 +612,102 @@ class NanoProcessor(processor.ProcessorABC):
                         "total_negwei_events": ak.Array(
                             [ak.sum(events.genWeight[events.genWeight < 0.0])]
                         ),
-                        "total_lhe_scaleweights_0": ak.Array([ak.sum(lhe_scale_w_arrays[:, 0] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 0 else ak.Array([0.]),
-                        "total_lhe_scaleweights_1": ak.Array([ak.sum(lhe_scale_w_arrays[:, 1] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 1 else ak.Array([0.]),
-                        "total_lhe_scaleweights_2": ak.Array([ak.sum(lhe_scale_w_arrays[:, 2] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 2 else ak.Array([0.]),
-                        "total_lhe_scaleweights_3": ak.Array([ak.sum(lhe_scale_w_arrays[:, 3] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 3 else ak.Array([0.]),
-                        "total_lhe_scaleweights_4": ak.Array([ak.sum(lhe_scale_w_arrays[:, 4] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 4 else ak.Array([0.]),
-                        "total_lhe_scaleweights_5": ak.Array([ak.sum(lhe_scale_w_arrays[:, 5] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 5 else ak.Array([0.]),
-                        "total_lhe_scaleweights_6": ak.Array([ak.sum(lhe_scale_w_arrays[:, 6] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 6 else ak.Array([0.]),
-                        "total_lhe_scaleweights_7": ak.Array([ak.sum(lhe_scale_w_arrays[:, 7] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 7 else ak.Array([0.]),
-                        "total_lhe_scaleweights_8": ak.Array([ak.sum(lhe_scale_w_arrays[:, 8] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 8 else ak.Array([0.]),
-                        "total_psweights_0": ak.Array([ak.sum(ps_w_arrays[:, 0] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 0 else ak.Array([0.]),
-                        "total_psweights_1": ak.Array([ak.sum(ps_w_arrays[:, 1] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 1 else ak.Array([0.]),
-                        "total_psweights_2": ak.Array([ak.sum(ps_w_arrays[:, 2] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 2 else ak.Array([0.]),
-                        "total_psweights_3": ak.Array([ak.sum(ps_w_arrays[:, 3] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 3 else ak.Array([0.]),
+                        "total_lhe_scaleweights_0": (
+                            ak.Array(
+                                [ak.sum(lhe_scale_w_arrays[:, 0] * events.genWeight)]
+                            )
+                            if lhe_pdf_w_arrays is not None
+                            and number_lhe_scaleweights > 0
+                            else ak.Array([0.0])
+                        ),
+                        "total_lhe_scaleweights_1": (
+                            ak.Array(
+                                [ak.sum(lhe_scale_w_arrays[:, 1] * events.genWeight)]
+                            )
+                            if lhe_pdf_w_arrays is not None
+                            and number_lhe_scaleweights > 1
+                            else ak.Array([0.0])
+                        ),
+                        "total_lhe_scaleweights_2": (
+                            ak.Array(
+                                [ak.sum(lhe_scale_w_arrays[:, 2] * events.genWeight)]
+                            )
+                            if lhe_pdf_w_arrays is not None
+                            and number_lhe_scaleweights > 2
+                            else ak.Array([0.0])
+                        ),
+                        "total_lhe_scaleweights_3": (
+                            ak.Array(
+                                [ak.sum(lhe_scale_w_arrays[:, 3] * events.genWeight)]
+                            )
+                            if lhe_pdf_w_arrays is not None
+                            and number_lhe_scaleweights > 3
+                            else ak.Array([0.0])
+                        ),
+                        "total_lhe_scaleweights_4": (
+                            ak.Array(
+                                [ak.sum(lhe_scale_w_arrays[:, 4] * events.genWeight)]
+                            )
+                            if lhe_pdf_w_arrays is not None
+                            and number_lhe_scaleweights > 4
+                            else ak.Array([0.0])
+                        ),
+                        "total_lhe_scaleweights_5": (
+                            ak.Array(
+                                [ak.sum(lhe_scale_w_arrays[:, 5] * events.genWeight)]
+                            )
+                            if lhe_pdf_w_arrays is not None
+                            and number_lhe_scaleweights > 5
+                            else ak.Array([0.0])
+                        ),
+                        "total_lhe_scaleweights_6": (
+                            ak.Array(
+                                [ak.sum(lhe_scale_w_arrays[:, 6] * events.genWeight)]
+                            )
+                            if lhe_pdf_w_arrays is not None
+                            and number_lhe_scaleweights > 6
+                            else ak.Array([0.0])
+                        ),
+                        "total_lhe_scaleweights_7": (
+                            ak.Array(
+                                [ak.sum(lhe_scale_w_arrays[:, 7] * events.genWeight)]
+                            )
+                            if lhe_pdf_w_arrays is not None
+                            and number_lhe_scaleweights > 7
+                            else ak.Array([0.0])
+                        ),
+                        "total_lhe_scaleweights_8": (
+                            ak.Array(
+                                [ak.sum(lhe_scale_w_arrays[:, 8] * events.genWeight)]
+                            )
+                            if lhe_pdf_w_arrays is not None
+                            and number_lhe_scaleweights > 8
+                            else ak.Array([0.0])
+                        ),
+                        "total_psweights_0": (
+                            ak.Array([ak.sum(ps_w_arrays[:, 0] * events.genWeight)])
+                            if ps_w_arrays is not None and number_of_psweights > 0
+                            else ak.Array([0.0])
+                        ),
+                        "total_psweights_1": (
+                            ak.Array([ak.sum(ps_w_arrays[:, 1] * events.genWeight)])
+                            if ps_w_arrays is not None and number_of_psweights > 1
+                            else ak.Array([0.0])
+                        ),
+                        "total_psweights_2": (
+                            ak.Array([ak.sum(ps_w_arrays[:, 2] * events.genWeight)])
+                            if ps_w_arrays is not None and number_of_psweights > 2
+                            else ak.Array([0.0])
+                        ),
+                        "total_psweights_3": (
+                            ak.Array([ak.sum(ps_w_arrays[:, 3] * events.genWeight)])
+                            if ps_w_arrays is not None and number_of_psweights > 3
+                            else ak.Array([0.0])
+                        ),
                     }
             # transfer file to permanent storage
-            if self.transfer_files: self.transfer_file(local_outfile_path, outfile_path)
+            if self.transfer_files:
+                self.transfer_file(local_outfile_path, outfile_path)
             return {dataset: 0}
 
         output = {
@@ -642,11 +742,13 @@ class NanoProcessor(processor.ProcessorABC):
                 # add counters for systematic variations of lhe and parton shower weights
                 # (this is not pretty but uproot wants fixed structure of branches)
                 try:
-                    number_lhe_scaleweights = len(lhe_scale_w_arrays) / len(lhe_scale_w_arrays[:,0])
+                    number_lhe_scaleweights = len(lhe_scale_w_arrays) / len(
+                        lhe_scale_w_arrays[:, 0]
+                    )
                 except TypeError:
                     number_lhe_scaleweights = 0
                 try:
-                    number_of_psweights = len(ps_w_arrays) / len(ps_w_arrays[:,0])
+                    number_of_psweights = len(ps_w_arrays) / len(ps_w_arrays[:, 0])
                 except TypeError:
                     number_of_psweights = 0
                 fout["sumw"] = {
@@ -660,21 +762,74 @@ class NanoProcessor(processor.ProcessorABC):
                     "total_negwei_events": ak.Array(
                         [ak.sum(events.genWeight[events.genWeight < 0.0])]
                     ),
-                    "total_lhe_scaleweights_0": ak.Array([ak.sum(lhe_scale_w_arrays[:, 0] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 0 else ak.Array([0.]),
-                    "total_lhe_scaleweights_1": ak.Array([ak.sum(lhe_scale_w_arrays[:, 1] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 1 else ak.Array([0.]),
-                    "total_lhe_scaleweights_2": ak.Array([ak.sum(lhe_scale_w_arrays[:, 2] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 2 else ak.Array([0.]),
-                    "total_lhe_scaleweights_3": ak.Array([ak.sum(lhe_scale_w_arrays[:, 3] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 3 else ak.Array([0.]),
-                    "total_lhe_scaleweights_4": ak.Array([ak.sum(lhe_scale_w_arrays[:, 4] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 4 else ak.Array([0.]),
-                    "total_lhe_scaleweights_5": ak.Array([ak.sum(lhe_scale_w_arrays[:, 5] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 5 else ak.Array([0.]),
-                    "total_lhe_scaleweights_6": ak.Array([ak.sum(lhe_scale_w_arrays[:, 6] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 6 else ak.Array([0.]),
-                    "total_lhe_scaleweights_7": ak.Array([ak.sum(lhe_scale_w_arrays[:, 7] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 7 else ak.Array([0.]),
-                    "total_lhe_scaleweights_8": ak.Array([ak.sum(lhe_scale_w_arrays[:, 8] * events.genWeight)]) if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 8 else ak.Array([0.]),
-                    "total_psweights_0": ak.Array([ak.sum(ps_w_arrays[:, 0] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 0 else ak.Array([0.]),
-                    "total_psweights_1": ak.Array([ak.sum(ps_w_arrays[:, 1] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 1 else ak.Array([0.]),
-                    "total_psweights_2": ak.Array([ak.sum(ps_w_arrays[:, 2] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 2 else ak.Array([0.]),
-                    "total_psweights_3": ak.Array([ak.sum(ps_w_arrays[:, 3] * events.genWeight)]) if ps_w_arrays is not None and number_of_psweights > 3 else ak.Array([0.]),
+                    "total_lhe_scaleweights_0": (
+                        ak.Array([ak.sum(lhe_scale_w_arrays[:, 0] * events.genWeight)])
+                        if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 0
+                        else ak.Array([0.0])
+                    ),
+                    "total_lhe_scaleweights_1": (
+                        ak.Array([ak.sum(lhe_scale_w_arrays[:, 1] * events.genWeight)])
+                        if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 1
+                        else ak.Array([0.0])
+                    ),
+                    "total_lhe_scaleweights_2": (
+                        ak.Array([ak.sum(lhe_scale_w_arrays[:, 2] * events.genWeight)])
+                        if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 2
+                        else ak.Array([0.0])
+                    ),
+                    "total_lhe_scaleweights_3": (
+                        ak.Array([ak.sum(lhe_scale_w_arrays[:, 3] * events.genWeight)])
+                        if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 3
+                        else ak.Array([0.0])
+                    ),
+                    "total_lhe_scaleweights_4": (
+                        ak.Array([ak.sum(lhe_scale_w_arrays[:, 4] * events.genWeight)])
+                        if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 4
+                        else ak.Array([0.0])
+                    ),
+                    "total_lhe_scaleweights_5": (
+                        ak.Array([ak.sum(lhe_scale_w_arrays[:, 5] * events.genWeight)])
+                        if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 5
+                        else ak.Array([0.0])
+                    ),
+                    "total_lhe_scaleweights_6": (
+                        ak.Array([ak.sum(lhe_scale_w_arrays[:, 6] * events.genWeight)])
+                        if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 6
+                        else ak.Array([0.0])
+                    ),
+                    "total_lhe_scaleweights_7": (
+                        ak.Array([ak.sum(lhe_scale_w_arrays[:, 7] * events.genWeight)])
+                        if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 7
+                        else ak.Array([0.0])
+                    ),
+                    "total_lhe_scaleweights_8": (
+                        ak.Array([ak.sum(lhe_scale_w_arrays[:, 8] * events.genWeight)])
+                        if lhe_pdf_w_arrays is not None and number_lhe_scaleweights > 8
+                        else ak.Array([0.0])
+                    ),
+                    "total_psweights_0": (
+                        ak.Array([ak.sum(ps_w_arrays[:, 0] * events.genWeight)])
+                        if ps_w_arrays is not None and number_of_psweights > 0
+                        else ak.Array([0.0])
+                    ),
+                    "total_psweights_1": (
+                        ak.Array([ak.sum(ps_w_arrays[:, 1] * events.genWeight)])
+                        if ps_w_arrays is not None and number_of_psweights > 1
+                        else ak.Array([0.0])
+                    ),
+                    "total_psweights_2": (
+                        ak.Array([ak.sum(ps_w_arrays[:, 2] * events.genWeight)])
+                        if ps_w_arrays is not None and number_of_psweights > 2
+                        else ak.Array([0.0])
+                    ),
+                    "total_psweights_3": (
+                        ak.Array([ak.sum(ps_w_arrays[:, 3] * events.genWeight)])
+                        if ps_w_arrays is not None and number_of_psweights > 3
+                        else ak.Array([0.0])
+                    ),
                 }
-        if self.transfer_files: self.transfer_file(local_outfile_path, outfile_path)
+        if self.transfer_files:
+            self.transfer_file(local_outfile_path, outfile_path)
 
         return {dataset: len(events)}
 
@@ -687,7 +842,9 @@ class NanoProcessor(processor.ProcessorABC):
         # Check if xrdcp failed
         if result != 0:
             print("xrdcp failed, attempting to transfer with gfal-copy")
-            transfer_command = f"gfal-copy -p -f -t 4200 {local_outfile_path} {outfile_path}"
+            transfer_command = (
+                f"gfal-copy -p -f -t 4200 {local_outfile_path} {outfile_path}"
+            )
             result = os.system(transfer_command)
             if result == 0:
                 print("File transferred successfully with gfal-copy")
@@ -701,4 +858,4 @@ class NanoProcessor(processor.ProcessorABC):
             print("File transfer failed, need to transfer manually")
             # append file path to a list for manual transfer which is stored in output_dir
             with open(f"{self.output_dir}/manual_transfer.txt", "a") as f:
-                f.write(f"{transfer_command}\n") 
+                f.write(f"{transfer_command}\n")

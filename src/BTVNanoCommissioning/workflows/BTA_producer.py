@@ -34,7 +34,7 @@ class NanoProcessor(processor.ProcessorABC):
         chunksize=75000,
         addPFMuons=False,  # BTA custom argument
         addAllTracks=False,  # BTA custom argument
-        base_file_path="root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee",      
+        base_file_path="root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee",
     ):
         self._year = year
         self._campaign = campaign

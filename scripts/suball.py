@@ -150,9 +150,7 @@ if __name__ == "__main__":
             if args.blacklist_sites is not None:
                 command += f" --blacklist_sites {args.blacklist_sites}"
             if args.debug:
-                print(
-                    f"Creating MC dataset: {command}"
-                )
+                print(f"Creating MC dataset: {command}")
 
             os.system(command)
             if args.debug:
