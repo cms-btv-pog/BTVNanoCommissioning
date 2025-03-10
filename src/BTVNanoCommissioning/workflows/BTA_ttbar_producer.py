@@ -565,10 +565,8 @@ class NanoProcessor(processor.ProcessorABC):
         passJetSel = (
             ((abs(chsel) == 11) | (abs(chsel) == 13)) & (ak.num(Jet_clean) >= 4)
         ) | ((abs(chsel) > 13) & (ak.num(Jet_clean) >= 1))
-        if "Run3" in self._campaign:
-            passMetSel = events.PuppiMET.pt > 0
-        else:
-            passMetSel = events.MET.pt > 0
+        # already corrected PuppiMET from JME shifts for Run 3
+        passMetSel = events.MET.pt > 0
 
         # and the channel selection, configured in TTbarSelectionFilter
         # https://github.com/cms-btv-pog/RecoBTag-PerformanceMeasurements/blob/10_6_X/python/TTbarSelectionFilter_cfi.py#L4
