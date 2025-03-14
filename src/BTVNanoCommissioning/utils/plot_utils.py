@@ -74,12 +74,13 @@ sample_mergemap = {
         "DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
     ],
     "W+jets": [
-        "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8",
-        "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        # "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8",
+        # "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         # jet binned sample
         "WtoLNu-4Jets_1J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "WtoLNu-4Jets_2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "WtoLNu-4Jets_3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "WtoLNu-4Jets_4J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
     ],
     # QCD
     "QCD": [
