@@ -83,7 +83,9 @@ workflows["ectag_ttsemilep_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="semittE"
 )
 
-workflows["btag_ttbar_sf"] = BTagTTbarValidSFProcessor
+workflows["btag_ttbar_sf_ee"] = partial(BTagTTbarValidSFProcessor, selectionModifier="ee")
+workflows["btag_ttbar_sf_emu"] = partial(BTagTTbarValidSFProcessor, selectionModifier="emu")
+workflows["btag_ttbar_sf_mumu"] = partial(BTagTTbarValidSFProcessor, selectionModifier="mumu")
 
 ##QCD
 workflows["QCD_sf"] = QCDValidProcessor

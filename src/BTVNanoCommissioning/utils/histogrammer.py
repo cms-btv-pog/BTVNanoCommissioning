@@ -6,6 +6,7 @@ from BTVNanoCommissioning.helpers.definitions import (
 )
 import hist as Hist
 import awkward as ak
+import numpy as np
 from BTVNanoCommissioning.helpers.func import flatten
 
 
@@ -217,17 +218,19 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             )
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
 
-    elif "btag_ttbar_sf" == workflow:
+    elif "btag_ttbar_sf" in workflow:
         obj_list = [
             "jet0",
             "jet1",
-            "mu",
-            "ele",
             "MET",
         ]  # store basic 4-vector, pt,eta, phi, mass for the object
-        _hist_dict["dr_mujet"] = Hist.Hist(
-            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
-        )  # create cutstomize histogram
+        if "ee" in workflow:
+            obj_list.append("ele")
+        elif "emu" in workflow:
+            obj_list.append("mu")
+            obj_list.append("ele")
+        elif "mumu" in workflow:
+            obj_list.append("mu")
     elif "c_ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
         obj_list.append("cjet")
@@ -539,6 +542,8 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
 
     bininfo = definitions()
     for d in bininfo.keys():
+        if "btag_ttbar" in workflow:
+            break
         if d not in events.Jet.fields:
             continue
         ranges = bininfo[d]["manual_ranges"]
@@ -655,7 +660,19 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                         Hist.axis.Regular(40, 0, 2, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
-
+            elif "btag_ttbar" in workflow:
+                if disc not in ("btagDeepFlavB", "btagPNetB", "btagRobustParTAK4B"):
+                    continue
+                _hist_dict[f"iterative_{disc}"] = Hist.Hist(
+                    syst_axis,
+                    flav_axis,
+                    Hist.axis.Variable([0, 0.8, 1.6, 2.5], name="eta", label="$\eta$"),
+                    Hist.axis.Variable([*range(0,100, 10), 100, 120, 140, np.inf], name="pt", label="$p_T$ / GeV"),
+                    Hist.axis.StrCategory(["HF", "LF"], name="region", label="Region"),
+                    Hist.axis.IntCategory([0, 1], name="jet_index", label="Jet index"),
+                    Hist.axis.Regular(100, 0.0, 1, name="discr", label=disc),
+                    Hist.storage.Weight(),
+                )
             else:
                 if "btag" in disc or "ProbaN" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
@@ -721,6 +738,8 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
 
     # Reduce the jet to the correct dimension in the plot
     nj = 4 if "jet4" in output.keys() else 2 if "jet2" in output.keys() else 1
+    if any("jet1" in key for key in output.keys()):
+        nj = 2
     pruned_ev.SelJet = pruned_ev.SelJet if nj == 1 else pruned_ev.SelJet[:, :nj]
     if "var" in str(ak.type(pruned_ev.SelJet.pt)) and nj == 1:
         pruned_ev.SelJet = pruned_ev.SelJet[:, 0]
@@ -928,8 +947,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     weight=weight,
                 )
             # filled discriminants
-            elif "btag" in histname or "PNet" in histname:
-                # Events with muon jet
+            elif ("btag" in histname or "PNet" in histname) and "iterative" not in histname:
                 if "MuonJet" in pruned_ev.fields:
                     flavs, seljets = smflav, pruned_ev.MuonJet
                     nj = 1
@@ -949,7 +967,109 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         discr=seljet[histname.replace(f"_{i}", "")],
                         weight=weights.partial_weight(exclude=exclude_btv),
                     )
-
+                    if not isRealData and "btag" in SF_map.keys():
+                        h.fill(
+                            syst=syst,
+                            flav=flav,
+                            discr=seljet[histname.replace(f"_{i}", "")],
+                            weight=weight,
+                        )
+            
+            if "iterative" in histname:
+                # we only want to fill in the probe jet
+                # see btag_ttbar workflow
+                for jet_index in [1, 0]:
+                    flavor = genflavor[:, jet_index]
+                    seljet = pruned_ev.SelJet[:, jet_index]
+                    tagger_name = histname.replace("iterative_", "")
+                    is_HF = pruned_ev[f"{tagger_name}_region_HF_jet{jet_index}"]
+                    is_LF = pruned_ev[f"{tagger_name}_region_LF_jet{jet_index}"]
+                    h.fill(
+                        syst=syst,
+                        flav=flavor[is_HF],
+                        eta=seljet.eta[is_HF],
+                        pt=seljet.pt[is_HF],
+                        region="HF",
+                        jet_index=jet_index,
+                        discr=seljet[tagger_name][is_HF],
+                        weight=weights.partial_weight(exclude=exclude_btv)[is_HF],
+                    )
+                    h.fill(
+                        syst=syst,
+                        flav=flavor[is_LF],
+                        eta=seljet.eta[is_LF],
+                        pt=seljet.pt[is_LF],
+                        region="LF",
+                        jet_index=jet_index,
+                        discr=seljet[tagger_name][is_LF],
+                        weight=weights.partial_weight(exclude=exclude_btv)[is_LF],
+                    )
+                    if not isRealData and "btag" in SF_map.keys():
+                        h.fill(
+                            syst=syst,
+                            flav=flavor[is_HF],
+                            eta=seljet.eta[is_HF],
+                            pt=seljet.pt[is_HF],
+                            region="HF",
+                            jet_index=jet_index,
+                            discr=seljet[tagger_name][is_HF],
+                            weight=weight[is_HF],
+                        )
+                        h.fill(
+                            syst=syst,
+                            flav=flavor[is_LF],
+                            eta=seljet.eta[is_LF],
+                            pt=seljet.pt[is_LF],
+                            region="LF",
+                            jet_index=jet_index,
+                            discr=seljet[tagger_name][is_LF],
+                            weight=weight[is_LF],
+                        )
+                    # for channel in ["ee", "emu", "mumu"]:
+                    #     channel_mask = pruned_ev[f"ch_{channel}"]
+                    #     # fill histogram
+                    #     # histname is of the form "iterative_{discriminator}_{jet_index}"
+                    #     h.fill(
+                    #         syst=syst,
+                    #         flav=genflavor[:, jet_index][channel_mask],
+                    #         eta=seljets.eta[channel_mask],
+                    #         pt=seljets.pt[channel_mask],
+                    #         channel=channel,
+                    #         discr=seljet[
+                    #             histname.replace(f"_{jet_index}", "").replace(
+                    #                 "iterative_", ""
+                    #             )
+                    #         ][channel_mask],
+                    #         weight=weight.partial_weight(exclude=exclude_btv),
+                    #     )
+                    #     if not isRealData and "btag" in SF_map.keys():
+                    #         h.fill(
+                    #             syst=syst,
+                    #             flav=flav,
+                    #             eta=1,
+                    #             pt=1,
+                    #             channel=1,
+                    #             discr=seljet[
+                    #                 histname.replace(f"_{jet_index}", "").replace(
+                    #                     "iterative_", ""
+                    #                 )
+                    #             ],
+                    #             weight=weight,
+                    #         )
+        if "hl" in pruned_ev.fields:
+            output["hl_ptratio"].fill(
+                syst,
+                genflavor[:, 0],
+                ratio=pruned_ev.hl.pt / pruned_ev.SelJet[:, 0].pt,
+                weight=weight,
+            )
+        if "sl" in pruned_ev.fields:
+            output["sl_ptratio"].fill(
+                syst,
+                genflavor[:, 0],
+                ratio=pruned_ev.sl.pt / pruned_ev.SelJet[:, 0].pt,
+                weight=weight,
+            )
         if "dr_poslnegl" in output.keys():
             # DY histograms
             output["dr_poslnegl"].fill(

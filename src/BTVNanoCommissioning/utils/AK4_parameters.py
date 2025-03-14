@@ -140,6 +140,7 @@ correction_config = {
         "JME": {
             "MC": "Summer23BPixPrompt23_V1 Summer23BPixPrompt23_RunD_JRV1",
             "Run2023D": "Summer23BPixPrompt23_RunD_V1",
+            "jername": "Summer23BPixPrompt23_RunD_JRV1_MC",
         },
         # "JME": "jec_compiled.pkl.gz",
         "LSF": {

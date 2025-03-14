@@ -547,8 +547,10 @@ def JME_shifts(
                 else:
                     jecname = jecname[0] + "_DATA"
             else:
-                jecname = correct_map["JME_cfg"]["MC"].split(" ")[0] + "_MC"
-                jrname = correct_map["JME_cfg"]["MC"].split(" ")[1] + "_MC"
+                # jecname = correct_map["JME_cfg"]["MC"].split("_")[0] + "_MC"
+                # jrname = correct_map["JME_cfg"]["MC"].split("_")[1] + "_MC"
+                jecname =correct_map["JME_cfg"]["MC"] + "_MC"
+                jrname = correct_map["JME_cfg"]["jername"]
 
             # store the original jet info
             nocorrjet = events.Jet
@@ -579,7 +581,6 @@ def JME_shifts(
                 corrFactor = JECflatCorrFactor
 
             else:
-
                 JERSF = correct_map["JME"][f"{jrname}_ScaleFactor_AK4PFPuppi"]
                 JERptres = correct_map["JME"][f"{jrname}_PtResolution_AK4PFPuppi"]
                 ## For MC, correct the jet pT with JEC first
@@ -1225,6 +1226,8 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             ele = allele[:, nele]
             ele_eta = ak.fill_none(ele.eta, -2.5)
             ele_pt = ak.fill_none(ele.pt, 20)
+            ele_phi = ak.fill_none(ele.phi, 0.0)
+
             mask = ele.pt > 20.0
             masknone = ak.is_none(ele.pt)
             sfs_alle, sfs_alle_up, sfs_alle_down = (
@@ -1250,7 +1253,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 "RecoBelow20",
                                 ele_eta,
                                 ele_pt_low,
-                                ele.phi,
+                                ele_phi,
                             ),
                             1.0,
                         )
@@ -1284,7 +1287,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoBelow20",
                                     ele_eta,
                                     ele_pt_low,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                                 0.0,
                             )
@@ -1296,7 +1299,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoBelow20",
                                     ele_eta,
                                     ele_pt_low,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                                 0.0,
                             )
@@ -1337,6 +1340,30 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_up_high,
                             )
                             sfs_down = np.where(
+                                mask & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "RecoAbove20",
+                                    ele_eta,
+                                    ele_pt,
+                                    ele.phi,
+                                ),
+                                sfs_down_high,
+                            )
+                            sfs_up = np.where(
+                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "Reco20to75",
+                                    ele_eta,
+                                    ele_pt,
+                                    ele_phi,
+                                ),
+                                sfs_up_high,
+                            )
+                            sfs_down = np.where(
                                 (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
@@ -1344,7 +1371,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "Reco20to75",
                                     ele_eta,
                                     ele_pt,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                                 sfs_down_high,
                             )
@@ -1384,7 +1411,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 "Reco20to75",
                                 ele_eta,
                                 ele_pt,
-                                ele.phi,
+                                ele_phi,
                             ),
                             sfs_high,
                         )
@@ -1422,6 +1449,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoAbove75",
                                     ele_eta,
                                     ele_pt_high,
+                                    ele_phi,
                                 ),
                                 sfs_up_low,
                             )
@@ -1612,8 +1640,15 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
             mu = allmu[:, nmu]
             masknone = ak.is_none(mu.pt)
 
-            mu_pt = np.clip(mu.pt, 15.0, 199.9)
-            mu_eta = np.clip(np.abs(mu.eta), 0.0, 2.4)
+            # ensure that no none values are present, np.clip cannot handle this
+            # nones are masked out in the sfs calculation
+            mu_pt = mu.pt
+            mu_eta = mu.eta
+            mu_pt = ak.fill_none(mu_pt, 0.0)
+            mu_eta = ak.fill_none(mu_eta, 0.0)
+
+            mu_pt = np.clip(mu_pt, 15.0, 199.9)
+            mu_eta = np.clip(np.abs(mu_eta), 0.0, 2.4)
             mask = mu_pt > 30
             sfs = 1.0
             if "correctionlib" in str(type(correct_map["MUO"])):
