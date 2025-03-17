@@ -98,10 +98,10 @@ class NanoProcessor(processor.ProcessorABC):
             "WcE": "ectag_Wc_sf",
             "cutbased_WcM": "ctag_cutbased_Wc_sf",
             "cutbased_WcE": "ectag_cutbased_Wc_sf",
-            "semittM": "ctag_Wc_sf",  # same histogram representation as W+c
-            "semittE": "ectag_Wc_sf",  # same histogram representation as W+c
+            "semittM": "ctag_Wc_sf",          # same histogram representation as W+c, since only nJet is different
+            "semittE": "ectag_Wc_sf",         # same histogram representation as W+c, since only nJet is different
             "WcM_noMuVeto": "ctag_Wc_sf",
-            "semittM_noMuVeto": "ctag_Wc_sf",
+            "semittM_noMuVeto": "ctag_Wc_sf", # same histogram representation as W+c, since only nJet is different
         }
         output = (
             {"": None}
