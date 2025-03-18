@@ -112,7 +112,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
-        selectionModifier="ch_ee",
+        selectionModifier=None,
     ):
         self._year = year
         self._campaign = campaign
