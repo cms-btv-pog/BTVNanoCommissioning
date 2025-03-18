@@ -71,6 +71,9 @@ workflows["ectag_ttdilep_sf"] = partial(
 workflows["ctag_ttsemilep_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="semittM"
 )
+workflows["ctag_ttsemilep_noMuVeto_sf"] = partial(
+    CTAGWcTTValidSFProcessor, selectionModifier="semittM_noMuVeto"
+)
 workflows["ectag_ttsemilep_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="semittE"
 )
@@ -81,6 +84,9 @@ workflows["QCD_smu_sf"] = QCDsmuValidProcessor
 
 # W+c
 workflows["ctag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcM")
+workflows["ctag_Wc_noMuVeto_sf"] = partial(
+    CTAGWcTTValidSFProcessor, selectionModifier="WcM_noMuVeto"
+)
 workflows["ectag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcE")
 workflows["ctag_Wc_WP_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="cutbased_WcM"
