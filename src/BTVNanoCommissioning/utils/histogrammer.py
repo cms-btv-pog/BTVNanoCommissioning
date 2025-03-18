@@ -707,7 +707,15 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
     # define Jet flavor
 
     # Reduce the jet to the correct dimension in the plot
-    nj = 4 if "jet4" in output.keys() else 2 if "jet2" in output.keys() else 1
+    found4jets = False
+    found2jets = False
+    for key in output.keys():
+        if "jet3" in key: # Because 0-indexing
+            found4jets = True
+            break
+        if "jet1" in key: # Because 0-indexing
+            found2jets = True
+    nj = 4 if found4jets else 2 if found2jets else 1
     pruned_ev.SelJet = pruned_ev.SelJet if nj == 1 else pruned_ev.SelJet[:, :nj]
     if "var" in str(ak.type(pruned_ev.SelJet.pt)) and nj == 1:
         pruned_ev.SelJet = pruned_ev.SelJet[:, 0]
