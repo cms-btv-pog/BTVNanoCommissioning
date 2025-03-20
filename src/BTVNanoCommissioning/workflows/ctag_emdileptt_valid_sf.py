@@ -1,4 +1,5 @@
-import collections, awkward as ak, numpy as np
+import awkward as ak
+import numpy as np
 import os
 import uproot
 from coffea import processor
@@ -41,7 +42,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
-        ## Load corrections
+        # Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
 
     @property
@@ -60,9 +61,7 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        output = (
-            {"": None} if self.noHist else histogrammer(events, "emctag_ttdilep_sf")
-        )
+        output = {} if self.noHist else histogrammer(events, "emctag_ttdilep_sf")
 
         if shift_name is None:
             if isRealData:
@@ -72,7 +71,7 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         #    Selections    #
         ####################
-        ## Lumimask
+        # Lumimask
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
@@ -80,7 +79,7 @@ class NanoProcessor(processor.ProcessorABC):
         if shift_name is None:
             output = dump_lumi(events[req_lumi], output)
 
-        ## HLT
+        # HLT
         trigger_he = [
             "Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
             "Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
@@ -93,7 +92,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_trig_ele = HLT_helper(events, trigger_he)
         req_trig_mu = HLT_helper(events, trigger_hm)
 
-        ## Muon cuts
+        # Muon cuts
         iso_muon_mu = events.Muon[
             (events.Muon.pt > 24) & mu_idiso(events, self._campaign)
         ]
@@ -101,7 +100,7 @@ class NanoProcessor(processor.ProcessorABC):
             (events.Muon.pt > 14) & mu_idiso(events, self._campaign)
         ]
 
-        ## Electron cuts
+        # Electron cuts
         iso_ele_ele = events.Electron[
             (events.Electron.pt > 27) & ele_mvatightid(events, self._campaign)
         ]
@@ -109,7 +108,7 @@ class NanoProcessor(processor.ProcessorABC):
             (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
         ]
 
-        ## cross leptons
+        # cross leptons
         req_ele = (ak.count(iso_muon_ele.pt, axis=1) == 1) & (
             ak.count(iso_ele_ele.pt, axis=1) == 1
         )
@@ -121,55 +120,43 @@ class NanoProcessor(processor.ProcessorABC):
         iso_ele = ak.pad_none(iso_ele, 1)
         iso_mu = ak.pad_none(iso_mu, 1)
 
-        ## Jet cuts
+        # Jet cuts
+        req_ele_iso = ak.all(
+            events.Jet.metric_table(iso_ele) > 0.4, axis=2, mask_identity=True
+        )
+        req_mu_iso = ak.all(
+            events.Jet.metric_table(iso_mu) > 0.4, axis=2, mask_identity=True
+        )
         jetsel = ak.fill_none(
-            jet_id(events, self._campaign)
-            & (
-                ak.all(
-                    events.Jet.metric_table(iso_ele) > 0.4,
-                    axis=2,
-                    mask_identity=True,
-                )
-            )
-            & (
-                ak.all(
-                    events.Jet.metric_table(iso_mu) > 0.4,
-                    axis=2,
-                    mask_identity=True,
-                )
-            ),
+            jet_id(events, self._campaign) & req_ele_iso & req_mu_iso,
             False,
             axis=-1,
         )
         event_jet = events.Jet[jetsel]
         req_jets = ak.count(event_jet.pt, axis=1) >= 2
 
-        ## Soft Muon cuts
+        # Soft Muon cuts
         soft_muon = events.Muon[softmu_mask(events, self._campaign)]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
 
-        ## Muon jet cuts
+        # Muon jet cuts
+        smu_iso = ak.all(
+            events.Jet.metric_table(soft_muon) > 0.4, axis=2, mask_identity=True
+        )
         mujetsel = ak.fill_none(
-            (
-                ak.all(
-                    events.Jet.metric_table(soft_muon) <= 0.4,
-                    axis=2,
-                    mask_identity=True,
-                )
-            )
-            & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1)),
+            smu_iso & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1)),
             False,
             axis=-1,
         )
         mu_jet = events.Jet[mujetsel & jetsel]
         req_mujet = ak.count(mu_jet.pt, axis=1) >= 1
 
-        ## store jet index for PFCands, create mask on the jet index
+        # store jet index for PFCands, create mask on the jet index
         jetindx = ak.mask(ak.local_index(events.Jet.pt), mujetsel)
         jetindx = ak.pad_none(jetindx, 1)
         jetindx = jetindx[:, 0]
 
-        ## Other cuts
+        # Other cuts
         req_dilepmass = ((iso_mu[:, 0] + iso_ele[:, 0]).mass > 12.0) & (
             ((iso_mu[:, 0] + iso_ele[:, 0]).mass < 75)
             | ((iso_mu[:, 0] + iso_ele[:, 0]).mass > 105)

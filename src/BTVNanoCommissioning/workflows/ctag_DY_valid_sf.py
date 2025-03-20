@@ -1,4 +1,5 @@
-import collections, awkward as ak, numpy as np
+import awkward as ak
+import numpy as np
 import os
 import uproot
 from coffea import processor
@@ -45,7 +46,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         self.selMod = selectionModifier
-        ## Load corrections
+        # Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
 
     @property
@@ -81,6 +82,7 @@ class NanoProcessor(processor.ProcessorABC):
             {} if self.noHist else histogrammer(events, histname[self.selMod])
         )
 
+
         if isRealData:
             output["sumw"] = len(events)
         else:
@@ -89,7 +91,8 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         #    Selections    #
         ####################
-        ## Lumimask
+
+        # Lumimask
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
@@ -97,13 +100,14 @@ class NanoProcessor(processor.ProcessorABC):
         if shift_name is None:
             output = dump_lumi(events[req_lumi], output)
 
-        ## HLT
+        # HLT
         req_trig = HLT_helper(events, triggers)
         req_metfilter = MET_filters(events, self._campaign)
 
-        ## Muon cuts
+        # Muon cuts
         dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
-        ## Electron cuts
+
+        # Electron cuts
         dilep_ele = events.Electron[
             (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
         ]
@@ -113,41 +117,34 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             thisdilep = dilep_ele
             otherdilep = dilep_mu
-        ## dilepton
+
+        # dilepton
         pos_dilep = thisdilep[thisdilep.charge > 0]
         neg_dilep = thisdilep[thisdilep.charge < 0]
+        req_pl = ak.count(pos_dilep.pt, axis=1) >= 1
+        req_nl = ak.count(neg_dilep.pt, axis=1) >= 1
+        req_dilep_chrg = ak.num(thisdilep.charge) >= 2
+        req_otherdilep_chrg = ak.num(otherdilep.charge) == 0
         req_dilep = ak.fill_none(
-            (
-                (ak.num(pos_dilep.pt) >= 1)
-                & (ak.num(neg_dilep.pt) >= 1)
-                & (ak.num(thisdilep.charge) >= 2)
-                & (ak.num(otherdilep.charge) == 0)
-            ),
+            req_pl & req_nl & req_dilep_chrg & req_otherdilep_chrg,
             False,
             axis=-1,
+        )
+
+        pl_iso = ak.all(
+            events.Jet.metric_table(pos_dilep) > 0.4, axis=2, mask_identity=True
+        )
+        nl_iso = ak.all(
+            events.Jet.metric_table(neg_dilep) > 0.4, axis=2, mask_identity=True
         )
 
         if self.selMod == "QG":
             jetmask = events.Jet.pt > 15 & events.Jet.jetId >= 4
         else:
-            jetmask = jet_id(events, self._campaign)
+            jetmask = jet_id(events, self._campaign) 
 
         jet_sel = ak.fill_none(
-            jetmask
-            & (
-                ak.all(
-                    events.Jet.metric_table(pos_dilep) > 0.4,
-                    axis=2,
-                    mask_identity=True,
-                )
-            )
-            & (
-                ak.all(
-                    events.Jet.metric_table(neg_dilep) > 0.4,
-                    axis=2,
-                    mask_identity=True,
-                )
-            ),
+            jetmask & pl_iso & nl_iso,
             False,
             axis=-1,
         )
@@ -160,12 +157,25 @@ class NanoProcessor(processor.ProcessorABC):
             (dilep_mass.mass > 81) & (dilep_mass.mass < 101) & (dilep_mass.pt > 15)
         )
 
-        ## Jet cuts
-        event_jet = events.Jet[jet_sel]
+        # Jet cuts
+        pl_iso = ak.all(
+            events.Jet.metric_table(pos_dilep[:, 0]) > 0.4, axis=2, mask_identity=True
+        )
+        nl_iso = ak.all(
+            events.Jet.metric_table(neg_dilep[:, 0]) > 0.4, axis=2, mask_identity=True
+        )
+        event_jet = events.Jet[
+            ak.fill_none(
+                jet_id(events, self._campaign) & pl_iso & nl_iso,
+                False,
+                axis=-1,
+            )
+        ]
+
         req_jets = ak.count(event_jet.pt, axis=1) >= 1
         # event_jet = ak.pad_none(event_jet, 1, axis=1)
 
-        ## store jet index for PFCands, create mask on the jet index
+        # store jet index for PFCands, create mask on the jet index
         jetindx = ak.mask(
             ak.local_index(events.Jet.pt),
             jet_sel == 1,
@@ -236,14 +246,14 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["posl"] = sposmu
             pruned_ev["negl"] = snegmu
             pruned_ev["SelMuon"] = smu
-            kinOnly = ["SelMuon", "MuonPlus", "MuonMinus"]
+            # kinOnly = ["SelMuon", "MuonPlus", "MuonMinus"]
         else:
             pruned_ev["ElectronPlus"] = sposmu
             pruned_ev["ElectronMinus"] = snegmu
             pruned_ev["posl"] = sposmu
             pruned_ev["negl"] = snegmu
             pruned_ev["SelElectron"] = smu
-            kinOnly = ["SelElectron", "ElectronPlus", "ElectronMinus"]
+            # kinOnly = ["SelElectron", "ElectronPlus", "ElectronMinus"]
         pruned_ev["dilep"] = sz
         pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
         pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta

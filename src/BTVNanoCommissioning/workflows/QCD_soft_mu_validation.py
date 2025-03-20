@@ -63,7 +63,7 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         isRealData = not hasattr(events, "genWeight")
         dataset = events.metadata["dataset"]
-        output = {"": None} if self.noHist else histogrammer(events, "QCD_smu")
+        output = {} if self.noHist else histogrammer(events, "QCD_smu")
 
         if isRealData:
             output["sumw"] = len(events)
