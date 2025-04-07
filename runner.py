@@ -298,7 +298,8 @@ if __name__ == "__main__":
         coffeaoutput = (
             f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
         )
-    os.system(f"mkdir -p {histoutdir}")
+    if not args.noHist:
+        os.system(f"mkdir -p {histoutdir}")
     # load dataset
     with open(args.samplejson) as f:
         sample_dict = json.load(f)
