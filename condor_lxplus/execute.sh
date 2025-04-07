@@ -1,7 +1,10 @@
 #!/bin/bash -xe
+export EOS_MGM_URL=root://eosuser.cern.ch
 
 JOBID=$1
 COMMDIR=$2
+
+echo "Running job $JOBID"
 
 export HOME=`pwd`
 if [ -d /afs/cern.ch/user/${USER:0:1}/$USER ]; then
@@ -18,13 +21,17 @@ voms-proxy-info
 export PATH="$4:$PATH" 
 
 # Build the sample json given the job id
+echo "Building sample json for job $JOBID"
 python -c "import json; json.dump(json.load(open('$WORKDIR/split_samples.json'))['$JOBID'], open('$WORKDIR/sample.json', 'w'), indent=4)"
 
+echo "Sample json:"
+cat $WORKDIR/sample.json
 declare -A ARGS
 for key in workflow output samplejson year campaign isSyst isArray noHist overwrite voms chunk skipbadfiles outputDir remoteRepo; do
     ARGS[$key]=$(jq -r ".$key" $WORKDIR/arguments.json)
 done
 
+echo "Arguments:"
 # Unparse arguments and send to runner.py
 OPTS="--wf ${ARGS[workflow]} --year ${ARGS[year]} --campaign ${ARGS[campaign]} --chunk ${ARGS[chunk]}"
 if [ "${ARGS[voms]}" != "null" ]; then
@@ -48,5 +55,12 @@ OPTS="$OPTS --executor iterative --overwrite --outputdir $3"
 echo "Now launching: python runner.py $OPTS"
 python runner.py $OPTS
 
-touch $WORKDIR/.success
+OUTPUT=$?
 
+if [ $OUTPUT -ne 0 ]; then
+    echo "Job $JOBID failed with exit code $OUTPUT"
+    exit $OUTPUT
+fi
+
+echo "Job $JOBID completed successfully"
+touch $WORKDIR/.success
