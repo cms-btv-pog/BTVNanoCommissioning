@@ -64,3 +64,5 @@ fi
 
 echo "Job $JOBID completed successfully"
 touch $WORKDIR/.success
+
+exit $OUTPUT
