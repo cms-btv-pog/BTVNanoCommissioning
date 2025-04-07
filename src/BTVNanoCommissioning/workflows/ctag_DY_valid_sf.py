@@ -139,7 +139,7 @@ class NanoProcessor(processor.ProcessorABC):
         )
 
         if self.selMod == "QG":
-            jetmask = events.Jet.pt > 15 & events.Jet.jetId >= 4
+            jetmask = jet_id(events, self._campaign, max_eta=5.13)
         else:
             jetmask = jet_id(events, self._campaign) 
 
@@ -285,8 +285,29 @@ class NanoProcessor(processor.ProcessorABC):
             )
         # Output arrays
         if self.isArray:
+            if "QG" in self.selMod:
+                othersData=[
+                    "SV_*",
+                    "PV_npvs",
+                    "PV_npvsGood",
+                    "Rho_*",
+                    "SoftMuon_dxySig",
+                    "Muon_sip3d",
+                ]
+            else:
+                othersData=[
+                    "PFCands_*",
+                    "MuonJet_*",
+                    "SV_*",
+                    "PV_npvs",
+                    "PV_npvsGood",
+                    "Rho_*",
+                    "SoftMuon_dxySig",
+                    "Muon_sip3d",
+                ]
+
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData
+                self, pruned_ev, events, weights, systematics, dataset, isRealData, othersData=othersData
             )
 
         return {dataset: output}

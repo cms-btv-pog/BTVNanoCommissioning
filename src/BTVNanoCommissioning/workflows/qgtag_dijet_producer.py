@@ -253,8 +253,16 @@ class NanoProcessor(processor.ProcessorABC):
             )
         # Output arrays
         if self.isArray:
+            othersData=[
+                "SV_*",
+                "PV_npvs",
+                "PV_npvsGood",
+                "Rho_*",
+                "SoftMuon_dxySig",
+                "Muon_sip3d",
+            ]
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData
+                self, pruned_ev, events, weights, systematics, dataset, isRealData, othersData=othersData
             )
 
         return {dataset: output}
