@@ -58,22 +58,30 @@ predefined_sample = {
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
         ],
     },
-    "btag_ttbar_sf_mumu": {
-        "data": ["Muon0", "Muon1"],
+    "btag_ttbar_sf": {
+        # mu, e, mumu, ee, emu
+        "data": ["Muon0", "Muon1", "EGamma0", "EGamma1", "MuonEG"],
         "MC": [
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
-            # "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
-            # "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+            # st
+            "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+            "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             # "TWminus_DR_AtLeastOneLepton_TuneCP5_13p6TeV_powheg-pythia8",
             # "TbarWplus_DR_AtLeastOneLepton_TuneCP5_13p6TeV_powheg-pythia8",
+            "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+            "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+            # vv
             "WW_TuneCP5_13p6TeV_pythia8",
             "WZ_TuneCP5_13p6TeV_pythia8",
             "ZZ_TuneCP5_13p6TeV_pythia8",
+            # dy
             "DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-            "WtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            # wjets to lnu
+            # "WtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8",
             "WtoLNu-4Jets_1J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoLNu-4Jets_2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoLNu-4Jets_3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
