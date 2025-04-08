@@ -78,10 +78,7 @@ class NanoProcessor(processor.ProcessorABC):
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
         histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf", "QG": "qgtag_DY_sf"}
-        output = (
-            {} if self.noHist else histogrammer(events, histname[self.selMod])
-        )
-
+        output = {} if self.noHist else histogrammer(events, histname[self.selMod])
 
         if isRealData:
             output["sumw"] = len(events)
@@ -141,7 +138,7 @@ class NanoProcessor(processor.ProcessorABC):
         if self.selMod == "QG":
             jetmask = jet_id(events, self._campaign, max_eta=5.13)
         else:
-            jetmask = jet_id(events, self._campaign) 
+            jetmask = jet_id(events, self._campaign)
 
         jet_sel = ak.fill_none(
             jetmask & pl_iso & nl_iso,
@@ -183,18 +180,22 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = ak.pad_none(jetindx, 1)
         jetindx = jetindx[:, 0]
 
-        selection = req_lumi & req_trig & req_dilep & req_dilepmass & req_jets & req_metfilter
+        selection = (
+            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets & req_metfilter
+        )
 
         if self.selMod == "QG":
             temp_jet = ak.pad_none(events.Jet, 1, axis=1)
 
             req_lead_jet = ak.fill_none(
-                    (temp_jet.pt[:, 0] > 15) & 
-                    (temp_jet[:,0].delta_r(pos_dilep[:,0]) > 0.4) &
-                    (temp_jet[:,0].delta_r(neg_dilep[:,0]) > 0.4) &
-                    (temp_jet.jetId[:, 0] >= 4) & 
-                    (np.abs(temp_jet[:,0].delta_phi(pos_dilep[:,0] + neg_dilep[:,0])) > 2.7)
-                ,
+                (temp_jet.pt[:, 0] > 15)
+                & (temp_jet[:, 0].delta_r(pos_dilep[:, 0]) > 0.4)
+                & (temp_jet[:, 0].delta_r(neg_dilep[:, 0]) > 0.4)
+                & (temp_jet.jetId[:, 0] >= 4)
+                & (
+                    np.abs(temp_jet[:, 0].delta_phi(pos_dilep[:, 0] + neg_dilep[:, 0]))
+                    > 2.7
+                ),
                 False,
                 axis=-1,
             )
@@ -286,7 +287,7 @@ class NanoProcessor(processor.ProcessorABC):
         # Output arrays
         if self.isArray:
             if "QG" in self.selMod:
-                othersData=[
+                othersData = [
                     "SV_*",
                     "PV_npvs",
                     "PV_npvsGood",
@@ -295,7 +296,7 @@ class NanoProcessor(processor.ProcessorABC):
                     "Muon_sip3d",
                 ]
             else:
-                othersData=[
+                othersData = [
                     "PFCands_*",
                     "MuonJet_*",
                     "SV_*",
@@ -307,7 +308,14 @@ class NanoProcessor(processor.ProcessorABC):
                 ]
 
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData, othersData=othersData
+                self,
+                pruned_ev,
+                events,
+                weights,
+                systematics,
+                dataset,
+                isRealData,
+                othersData=othersData,
             )
 
         return {dataset: output}
