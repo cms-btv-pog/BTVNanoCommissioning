@@ -536,16 +536,14 @@ for index, discr in enumerate(var_set):
             collated["data"][discr][allaxis], hmc, ax=rax, flow=args.flow, xerr=do_xerr
         )
     else:
+        hmc = collated["mc"][discr][allaxis]
         if "sample" in args.split:
-            hmc = []
-            for s in collated.keys():
-                if s != "mc" and s != "data":
-                    if "nominal" not in collated[s][discr].axes:
-                        print(f"{s} has no nominal")
-                        continue
-                    hmc.append(collated[s][discr][allaxis])
             hep.histplot(
-                hmc,
+                [
+                    collated[s][discr][allaxis]
+                    for s in collated.keys()
+                    if s != "mc" and s != "data"
+                ],
                 histtype="fill",
                 stack=True,
                 label=[s for s in collated.keys() if s != "mc" and s != "data"],
@@ -557,7 +555,6 @@ for index, discr in enumerate(var_set):
                 flow=args.flow,
             )
         else:
-            hmc = collated["mc"][discr][allaxis]
             hep.histplot(
                 hmc,
                 color="tab:orange",
@@ -656,9 +653,9 @@ for index, discr in enumerate(var_set):
         name += "_log"
         ax.set_ylim(bottom=0.1)
         mpl_magic(ax=ax)
-        # fig.savefig(
-        #     f"plot/BTV/{args.phase}_{args.ext}_{time}/unc_{discr}_inclusive{scale}_{name}.pdf"
-        # )
+        fig.savefig(
+            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
+        )
         fig.savefig(
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
         )
