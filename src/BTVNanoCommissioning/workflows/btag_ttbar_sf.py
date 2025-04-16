@@ -151,15 +151,7 @@ class NanoProcessor(processor.ProcessorABC):
         ######################
         #  Create histogram  #
         ######################
-        _hist_event_dict = (
-            {"": None} if self.noHist else histogrammer(events, "btag_ttbar_sf")
-        )
-        if _hist_event_dict is None:
-            _hist_event_dict[""]
-        output = {
-            "sumw": processor.defaultdict_accumulator(float),
-            **_hist_event_dict,
-        }
+        output = {} if self.noHist else histogrammer(events, "btag_ttbar_sf")
         if shift_name is None:
             if isRealData:
                 output["sumw"] = len(events)

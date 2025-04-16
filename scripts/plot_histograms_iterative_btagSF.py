@@ -14,9 +14,11 @@ lumi_label = lumi / 1000  # fb^-1
 com = 13.6
 
 # load the coffea file
+# mc_path = "/home/home1/institut_3a/zinn/analyses/BTV/BTVNanoCommissioning/hists_btag_ttbar_sf_mumu_MC_Summer23_2023_BTV_Run3_2023_Comm_MINIAODv4_NanoV12/hists_btag_ttbar_sf_mumu_MC_Summer23_2023_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.coffea"
 mc_path = "/home/home1/institut_3a/zinn/analyses/BTV/BTVNanoCommissioning/hists_btag_ttbar_sf_MC_Summer23BPix_2023_BTV_Run3_2023_Comm_MINIAODv4_NanoV12/hists_btag_ttbar_sf_MC_Summer23BPix_2023_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.coffea"
 mc_output = load(mc_path)
 
+# data_muBTV_path = "/home/home1/institut_3a/zinn/analyses/BTV/BTVNanoCommissioning/hists_btag_ttbar_sf_mumu_data_Summer23_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12/hists_btag_ttbar_sf_mumu_data_Summer23_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.coffea"
 data_muBTV_path = "/home/home1/institut_3a/zinn/analyses/BTV/BTVNanoCommissioning/hists_btag_ttbar_sf_data_Summer23BPix_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12/hists_btag_ttbar_sf_data_Summer23BPix_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.coffea"
 data_muBTV_output = load(data_muBTV_path)
 data_emBTV = "/home/home1/institut_3a/zinn/analyses/BTV/BTVNanoCommissioning/hists_btag_ttbar_sf_data_Summer23BPix_2023_em_BTV_Run3_2023_Comm_MINIAODv4_NanoV12/hists_btag_ttbar_sf_data_Summer23BPix_2023_em_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.coffea"
@@ -25,7 +27,7 @@ data_emBTV_output = load(data_emBTV)
 output = {
     "mc": mc_output,
     "data_muBTV": data_muBTV_output,
-    "data_emBTV": data_emBTV_output,
+    # "data_emBTV": data_emBTV_output,
 }
 
 output = scaleSumW(output, lumi)
@@ -181,7 +183,7 @@ with rc_context(hep.style.CMS):
                         [
                             histogram[
                                 "nominal",
-                                flav_axis.index(flav),
+                                list(flav_axis.index(flav)),
                                 # index,
                                 eta_index,
                                 pt_index,
