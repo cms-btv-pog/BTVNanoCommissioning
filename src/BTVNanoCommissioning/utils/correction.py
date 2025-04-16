@@ -1214,6 +1214,7 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
 ### Lepton SFs
 def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
     allele = ele if ele.ndim > 1 else ak.singletons(ele)
+    allele = ak.pad_none(allele, 2)
 
     for sf in correct_map["EGM_cfg"].keys():
         ## Only apply SFs for lepton pass HLT filter
@@ -1228,7 +1229,6 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             ele_pt = ak.fill_none(ele.pt, 20)
             ele_phi = ak.fill_none(ele.phi, 0.0)
 
-            mask = ele.pt > 20.0
             masknone = ak.is_none(ele.pt)
             sfs_alle, sfs_alle_up, sfs_alle_down = (
                 np.ones_like(allele[:, 0].pt),
@@ -1239,14 +1239,13 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             if "correctionlib" in str(type(correct_map["EGM"])):
                 ## Reco SF -splitted pT
                 if "Reco" in sf:
-                    if not any(
-                        campaign in correct_map["campaign"]
-                        for campaign in ["Summer22", "Summer23"]
-                    ):
-                        ele_pt = np.where(ele.pt < 20.0, 20.0, ele.pt)
-                        ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
+                    ## phi is used in Summer23
+                    ele_pt_mid = np.clip(ele_pt, 20.1, 74.9)
+                    ele_pt_low = np.where(ele_pt >= 20.0, 19.9, ele_pt)
+                    ele_pt_high = np.clip(ele_pt, 75.0, 500.0)
+                    if "Summer23" in correct_map["campaign"]:
                         sfs_low = np.where(
-                            (~mask) & (~masknone),
+                            (ele.pt <= 20.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1260,7 +1259,12 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         sfs_high = np.where(
                             (ele.pt > 75.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                sf.split(" ")[1], "sf", "RecoAbove20", ele_eta, ele_pt, ele.phi
+                                sf.split(" ")[1],
+                                "sf",
+                                "RecoAbove75",
+                                ele_eta,
+                                ele_pt_high,
+                                ele_phi,
                             ),
                             sfs_low,
                         )
@@ -1271,8 +1275,8 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 "sf",
                                 "Reco20to75",
                                 ele_eta,
-                                ele_pt,
-                                ele.phi,
+                                ele_pt_mid,
+                                ele_phi,
                             ),
                             sfs_high,
                         )
@@ -1299,7 +1303,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoBelow20",
                                     ele_eta,
                                     ele_pt_low,
-                                    ele_phi,
+                                    ele.phi,
                                 ),
                                 0.0,
                             )
@@ -1311,7 +1315,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoAbove75",
                                     ele_eta,
                                     ele_pt_high,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                                 sfs_up_low,
                             )
@@ -1323,7 +1327,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoAbove75",
                                     ele_eta,
                                     ele_pt_high,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                                 sfs_down_low,
                             )
@@ -1334,31 +1338,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "sfup",
                                     "Reco20to75",
                                     ele_eta,
-                                    ele_pt,
-                                    ele.phi,
-                                ),
-                                sfs_up_high,
-                            )
-                            sfs_down = np.where(
-                                mask & ~masknone,
-                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                    sf.split(" ")[1],
-                                    "sfdown",
-                                    "RecoAbove20",
-                                    ele_eta,
-                                    ele_pt,
-                                    ele.phi,
-                                ),
-                                sfs_down_high,
-                            )
-                            sfs_up = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
-                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                    sf.split(" ")[1],
-                                    "sfup",
-                                    "Reco20to75",
-                                    ele_eta,
-                                    ele_pt,
+                                    ele_pt_mid,
                                     ele_phi,
                                 ),
                                 sfs_up_high,
@@ -1370,7 +1350,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "sfdown",
                                     "Reco20to75",
                                     ele_eta,
-                                    ele_pt,
+                                    ele_pt_mid,
                                     ele_phi,
                                 ),
                                 sfs_down_high,
@@ -1406,12 +1386,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         sfs = np.where(
                             (ele.pt > 20.0) & (ele.pt <= 75.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                sf.split(" ")[1],
-                                "sf",
-                                "Reco20to75",
-                                ele_eta,
-                                ele_pt,
-                                ele_phi,
+                                sf.split(" ")[1], "sf", "Reco20to75", ele_eta, ele_pt_mid
                             ),
                             sfs_high,
                         )
@@ -1449,7 +1424,6 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoAbove75",
                                     ele_eta,
                                     ele_pt_high,
-                                    ele_phi,
                                 ),
                                 sfs_up_low,
                             )
@@ -1471,7 +1445,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "sfup",
                                     "Reco20to75",
                                     ele_eta,
-                                    ele_pt,
+                                    ele_pt_mid,
                                 ),
                                 sfs_up_high,
                             )
@@ -1482,7 +1456,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "sfdown",
                                     "Reco20to75",
                                     ele_eta,
-                                    ele_pt,
+                                    ele_pt_mid,
                                 ),
                                 sfs_down_high,
                             )
@@ -1502,7 +1476,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 correct_map["EGM_cfg"][sf],
                                 ele_eta,
                                 ele_pt,
-                                ele.phi,
+                                ele_phi,
                             ),
                         )
 
@@ -1516,7 +1490,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     correct_map["EGM_cfg"][sf],
                                     ele_eta,
                                     ele_pt,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                             )
                             sfs_down = np.where(
@@ -1528,7 +1502,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     correct_map["EGM_cfg"][sf],
                                     ele_eta,
                                     ele_pt,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                             )
                     else:
@@ -1624,6 +1598,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
 def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
     allmu = mu if mu.ndim > 1 else ak.singletons(mu)
+    allmu = ak.pad_none(allmu, mu.ndim)
     for sf in correct_map["MUO_cfg"].keys():
         ## Only apply SFs for lepton pass HLT filter
         if not isHLT and "HLT" in sf:
@@ -1642,10 +1617,8 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
 
             # ensure that no none values are present, np.clip cannot handle this
             # nones are masked out in the sfs calculation
-            mu_pt = mu.pt
-            mu_eta = mu.eta
-            mu_pt = ak.fill_none(mu_pt, 0.0)
-            mu_eta = ak.fill_none(mu_eta, 0.0)
+            mu_pt = ak.fill_none(mu.pt, 0.0)
+            mu_eta = ak.fill_none(mu.eta, 0.0)
 
             mu_pt = np.clip(mu_pt, 15.0, 199.9)
             mu_eta = np.clip(np.abs(mu_eta), 0.0, 2.4)
