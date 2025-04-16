@@ -344,6 +344,9 @@ class NanoProcessor(processor.ProcessorABC):
         elif self.channel == "emu":
             pruned_ev["SelMuon"] = good_muons[event_level][:, 0]
             pruned_ev["SelElectron"] = good_electrons[event_level][:, 0]
+        else:
+            pruned_ev["SelMuon"] = good_muons[event_level][:, :2]
+            pruned_ev["SelElectron"] = good_electrons[event_level][:, :2]
 
         # pruned_ev["ch_mumu"] = ch_mumu[event_level]
         # pruned_ev["ch_ee"] = ch_ee[event_level]
