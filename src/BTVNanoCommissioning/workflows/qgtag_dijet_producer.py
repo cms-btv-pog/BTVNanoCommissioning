@@ -184,7 +184,7 @@ class NanoProcessor(processor.ProcessorABC):
             ak.zeros_like(req_jet),
         )
 
-        event_level = event_level & req_jet & req_dphi & req_subjet & req_tagjet
+        event_level = event_level & req_jet & req_dphi & req_subjet # & req_tagjet
 
         ## MC only: require gen vertex to be close to reco vertex
         if "GenVtx_z" in events.fields:
@@ -217,18 +217,19 @@ class NanoProcessor(processor.ProcessorABC):
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
 
-        pruned_ev["Tag"] = ak.where(
-            ak.fill_none(np.abs(pruned_ev.Jet.eta)[:, 0] < 1.3, False)
-            & ak.fill_none(np.abs(pruned_ev.Jet.eta)[:, 1] < 1.3, False),
-            pruned_ev.Jet[
-                :, np.random.randint(0, 2)
-            ],  # Is this correct? Is a single value returned for the whole program or for each event?
-            ak.where(
-                np.abs(pruned_ev.Jet.eta)[:, 0] < 1.3,
-                pruned_ev.Jet[:, 0],
-                pruned_ev.Jet[:, 1],
-            ),
-        )
+        # pruned_ev["Tag"] = ak.where(
+            # ak.fill_none(np.abs(pruned_ev.Jet.eta)[:, 0] < 1.3, False)
+            # & ak.fill_none(np.abs(pruned_ev.Jet.eta)[:, 1] < 1.3, False),
+            # pruned_ev.Jet[
+                # :, np.random.randint(0, 2)
+            # ],  # Is this correct? Is a single value returned for the whole program or for each event?
+            # ak.where(
+                # np.abs(pruned_ev.Jet.eta)[:, 0] < 1.3,
+                # pruned_ev.Jet[:, 0],
+                # pruned_ev.Jet[:, 1],
+            # ),
+        # )
+        pruned_ev["Tag"] = pruned_ev.Jet[:, np.random.randint(0, 2)]
         pruned_ev["Tag", "pt"] = pruned_ev["Tag"].pt
         pruned_ev["Tag", "eta"] = pruned_ev["Tag"].eta
         pruned_ev["Tag", "phi"] = pruned_ev["Tag"].phi
