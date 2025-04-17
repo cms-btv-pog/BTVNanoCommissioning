@@ -111,7 +111,6 @@ class NanoProcessor(processor.ProcessorABC):
             ]
         elif self.selectionModifier == "PFJet":
             triggers = [
-                "ZeroBias",
                 "PFJet40",
                 "PFJet60",
                 "PFJet80",
@@ -127,7 +126,6 @@ class NanoProcessor(processor.ProcessorABC):
             ]
         elif self.selectionModifier == "DiPFJetAve":
             triggers = [
-                "ZeroBias",
                 "DiPFJetAve40",
                 "DiPFJetAve60",
                 "DiPFJetAve80",
