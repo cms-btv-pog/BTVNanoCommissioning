@@ -275,7 +275,11 @@ class NanoProcessor(processor.ProcessorABC):
                 "Rho_*",
                 "SoftMuon_dxySig",
                 "Muon_sip3d",
+                "run",
+                "luminosityBlock",
             ]
+            for trigger in triggers:
+                othersData.append(f"HLT_{trigger}")
             array_writer(
                 self,
                 pruned_ev,
