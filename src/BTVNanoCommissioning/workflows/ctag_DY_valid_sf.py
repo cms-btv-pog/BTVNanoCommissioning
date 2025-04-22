@@ -128,23 +128,6 @@ class NanoProcessor(processor.ProcessorABC):
             axis=-1,
         )
 
-        pl_iso = ak.all(
-            events.Jet.metric_table(pos_dilep) > 0.4, axis=2, mask_identity=True
-        )
-        nl_iso = ak.all(
-            events.Jet.metric_table(neg_dilep) > 0.4, axis=2, mask_identity=True
-        )
-
-        if self.selMod == "QG":
-            jetmask = jet_id(events, self._campaign, max_eta=5.13)
-        else:
-            jetmask = jet_id(events, self._campaign)
-
-        jet_sel = ak.fill_none(
-            jetmask & pl_iso & nl_iso,
-            False,
-            axis=-1,
-        )
 
         pos_dilep = ak.pad_none(pos_dilep, 1, axis=1)
         neg_dilep = ak.pad_none(neg_dilep, 1, axis=1)
@@ -161,16 +144,21 @@ class NanoProcessor(processor.ProcessorABC):
         nl_iso = ak.all(
             events.Jet.metric_table(neg_dilep[:, 0]) > 0.4, axis=2, mask_identity=True
         )
-        event_jet = events.Jet[
-            ak.fill_none(
-                jet_id(events, self._campaign) & pl_iso & nl_iso,
-                False,
-                axis=-1,
-            )
-        ]
+
+        if "QG" in self.selMod:
+            jetmask = jet_id(events, self._campaign, max_eta=5.13)
+        else:
+            jetmask = jet_id(events, self._campaign)
+
+        jet_sel = ak.fill_none(
+            jetmask & pl_iso & nl_iso,
+            False,
+            axis=-1,
+        )
+
+        event_jet = events.Jet[jet_sel]
 
         req_jets = ak.count(event_jet.pt, axis=1) >= 1
-        # event_jet = ak.pad_none(event_jet, 1, axis=1)
 
         # store jet index for PFCands, create mask on the jet index
         jetindx = ak.mask(
@@ -184,14 +172,13 @@ class NanoProcessor(processor.ProcessorABC):
             req_lumi & req_trig & req_dilep & req_dilepmass & req_jets & req_metfilter
         )
 
-        if self.selMod == "QG":
+        if "QG" in self.selMod:
             temp_jet = ak.pad_none(events.Jet, 1, axis=1)
 
             req_lead_jet = ak.fill_none(
                 (temp_jet.pt[:, 0] > 15)
                 & (temp_jet[:, 0].delta_r(pos_dilep[:, 0]) > 0.4)
                 & (temp_jet[:, 0].delta_r(neg_dilep[:, 0]) > 0.4)
-                & (temp_jet.jetId[:, 0] >= 4)
                 & (
                     np.abs(temp_jet[:, 0].delta_phi(pos_dilep[:, 0] + neg_dilep[:, 0]))
                     > 2.7
