@@ -151,7 +151,7 @@ class NanoProcessor(processor.ProcessorABC):
             jetmask = jet_id(events, self._campaign)
 
         jet_sel = ak.fill_none(
-            jetmask & pl_iso & nl_iso,
+            pl_iso & nl_iso & jetmask,
             False,
             axis=-1,
         )
@@ -173,13 +173,10 @@ class NanoProcessor(processor.ProcessorABC):
         )
 
         if "QG" in self.selMod:
-            temp_jet = ak.pad_none(events.Jet, 1, axis=1)
+            temp_jet = ak.pad_none(event_jet, 1, axis=1)
 
             req_lead_jet = ak.fill_none(
-                (temp_jet.pt[:, 0] > 15)
-                & (temp_jet[:, 0].delta_r(pos_dilep[:, 0]) > 0.4)
-                & (temp_jet[:, 0].delta_r(neg_dilep[:, 0]) > 0.4)
-                & (
+                (
                     np.abs(temp_jet[:, 0].delta_phi(pos_dilep[:, 0] + neg_dilep[:, 0]))
                     > 2.7
                 ),
@@ -252,7 +249,7 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
         pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
-        if "PFCands" in events.fields:
+        if "PFCands" in events.fields and "QG" not in self.selMod:
             pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
 
         ####################

@@ -252,12 +252,6 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             systematics = [shift_name]
 
-        # if not isRealData:
-        # pruned_ev["weight"] = weights.weight()
-        # for ind_wei in weights.weightStatistics.keys():
-        # pruned_ev[f"{ind_wei}_weight"] = weights.partial_weight(
-        # include=[ind_wei]
-        # )
 
         # Configure histograms
         if not self.noHist:
