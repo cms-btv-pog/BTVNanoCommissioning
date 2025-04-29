@@ -6412,6 +6412,8 @@ def axes_name(var):
             unit = unit + " CvB"
         elif "CvNotB" in var:
             unit = unit + " CvNotB"
+        elif "BvCt" in var:
+            unit = unit + " BvCt"
         elif "BvC" in var:
             unit = unit + " BvC"
         elif "B_b" in var or "ProbB" in var:
@@ -6422,6 +6424,8 @@ def axes_name(var):
             unit = unit + " Prob(lepb)"
         elif "B_lepb" in var:
             unit = unit + " Prob(lepb)"
+        elif "HFvLFt" in var:
+            unit = unit + " HFvLFt"
         elif "HFvLF" in var:
             unit = unit + " HFvLF"
         elif "2D" in var:
