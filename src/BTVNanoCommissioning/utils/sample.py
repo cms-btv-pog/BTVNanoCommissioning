@@ -80,8 +80,8 @@ predefined_sample = {
             "DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             # wjets to lnu
-            # "WtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-            "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8",
+            "WtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            # "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8",
             "WtoLNu-4Jets_1J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoLNu-4Jets_2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoLNu-4Jets_3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
