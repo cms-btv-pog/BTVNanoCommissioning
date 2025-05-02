@@ -215,4 +215,17 @@ jes_sources_full_set = (
     "SinglePionHCAL",
     "TimePtEta",
 )
-jes_sources_reduced_set = ()
+jes_sources_reduced_set = (
+    # "Absolute",
+    # "Absolute_2017",
+    # "BBEC1",
+    # "BBEC1_2017",
+    # "EC2",
+    # "EC2_2017",
+    # "FlavorQCD",
+    # "HF",
+    # "HF_2017",
+    # "RelativeBal",
+    # "RelativeSample_2017",
+    "Total",
+)

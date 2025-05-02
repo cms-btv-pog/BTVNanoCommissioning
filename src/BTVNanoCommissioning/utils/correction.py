@@ -616,7 +616,7 @@ def JME_shifts(
 
             ## JEC variations
             if not isRealData and systematic != False:
-                if systematic != "split":
+                if (systematic != "split") and (systematic != "reduced"):
                     jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
                     jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
                     unc_jets, unc_met = {}, {}
