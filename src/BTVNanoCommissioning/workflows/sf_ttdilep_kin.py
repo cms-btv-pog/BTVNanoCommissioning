@@ -74,23 +74,55 @@ def compute_pt_rel(lepton, jet):
     jet_y = jet.pt * np.sin(jet.phi)
     jet_z = jet.pt * np.sinh(jet.eta)
 
-    # Compute the dot product between the lepton and jet 3-momenta.
     dot = lepton_x * jet_x + lepton_y * jet_y + lepton_z * jet_z
-
-    # Compute the squared magnitudes of the 3-momenta.
     jet_p2 = jet_x**2 + jet_y**2 + jet_z**2
     lepton_p2 = lepton_x**2 + lepton_y**2 + lepton_z**2
 
-    # Avoid division by zero: replace zero jet momentum with 1.
-    safe_jet_p2 = ak.where(jet_p2 == 0, 1, jet_p2)
-
     # Compute pt_rel^2 = |p_lepton|^2 - (dot/|p_jet|)^2.
+    safe_jet_p2 = ak.where(jet_p2 == 0, 1, jet_p2)
     pt_rel_sq = lepton_p2 - (dot**2) / safe_jet_p2
-
-    # Ensure numerical stability: prevent negative values.
     pt_rel_sq = ak.where(pt_rel_sq < 0, 0, pt_rel_sq)
 
     return np.sqrt(pt_rel_sq)
+
+
+def compute_mass(lepton, jet):
+    """
+    Compute the mass of the sum of lepton and the jet
+
+    Parameters:
+      lepton: a vector or Awkward array of lepton 4-vectors with fields
+              "pt", "eta", "phi", "mass", having the same shape as `jet`.
+      jet:    a vector or Awkward array of jet 4-vectors with fields
+              "pt", "eta", "phi", "mass", having the same shape as `lepton`.
+
+    Returns:
+      An array (e.g. an Awkward array or NumPy array) of mass values.
+    """
+
+    # Energy + momentum components
+    E_lepton = np.sqrt(lepton.pt**2 * np.cosh(lepton.eta)**2 + lepton.mass**2)
+    px_lepton = lepton.pt * np.cos(lepton.phi)
+    py_lepton = lepton.pt * np.sin(lepton.phi)
+    pz_lepton = lepton.pt * np.sinh(lepton.eta)
+
+    E_jet    = np.sqrt(jet.pt**2 * np.cosh(jet.eta)**2 + jet.mass**2)
+    px_jet = jet.pt * np.cos(jet.phi)
+    py_jet = jet.pt * np.sin(jet.phi)
+    pz_jet = jet.pt * np.sinh(jet.eta)
+
+
+    # Invariant mass
+    E_sum  = E_lepton + E_jet
+    px_sum = px_lepton + px_jet
+    py_sum = py_lepton + py_jet
+    pz_sum = pz_lepton + pz_jet
+
+    mass2 = E_sum**2 - (px_sum**2 + py_sum**2 + pz_sum**2)
+    mass2 = ak.where(mass2 < 0, 0, mass2)
+    mass = np.sqrt(mass2)
+
+    return mass
 
 
 def delta_phi(p1, p2):
@@ -362,15 +394,7 @@ class NanoProcessor(processor.ProcessorABC):
         lepton_far = ak.where(is_ele_close, mu, ele)
 
         # Compute “far” system kinematics per jet:
-        close_system = ak.zip(
-            {
-                "pt": ev_jets.pt + lepton_close.pt,
-                "eta": ev_jets.eta + lepton_close.eta,
-                "phi": ev_jets.phi + lepton_close.phi,
-                "mass": ev_jets.mass + lepton_close.mass,
-            }
-        )
-        close_mlj = close_system.mass
+        close_mlj = compute_mass(lepton_close, ev_jets)
         close_ptrel = compute_pt_rel(lepton_close, ev_jets)
         close_deta = delta_eta(ev_jets, lepton_close)
         close_dphi = delta_phi(ev_jets, lepton_close)
@@ -378,15 +402,7 @@ class NanoProcessor(processor.ProcessorABC):
         close_lj2ll_dphi = delta_phi(lepton_close, dilepton[:, None])
 
         # Compute “far” system kinematics per jet:
-        far_system = ak.zip(
-            {
-                "pt": ev_jets.pt + lepton_far.pt,
-                "eta": ev_jets.eta + lepton_far.eta,
-                "phi": ev_jets.phi + lepton_far.phi,
-                "mass": ev_jets.mass + lepton_far.mass,
-            }
-        )
-        far_mlj = far_system.mass
+        far_mlj = compute_mass(lepton_far, ev_jets)
         far_ptrel = compute_pt_rel(lepton_far, ev_jets)
         far_deta = delta_eta(ev_jets, lepton_far)
         far_dphi = delta_phi(ev_jets, lepton_far)
