@@ -74,34 +74,6 @@ def reduce_or(*conditions):
     return reduce(or_, conditions)
 
 
-b_tagger = {
-    "deepjet": {
-        "working_points": {
-            "loose": 0.0614,
-            "medium": 0.3196,
-            "tight": 0.73,
-        },
-        "flag": "btagDeepFlavB",
-    },
-    "PNet": {
-        "working_points": {
-            "loose": 0.1,
-            "medium": 0.5,
-            "tight": 0.9,
-        },
-        "flag": "btagPNetB",
-    },
-    "ParT": {
-        "working_points": {
-            "loose": 0.0897,
-            "medium": 0.451,
-            "tight": 0.8604,
-        },
-        "flag": "btagRobustParTAK4B",
-    },
-}
-
-
 class NanoProcessor(processor.ProcessorABC):
     def __init__(
         self,
@@ -125,6 +97,39 @@ class NanoProcessor(processor.ProcessorABC):
         self.channel = selectionModifier
         ## Load corrections
         self.SF_map = load_SF(year=self._year, campaign=self._campaign)
+
+        if self._year == "2024":
+            ParT_name = "btagUParTAK4B"
+        else:
+            ParT_name = "btagRobustParTAK4B"
+
+
+        self.b_tagger_config = {
+            "deepjet": {
+                "working_points": {
+                    "loose": 0.0614,
+                    "medium": 0.3196,
+                    "tight": 0.73,
+                },
+                "flag": "btagDeepFlavB",
+            },
+            "PNet": {
+                "working_points": {
+                    "loose": 0.1,
+                    "medium": 0.5,
+                    "tight": 0.9,
+                },
+                "flag": "btagPNetB",
+            },
+            "ParT": {
+                "working_points": {
+                    "loose": 0.0897,
+                    "medium": 0.451,
+                    "tight": 0.8604,
+                },
+                "flag": ParT_name,
+            },
+        }
 
     @property
     def accumulator(self):
@@ -151,7 +156,16 @@ class NanoProcessor(processor.ProcessorABC):
         ######################
         #  Create histogram  #
         ######################
-        output = {} if self.noHist else histogrammer(events, "btag_ttbar_sf")
+        output = (
+            {}
+            if self.noHist
+            else histogrammer(
+                events,
+                workflow="btag_ttbar_sf",
+                year=self._year,
+                campaign=self._campaign,
+            )
+        )
         if shift_name is None:
             if isRealData:
                 output["sumw"] = len(events)
@@ -358,14 +372,14 @@ class NanoProcessor(processor.ProcessorABC):
         #  Tag and Probe   #
         ####################
 
-        for tagger_config in b_tagger.values():
+        for tagger_config in self.b_tagger_config.values():
             tagger_name = tagger_config["flag"]
             for i_jet in range(2):
                 pruned_ev[f"{tagger_name}_region_HF_jet{i_jet}"] = np.zeros(len(pruned_ev.njet), dtype=bool)
                 pruned_ev[f"{tagger_name}_region_LF_jet{i_jet}"] = np.zeros(len(pruned_ev.njet), dtype=bool)
 
         for i_tag_jet, i_probe_jet in [(0, 1), (1, 0)]:
-            for tagger_config in b_tagger.values():
+            for tagger_config in self.b_tagger_config.values():
                 b_score_btag = ak.fill_none(
                     ak.firsts(
                         pruned_ev["SelJet"][:, i_tag_jet : i_tag_jet + 1][

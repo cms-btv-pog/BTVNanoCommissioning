@@ -661,7 +661,11 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                         Hist.storage.Weight(),
                     )
             elif "btag_ttbar" in workflow:
-                if disc not in ("btagDeepFlavB", "btagPNetB", "btagRobustParTAK4B"):
+                if year == "2024":
+                    ParT_name = "btagUParTAK4B"
+                else:
+                    ParT_name = "btagRobustParTAK4B"
+                if disc not in ("btagDeepFlavB", "btagPNetB", ParT_name):
                     continue
                 _hist_dict[f"iterative_{disc}"] = Hist.Hist(
                     syst_axis,
