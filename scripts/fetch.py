@@ -490,6 +490,47 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
 
     return sample_dict
 
+def safe_das_query(query):
+    """Safely execute a DAS query with proper error handling"""
+    import subprocess
+    
+    # Use the same environment setup as run_das_command
+    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    if in_ci:
+        cmd = f"""
+        source /cvmfs/cms.cern.ch/cmsset_default.sh &&
+        which dasgoclient || export PATH=$PATH:/cvmfs/cms.cern.ch/common &&
+        {query}
+        """
+        try:
+            result = subprocess.run(['bash', '-c', cmd], 
+                                  capture_output=True, 
+                                  text=True)
+            if result.returncode != 0:
+                print(f"DAS query failed: {result.stderr}")
+                return []
+            
+            output = [line for line in result.stdout.strip().split('\n') if line]
+            # Check if output contains error messages
+            if any(line.startswith('ERROR:') for line in output):
+                print(f"DAS query returned error: {output}")
+                return []
+                
+            return output
+        except Exception as e:
+            print(f"Exception during DAS query: {e}")
+            return []
+    else:
+        # For local environment
+        try:
+            output = os.popen(query).read().strip().split('\n')
+            if any(line.startswith('ERROR:') for line in output):
+                print(f"DAS query returned error: {output}")
+                return []
+            return [line for line in output if line]
+        except Exception as e:
+            print(f"Exception during DAS query: {e}")
+            return []
 
 def main(args):
 
@@ -537,22 +578,21 @@ def main(args):
                     else mc_campaign
                 )
 
-            dataset = (
-                os.popen(
-                    f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
-                )
-                .read()[:-1]
-                .split("\n")
-            )
+            query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
+            dataset = safe_das_query(query)
+
+            if not dataset:
+                print(f"WARNING: No datasets found for {l} with campaign {args.DAS_campaign}")
+                continue  # Skip this dataset if query fails
+            
             if dataset[0] == "":
                 print(l, "not Found! List all campaigns")
-                dataset = (
-                    os.popen(
-                        f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/**/NANOAOD*'"
-                    )
-                    .read()[:-1]
-                    .split("\n")
-                )
+                query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
+                dataset = safe_das_query(query)
+
+                if not dataset:
+                    print(f"WARNING: No datasets found for {l} with campaign {args.DAS_campaign}")
+                    continue  # Skip this dataset if query fails
                 if dataset[0] == "":
                     print(f"{l} is not a valid dataset")
                     continue
@@ -562,15 +602,13 @@ def main(args):
                     if "CMSSW" not in d and "Tier0" not in d and "ECAL" not in d
                 ]
                 args.DAS_campaign = input(f"which campaign? \n {campaigns} \n")
-                dataset = (
-                    os.popen(
-                        f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
-                    )
-                    .read()[:-1]
-                    .split("\n")
-                )
+                query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
+                dataset = safe_das_query(query)
 
-                outf.write(dataset[0] + "\n")
+                if dataset and not any('ERROR:' in d for d in dataset):
+                    outf.write(dataset[0] + "\n")
+                else:
+                    print(f"WARNING: Skipping invalid dataset result for {l}")
                 # continue
 
             elif len(dataset) > 1:
@@ -580,21 +618,25 @@ def main(args):
                         f"{l} is which campaign? \n {campaigns} \n"
                     )
 
-                    dataset = (
-                        os.popen(
-                            f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
-                        )
-                        .read()[:-1]
-                        .split("\n")
-                    )
+                    query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
+                    dataset = safe_das_query(query)
 
-                    outf.write(dataset[0] + "\n")
+                    if dataset and not any('ERROR:' in d for d in dataset):
+                        outf.write(dataset[0] + "\n")
+                    else:
+                        print(f"WARNING: Skipping invalid dataset result for {l}")
                 else:
                     for d in dataset:
-                        outf.write(d + "\n")
+                        if not 'ERROR:' in d:
+                            outf.write(d + "\n")
+                        else:
+                            print(f"WARNING: Skipping invalid dataset result: {d}")
 
             else:
-                outf.write(dataset[0] + "\n")
+                if dataset and not any('ERROR:' in d for d in dataset):
+                    outf.write(dataset[0] + "\n")
+                else:
+                    print(f"WARNING: Skipping invalid dataset result for {l}")
         outf.close()
     ## If put the path
     if args.from_path:
