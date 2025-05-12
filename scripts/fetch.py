@@ -153,6 +153,7 @@ def get_xrootd_sites_map():
 
 
 def getFilesFromDas(args):
+    """Improved getFilesFromDas with multiple fallback strategies"""
     fset = []
     with open(args.input) as fp:
         lines = fp.readlines()
@@ -160,116 +161,159 @@ def getFilesFromDas(args):
             fset.append(line)
 
     fdict = {}
+    # Site handling setup
     if args.blacklist_sites is not None:
         args.blacklist_sites = args.blacklist_sites.split(",")
         print("blacklist sites:", args.blacklist_sites)
     if args.whitelist_sites is not None:
         args.whitelist_sites = args.whitelist_sites.split(",")
         print("whitelist sites:", args.whitelist_sites)
+        
+    # Track failed datasets for summary report
+    failed_datasets = []
+    
     for dataset in fset:
         if dataset.startswith("#") or dataset.strip() == "":
             continue
 
-        dsname = dataset.strip().split("/")[1]  # Dataset first name
-
-        Tier = dataset.strip().split("/")[3]
-        # NANOAODSIM for regular samples, USER for private
-        if "Run" in dataset and "pythia8" not in dataset:
-            dsname = dataset.strip().split("/")[1] + dataset.strip().split("/")[2]
-            if "BTV" in dataset:
-                dsname = (
-                    dataset.strip().split("/")[1]
-                    + dataset.strip().split("/")[2][
-                        dataset.strip().split("/")[2].find("-") + 1 :
-                    ]
-                )
-                dsname = dsname[: dsname.find("_BTV")]
-        instance = "prod/global"
-        if Tier == "USER":
-            instance = "prod/phys03"
-        print("Creating list of files for dataset", dsname, Tier, instance)
-        flist = (
-            os.popen(
-                (
-                    "/cvmfs/cms.cern.ch/common/dasgoclient -query='instance={} file dataset={}'"
-                ).format(instance, fset[fset.index(dataset)].rstrip())
-            )
-            .read()
-            .split("\n")
-        )
-        print("Number of files: ", len(flist))
-        import json
-
-        dataset = dataset[:-1] if "\n" in dataset else dataset
-        fetchsite = json.loads(
-            (
-                os.popen(
-                    f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance={instance}  dataset={dataset} site' -json"
-                ).read()
-            )
-        )
-
-        if instance == "prod/phys03":
-            possible_sites = [fetchsite[0]["site"][0]["name"]]
-        else:
-            possible_sites = [
-                s["site"][0]["name"]
-                for s in fetchsite
-                if (s["site"][0]["replica_fraction"] == "100.00%")
-                & (s["site"][0]["block_completion"] == "100.00%")
-                & (s["site"][0]["kind"] == "DISK")
-            ]
-
-        sites_xrootd_prefix = get_xrootd_sites_map()
-        xrd = None
-
-        if args.xrd == None:
-            if args.whitelist_sites is not None:
-                # get first site in whitelist_site
-                for w_site in args.whitelist_sites:
-                    if xrd is not None:
-                        break
-                    for site in possible_sites:
-                        if site == w_site and type(sites_xrootd_prefix[site]) == str:
-                            xrd = sites_xrootd_prefix[site]
-            else:
-                for site in possible_sites:
-                    # skip sites without xrd prefix
-                    if (
-                        site == "T2_IT_Pisa"
-                        or site == "T2_IT_Bari"
-                        or site == "T2_BE_UCL"
-                        or site == "T2_IT_Rome"
-                        or site == "T2_FR_GRIF"
-                    ):
-                        continue
-                    if (
-                        args.blacklist_sites is not None
-                        and site in args.blacklist_sites
-                    ):
-                        continue
-                    # get first site in possible_sites
-                    elif type(sites_xrootd_prefix[site]) == str:
-                        xrd = sites_xrootd_prefix[site]
-        else:
-            xrd = args.xrd
-
-        if xrd is None:
-            print(
-                f"No SITE available in the whitelist for file {dsname}, change to global redirector: {args.redirector}"
-            )
+        dataset = dataset.strip()
+        print(f"\n===== Processing dataset: '{dataset}' =====")
+        
+        # Validate dataset format
+        if not dataset.startswith('/'):
+            print(f"WARNING: Dataset '{dataset}' does not start with '/' - trying anyway")
+        
+        # Try to get dsname safely
+        try:
+            dsname = dataset.split('/')[1]  # Primary dataset name
+        except IndexError:
+            print(f"ERROR: Cannot parse dataset name from '{dataset}'")
+            print("Using the entire string as the dataset name")
+            dsname = dataset.replace('/', '_').strip()
+        
+        # Try multiple DAS query approaches
+        flist = []
+        das_queries = [
+            f"dasgoclient -query=\"file dataset={dataset}\"",
+            f"dasgoclient -query=\"file dataset={dataset} instance=prod/global\"",
+            f"dasgoclient -query=\"file dataset={dataset} instance=prod/phys03\"",
+            f"dasgoclient -query=\"file dataset=*{dataset}*\""
+        ]
+        
+        for query in das_queries:
+            if flist:  # If we already have files, no need to try other queries
+                break
+                
+            print(f"Trying DAS query: {query}")
+            try:
+                flist = os.popen(query).read().splitlines()
+                if flist:
+                    print(f"Found {len(flist)} files with query: {query}")
+                    break
+            except Exception as e:
+                print(f"Error with DAS query: {e}")
+        
+        if not flist:
+            print(f"WARNING: No files found for dataset '{dataset}' after trying all queries")
+            failed_datasets.append(dataset)
+            continue
+        
+        # Get sites with multiple fallback strategies
+        sites = []
+        site_queries = [
+            f"dasgoclient -query=\"site dataset={dataset}\"",
+            f"dasgoclient -query=\"site dataset={dataset} instance=prod/global\"",
+            f"dasgoclient -query=\"site dataset={dataset} instance=prod/phys03\""
+        ]
+        
+        for query in site_queries:
+            if sites:  # If we already have sites, no need to try other queries
+                break
+                
+            print(f"Trying site query: {query}")
+            try:
+                sites = os.popen(query).read().splitlines()
+                if sites:
+                    print(f"Found {len(sites)} sites with query: {query}")
+                    break
+            except Exception as e:
+                print(f"Error with site query: {e}")
+        
+        # Fallback to default redirector if no sites found
+        if not sites:
+            print(f"WARNING: No sites found for dataset '{dataset}', using global redirector")
             redirector = {
                 "infn": "root://xrootd-cms.infn.it//",
                 "fnal": "root://cmsxrootd.fnal.gov/",
-                "cern": "root://cms-xrd-global.cern.ch/",
+                "cern": "root://cms-xrd-global.cern.ch/"
             }
             xrd = redirector[args.redirector]
+            if args.limit is not None:
+                flist = flist[:args.limit]
+            if dsname not in fdict:
+                fdict[dsname] = [xrd + f for f in flist if len(f) > 1]
+            else:
+                fdict[dsname].extend([xrd + f for f in flist if len(f) > 1])
+            continue
+        
+        # Process sites with careful error handling
+        xrd = None
+        sites_xrootd_prefix = get_xrootd_sites_map()
+        
+        for site in sites:
+            if not site:
+                continue
+                
+            # Handle site blacklisting/whitelisting
+            if args.blacklist_sites is not None and site in args.blacklist_sites:
+                print(f"Site {site} is blacklisted, skipping")
+                continue
+            if args.whitelist_sites is not None and site not in args.whitelist_sites:
+                print(f"Site {site} is not in whitelist, skipping")
+                continue
+            
+            # Safely handle site redirector lookup
+            try:
+                if site in sites_xrootd_prefix:
+                    if isinstance(sites_xrootd_prefix[site], list):
+                        xrd = sites_xrootd_prefix[site][0]
+                    elif isinstance(sites_xrootd_prefix[site], str):
+                        xrd = sites_xrootd_prefix[site]
+                    
+                    if xrd:
+                        print(f"Using redirector for site {site}: {xrd}")
+                        break
+            except Exception as e:
+                print(f"Error processing site {site}: {e}")
+        
+        # Fallback to global redirector if no valid site found
+        if xrd is None:
+            print(f"No valid site found for {dsname}, using global redirector: {args.redirector}")
+            redirector = {
+                "infn": "root://xrootd-cms.infn.it//",
+                "fnal": "root://cmsxrootd.fnal.gov/",
+                "cern": "root://cms-xrd-global.cern.ch/"
+            }
+            xrd = redirector[args.redirector]
+        
         if args.limit is not None:
-            flist = flist[: args.limit]
+            flist = flist[:args.limit]
+        
+        # Add files to dictionary
         if dsname not in fdict:
             fdict[dsname] = [xrd + f for f in flist if len(f) > 1]
-        else:  # needed to collect all data samples into one common key "Data" (using append() would introduce a new element for the key)
+        else:
             fdict[dsname].extend([xrd + f for f in flist if len(f) > 1])
+        
+        print(f"Added {len(fdict[dsname])} files for dataset {dsname}")
+    
+    # Report on failures
+    if failed_datasets:
+        print("\n===== SUMMARY OF FAILED DATASETS =====")
+        for ds in failed_datasets:
+            print(f"- {ds}")
+        print(f"Total: {len(failed_datasets)} failed datasets out of {len(fset)}")
+    
     return fdict
 
 
