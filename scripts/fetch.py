@@ -151,6 +151,37 @@ def get_xrootd_sites_map():
 
     return json.load(open(".sites_map.json"))
 
+def run_das_command(cmd):
+    """Run a DAS command with proper environment in micromamba"""
+    import os
+    import subprocess
+    
+    # Check if we're in GitLab CI
+    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    
+    if in_ci:
+        # Set up full environment for GitLab CI with micromamba
+        full_cmd = f"""
+        source /cvmfs/cms.cern.ch/cmsset_default.sh &&
+        which dasgoclient || export PATH=$PATH:/cvmfs/cms.cern.ch/common &&
+        {cmd}
+        """
+        
+        # Use subprocess to run command and capture output
+        try:
+            result = subprocess.run(['bash', '-c', full_cmd], 
+                                    capture_output=True, 
+                                    text=True)
+            if result.returncode != 0:
+                print(f"Command failed: {result.stderr}")
+                return []
+            return [line for line in result.stdout.strip().split('\n') if line]
+        except Exception as e:
+            print(f"Error executing command: {e}")
+            return []
+    else:
+        # Normal execution for local environments
+        return os.popen(cmd).read().splitlines()
 
 def getFilesFromDas(args):
     """Improved getFilesFromDas with multiple fallback strategies"""
@@ -206,7 +237,7 @@ def getFilesFromDas(args):
                 
             print(f"Trying DAS query: {query}")
             try:
-                flist = os.popen(query).read().splitlines()
+                flist = run_das_command(query)
                 if flist:
                     print(f"Found {len(flist)} files with query: {query}")
                     break
@@ -232,7 +263,7 @@ def getFilesFromDas(args):
                 
             print(f"Trying site query: {query}")
             try:
-                sites = os.popen(query).read().splitlines()
+                sites = run_das_command(query)
                 if sites:
                     print(f"Found {len(sites)} sites with query: {query}")
                     break
