@@ -490,112 +490,62 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
 
     return sample_dict
 
-def normalize_wildcards(query_string):
-    """Normalize wildcard patterns to ensure consistent behavior across environments"""
-    import re
-    
-    # Print original query for debugging
-    print(f"Original query: {query_string}")
-    
-    # Look for the dataset pattern parts
-    dataset_pattern = re.search(r'dataset=([^\'"\s]+)', query_string)
-    if not dataset_pattern:
-        print("No dataset pattern found to normalize")
-        return query_string
-        
-    # Extract the pattern
-    pattern = dataset_pattern.group(1)
-    
-    # Replace multiple consecutive asterisks with a single asterisk
-    normalized_pattern = re.sub(r'\*+', '*', pattern)
-    
-    # Show what was normalized
-    if pattern != normalized_pattern:
-        print(f"Normalized pattern from: {pattern}")
-        print(f"                     to: {normalized_pattern}")
-    
-    # Replace the original pattern with the normalized one
-    normalized_query = query_string.replace(pattern, normalized_pattern)
-    print(f"Final query: {normalized_query}")
-    
-    return normalized_query
-
-def safe_das_query(query):
-    """Safely execute a DAS query with proper error handling"""
+def direct_das_query(dataset_name, campaign_pattern):
+    """
+    Execute a DAS query directly with proper client and parameters
+    Returns list of matching datasets or empty list if none found
+    """
     import subprocess
+    import os
     
-    print(f"\n===== DAS QUERY =====")
-    print(f"Initial query: {query}")
+    # Use absolute paths to avoid any path issues
+    dasgoclient = "/cvmfs/cms.cern.ch/common/dasgoclient"
     
-    # Normalize wildcards in the query
-    query = normalize_wildcards(query)
+    # Remove extra asterisks which cause problems
+    clean_pattern = campaign_pattern.replace("**", "*")
     
-    # Use the same environment setup as run_das_command
-    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
-    print(f"Running in CI environment: {in_ci}")
+    # Build a clean query with minimal characters that could cause issues
+    query = f"dataset=/{dataset_name}/*{clean_pattern}*/NANOAOD*"
     
-    if in_ci:
-        cmd = f"""
-        source /cvmfs/cms.cern.ch/cmsset_default.sh &&
-        which dasgoclient || export PATH=$PATH:/cvmfs/cms.cern.ch/common &&
-        {query}
-        """
-        print(f"Full command in CI:\n{cmd}")
-        
-        try:
-            print("Executing command with subprocess.run...")
+    print(f"Executing direct DAS query: {query}")
+    
+    try:
+        # For local environment 
+        if not ('CI' in os.environ or 'GITLAB_CI' in os.environ):
+            cmd = f"{dasgoclient} -query=\"instance=prod/global {query}\""
+            print(f"Local command: {cmd}")
+            output = os.popen(cmd).read().strip().split('\n')
+        else:
+            # For CI environment
+            cmd = f"""
+            source /cvmfs/cms.cern.ch/cmsset_default.sh && 
+            {dasgoclient} -query=\"instance=prod/global {query}\"
+            """
+            print(f"CI command: {cmd}")
             result = subprocess.run(['bash', '-c', cmd], 
-                                  capture_output=True, 
-                                  text=True)
-            
+                                    capture_output=True, 
+                                    text=True)
             if result.returncode != 0:
-                print(f"DAS query failed with code {result.returncode}: {result.stderr}")
+                print(f"DAS command failed with code {result.returncode}")
                 return []
-            
             output = [line for line in result.stdout.strip().split('\n') if line]
-            print(f"DAS query returned {len(output)} results")
-            
-            # Check if output contains error messages
-            if any(line.startswith('ERROR:') for line in output):
-                print(f"DAS query returned error: {output}")
-                return []
-            
-            # Print first few results
-            if output:
-                print("First few results:")
-                for i, line in enumerate(output[:3]):
-                    print(f"  {i+1}: {line}")
-                if len(output) > 3:
-                    print(f"  ... and {len(output) - 3} more")
-                    
+        
+        # Check results
+        if output and output[0]:
+            print(f"Query found {len(output)} datasets:")
+            for i, ds in enumerate(output[:3]):
+                print(f"  {i+1}: {ds}")
+            if len(output) > 3:
+                print(f"  ... and {len(output) - 3} more")
             return output
-        except Exception as e:
-            print(f"Exception during DAS query execution: {e}")
+        else:
+            print(f"No datasets found matching: {query}")
             return []
-    else:
-        # For local environment
-        print("Executing with os.popen in local environment")
-        try:
-            output = os.popen(query).read().strip().split('\n')
-            print(f"DAS query returned {len(output)} results")
             
-            if any(line.startswith('ERROR:') for line in output):
-                print(f"DAS query returned error: {output}")
-                return []
-                
-            # Print first few results
-            if output and output[0]:
-                print("First few results:")
-                for i, line in enumerate(output[:3]):
-                    print(f"  {i+1}: {line}")
-                if len(output) > 3:
-                    print(f"  ... and {len(output) - 3} more")
-                    
-            return [line for line in output if line]
-        except Exception as e:
-            print(f"Exception during DAS query execution: {e}")
-            return []
-
+    except Exception as e:
+        print(f"Error executing DAS query: {e}")
+        return []
+    
 def main(args):
 
     if args.from_workflow:
@@ -642,8 +592,7 @@ def main(args):
                     else mc_campaign
                 )
 
-            query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*\""
-            dataset = safe_das_query(query)
+            dataset = direct_das_query(l, args.DAS_campaign)
 
             if not dataset:
                 print(f"WARNING: No datasets found for {l} with campaign {args.DAS_campaign}")
@@ -651,8 +600,7 @@ def main(args):
             
             if dataset[0] == "":
                 print(l, "not Found! List all campaigns")
-                query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*\""
-                dataset = safe_das_query(query)
+                dataset = direct_das_query(l, args.DAS_campaign)
 
                 if not dataset:
                     print(f"WARNING: No datasets found for {l} with campaign {args.DAS_campaign}")
@@ -666,8 +614,7 @@ def main(args):
                     if "CMSSW" not in d and "Tier0" not in d and "ECAL" not in d
                 ]
                 args.DAS_campaign = input(f"which campaign? \n {campaigns} \n")
-                query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*\""
-                dataset = safe_das_query(query)
+                dataset = direct_das_query(l, args.DAS_campaign)
 
                 if dataset and not any('ERROR:' in d for d in dataset):
                     outf.write(dataset[0] + "\n")
@@ -682,8 +629,7 @@ def main(args):
                         f"{l} is which campaign? \n {campaigns} \n"
                     )
 
-                    query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*\""
-                    dataset = safe_das_query(query)
+                    dataset = direct_das_query(l, args.DAS_campaign)
 
                     if dataset and not any('ERROR:' in d for d in dataset):
                         outf.write(dataset[0] + "\n")
