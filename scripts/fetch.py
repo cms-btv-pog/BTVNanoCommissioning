@@ -642,7 +642,7 @@ def main(args):
                     else mc_campaign
                 )
 
-            query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
+            query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*\""
             dataset = safe_das_query(query)
 
             if not dataset:
@@ -651,7 +651,7 @@ def main(args):
             
             if dataset[0] == "":
                 print(l, "not Found! List all campaigns")
-                query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
+                query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*\""
                 dataset = safe_das_query(query)
 
                 if not dataset:
@@ -666,7 +666,7 @@ def main(args):
                     if "CMSSW" not in d and "Tier0" not in d and "ECAL" not in d
                 ]
                 args.DAS_campaign = input(f"which campaign? \n {campaigns} \n")
-                query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
+                query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*\""
                 dataset = safe_das_query(query)
 
                 if dataset and not any('ERROR:' in d for d in dataset):
@@ -682,7 +682,7 @@ def main(args):
                         f"{l} is which campaign? \n {campaigns} \n"
                     )
 
-                    query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query='instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*'"
+                    query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"instance=prod/global dataset=/{l}/*{args.DAS_campaign}*/NANOAOD*\""
                     dataset = safe_das_query(query)
 
                     if dataset and not any('ERROR:' in d for d in dataset):
