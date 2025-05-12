@@ -517,13 +517,18 @@ def direct_das_query(dataset_name, campaign_pattern):
             output = os.popen(cmd).read().strip().split('\n')
         else:
             # For CI environment - fix paths
-            cmd = [
-                "bash", 
-                "-c", 
-                f"source /cvmfs/cms.cern.ch/cmsset_default.sh && {dasgoclient} -query=\"instance=prod/global {query}\""
-            ]
-            print(f"CI command array: {cmd}")
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            cmd = f"""
+            source /cvmfs/cms.cern.ch/cmsset_default.sh && 
+            {dasgoclient} -query='instance=prod/global {query}'
+            """
+            print(f"CI command: {cmd}")
+            
+            # Use bash directly with wildcard handling enabled
+            result = subprocess.run(
+                ["bash", "-c", cmd],
+                capture_output=True, 
+                text=True
+            )
             if result.returncode != 0:
                 print(f"DAS command failed with code {result.returncode}: {result.stderr}")
                 return []
