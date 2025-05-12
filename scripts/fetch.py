@@ -498,7 +498,7 @@ def direct_das_query(dataset_name, campaign_pattern):
     import subprocess
     import os
     
-    # Use absolute paths to avoid any path issues
+    # Fix path issue - use correct CVMFS path
     dasgoclient = "/cvmfs/cms.cern.ch/common/dasgoclient"
     
     # Remove extra asterisks which cause problems
@@ -516,17 +516,16 @@ def direct_das_query(dataset_name, campaign_pattern):
             print(f"Local command: {cmd}")
             output = os.popen(cmd).read().strip().split('\n')
         else:
-            # For CI environment
-            cmd = f"""
-            source /cvmfs/cms.cern.ch/cmsset_default.sh && 
-            {dasgoclient} -query=\"instance=prod/global {query}\"
-            """
-            print(f"CI command: {cmd}")
-            result = subprocess.run(['bash', '-c', cmd], 
-                                    capture_output=True, 
-                                    text=True)
+            # For CI environment - fix paths
+            cmd = [
+                "bash", 
+                "-c", 
+                f"source /cvmfs/cms.cern.ch/cmsset_default.sh && {dasgoclient} -query=\"instance=prod/global {query}\""
+            ]
+            print(f"CI command array: {cmd}")
+            result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode != 0:
-                print(f"DAS command failed with code {result.returncode}")
+                print(f"DAS command failed with code {result.returncode}: {result.stderr}")
                 return []
             output = [line for line in result.stdout.strip().split('\n') if line]
         
