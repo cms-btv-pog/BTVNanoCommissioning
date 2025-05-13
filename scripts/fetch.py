@@ -518,31 +518,40 @@ def direct_das_query(dataset_name, campaign_pattern):
         else:
             # For CI environment - use a two-step approach without wildcards
             # First, get all datasets for this primary dataset
-            #basic_query = f"dataset=/{dataset_name}/*/* instance=prod/global"
-            cmd = ["bash", "-c", f"source /cvmfs/cms.cern.ch/cmsset_default.sh && bash -c '{dasgoclient} -query=\"dataset=/{dataset_name}/*{clean_pattern}*/NANOAOD*\"'"]
-            print(f"CI basic query: {cmd}")
+            # Double bash approach - the key is the shell quoting
+            # Crafting the command with careful quoting
+            inner_cmd = f"{dasgoclient} -query=\'instance=prod/global {query}\'"
+            outer_cmd = f"source /cvmfs/cms.cern.ch/cmsset_default.sh && bash -c \"{inner_cmd}\""
             
-            result = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
+            print(f"Double bash command: {outer_cmd}")
+            
+            # Execute as a single command string
+            result = subprocess.run(["bash", "-c", outer_cmd], 
+                                   capture_output=True, 
+                                   text=True)
             if result.returncode != 0:
-                print(f"Basic query failed: {result.stderr}")
-                return []
+                print(f"Command failed: {result.stderr}")
+                # Fallback to two-step approach if double bash fails
+                print("Falling back to two-step approach")
+                fallback_cmd = f"source /cvmfs/cms.cern.ch/cmsset_default.sh && {dasgoclient} -query=\"dataset=/{dataset_name}/* instance=prod/global\""
+                fallback_result = subprocess.run(["bash", "-c", fallback_cmd], 
+                                               capture_output=True, 
+                                               text=True)
                 
-            # Get all datasets
-            all_datasets = [line for line in result.stdout.strip().split('\n') if line]
-            if not all_datasets:
-                print(f"No datasets found for {dataset_name}")
-                return []
-                
-            # Now filter datasets matching our pattern criteria
-            pattern_core = clean_pattern.replace("*", "")
-            print(f"Filtering with pattern core: '{pattern_core}'")
-            
-            matching_datasets = [
-                ds for ds in all_datasets 
-                if pattern_core in ds and "NANOAOD" in ds
-            ]
-            
-            output = matching_datasets
+                if fallback_result.returncode != 0:
+                    print(f"Fallback query failed: {fallback_result.stderr}")
+                    return []
+                    
+                all_datasets = [line for line in fallback_result.stdout.strip().split('\n') if line]
+                pattern_core = clean_pattern.replace("*", "")
+                matching_datasets = [
+                    ds for ds in all_datasets 
+                    if pattern_core in ds and "NANOAOD" in ds
+                ]
+                output = matching_datasets
+            else:
+                output = [line for line in result.stdout.strip().split('\n') if line]
+        
         
         # Check results
         if output and output[0]:
