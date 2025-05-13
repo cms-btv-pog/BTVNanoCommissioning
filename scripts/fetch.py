@@ -510,29 +510,39 @@ def direct_das_query(dataset_name, campaign_pattern):
     print(f"Executing direct DAS query: {query}")
     
     try:
-        # For local environment 
+        # For local environment - KEEP AS IS
         if not ('CI' in os.environ or 'GITLAB_CI' in os.environ):
             cmd = f"{dasgoclient} -query=\"instance=prod/global {query}\""
             print(f"Local command: {cmd}")
             output = os.popen(cmd).read().strip().split('\n')
         else:
-            # For CI environment - fix paths
-            cmd = f"""
-            source /cvmfs/cms.cern.ch/cmsset_default.sh && 
-            {dasgoclient} -query='instance=prod/global {query}'
-            """
-            print(f"CI command: {cmd}")
+            # For CI environment - use a two-step approach without wildcards
+            # First, get all datasets for this primary dataset
+            basic_query = f"dataset=/{dataset_name}/* instance=prod/global"
+            cmd = f"source /cvmfs/cms.cern.ch/cmsset_default.sh && {dasgoclient} -query=\"{basic_query}\""
+            print(f"CI basic query: {cmd}")
             
-            # Use bash directly with wildcard handling enabled
-            result = subprocess.run(
-                ["bash", "-c", cmd],
-                capture_output=True, 
-                text=True
-            )
+            result = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
             if result.returncode != 0:
-                print(f"DAS command failed with code {result.returncode}: {result.stderr}")
+                print(f"Basic query failed: {result.stderr}")
                 return []
-            output = [line for line in result.stdout.strip().split('\n') if line]
+                
+            # Get all datasets
+            all_datasets = [line for line in result.stdout.strip().split('\n') if line]
+            if not all_datasets:
+                print(f"No datasets found for {dataset_name}")
+                return []
+                
+            # Now filter datasets matching our pattern criteria
+            pattern_core = clean_pattern.replace("*", "")
+            print(f"Filtering with pattern core: '{pattern_core}'")
+            
+            matching_datasets = [
+                ds for ds in all_datasets 
+                if pattern_core in ds and "NANOAOD" in ds
+            ]
+            
+            output = matching_datasets
         
         # Check results
         if output and output[0]:
