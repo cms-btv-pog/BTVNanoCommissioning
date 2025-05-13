@@ -518,8 +518,8 @@ def direct_das_query(dataset_name, campaign_pattern):
         else:
             # For CI environment - use a two-step approach without wildcards
             # First, get all datasets for this primary dataset
-            basic_query = f"dataset=/{dataset_name}/*/* instance=prod/global"
-            cmd = f"source /cvmfs/cms.cern.ch/cmsset_default.sh && {dasgoclient} -query=\"{basic_query}\""
+            #basic_query = f"dataset=/{dataset_name}/*/* instance=prod/global"
+            cmd = ["bash", "-c", f"source /cvmfs/cms.cern.ch/cmsset_default.sh && bash -c '{dasgoclient} -query=\"dataset=/{dataset_name}/*{clean_pattern}*/NANOAOD*\"'"]
             print(f"CI basic query: {cmd}")
             
             result = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True)
