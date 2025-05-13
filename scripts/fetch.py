@@ -518,7 +518,7 @@ def direct_das_query(dataset_name, campaign_pattern):
         else:
             # For CI environment - use a two-step approach without wildcards
             # First, get all datasets for this primary dataset
-            basic_query = f"dataset=/{dataset_name}/* instance=prod/global"
+            basic_query = f"dataset=/{dataset_name}/*/* instance=prod/global"
             cmd = f"source /cvmfs/cms.cern.ch/cmsset_default.sh && {dasgoclient} -query=\"{basic_query}\""
             print(f"CI basic query: {cmd}")
             
