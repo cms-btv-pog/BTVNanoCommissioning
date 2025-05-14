@@ -156,103 +156,102 @@ def run_das_command(cmd):
     import os
     import subprocess
     import re
-    import shlex
+    import tempfile
     
-    # Add debug info about environment
-    print("\n==== DAS Command Debug Information ====")
+    # Add debug info 
+    print(f"\n==== DAS Command Debug Information ====")
     print(f"Original command: {cmd}")
-    print(f"Environment: {'CI' if ('CI' in os.environ or 'GITLAB_CI' in os.environ) else 'Local'}")
-    if 'CI' in os.environ:
-        print(f"CI environment variable: {os.environ.get('CI')}")
-    if 'GITLAB_CI' in os.environ:
-        print(f"GITLAB_CI environment variable: {os.environ.get('GITLAB_CI')}")
-    print(f"Current working directory: {os.getcwd()}")
     
     # Check if we're in GitLab CI
     in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
     
     if in_ci:
-        # Extract the query part to handle wildcards properly
+        # Extract the query part
         match = re.search(r'-query="([^"]+)"', cmd)
         if match:
             query = match.group(1)
-            print(f"Extracted query: {query}")
-            
-            # Check for wildcards in the query
-            if '*' in query:
-                print(f"Query contains wildcards: {[c for c in query if c == '*']}")
-                
-            # Escape the wildcards with backslashes so they're passed literally
             escaped_query = query.replace('*', '\\*')
-            print(f"Escaped query: {escaped_query}")
-            
-            # Replace original query with escaped version
             escaped_cmd = cmd.replace(f'-query="{query}"', f'-query="{escaped_query}"')
-            print(f"Escaped command: {escaped_cmd}")
         else:
-            print("No query pattern found in command - using as is")
             escaped_cmd = cmd
         
-        # FIX: Check if command has /common/dasgoclient and doesn't have /cms.cern.ch prefix
+        # Fix paths for CI
         if '/common/dasgoclient' in escaped_cmd and not '/cms.cern.ch/common/dasgoclient' in escaped_cmd:
-            # Fix the path to include /cms.cern.ch prefix
             escaped_cmd = escaped_cmd.replace('/common/dasgoclient', '/cms.cern.ch/common/dasgoclient')
-            print(f"Fixed dasgoclient path: {escaped_cmd}")
         
-        # Set up full environment
-        full_cmd = f"""
-        echo "Starting DAS query in CI environment";
-        source /cvmfs/cms.cern.ch/cmsset_default.sh || echo "Failed to source CMS environment";
-        echo "CMS environment sourced";
-        export PATH=$PATH:/cms.cern.ch/common;
-        echo "PATH: $PATH";
-        echo "Executing direct command: {escaped_cmd}";
-        {escaped_cmd}
-        """
+        # COMPLETELY DIFFERENT APPROACH: Write a script file and execute it
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
+            script_path = script_file.name
+            script_file.write('#!/bin/bash\n\n')
+            script_file.write('echo "Starting DAS query from temp script"\n')
+            script_file.write('echo "Command: ' + escaped_cmd + '"\n')
+            
+            # Add all possible CMS environment setup paths
+            script_file.write('if [ -f /cms.cern.ch/cmsset_default.sh ]; then\n')
+            script_file.write('    source /cms.cern.ch/cmsset_default.sh\n')
+            script_file.write('    echo "Sourced /cms.cern.ch/cmsset_default.sh"\n')
+            script_file.write('elif [ -f /cvmfs/cms.cern.ch/cmsset_default.sh ]; then\n')
+            script_file.write('    source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
+            script_file.write('    echo "Sourced /cvmfs/cms.cern.ch/cmsset_default.sh"\n')
+            script_file.write('else\n')
+            script_file.write('    echo "WARNING: Could not find cmsset_default.sh"\n')
+            script_file.write('fi\n\n')
+            
+            # Try each possible path for dasgoclient
+            script_file.write('echo "Searching for dasgoclient:"\n')
+            script_file.write('if [ -f /cms.cern.ch/common/dasgoclient ]; then\n')
+            script_file.write('    echo "Found at /cms.cern.ch/common/dasgoclient"\n')
+            script_file.write('    export PATH=$PATH:/cms.cern.ch/common\n')
+            script_file.write('elif [ -f /cvmfs/cms.cern.ch/common/dasgoclient ]; then\n')
+            script_file.write('    echo "Found at /cvmfs/cms.cern.ch/common/dasgoclient"\n')
+            script_file.write('    export PATH=$PATH:/cvmfs/cms.cern.ch/common\n')
+            script_file.write('fi\n\n')
+            
+            # Execute the command
+            script_file.write('echo "Executing command"\n')
+            script_file.write(escaped_cmd + '\n')
         
-        print(f"Full CI shell command:\n{full_cmd}")
+        # Make script executable
+        os.chmod(script_path, 0o755)
+        print(f"Created temporary script at: {script_path}")
         
-        # Use subprocess with shell=True to ensure wildcards are handled correctly
+        # Execute the script
         try:
-            print("Executing command using subprocess.run with shell=True")
-            result = subprocess.run(full_cmd, 
-                                   shell=True,
+            print(f"Executing script: {script_path}")
+            result = subprocess.run([script_path], 
                                    capture_output=True, 
                                    text=True)
             
-            print(f"Command return code: {result.returncode}")
+            print(f"Script return code: {result.returncode}")
             
             if result.stdout:
-                print(f"Command stdout (first 200 chars): {result.stdout[:200]}")
-            else:
-                print("Command stdout: <empty>")
-                
+                print(f"Script stdout (first 200 chars): {result.stdout[:200]}")
             if result.stderr:
-                print(f"Command stderr: {result.stderr}")
-            
+                print(f"Script stderr: {result.stderr}")
+                
             if result.returncode != 0:
-                print(f"Command failed with code {result.returncode}")
+                print(f"Script failed with code {result.returncode}")
                 return []
                 
-            # Process output
             output = [line for line in result.stdout.strip().split('\n') if line]
-            print(f"Processed {len(output)} output lines")
-            if output and len(output) > 0:
-                print(f"First output line: {output[0]}")
+            # Remove the script's debug lines from output
+            output = [line for line in output if not line.startswith("Starting") and 
+                                               not line.startswith("Sourced") and
+                                               not line.startswith("Found") and
+                                               not line.startswith("Executing")]
             return output
             
         except Exception as e:
-            print(f"Exception executing command: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"Exception executing script: {e}")
             return []
+        finally:
+            # Clean up the temp script
+            os.unlink(script_path)
+            
     else:
-        # Normal execution for local environments
+        # Local environment - unchanged
         print(f"Executing local command with os.popen: {cmd}")
         result = os.popen(cmd).read().splitlines()
-        print(f"Local command returned {len(result)} lines")
-        if result and len(result) > 0:
-            print(f"First output line: {result[0]}")
         return result
 
 def getFilesFromDas(args):
