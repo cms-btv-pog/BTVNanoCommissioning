@@ -202,7 +202,7 @@ def run_das_command(cmd):
         # Set up full environment
         full_cmd = f"""
         echo "Starting DAS query in CI environment";
-        source /cms.cern.ch/cmsset_default.sh &&
+        source /cvmfs/cms.cern.ch/cmsset_default.sh &&
         echo "CMS environment sourced";
         # Get the full path to dasgoclient and save it
         which dasgoclient > /tmp/dasgoclient_path || echo "dasgoclient not found" || export PATH=$PATH:/cms.cern.ch/common;
