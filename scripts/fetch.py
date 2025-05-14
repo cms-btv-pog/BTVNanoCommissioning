@@ -155,21 +155,32 @@ def run_das_command(cmd):
     """Run a DAS command with proper environment in micromamba"""
     import os
     import subprocess
+    import re
     
     # Check if we're in GitLab CI
     in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
     
     if in_ci:
-        # Set up full environment for GitLab CI with micromamba
+        # Extract the query part to handle wildcards properly
+        match = re.search(r'-query="([^"]+)"', cmd)
+        if match:
+            query = match.group(1)
+            # Escape the wildcards with backslashes so they're passed literally
+            escaped_query = query.replace('*', '\\*')
+            # Replace original query with escaped version
+            cmd = cmd.replace(f'-query="{query}"', f'-query="{escaped_query}"')
+        
+        # Set up full environment for GitLab CI
         full_cmd = f"""
         source /cvmfs/cms.cern.ch/cmsset_default.sh &&
         which dasgoclient || export PATH=$PATH:/cvmfs/cms.cern.ch/common &&
         {cmd}
         """
         
-        # Use subprocess to run command and capture output
+        # Use subprocess with shell=True to ensure wildcards are handled correctly
         try:
-            result = subprocess.run(['bash', '-c', full_cmd], 
+            result = subprocess.run(full_cmd, 
+                                    shell=True,
                                     capture_output=True, 
                                     text=True)
             if result.returncode != 0:
