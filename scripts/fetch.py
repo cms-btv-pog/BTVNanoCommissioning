@@ -193,12 +193,6 @@ def run_das_command(cmd):
             print("No query pattern found in command - using as is")
             escaped_cmd = cmd
         
-        # Check for dasgoclient path
-        if '/cms.cern.ch/' in cmd:
-            print("WARNING: Using /cms.cern.ch/ path, should be /cvmfs/cms.cern.ch/")
-            escaped_cmd = escaped_cmd.replace('/cms.cern.ch/', '/cvmfs/cms.cern.ch/')
-            print(f"Fixed path: {escaped_cmd}")
-        
         # Set up full environment for GitLab CI
         full_cmd = f"""
         echo "Starting DAS query in CI environment";
@@ -588,7 +582,7 @@ def direct_das_query(dataset_name, campaign_pattern):
         else:
             # For CI environment - use the two-step approach
             # First query without wildcards in the campaign pattern
-            basic_query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"dataset=/{dataset_name}/*/* instance=prod/global\""
+            basic_query = f"/cms.cern.ch/common/dasgoclient -query=\"dataset=/{dataset_name}/*/* instance=prod/global\""
             print(f"CI basic query: {basic_query}")
             
             # Use the existing run_das_command function
