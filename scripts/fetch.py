@@ -202,7 +202,7 @@ def run_das_command(cmd):
         # Set up full environment
         full_cmd = f"""
         echo "Starting DAS query in CI environment";
-        source /cms.cern.ch/cmsset_default.sh || echo "Failed to source CMS environment";
+        source /cvmfs/cms.cern.ch/cmsset_default.sh || echo "Failed to source CMS environment";
         echo "CMS environment sourced";
         export PATH=$PATH:/cms.cern.ch/common;
         echo "PATH: $PATH";
