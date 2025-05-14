@@ -193,15 +193,25 @@ def run_das_command(cmd):
             print("No query pattern found in command - using as is")
             escaped_cmd = cmd
         
-        # Set up full environment for GitLab CI
+        # FIX: Check if command has /common/dasgoclient and doesn't have /cms.cern.ch prefix
+        if '/common/dasgoclient' in escaped_cmd and not '/cms.cern.ch/common/dasgoclient' in escaped_cmd:
+            # Fix the path to include /cms.cern.ch prefix
+            escaped_cmd = escaped_cmd.replace('/common/dasgoclient', '/cms.cern.ch/common/dasgoclient')
+            print(f"Fixed dasgoclient path: {escaped_cmd}")
+        
+        # Set up full environment
         full_cmd = f"""
         echo "Starting DAS query in CI environment";
-        source /cvmfs/cms.cern.ch/cmsset_default.sh &&
+        source /cms.cern.ch/cmsset_default.sh &&
         echo "CMS environment sourced";
-        which dasgoclient || echo "dasgoclient not found" || export PATH=$PATH:/cvmfs/cms.cern.ch/common;
-        echo "Using dasgoclient: $(which dasgoclient)";
-        echo "Executing: {escaped_cmd}";
-        {escaped_cmd}
+        # Get the full path to dasgoclient and save it
+        which dasgoclient > /tmp/dasgoclient_path || echo "dasgoclient not found" || export PATH=$PATH:/cms.cern.ch/common;
+        DASGOCLIENT_PATH=$(cat /tmp/dasgoclient_path)
+        echo "Using dasgoclient: $DASGOCLIENT_PATH";
+        # Replace any dasgoclient path with the actual path found in the environment
+        FIXED_CMD=$(echo "{escaped_cmd}" | sed "s|/[^/]*/dasgoclient|$DASGOCLIENT_PATH|g")
+        echo "Executing command: $FIXED_CMD";
+        $FIXED_CMD
         """
         
         print(f"Full CI shell command:\n{full_cmd}")
