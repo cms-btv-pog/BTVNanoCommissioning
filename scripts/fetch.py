@@ -156,6 +156,17 @@ def run_das_command(cmd):
     import os
     import subprocess
     import re
+    import shlex
+    
+    # Add debug info about environment
+    print("\n==== DAS Command Debug Information ====")
+    print(f"Original command: {cmd}")
+    print(f"Environment: {'CI' if ('CI' in os.environ or 'GITLAB_CI' in os.environ) else 'Local'}")
+    if 'CI' in os.environ:
+        print(f"CI environment variable: {os.environ.get('CI')}")
+    if 'GITLAB_CI' in os.environ:
+        print(f"GITLAB_CI environment variable: {os.environ.get('GITLAB_CI')}")
+    print(f"Current working directory: {os.getcwd()}")
     
     # Check if we're in GitLab CI
     in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
@@ -165,34 +176,84 @@ def run_das_command(cmd):
         match = re.search(r'-query="([^"]+)"', cmd)
         if match:
             query = match.group(1)
+            print(f"Extracted query: {query}")
+            
+            # Check for wildcards in the query
+            if '*' in query:
+                print(f"Query contains wildcards: {[c for c in query if c == '*']}")
+                
             # Escape the wildcards with backslashes so they're passed literally
             escaped_query = query.replace('*', '\\*')
+            print(f"Escaped query: {escaped_query}")
+            
             # Replace original query with escaped version
-            cmd = cmd.replace(f'-query="{query}"', f'-query="{escaped_query}"')
+            escaped_cmd = cmd.replace(f'-query="{query}"', f'-query="{escaped_query}"')
+            print(f"Escaped command: {escaped_cmd}")
+        else:
+            print("No query pattern found in command - using as is")
+            escaped_cmd = cmd
+        
+        # Check for dasgoclient path
+        if '/cms.cern.ch/' in cmd:
+            print("WARNING: Using /cms.cern.ch/ path, should be /cvmfs/cms.cern.ch/")
+            escaped_cmd = escaped_cmd.replace('/cms.cern.ch/', '/cvmfs/cms.cern.ch/')
+            print(f"Fixed path: {escaped_cmd}")
         
         # Set up full environment for GitLab CI
         full_cmd = f"""
+        echo "Starting DAS query in CI environment";
         source /cvmfs/cms.cern.ch/cmsset_default.sh &&
-        which dasgoclient || export PATH=$PATH:/cvmfs/cms.cern.ch/common &&
-        {cmd}
+        echo "CMS environment sourced";
+        which dasgoclient || echo "dasgoclient not found" || export PATH=$PATH:/cvmfs/cms.cern.ch/common;
+        echo "Using dasgoclient: $(which dasgoclient)";
+        echo "Executing: {escaped_cmd}";
+        {escaped_cmd}
         """
+        
+        print(f"Full CI shell command:\n{full_cmd}")
         
         # Use subprocess with shell=True to ensure wildcards are handled correctly
         try:
+            print("Executing command using subprocess.run with shell=True")
             result = subprocess.run(full_cmd, 
-                                    shell=True,
-                                    capture_output=True, 
-                                    text=True)
+                                   shell=True,
+                                   capture_output=True, 
+                                   text=True)
+            
+            print(f"Command return code: {result.returncode}")
+            
+            if result.stdout:
+                print(f"Command stdout (first 200 chars): {result.stdout[:200]}")
+            else:
+                print("Command stdout: <empty>")
+                
+            if result.stderr:
+                print(f"Command stderr: {result.stderr}")
+            
             if result.returncode != 0:
-                print(f"Command failed: {result.stderr}")
+                print(f"Command failed with code {result.returncode}")
                 return []
-            return [line for line in result.stdout.strip().split('\n') if line]
+                
+            # Process output
+            output = [line for line in result.stdout.strip().split('\n') if line]
+            print(f"Processed {len(output)} output lines")
+            if output and len(output) > 0:
+                print(f"First output line: {output[0]}")
+            return output
+            
         except Exception as e:
-            print(f"Error executing command: {e}")
+            print(f"Exception executing command: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     else:
         # Normal execution for local environments
-        return os.popen(cmd).read().splitlines()
+        print(f"Executing local command with os.popen: {cmd}")
+        result = os.popen(cmd).read().splitlines()
+        print(f"Local command returned {len(result)} lines")
+        if result and len(result) > 0:
+            print(f"First output line: {result[0]}")
+        return result
 
 def getFilesFromDas(args):
     """Improved getFilesFromDas with multiple fallback strategies"""
@@ -527,7 +588,7 @@ def direct_das_query(dataset_name, campaign_pattern):
         else:
             # For CI environment - use the two-step approach
             # First query without wildcards in the campaign pattern
-            basic_query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"dataset=/{dataset_name}/* instance=prod/global\""
+            basic_query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"dataset=/{dataset_name}/*/* instance=prod/global\""
             print(f"CI basic query: {basic_query}")
             
             # Use the existing run_das_command function
