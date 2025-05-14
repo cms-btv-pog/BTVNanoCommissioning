@@ -492,81 +492,73 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
 
 def direct_das_query(dataset_name, campaign_pattern):
     """
-    Execute a DAS query directly with proper client and parameters
+    Execute a DAS query using the existing run_das_command function
     Returns list of matching datasets or empty list if none found
     """
-    import subprocess
-    import os
-    
-    # Fix path issue - use correct CVMFS path
-    dasgoclient = "/cvmfs/cms.cern.ch/common/dasgoclient"
-    
     # Remove extra asterisks which cause problems
     clean_pattern = campaign_pattern.replace("**", "*")
     
-    # Build a clean query with minimal characters that could cause issues
+    # Build query for dataset discovery
     query = f"dataset=/{dataset_name}/*{clean_pattern}*/NANOAOD*"
     
     print(f"Executing direct DAS query: {query}")
     
     try:
-        # For local environment - KEEP AS IS
-        if not ('CI' in os.environ or 'GITLAB_CI' in os.environ):
-            cmd = f"{dasgoclient} -query=\"instance=prod/global {query}\""
-            print(f"Local command: {cmd}")
-            output = os.popen(cmd).read().strip().split('\n')
-        else:
-            # For CI environment - use a two-step approach without wildcards
-            # First, get all datasets for this primary dataset
-            # Double bash approach - the key is the shell quoting
-            # Crafting the command with careful quoting
-            inner_cmd = f"{dasgoclient} -query=\'instance=prod/global {query}\'"
-            outer_cmd = f"source /cvmfs/cms.cern.ch/cmsset_default.sh && bash -c \"{inner_cmd}\""
-            
-            print(f"Double bash command: {outer_cmd}")
-            
-            # Execute as a single command string
-            result = subprocess.run(["bash", "-c", outer_cmd], 
-                                   capture_output=True, 
-                                   text=True)
-            if result.returncode != 0:
-                print(f"Command failed: {result.stderr}")
-                # Fallback to two-step approach if double bash fails
-                print("Falling back to two-step approach")
-                fallback_cmd = f"source /cvmfs/cms.cern.ch/cmsset_default.sh && {dasgoclient} -query=\"dataset=/{dataset_name}/* instance=prod/global\""
-                fallback_result = subprocess.run(["bash", "-c", fallback_cmd], 
-                                               capture_output=True, 
-                                               text=True)
-                
-                if fallback_result.returncode != 0:
-                    print(f"Fallback query failed: {fallback_result.stderr}")
-                    return []
-                    
-                all_datasets = [line for line in fallback_result.stdout.strip().split('\n') if line]
-                pattern_core = clean_pattern.replace("*", "")
-                matching_datasets = [
-                    ds for ds in all_datasets 
-                    if pattern_core in ds and "NANOAOD" in ds
-                ]
-                output = matching_datasets
-            else:
-                output = [line for line in result.stdout.strip().split('\n') if line]
+        # Check if we're in CI environment
+        in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
         
+        if not in_ci:
+            # For local environment - use direct dasgoclient call
+            cmd = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"instance=prod/global {query}\""
+            print(f"Local command: {cmd}")
+            # Use the already-working run_das_command function instead of os.popen
+            output = run_das_command(cmd)
+        else:
+            # For CI environment - use the two-step approach
+            # First query without wildcards in the campaign pattern
+            basic_query = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"dataset=/{dataset_name}/* instance=prod/global\""
+            print(f"CI basic query: {basic_query}")
+            
+            # Use the existing run_das_command function
+            all_datasets = run_das_command(basic_query)
+            
+            if not all_datasets:
+                print(f"No datasets found for {dataset_name}")
+                return []
+                
+            # Now filter datasets matching our pattern criteria
+            pattern_core = clean_pattern.replace("*", "")
+            print(f"Filtering with pattern core: '{pattern_core}'")
+            
+            matching_datasets = [
+                ds for ds in all_datasets 
+                if pattern_core in ds and "NANOAOD" in ds
+            ]
+            
+            output = matching_datasets
         
         # Check results
         if output and output[0]:
-            print(f"Query found {len(output)} datasets:")
-            for i, ds in enumerate(output[:3]):
-                print(f"  {i+1}: {ds}")
-            if len(output) > 3:
-                print(f"  ... and {len(output) - 3} more")
-            return output
+            # Filter out validation errors
+            valid_outputs = [ds for ds in output if not "Validation error" in ds]
+            if valid_outputs:
+                print(f"Query found {len(valid_outputs)} datasets:")
+                for i, ds in enumerate(valid_outputs[:3]):
+                    print(f"  {i+1}: {ds}")
+                if len(valid_outputs) > 3:
+                    print(f"  ... and {len(valid_outputs) - 3} more")
+                return valid_outputs
+            else:
+                print("All results were validation errors")
+                return []
         else:
             print(f"No datasets found matching: {query}")
             return []
             
     except Exception as e:
         print(f"Error executing DAS query: {e}")
+        import traceback
+        traceback.print_exc()
         return []
     
 def main(args):
