@@ -238,7 +238,7 @@ def run_das_command(cmd):
             print(f"Script return code: {result.returncode}")
             
             if result.stdout:
-                print(f"Script stdout (first 400 chars): {result.stdout[:400]}")
+                print(f"Script stdout (first 800 chars): {result.stdout[:800]}")
             if result.stderr:
                 print(f"Script stderr: {result.stderr}")
                 
