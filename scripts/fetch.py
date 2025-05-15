@@ -186,6 +186,17 @@ def run_das_command(cmd):
             script_file.write('echo "Starting DAS query from temp script"\n')
             script_file.write('echo "Command: ' + escaped_cmd + '"\n')
             
+            # Add this near the beginning of your script generation, after the shebang
+            script_file.write('echo "Checking for proxy..."\n')
+            script_file.write('if [ -n "$X509_USER_PROXY" ] && [ -f "$X509_USER_PROXY" ]; then\n')
+            script_file.write('    echo "Using proxy from $X509_USER_PROXY"\n')
+            script_file.write('elif [ -f "${CI_PROJECT_DIR}/proxy/x509_proxy" ]; then\n')
+            script_file.write('    export X509_USER_PROXY="${CI_PROJECT_DIR}/proxy/x509_proxy"\n')
+            script_file.write('    echo "Found and using proxy at ${X509_USER_PROXY}"\n')
+            script_file.write('else\n')
+            script_file.write('    echo "WARNING: No proxy found! DAS queries may fail."\n')
+            script_file.write('fi\n\n')
+            
             # Add all possible CMS environment setup paths
             script_file.write('if [ -f /cms.cern.ch/cmsset_default.sh ]; then\n')
             script_file.write('    source /cms.cern.ch/cmsset_default.sh\n')
