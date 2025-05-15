@@ -223,10 +223,6 @@ def run_das_command(cmd):
             script_file.write('    echo "' + escaped_cmd + '"\n')
             script_file.write('    ' + escaped_cmd + '\n')
             script_file.write('fi\n')
-            
-            # Execute the command
-            script_file.write('echo "Executing command"\n')
-            script_file.write(escaped_cmd + '\n')
         
         # Make script executable
         os.chmod(script_path, 0o755)
