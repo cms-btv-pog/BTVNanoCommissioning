@@ -211,10 +211,12 @@ def run_das_command(cmd):
             # Modify the command to use the full path found
             script_file.write('if [ -n "$DASGOCLIENT_PATH" ]; then\n')
             script_file.write('    echo "Using dasgoclient at: $DASGOCLIENT_PATH"\n')
-            # Replace /common/dasgoclient or /any/path/to/dasgoclient with the found path
-            script_file.write('    EXEC_CMD=$(echo "' + escaped_cmd + '" | sed "s|/[^/]*/dasgoclient|$DASGOCLIENT_PATH|g")\n')
+            script_file.write('    # Extract the arguments from the original command\n')
+            script_file.write('    DASGOCLIENT_ARGS=$(echo "' + escaped_cmd + '" | sed -E \'s|.*/dasgoclient\\s*||\')\n')
+            script_file.write('    # Build new command with the correct path\n')
+            script_file.write('    EXEC_CMD="$DASGOCLIENT_PATH $DASGOCLIENT_ARGS"\n')
             script_file.write('    echo "Executing command: $EXEC_CMD"\n')
-            script_file.write('    $EXEC_CMD\n')
+            script_file.write('    eval $EXEC_CMD\n')
             script_file.write('else\n')
             script_file.write('    echo "ERROR: dasgoclient not found in any expected location"\n')
             script_file.write('    echo "Trying original command anyway:"\n')
