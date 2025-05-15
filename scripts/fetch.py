@@ -197,15 +197,30 @@ def run_das_command(cmd):
             script_file.write('    echo "WARNING: Could not find cmsset_default.sh"\n')
             script_file.write('fi\n\n')
             
-            # Try each possible path for dasgoclient
+            # Try each possible path for dasgoclient and STORE THE FULL PATH
             script_file.write('echo "Searching for dasgoclient:"\n')
+            script_file.write('DASGOCLIENT_PATH=""\n')
             script_file.write('if [ -f /cms.cern.ch/common/dasgoclient ]; then\n')
             script_file.write('    echo "Found at /cms.cern.ch/common/dasgoclient"\n')
-            script_file.write('    export PATH=$PATH:/cms.cern.ch/common\n')
+            script_file.write('    DASGOCLIENT_PATH="/cms.cern.ch/common/dasgoclient"\n')
             script_file.write('elif [ -f /cvmfs/cms.cern.ch/common/dasgoclient ]; then\n')
             script_file.write('    echo "Found at /cvmfs/cms.cern.ch/common/dasgoclient"\n')
-            script_file.write('    export PATH=$PATH:/cvmfs/cms.cern.ch/common\n')
+            script_file.write('    DASGOCLIENT_PATH="/cvmfs/cms.cern.ch/common/dasgoclient"\n')
             script_file.write('fi\n\n')
+
+            # Modify the command to use the full path found
+            script_file.write('if [ -n "$DASGOCLIENT_PATH" ]; then\n')
+            script_file.write('    echo "Using dasgoclient at: $DASGOCLIENT_PATH"\n')
+            # Replace /common/dasgoclient or /any/path/to/dasgoclient with the found path
+            script_file.write('    EXEC_CMD=$(echo "' + escaped_cmd + '" | sed "s|/[^/]*/dasgoclient|$DASGOCLIENT_PATH|g")\n')
+            script_file.write('    echo "Executing command: $EXEC_CMD"\n')
+            script_file.write('    $EXEC_CMD\n')
+            script_file.write('else\n')
+            script_file.write('    echo "ERROR: dasgoclient not found in any expected location"\n')
+            script_file.write('    echo "Trying original command anyway:"\n')
+            script_file.write('    echo "' + escaped_cmd + '"\n')
+            script_file.write('    ' + escaped_cmd + '\n')
+            script_file.write('fi\n')
             
             # Execute the command
             script_file.write('echo "Executing command"\n')
