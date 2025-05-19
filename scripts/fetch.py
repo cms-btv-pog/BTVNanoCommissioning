@@ -733,6 +733,9 @@ def main(args):
                 # continue
 
             elif len(dataset) > 1:
+                print(f"Found multiple datasets for {l}:")
+                for i, d in enumerate(dataset):
+                    print(f"  {i+1}: {d}")
                 campaigns = [d.split("/")[2] for d in dataset]
                 if args.from_workflow is None or dataset[0].endswith("SIM"):
                     args.DAS_campaign = input(
