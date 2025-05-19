@@ -160,7 +160,7 @@ def run_das_command(cmd):
     
     # Add debug info 
     print(f"\n==== DAS Command Debug Information ====")
-    print(f"Original command: {cmd}")
+    #print(f"Original command: {cmd}")
     
     # Check if we're in GitLab CI
     in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
@@ -237,7 +237,7 @@ def run_das_command(cmd):
         
         # Make script executable
         os.chmod(script_path, 0o755)
-        print(f"Created temporary script at: {script_path}")
+        #print(f"Created temporary script at: {script_path}")
         
         # Execute the script
         try:
@@ -617,20 +617,20 @@ def direct_das_query(dataset_name, campaign_pattern):
             # Use the existing run_das_command function
             all_datasets = run_das_command(basic_query)
             
-            if not all_datasets:
-                print(f"No datasets found for {dataset_name}")
-                return []
+            #if not all_datasets:
+            #    print(f"No datasets found for {dataset_name}")
+            #    return []
                 
             # Now filter datasets matching our pattern criteria
-            pattern_core = clean_pattern.replace("*", "")
-            print(f"Filtering with pattern core: '{pattern_core}'")
+            #pattern_core = clean_pattern.replace("*", "")
+            #print(f"Filtering with pattern core: '{pattern_core}'")
             
-            matching_datasets = [
-                ds for ds in all_datasets 
-                if pattern_core in ds and "NANOAOD" in ds
-            ]
+            #matching_datasets = [
+            #    ds for ds in all_datasets 
+            #    if pattern_core in ds and "NANOAOD" in ds
+            #]
             
-            output = matching_datasets
+            output = all_datasets
         
         # Check results
         if output and output[0]:
