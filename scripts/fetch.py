@@ -325,10 +325,10 @@ def getFilesFromDas(args):
         # Try multiple DAS query approaches
         flist = []
         das_queries = [
-            f"dasgoclient -query=\"file dataset={dataset}\"",
-            f"dasgoclient -query=\"file dataset={dataset} instance=prod/global\"",
-            f"dasgoclient -query=\"file dataset={dataset} instance=prod/phys03\"",
-            f"dasgoclient -query=\"file dataset=*{dataset}*\""
+            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset}\"",
+            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} instance=prod/global\"",
+            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} instance=prod/phys03\"",
+            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset=*{dataset}*\""
         ]
         
         for query in das_queries:
@@ -352,9 +352,9 @@ def getFilesFromDas(args):
         # Get sites with multiple fallback strategies
         sites = []
         site_queries = [
-            f"dasgoclient -query=\"site dataset={dataset}\"",
-            f"dasgoclient -query=\"site dataset={dataset} instance=prod/global\"",
-            f"dasgoclient -query=\"site dataset={dataset} instance=prod/phys03\""
+            f"/cms.cern.ch/common/dasgoclient -query=\"site dataset={dataset}\"",
+            f"/cms.cern.ch/common/dasgoclient -query=\"site dataset={dataset} instance=prod/global\"",
+            f"/cms.cern.ch/common/dasgoclient -query=\"site dataset={dataset} instance=prod/phys03\""
         ]
         
         for query in site_queries:
