@@ -262,6 +262,11 @@ def run_das_command(cmd):
             output = [line for line in output if not line.startswith("Starting") and 
                                                not line.startswith("Sourced") and
                                                not line.startswith("Found") and
+                                               not line.startswith("Using") and
+                                               not line.startswith("Command") and
+                                               not line.startswith("Checking") and
+                                               not line.startswith("Searching") and
+                                               not line.startswith("Trying") and
                                                not line.startswith("Executing")]
             return output
             
