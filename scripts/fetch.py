@@ -208,21 +208,30 @@ def run_das_command(cmd):
             script_file.write('    echo "WARNING: Could not find cmsset_default.sh"\n')
             script_file.write('fi\n\n')
             
-            # Try each possible path for dasgoclient and STORE THE FULL PATH
             script_file.write('echo "Searching for dasgoclient:"\n')
-            script_file.write('DASGOCLIENT_PATH=""\n')
+            script_file.write('DASGOCLIENT=""\n')  # Changed variable name to match usage below
             script_file.write('if [ -f /cms.cern.ch/common/dasgoclient ]; then\n')
             script_file.write('    echo "Found at /cms.cern.ch/common/dasgoclient"\n')
-            script_file.write('    DASGOCLIENT_PATH="/cms.cern.ch/common/dasgoclient"\n')
+            script_file.write('    DASGOCLIENT="/cms.cern.ch/common/dasgoclient"\n')
             script_file.write('elif [ -f /cvmfs/cms.cern.ch/common/dasgoclient ]; then\n')
             script_file.write('    echo "Found at /cvmfs/cms.cern.ch/common/dasgoclient"\n')
-            script_file.write('    DASGOCLIENT_PATH="/cvmfs/cms.cern.ch/common/dasgoclient"\n')
+            script_file.write('    DASGOCLIENT="/cvmfs/cms.cern.ch/common/dasgoclient"\n')
             script_file.write('fi\n\n')
 
-            # Extract the query and run it
+            # Add error checking for dasgoclient
+            script_file.write('if [ -z "$DASGOCLIENT" ]; then\n')
+            script_file.write('    echo "ERROR: dasgoclient not found!"\n')
+            script_file.write('    exit 1\n')
+            script_file.write('fi\n\n')
+
+            # Extract the query and run it - properly handle the extraction
             query_match = re.search(r'-query="([^"]+)"', cmd)
             if query_match:
                 query = query_match.group(1)
+                # Remove double asterisks which cause problems
+                query = query.replace('**', '*')
+                # Add quotes around the query and execute with proper syntax
+                script_file.write(f'echo "Executing command: $DASGOCLIENT -query=\\"{query}\\""\n')
                 script_file.write(f'$DASGOCLIENT -query="{query}"\n')
             else:
                 script_file.write(f'{cmd}\n')
