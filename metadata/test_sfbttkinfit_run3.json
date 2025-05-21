@@ -1,8 +1,8 @@
 {
     "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8": [
-        "root://dcache-cms-xrootd.desy.de:1094//store/mc/Run3Summer22NanoAODv12/TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/40000/0128d2f0-f489-4eed-80d0-7240071b9314.root"
+        "root://dcache-cms-xrootd.desy.de:1094/pnfs/desy.de/cms/tier2/store/user/pgadow/PFNano_Run3/mc_summer22_MINIAODv4/TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22MiniAODv4-130X_mcRun3_2022_realistic_v5-v2_BTV_Run3_2022_Comm_MINIAODv4/250502_153017/0000/MC_defaultAK4_preEE_10.root"
     ],
     "MuonEGRun2022C-22Sep2023-v1": [
-        "root://dcache-cms-xrootd.desy.de:1094//store/data/Run2022C/MuonEG/NANOAOD/22Sep2023-v1/2540000/92c52dd8-4272-413c-a6cc-ae6ea8b1218e.root"
+        "root://dcache-cms-xrootd.desy.de:1094/pnfs/desy.de/cms/tier2/store/user/pgadow/PFNano_Run3/data_2022_MINIAODv4/MuonEG/Run2022C-22Sep2023-v1_BTV_Run3_2022_Comm_MINIAODv4/250502_152649/0000/data_defaultAK4_2023_129.root"
     ]
 }
