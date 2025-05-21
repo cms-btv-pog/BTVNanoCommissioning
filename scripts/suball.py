@@ -148,7 +148,7 @@ if __name__ == "__main__":
         ## Run the workflows
         for types in predefined_sample[wf].keys():
 
-            if (types != "data" or types != "MC") and args.scheme == "Validation":
+            if (types != "data" and types != "MC") and args.scheme == "Validation":
                 continue
             print(
                 f"hists_{wf}_{types}_{args.campaign}_{args.year}_{wf}/hists_{wf}_{types}_{args.campaign}_{args.year}_{wf}.coffea"
