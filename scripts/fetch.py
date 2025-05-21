@@ -219,21 +219,13 @@ def run_das_command(cmd):
             script_file.write('    DASGOCLIENT_PATH="/cvmfs/cms.cern.ch/common/dasgoclient"\n')
             script_file.write('fi\n\n')
 
-            # Modify the command to use the full path found
-            script_file.write('if [ -n "$DASGOCLIENT_PATH" ]; then\n')
-            script_file.write('    echo "Using dasgoclient at: $DASGOCLIENT_PATH"\n')
-            script_file.write('    # Extract the arguments from the original command\n')
-            script_file.write('    DASGOCLIENT_ARGS=$(echo "' + escaped_cmd + '" | sed -E \'s|.*/dasgoclient\\s*||\')\n')
-            script_file.write('    # Build new command with the correct path\n')
-            script_file.write('    EXEC_CMD="$DASGOCLIENT_PATH $DASGOCLIENT_ARGS"\n')
-            script_file.write('    echo "Executing command: $EXEC_CMD"\n')
-            script_file.write('    eval $EXEC_CMD\n')
-            script_file.write('else\n')
-            script_file.write('    echo "ERROR: dasgoclient not found in any expected location"\n')
-            script_file.write('    echo "Trying original command anyway:"\n')
-            script_file.write('    echo "' + escaped_cmd + '"\n')
-            script_file.write('    ' + escaped_cmd + '\n')
-            script_file.write('fi\n')
+            # Extract the query and run it
+            query_match = re.search(r'-query="([^"]+)"', cmd)
+            if query_match:
+                query = query_match.group(1)
+                script_file.write(f'$DASGOCLIENT -query="{query}"\n')
+            else:
+                script_file.write(f'{cmd}\n')
         
         # Make script executable
         os.chmod(script_path, 0o755)
@@ -285,6 +277,8 @@ def run_das_command(cmd):
 
 def getFilesFromDas(args):
     """Improved getFilesFromDas with multiple fallback strategies"""
+    # Check if we're in GitLab CI
+    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
     fset = []
     with open(args.input) as fp:
         lines = fp.readlines()
@@ -324,12 +318,20 @@ def getFilesFromDas(args):
         
         # Try multiple DAS query approaches
         flist = []
-        das_queries = [
-            f"dasgoclient -query=\"file dataset={dataset}\"",
-            f"dasgoclient -query=\"file dataset={dataset} instance=prod/global\"",
-            f"dasgoclient -query=\"file dataset={dataset} instance=prod/phys03\"",
-            f"dasgoclient -query=\"file dataset=*{dataset}*\""
+        if in_ci:
+            das_queries = [
+            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset}\"",
+            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} instance=prod/global\"",
+            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} instance=prod/phys03\"",
+            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset=*{dataset}*\""
         ]
+        else:
+            das_queries = [
+                f"dasgoclient -query=\"file dataset={dataset}\"",
+                f"dasgoclient -query=\"file dataset={dataset} instance=prod/global\"",
+                f"dasgoclient -query=\"file dataset={dataset} instance=prod/phys03\"",
+                f"dasgoclient -query=\"file dataset=*{dataset}*\""
+            ]
         
         for query in das_queries:
             if flist:  # If we already have files, no need to try other queries
@@ -351,11 +353,18 @@ def getFilesFromDas(args):
         
         # Get sites with multiple fallback strategies
         sites = []
-        site_queries = [
-            f"dasgoclient -query=\"site dataset={dataset}\"",
-            f"dasgoclient -query=\"site dataset={dataset} instance=prod/global\"",
-            f"dasgoclient -query=\"site dataset={dataset} instance=prod/phys03\""
-        ]
+        if in_ci:
+            site_queries = [
+                f"/cms.cern.ch/common/dasgoclient -query=\"site dataset={dataset}\"",
+                f"/cms.cern.ch/common/dasgoclient -query=\"site dataset={dataset} instance=prod/global\"",
+                f"/cms.cern.ch/common/dasgoclient -query=\"site dataset={dataset} instance=prod/phys03\""
+            ]
+        else:
+            site_queries = [
+                f"dasgoclient -query=\"site dataset={dataset}\"",
+                f"dasgoclient -query=\"site dataset={dataset} instance=prod/global\"",
+                f"dasgoclient -query=\"site dataset={dataset} instance=prod/phys03\""
+            ]
         
         for query in site_queries:
             if sites:  # If we already have sites, no need to try other queries
