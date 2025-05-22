@@ -74,12 +74,12 @@ def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
         print(f"❌ Error: JSON file {json_path} not found")
         return False
     
-    # Create a script to find working redirectors and update JSON file
+    # Create a script that fixes the syntax issues
     with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
         script_path = script_file.name
         script_file.write('#!/bin/bash\n\n')
         
-        # Try to source potential grid environments
+        # Source environments and setup checks
         script_file.write('echo "🔎 Searching for XRootD environment..."\n')
         script_file.write('[ -f /cvmfs/grid.cern.ch/etc/profile.d/setup-cvmfs-ui.sh ] && source /cvmfs/grid.cern.ch/etc/profile.d/setup-cvmfs-ui.sh &>/dev/null && echo "✅ Sourced CVMFS grid environment"\n')
         script_file.write('[ -f /cvmfs/cms.cern.ch/cmsset_default.sh ] && source /cvmfs/cms.cern.ch/cmsset_default.sh &>/dev/null && echo "✅ Sourced CMSSW environment"\n')
@@ -103,7 +103,7 @@ def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
         script_file.write('    fi\n')
         script_file.write('done\n\n')
         
-        # Function to check if a redirector is working
+        # Define check_redirector and check_file_exists functions
         script_file.write('function check_redirector() {\n')
         script_file.write('    local redirector=$1\n')
         script_file.write('    echo "🔄 Testing redirector: $redirector..."\n')
@@ -132,7 +132,6 @@ def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
         script_file.write('    return 1\n')
         script_file.write('}\n\n')
         
-        # Function to check if a file exists
         script_file.write('function check_file_exists() {\n')
         script_file.write('    local redirector=$1\n')
         script_file.write('    local filepath=$2\n')
@@ -160,10 +159,10 @@ def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
         script_file.write('echo "📄 Reading dataset file: $JSON_FILE"\n')
         script_file.write('cp "$JSON_FILE" "$JSON_BACKUP"\n\n')
         
-        # Test all redirectors including fallbacks
+        # Test redirectors
         script_file.write('declare -A REDIRECTOR_STATUS\n')
         
-        # First check existing redirectors in the JSON
+        # Extract redirectors
         script_file.write('echo "🔎 Extracting redirectors from dataset JSON..."\n')
         script_file.write('REDIRECTORS=$(python3 -c \'import json, re, sys; data = json.load(open(sys.argv[1])); urls = set(); redirector_pattern = re.compile(r"root://([^/]+)"); [urls.add(redirector_pattern.search(url).group(1)) for dataset in data.values() for url in dataset if url.startswith("root://") and redirector_pattern.search(url)]; print("\\n".join(urls))\' "$JSON_FILE" 2>/dev/null)\n\n')
         
@@ -178,7 +177,7 @@ def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
         script_file.write('    fi\n')
         script_file.write('done <<< "$REDIRECTORS"\n\n')
         
-        # Then check fallback redirectors
+        # Test fallback redirectors
         for fallback in fallback_redirectors:
             script_file.write(f'echo "⏳ Testing fallback redirector: {fallback}"\n')
             script_file.write(f'if check_redirector "{fallback}"; then\n')
@@ -187,14 +186,14 @@ def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
             script_file.write(f'    REDIRECTOR_STATUS["{fallback}"]="fail"\n')
             script_file.write('fi\n\n')
         
-        # Find working fallback redirectors
-        script_file.write('WORKING_FALLBACKS=("")\n')
+        # Find working fallbacks
+        script_file.write('WORKING_FALLBACKS=()\n')
         for fallback in fallback_redirectors:
             script_file.write(f'if [ "${{REDIRECTOR_STATUS["{fallback}"]}}" = "ok" ]; then\n')
             script_file.write(f'    WORKING_FALLBACKS+=("{fallback}")\n')
             script_file.write('fi\n')
         
-        # Summary of redirector status
+        # Summary
         script_file.write('echo "📊 Redirector Status Summary:"\n')
         script_file.write('for redirector in "${!REDIRECTOR_STATUS[@]}"; do\n')
         script_file.write('    if [ "${REDIRECTOR_STATUS[$redirector]}" = "ok" ]; then\n')
@@ -204,112 +203,121 @@ def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
         script_file.write('    fi\n')
         script_file.write('done\n\n')
         
-        # Now process each URL and replace failing redirectors
-        script_file.write('echo "🔄 Processing dataset file URLs..."\n')
-        script_file.write('python3 -c \'\n')
-        script_file.write('import json, re, sys, os\n')
-        script_file.write('import subprocess\n')
-        script_file.write('\n')
-        script_file.write('# Load redirector status from the environment\n')
-        script_file.write('redirector_status = {}\n')
-        script_file.write('for key, value in os.environ.items():\n')
-        script_file.write('    if key.startswith("REDIRECTOR_STATUS_"):\n')
-        script_file.write('        redirector = key[18:]\n')
-        script_file.write('        redirector_status[redirector] = value\n')
-        script_file.write('\n')
-        script_file.write('# Load fallbacks from environment\n')
-        script_file.write('fallbacks = []\n')
-        script_file.write('fallback_env = os.environ.get("WORKING_FALLBACKS", "")\n')
-        script_file.write('if fallback_env:\n')
-        script_file.write('    fallbacks = fallback_env.split(":")\n')
-        script_file.write('\n')
-        script_file.write('# Function to check if file exists using subprocess\n')
-        script_file.write('def check_file_exists(redirector, filepath):\n')
-        script_file.write('    check_cmd = f"bash -c \'source $0; check_file_exists {redirector} {filepath}\'" "{sys.argv[3]}"\n')
-        script_file.write('    try:\n')
-        script_file.write('        result = subprocess.run(check_cmd, shell=True, capture_output=True)\n')
-        script_file.write('        return result.returncode == 0\n')
-        script_file.write('    except Exception:\n')
-        script_file.write('        return False\n')
-        script_file.write('\n')
-        script_file.write('# Load the JSON file\n')
-        script_file.write('with open(sys.argv[1], "r") as f:\n')
-        script_file.write('    data = json.load(f)\n')
-        script_file.write('\n')
-        script_file.write('redirector_pattern = re.compile(r"root://([^/]+)")\n')
-        script_file.write('modified = False\n')
-        script_file.write('stats = {"total": 0, "fixed": 0, "failed": 0}\n')
-        script_file.write('\n')
-        script_file.write('# Process each dataset\n')
-        script_file.write('for dataset, urls in data.items():\n')
-        script_file.write('    print(f"  Dataset: {dataset} - {len(urls)} files")\n')
-        script_file.write('    new_urls = []\n')
-        script_file.write('    \n')
-        script_file.write('    for url in urls:\n')
-        script_file.write('        stats["total"] += 1\n')
-        script_file.write('        if not url.startswith("root://"):\n')
-        script_file.write('            new_urls.append(url)  # Non-root URL, keep as is\n')
-        script_file.write('            continue\n')
-        script_file.write('            \n')
-        script_file.write('        match = redirector_pattern.search(url)\n')
-        script_file.write('        if not match:\n')
-        script_file.write('            new_urls.append(url)  # Invalid format, keep as is\n')
-        script_file.write('            continue\n')
-        script_file.write('            \n')
-        script_file.write('        redirector = match.group(1)\n')
-        script_file.write('        current_status = os.environ.get(f"REDIRECTOR_STATUS_{redirector}", "unknown")\n')
-        script_file.write('        \n')
-        script_file.write('        # If redirector is working, keep URL as is\n')
-        script_file.write('        if current_status == "ok":\n')
-        script_file.write('            new_urls.append(url)\n')
-        script_file.write('        else:\n')
-        script_file.write('            # Extract file path\n')
-        script_file.write('            path_start = url.find("/store/")\n')
-        script_file.write('            if path_start == -1:\n')
-        script_file.write('                path_start = url.find("/", url.find(redirector) + len(redirector))\n')
-        script_file.write('            \n')
-        script_file.write('            if path_start == -1:\n')
-        script_file.write('                new_urls.append(url)  # Can\'t find path, keep as is\n')
-        script_file.write('                stats["failed"] += 1\n')
-        script_file.write('                print(f"    ⚠️ Can\'t parse path in: {url}")\n')
-        script_file.write('                continue\n')
-        script_file.write('                \n')
-        script_file.write('            filepath = url[path_start:]\n')
-        script_file.write('            fixed = False\n')
-        script_file.write('            \n')
-        script_file.write('            # Try each working fallback\n')
-        script_file.write('            for fallback in fallbacks:\n')
-        script_file.write('                if not fallback:  # Skip empty strings\n')
-        script_file.write('                    continue\n')
-        script_file.write('                    \n')
-        script_file.write('                new_url = f"root://{fallback}{filepath}"\n')
-        script_file.write('                print(f"    Testing {url} => {new_url}")\n')
-        script_file.write('                \n')
-        script_file.write('                if check_file_exists(fallback, filepath):\n')
-        script_file.write('                    print(f"    ✅ Replaced {redirector} with {fallback}")\n')
-        script_file.write('                    new_urls.append(new_url)\n')
-        script_file.write('                    fixed = True\n')
-        script_file.write('                    stats["fixed"] += 1\n')
-        script_file.write('                    modified = True\n')
-        script_file.write('                    break\n')
-        script_file.write('            \n')
-        script_file.write('            if not fixed:\n')
-        script_file.write('                print(f"    ⚠️ No working redirector found for {url}")\n')
-        script_file.write('                new_urls.append(url)  # Keep original if no working alternative\n')
-        script_file.write('                stats["failed"] += 1\n')
-        script_file.write('    \n')
-        script_file.write('    # Update dataset with new URLs\n')
-        script_file.write('    data[dataset] = new_urls\n')
-        script_file.write('\n')
-        script_file.write('# Write the updated JSON\n')
-        script_file.write('if modified:\n')
-        script_file.write('    with open(sys.argv[2], "w") as f:\n')
-        script_file.write('        json.dump(data, f, indent=4)\n')
-        script_file.write('    print(f"\\n✅ Updated JSON saved to {sys.argv[2]}")\n')
-        script_file.write('    print(f"📊 Stats: {stats[\\"total\\"]} URLs processed, {stats[\\"fixed\\"]} fixed, {stats[\\"failed\\"]} failed")\n')
-        script_file.write('else:\n')
-        script_file.write('    print("✅ No changes needed to JSON file")\n')
-        script_file.write('\' "$JSON_FILE" "$JSON_FILE" "$(realpath "$0")"\n\n')
+        # Create a separate Python script instead of embedding it
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as py_script_file:
+            py_script_path = py_script_file.name
+            
+            py_script_file.write('#!/usr/bin/env python3\n')
+            py_script_file.write('import json\n')
+            py_script_file.write('import re\n')
+            py_script_file.write('import sys\n')
+            py_script_file.write('import os\n')
+            py_script_file.write('import subprocess\n\n')
+            
+            py_script_file.write('# Load the JSON file\n')
+            py_script_file.write('json_file = sys.argv[1]\n')
+            py_script_file.write('script_path = sys.argv[2]\n\n')
+            
+            py_script_file.write('# Load redirector status from environment\n')
+            py_script_file.write('redirector_status = {}\n')
+            py_script_file.write('for key, value in os.environ.items():\n')
+            py_script_file.write('    if key.startswith("REDIRECTOR_STATUS_"):\n')
+            py_script_file.write('        redirector = key[18:].replace("__", ":")\n')
+            py_script_file.write('        redirector_status[redirector] = value\n\n')
+            
+            py_script_file.write('# Load fallbacks\n')
+            py_script_file.write('fallbacks = []\n')
+            py_script_file.write('fallback_env = os.environ.get("WORKING_FALLBACKS", "")\n')
+            py_script_file.write('if fallback_env:\n')
+            py_script_file.write('    fallbacks = [f for f in fallback_env.split(":") if f]\n\n')
+            
+            py_script_file.write('# Function to check file exists\n')
+            py_script_file.write('def check_file_exists(redirector, filepath):\n')
+            py_script_file.write('    try:\n')
+            py_script_file.write('        cmd = ["bash", "-c", f\'source "{script_path}"; check_file_exists "{redirector}" "{filepath}"\']\n')
+            py_script_file.write('        result = subprocess.run(cmd, capture_output=True)\n')
+            py_script_file.write('        return result.returncode == 0\n')
+            py_script_file.write('    except Exception as e:\n')
+            py_script_file.write('        print(f"Error checking file: {e}")\n')
+            py_script_file.write('        return False\n\n')
+            
+            py_script_file.write('# Open and process JSON\n')
+            py_script_file.write('with open(json_file, "r") as f:\n')
+            py_script_file.write('    data = json.load(f)\n\n')
+            
+            py_script_file.write('redirector_pattern = re.compile(r"root://([^/]+)")\n')
+            py_script_file.write('modified = False\n')
+            py_script_file.write('stats = {"total": 0, "fixed": 0, "failed": 0}\n\n')
+            
+            py_script_file.write('# Process each dataset\n')
+            py_script_file.write('for dataset, urls in data.items():\n')
+            py_script_file.write('    print(f"  Dataset: {dataset} - {len(urls)} files")\n')
+            py_script_file.write('    new_urls = []\n')
+            py_script_file.write('    \n')
+            py_script_file.write('    for url in urls:\n')
+            py_script_file.write('        stats["total"] += 1\n')
+            py_script_file.write('        if not url.startswith("root://"):\n')
+            py_script_file.write('            new_urls.append(url)  # Keep non-XRootD URLs as is\n')
+            py_script_file.write('            continue\n')
+            py_script_file.write('        \n')
+            py_script_file.write('        match = redirector_pattern.search(url)\n')
+            py_script_file.write('        if not match:\n')
+            py_script_file.write('            new_urls.append(url)  # Keep invalid URLs as is\n')
+            py_script_file.write('            continue\n')
+            py_script_file.write('        \n')
+            py_script_file.write('        redirector = match.group(1)\n')
+            py_script_file.write('        # Check if redirector is working\n')
+            py_script_file.write('        current_status = redirector_status.get(redirector, "unknown")\n')
+            py_script_file.write('        \n')
+            py_script_file.write('        if current_status == "ok":\n')
+            py_script_file.write('            new_urls.append(url)  # Keep working URLs as is\n')
+            py_script_file.write('        else:\n')
+            py_script_file.write('            # Get file path\n')
+            py_script_file.write('            path_start = url.find("/store/")\n')
+            py_script_file.write('            if path_start == -1:\n')
+            py_script_file.write('                path_start = url.find("/", url.find(redirector) + len(redirector))\n')
+            py_script_file.write('            \n')
+            py_script_file.write('            if path_start == -1:\n')
+            py_script_file.write('                print(f"    ⚠️ Cannot parse path in: {url}")\n')
+            py_script_file.write('                new_urls.append(url)  # Cannot parse path\n')
+            py_script_file.write('                stats["failed"] += 1\n')
+            py_script_file.write('                continue\n')
+            py_script_file.write('            \n')
+            py_script_file.write('            filepath = url[path_start:]\n')
+            py_script_file.write('            fixed = False\n')
+            py_script_file.write('            \n')
+            py_script_file.write('            # Try each working fallback\n')
+            py_script_file.write('            for fallback in fallbacks:\n')
+            py_script_file.write('                new_url = f"root://{fallback}{filepath}"\n')
+            py_script_file.write('                print(f"    Testing {url} => {new_url}")\n')
+            py_script_file.write('                \n')
+            py_script_file.write('                if check_file_exists(fallback, filepath):\n')
+            py_script_file.write('                    print(f"    ✅ Replaced {redirector} with {fallback}")\n')
+            py_script_file.write('                    new_urls.append(new_url)\n')
+            py_script_file.write('                    fixed = True\n')
+            py_script_file.write('                    stats["fixed"] += 1\n')
+            py_script_file.write('                    modified = True\n')
+            py_script_file.write('                    break\n')
+            py_script_file.write('            \n')
+            py_script_file.write('            if not fixed:\n')
+            py_script_file.write('                print(f"    ⚠️ No working redirector found for {url}")\n')
+            py_script_file.write('                new_urls.append(url)  # Keep original if no working alternative\n')
+            py_script_file.write('                stats["failed"] += 1\n')
+            py_script_file.write('    \n')
+            py_script_file.write('    # Update dataset\n')
+            py_script_file.write('    data[dataset] = new_urls\n\n')
+            
+            py_script_file.write('# Write updated JSON\n')
+            py_script_file.write('if modified:\n')
+            py_script_file.write('    with open(json_file, "w") as f:\n')
+            py_script_file.write('        json.dump(data, f, indent=4)\n')
+            py_script_file.write('    print(f"\\n✅ Updated JSON saved to {json_file}")\n')
+            py_script_file.write('    print(f"📊 Stats: {stats[\\"total\\"]} URLs processed, {stats[\\"fixed\\"]} fixed, {stats[\\"failed\\"]} failed")\n')
+            py_script_file.write('else:\n')
+            py_script_file.write('    print("✅ No changes needed to JSON file")\n')
+        
+        # Make Python script executable
+        os.chmod(py_script_path, 0o755)
         
         # Export redirector status for Python script
         script_file.write('# Export redirector status for Python\n')
@@ -327,7 +335,11 @@ def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
             script_file.write(fallback)
         script_file.write('"\n\n')
         
-        # Verify script completed successfully
+        # Execute the Python script
+        script_file.write(f'echo "Executing Python script to update redirectors..."\n')
+        script_file.write(f'python3 {py_script_path} "$JSON_FILE" "$(realpath "$0")"\n\n')
+        
+        # Completion
         script_file.write('echo "✅ Redirector validation completed"\n')
         script_file.write('exit 0\n')
     
@@ -340,6 +352,8 @@ def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
     
     # Clean up
     os.unlink(script_path)
+    if os.path.exists(py_script_path):
+        os.unlink(py_script_path)
     
     return exit_code == 0
 
