@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
+from mplhep.plot import ylow, yscale_legend, yscale_anchored_text
 
 plt.style.use(hep.style.ROOT)
 from BTVNanoCommissioning.workflows import workflows
@@ -23,6 +24,22 @@ from BTVNanoCommissioning.utils.plot_utils import (
     sample_mergemap,
     color_map,
 )
+
+# patch mplhep mpl_magic function to allow soft_fail=True
+def mpl_magic(ax=None, info=True, soft_fail=True):
+    """
+    Consolidate all ex-post style adjustments:
+        ylow
+        yscale_legend
+    """
+    if ax is None:
+        ax = plt.gca()
+    if info:
+        pass
+
+    ax = ylow(ax)
+    ax = yscale_legend(ax, soft_fail=soft_fail)
+    return yscale_anchored_text(ax)
 
 bininfo = definitions()
 SV_bininfo = SV_definitions()
@@ -152,6 +169,10 @@ elif "semilep" in args.phase:
 elif "dilep" in args.phase:
     input_txt = r"t$\bar{t}$ dileptonic"
     nj = 2
+# TODO: check nj and label
+elif "btag_ttbar" in args.phase:
+    input_txt = r"t$\bar{t}$ dileptonic"
+    nj = 2
 if (
     "njet" in args.variable.split(",")
     or "nbjet" in args.variable.split(",")
@@ -172,7 +193,7 @@ if "ctag" in args.phase and "DY" not in args.phase:
     input_txt = input_txt + "\nw/ soft-$\mu$"
 if args.variable == "all":
     var_set = [var for var in collated["mc"].keys()]
-elif "*" in args.variable:
+elif ("*" in args.variable) and not ("," in args.variable):
     if args.variable.count("*") > 1:
         var_set = [
             var
@@ -196,8 +217,15 @@ elif "*" in args.variable:
             != None
         ]
 
+elif ("*" in args.variable) and ("," in args.variable):
+    var_set = []
+    for wildcard in args.variable.split(","):
+        for var in collated["mc"].keys():
+            if re.match(f"^{wildcard.replace('*', '.*')}$", var):
+                var_set.append(var)
 else:
     var_set = args.variable.split(",")
+print("plotting variables:", var_set)
 for index, discr in enumerate(var_set):
     try:
         if not isinstance(collated["mc"][discr], hist.hist.Hist):
@@ -209,10 +237,14 @@ for index, discr in enumerate(var_set):
     if (
         discr not in collated["mc"].keys()
         or discr not in collated["data"].keys()
-        or (collated["mc"][discr].values() == 0).all()
+    ):
+        print(discr, "not in file")
+        continue
+    elif (
+        (collated["mc"][discr].values() == 0).all()
         or (collated["data"][discr].values() == 0).all()
     ):
-        print(discr, "not in file or empty")
+        print(discr, "empty")
         continue
 
     ## axis info
@@ -542,6 +574,10 @@ for index, discr in enumerate(var_set):
             xerr=do_xerr,
             flow=args.flow,
         )
+        if isinstance(hmc, list):
+            from functools import reduce
+            from operator import add
+            hmc = reduce(add, hmc)
         MCerrorband(hmc, ax=ax, flow=args.flow)  # stat. unc. errorband
         rax = plotratio(
             collated["data"][discr][allaxis], hmc, ax=rax, flow=args.flow, xerr=do_xerr
@@ -607,16 +643,16 @@ for index, discr in enumerate(var_set):
     name = "all"
     if args.split == "sample":
         name = name + "_sample"
-    hep.mpl_magic(ax=ax)
+    mpl_magic(ax=ax)
     if args.log:
         print(
             "creating:",
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         ax.set_yscale("log")
-        name = "log"
+        name += "_log"
         ax.set_ylim(bottom=0.1)
-        hep.mpl_magic(ax=ax)
+        mpl_magic(ax=ax)
         fig.savefig(
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
         )
