@@ -30,6 +30,11 @@ from BTVNanoCommissioning.workflows.ctag_DY_valid_sf import (
     NanoProcessor as CTAGDYValidSFProcessor,
 )
 
+# Light-jet mistags with negative tag method
+from BTVNanoCommissioning.workflows.sfl_negtag_DY import (
+    NanoProcessor as NegTagDYValidSFProcessor,
+)
+
 ##QCD
 from BTVNanoCommissioning.workflows.QCD_validation import (
     NanoProcessor as QCDValidProcessor,
@@ -103,6 +108,9 @@ workflows["ectag_Wc_WP_sf"] = partial(
 # DY
 workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
 workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
+
+# DY light jet SF with negative tag method
+workflows["sfl_negtag_DY"] = NegTagDYValidSFProcessor
 
 # Tutorial
 # workflows["example"] = ExampleProcessor

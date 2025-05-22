@@ -107,6 +107,14 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         _hist_dict["dr_lmusmujetsmu"] = Hist.Hist(
             syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
         )
+    elif "sfl_negtag_DY" == workflow:
+        obj_list = []
+        # TODO: add objects to list and do things with them
+        # FIXME: commented SVJet related histogram until fixing linkinf of BTVNano
+        # _hist_dict["dr_SVjet0"] = Hist.Hist(
+        #     syst_axis, flav_axis, dr_SV_axis, Hist.storage.Weight()
+        # )x
+        # _hist_dict["nJetSVs"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
 
     elif "validation" == workflow:
         obj_list = ["jet0", "jet1"]
