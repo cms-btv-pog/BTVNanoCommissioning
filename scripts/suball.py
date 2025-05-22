@@ -3,6 +3,7 @@ from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.utils.sample import predefined_sample
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config
 import os, sys, inspect
+from datetime import datetime
 
 current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parent_dir = os.path.dirname(current_dir)
@@ -55,112 +56,121 @@ def check_xrootd_site_availability(site_url):
         return False
 
 # Add this function to sanitize and validate your dataset JSON
-def validate_dataset_redirectors(json_path, fallback_redirectors=None):
-    """Use multiple strategies to validate XRootD access"""
+def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
+    """Validate and fix redirectors in dataset JSON file"""
     import json
-    import tempfile
+    import re
     import os
+    import tempfile
     import subprocess
+    from datetime import datetime
+    
+    print(f"🔍 [{datetime.now().strftime('%H:%M:%S')}] Validating and fixing redirectors in {json_path}")
     
     if fallback_redirectors is None:
         fallback_redirectors = ["cms-xrd-global.cern.ch", "xrootd-cms.infn.it", "cmsxrootd.fnal.gov"]
     
     if not os.path.exists(json_path):
-        print(f"Error: JSON file {json_path} not found")
+        print(f"❌ Error: JSON file {json_path} not found")
         return False
     
-    # Try to directly use Python's XRootD module
-    try:
-        from XRootD import client
-        has_python_xrootd = True
-        print("✅ Found Python XRootD module")
-    except ImportError:
-        has_python_xrootd = False
-        print("❌ Python XRootD module not available")
-    
-    # Create a script to source possible XRootD environments and check files
+    # Create a script to find working redirectors and update JSON file
     with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
         script_path = script_file.name
         script_file.write('#!/bin/bash\n\n')
         
-        # Try to find and source various grid/CMS environments
-        script_file.write('echo "Searching for XRootD environment..."\n')
-        script_file.write('FOUND_XROOTD=false\n\n')
+        # Try to source potential grid environments
+        script_file.write('echo "🔎 Searching for XRootD environment..."\n')
+        script_file.write('[ -f /cvmfs/grid.cern.ch/etc/profile.d/setup-cvmfs-ui.sh ] && source /cvmfs/grid.cern.ch/etc/profile.d/setup-cvmfs-ui.sh &>/dev/null && echo "✅ Sourced CVMFS grid environment"\n')
+        script_file.write('[ -f /cvmfs/cms.cern.ch/cmsset_default.sh ] && source /cvmfs/cms.cern.ch/cmsset_default.sh &>/dev/null && echo "✅ Sourced CMSSW environment"\n')
         
-        # Try multiple possible environment setups
-        script_file.write('# Try CVMFS grid environment\n')
-        script_file.write('if [ -f /cvmfs/grid.cern.ch/etc/profile.d/setup-cvmfs-ui.sh ]; then\n')
-        script_file.write('    echo "Sourcing CVMFS grid environment"\n')
-        script_file.write('    source /cvmfs/grid.cern.ch/etc/profile.d/setup-cvmfs-ui.sh\n')
-        script_file.write('    FOUND_XROOTD=true\n')
+        # Check for Python XRootD module
+        script_file.write('if python3 -c "from XRootD import client; print(\'XRootD Python module available\')" &>/dev/null; then\n')
+        script_file.write('    echo "✅ Found Python XRootD module"\n')
+        script_file.write('    HAS_PYTHON_XROOTD=true\n')
+        script_file.write('else\n')
+        script_file.write('    echo "❌ Python XRootD module not available"\n')
+        script_file.write('    HAS_PYTHON_XROOTD=false\n')
         script_file.write('fi\n\n')
         
-        script_file.write('# Try OSG grid environment\n')
-        script_file.write('if [ -n "$OSG_GRID" ] && [ -f $OSG_GRID/setup.sh ]; then\n')
-        script_file.write('    echo "Sourcing OSG grid environment"\n')
-        script_file.write('    source $OSG_GRID/setup.sh\n')
-        script_file.write('    FOUND_XROOTD=true\n')
-        script_file.write('fi\n\n')
-        
-        script_file.write('# Try CMSSW environment\n')
-        script_file.write('if [ -f /cvmfs/cms.cern.ch/cmsset_default.sh ]; then\n')
-        script_file.write('    echo "Sourcing CMSSW environment"\n')
-        script_file.write('    source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
-        script_file.write('    FOUND_XROOTD=true\n')
-        script_file.write('fi\n\n')
-        
-        # Check for xrdfs in various locations
-        script_file.write('# Check for xrdfs in various locations\n')
+        # Locate xrdfs
+        script_file.write('XRDFS_CMD=""\n')
         script_file.write('for xrd_path in $(which -a xrdfs 2>/dev/null) /cvmfs/grid.cern.ch/*/bin/xrdfs /usr/bin/xrdfs; do\n')
         script_file.write('    if [ -x "$xrd_path" ]; then\n')
-        script_file.write('        echo "Found xrdfs at: $xrd_path"\n')
-        script_file.write('        export XRDFS_CMD="$xrd_path"\n')
-        script_file.write('        FOUND_XROOTD=true\n')
+        script_file.write('        echo "✅ Found xrdfs at: $xrd_path"\n')
+        script_file.write('        XRDFS_CMD="$xrd_path"\n')
         script_file.write('        break\n')
         script_file.write('    fi\n')
         script_file.write('done\n\n')
         
-        # Function to test if a redirector is responding
-        script_file.write('# Function to test redirector\n')
-        script_file.write('function test_redirector() {\n')
+        # Function to check if a redirector is working
+        script_file.write('function check_redirector() {\n')
         script_file.write('    local redirector=$1\n')
-        script_file.write('    \n')
-        script_file.write('    # Try with xrdfs if available\n')
+        script_file.write('    echo "🔄 Testing redirector: $redirector..."\n')
+        
+        # Try xrdfs ping
         script_file.write('    if [ -n "$XRDFS_CMD" ]; then\n')
         script_file.write('        if "$XRDFS_CMD" "$redirector" ping &>/dev/null; then\n')
         script_file.write('            echo "✅ Redirector $redirector is responding via xrdfs"\n')
         script_file.write('            return 0\n')
+        script_file.write('        else\n')
+        script_file.write('            echo "⚠️ Redirector $redirector is NOT responding via xrdfs"\n')
         script_file.write('        fi\n')
         script_file.write('    fi\n')
-        script_file.write('    \n')
-        script_file.write('    # Try with Python XRootD\n')
-        script_file.write('    if python3 -c "from XRootD import client; exit(0 if client.FileSystem(\'root://$redirector\').ping()[0].ok else 1)" 2>/dev/null; then\n')
-        script_file.write('        echo "✅ Redirector $redirector is responding via Python XRootD"\n')
-        script_file.write('        return 0\n')
+        
+        # Try Python XRootD
+        script_file.write('    if [ "$HAS_PYTHON_XROOTD" = true ]; then\n')
+        script_file.write('        if python3 -c "from XRootD import client; exit(0 if client.FileSystem(\'root://$redirector\').ping()[0].ok else 1)" &>/dev/null; then\n')
+        script_file.write('            echo "✅ Redirector $redirector is responding via Python XRootD"\n')
+        script_file.write('            return 0\n')
+        script_file.write('        else\n')
+        script_file.write('            echo "⚠️ Redirector $redirector is NOT responding via Python XRootD"\n')
+        script_file.write('        fi\n')
         script_file.write('    fi\n')
-        script_file.write('    \n')
-        script_file.write('    echo "❌ Redirector $redirector is not responding"\n')
+        
+        script_file.write('    echo "❌ Redirector $redirector is not responding via any method"\n')
         script_file.write('    return 1\n')
         script_file.write('}\n\n')
         
-        # Read and parse JSON directly in the script
-        script_file.write(f'JSON_FILE="{json_path}"\n')
-        script_file.write('if [ ! -f "$JSON_FILE" ]; then\n')
-        script_file.write('    echo "ERROR: JSON file not found: $JSON_FILE"\n')
-        script_file.write('    exit 1\n')
-        script_file.write('fi\n\n')
+        # Function to check if a file exists
+        script_file.write('function check_file_exists() {\n')
+        script_file.write('    local redirector=$1\n')
+        script_file.write('    local filepath=$2\n')
         
-        # Extract all unique redirectors
-        script_file.write('# Extract all unique redirectors from JSON\n')
-        script_file.write('echo "Reading redirectors from $JSON_FILE"\n')
+        # Try xrdfs stat
+        script_file.write('    if [ -n "$XRDFS_CMD" ]; then\n')
+        script_file.write('        if "$XRDFS_CMD" "$redirector" stat "$filepath" &>/dev/null; then\n')
+        script_file.write('            return 0\n')
+        script_file.write('        fi\n')
+        script_file.write('    fi\n')
+        
+        # Try Python XRootD
+        script_file.write('    if [ "$HAS_PYTHON_XROOTD" = true ]; then\n')
+        script_file.write('        if python3 -c "from XRootD import client; exit(0 if client.FileSystem(\'root://$redirector\').stat(\'$filepath\')[0].ok else 1)" &>/dev/null; then\n')
+        script_file.write('            return 0\n')
+        script_file.write('        fi\n')
+        script_file.write('    fi\n')
+        
+        script_file.write('    return 1\n')
+        script_file.write('}\n\n')
+        
+        # JSON file path
+        script_file.write(f'JSON_FILE="{json_path}"\n')
+        script_file.write('JSON_BACKUP="${JSON_FILE}.bak"\n')
+        script_file.write('echo "📄 Reading dataset file: $JSON_FILE"\n')
+        script_file.write('cp "$JSON_FILE" "$JSON_BACKUP"\n\n')
+        
+        # Test all redirectors including fallbacks
+        script_file.write('declare -A REDIRECTOR_STATUS\n')
+        
+        # First check existing redirectors in the JSON
+        script_file.write('echo "🔎 Extracting redirectors from dataset JSON..."\n')
         script_file.write('REDIRECTORS=$(python3 -c \'import json, re, sys; data = json.load(open(sys.argv[1])); urls = set(); redirector_pattern = re.compile(r"root://([^/]+)"); [urls.add(redirector_pattern.search(url).group(1)) for dataset in data.values() for url in dataset if url.startswith("root://") and redirector_pattern.search(url)]; print("\\n".join(urls))\' "$JSON_FILE" 2>/dev/null)\n\n')
         
-        # Test each redirector
-        script_file.write('# Test each redirector\n')
-        script_file.write('declare -A REDIRECTOR_STATUS\n')
+        script_file.write('echo "⏳ Testing existing redirectors..."\n')
         script_file.write('while read -r redirector; do\n')
         script_file.write('    if [ -n "$redirector" ]; then\n')
-        script_file.write('        if test_redirector "$redirector"; then\n')
+        script_file.write('        if check_redirector "$redirector"; then\n')
         script_file.write('            REDIRECTOR_STATUS["$redirector"]="ok"\n')
         script_file.write('        else\n')
         script_file.write('            REDIRECTOR_STATUS["$redirector"]="fail"\n')
@@ -168,74 +178,170 @@ def validate_dataset_redirectors(json_path, fallback_redirectors=None):
         script_file.write('    fi\n')
         script_file.write('done <<< "$REDIRECTORS"\n\n')
         
-        # Also test fallback redirectors
-        for redirector in fallback_redirectors:
-            script_file.write(f'# Test fallback redirector: {redirector}\n')
-            script_file.write(f'if test_redirector "{redirector}"; then\n')
-            script_file.write(f'    REDIRECTOR_STATUS["{redirector}"]="ok"\n')
+        # Then check fallback redirectors
+        for fallback in fallback_redirectors:
+            script_file.write(f'echo "⏳ Testing fallback redirector: {fallback}"\n')
+            script_file.write(f'if check_redirector "{fallback}"; then\n')
+            script_file.write(f'    REDIRECTOR_STATUS["{fallback}"]="ok"\n')
             script_file.write('else\n')
-            script_file.write(f'    REDIRECTOR_STATUS["{redirector}"]="fail"\n')
+            script_file.write(f'    REDIRECTOR_STATUS["{fallback}"]="fail"\n')
             script_file.write('fi\n\n')
         
-        # Output status summary
-        script_file.write('# Output redirector status\n')
-        script_file.write('echo "Redirector Status:"\n')
+        # Find working fallback redirectors
+        script_file.write('WORKING_FALLBACKS=("")\n')
+        for fallback in fallback_redirectors:
+            script_file.write(f'if [ "${{REDIRECTOR_STATUS["{fallback}"]}}" = "ok" ]; then\n')
+            script_file.write(f'    WORKING_FALLBACKS+=("{fallback}")\n')
+            script_file.write('fi\n')
+        
+        # Summary of redirector status
+        script_file.write('echo "📊 Redirector Status Summary:"\n')
         script_file.write('for redirector in "${!REDIRECTOR_STATUS[@]}"; do\n')
-        script_file.write('    echo "  $redirector: ${REDIRECTOR_STATUS[$redirector]}"\n')
+        script_file.write('    if [ "${REDIRECTOR_STATUS[$redirector]}" = "ok" ]; then\n')
+        script_file.write('        echo "  ✅ $redirector: WORKING"\n')
+        script_file.write('    else\n')
+        script_file.write('        echo "  ❌ $redirector: FAILING"\n')
+        script_file.write('    fi\n')
         script_file.write('done\n\n')
         
-        # Exit with success if we found xrootd or python-xrootd
-        script_file.write('# Exit with success code\n')
-        script_file.write('if [ "$FOUND_XROOTD" = true ]; then\n')
-        script_file.write('    echo "✅ XRootD access method found"\n')
-        script_file.write('    exit 0\n')
-        script_file.write('else\n')
-        script_file.write('    echo "❌ No XRootD access method found"\n')
-        script_file.write('    exit 1\n')
-        script_file.write('fi\n')
+        # Now process each URL and replace failing redirectors
+        script_file.write('echo "🔄 Processing dataset file URLs..."\n')
+        script_file.write('python3 -c \'\n')
+        script_file.write('import json, re, sys, os\n')
+        script_file.write('import subprocess\n')
+        script_file.write('\n')
+        script_file.write('# Load redirector status from the environment\n')
+        script_file.write('redirector_status = {}\n')
+        script_file.write('for key, value in os.environ.items():\n')
+        script_file.write('    if key.startswith("REDIRECTOR_STATUS_"):\n')
+        script_file.write('        redirector = key[18:]\n')
+        script_file.write('        redirector_status[redirector] = value\n')
+        script_file.write('\n')
+        script_file.write('# Load fallbacks from environment\n')
+        script_file.write('fallbacks = []\n')
+        script_file.write('fallback_env = os.environ.get("WORKING_FALLBACKS", "")\n')
+        script_file.write('if fallback_env:\n')
+        script_file.write('    fallbacks = fallback_env.split(":")\n')
+        script_file.write('\n')
+        script_file.write('# Function to check if file exists using subprocess\n')
+        script_file.write('def check_file_exists(redirector, filepath):\n')
+        script_file.write('    check_cmd = f"bash -c \'source $0; check_file_exists {redirector} {filepath}\'" "{sys.argv[3]}"\n')
+        script_file.write('    try:\n')
+        script_file.write('        result = subprocess.run(check_cmd, shell=True, capture_output=True)\n')
+        script_file.write('        return result.returncode == 0\n')
+        script_file.write('    except Exception:\n')
+        script_file.write('        return False\n')
+        script_file.write('\n')
+        script_file.write('# Load the JSON file\n')
+        script_file.write('with open(sys.argv[1], "r") as f:\n')
+        script_file.write('    data = json.load(f)\n')
+        script_file.write('\n')
+        script_file.write('redirector_pattern = re.compile(r"root://([^/]+)")\n')
+        script_file.write('modified = False\n')
+        script_file.write('stats = {"total": 0, "fixed": 0, "failed": 0}\n')
+        script_file.write('\n')
+        script_file.write('# Process each dataset\n')
+        script_file.write('for dataset, urls in data.items():\n')
+        script_file.write('    print(f"  Dataset: {dataset} - {len(urls)} files")\n')
+        script_file.write('    new_urls = []\n')
+        script_file.write('    \n')
+        script_file.write('    for url in urls:\n')
+        script_file.write('        stats["total"] += 1\n')
+        script_file.write('        if not url.startswith("root://"):\n')
+        script_file.write('            new_urls.append(url)  # Non-root URL, keep as is\n')
+        script_file.write('            continue\n')
+        script_file.write('            \n')
+        script_file.write('        match = redirector_pattern.search(url)\n')
+        script_file.write('        if not match:\n')
+        script_file.write('            new_urls.append(url)  # Invalid format, keep as is\n')
+        script_file.write('            continue\n')
+        script_file.write('            \n')
+        script_file.write('        redirector = match.group(1)\n')
+        script_file.write('        current_status = os.environ.get(f"REDIRECTOR_STATUS_{redirector}", "unknown")\n')
+        script_file.write('        \n')
+        script_file.write('        # If redirector is working, keep URL as is\n')
+        script_file.write('        if current_status == "ok":\n')
+        script_file.write('            new_urls.append(url)\n')
+        script_file.write('        else:\n')
+        script_file.write('            # Extract file path\n')
+        script_file.write('            path_start = url.find("/store/")\n')
+        script_file.write('            if path_start == -1:\n')
+        script_file.write('                path_start = url.find("/", url.find(redirector) + len(redirector))\n')
+        script_file.write('            \n')
+        script_file.write('            if path_start == -1:\n')
+        script_file.write('                new_urls.append(url)  # Can\'t find path, keep as is\n')
+        script_file.write('                stats["failed"] += 1\n')
+        script_file.write('                print(f"    ⚠️ Can\'t parse path in: {url}")\n')
+        script_file.write('                continue\n')
+        script_file.write('                \n')
+        script_file.write('            filepath = url[path_start:]\n')
+        script_file.write('            fixed = False\n')
+        script_file.write('            \n')
+        script_file.write('            # Try each working fallback\n')
+        script_file.write('            for fallback in fallbacks:\n')
+        script_file.write('                if not fallback:  # Skip empty strings\n')
+        script_file.write('                    continue\n')
+        script_file.write('                    \n')
+        script_file.write('                new_url = f"root://{fallback}{filepath}"\n')
+        script_file.write('                print(f"    Testing {url} => {new_url}")\n')
+        script_file.write('                \n')
+        script_file.write('                if check_file_exists(fallback, filepath):\n')
+        script_file.write('                    print(f"    ✅ Replaced {redirector} with {fallback}")\n')
+        script_file.write('                    new_urls.append(new_url)\n')
+        script_file.write('                    fixed = True\n')
+        script_file.write('                    stats["fixed"] += 1\n')
+        script_file.write('                    modified = True\n')
+        script_file.write('                    break\n')
+        script_file.write('            \n')
+        script_file.write('            if not fixed:\n')
+        script_file.write('                print(f"    ⚠️ No working redirector found for {url}")\n')
+        script_file.write('                new_urls.append(url)  # Keep original if no working alternative\n')
+        script_file.write('                stats["failed"] += 1\n')
+        script_file.write('    \n')
+        script_file.write('    # Update dataset with new URLs\n')
+        script_file.write('    data[dataset] = new_urls\n')
+        script_file.write('\n')
+        script_file.write('# Write the updated JSON\n')
+        script_file.write('if modified:\n')
+        script_file.write('    with open(sys.argv[2], "w") as f:\n')
+        script_file.write('        json.dump(data, f, indent=4)\n')
+        script_file.write('    print(f"\\n✅ Updated JSON saved to {sys.argv[2]}")\n')
+        script_file.write('    print(f"📊 Stats: {stats[\\"total\\"]} URLs processed, {stats[\\"fixed\\"]} fixed, {stats[\\"failed\\"]} failed")\n')
+        script_file.write('else:\n')
+        script_file.write('    print("✅ No changes needed to JSON file")\n')
+        script_file.write('\' "$JSON_FILE" "$JSON_FILE" "$(realpath "$0")"\n\n')
+        
+        # Export redirector status for Python script
+        script_file.write('# Export redirector status for Python\n')
+        script_file.write('for redirector in "${!REDIRECTOR_STATUS[@]}"; do\n')
+        script_file.write('    # Safe variable name by replacing special chars\n')
+        script_file.write('    safe_redirector=$(echo "$redirector" | tr \':.:\' \'__\')\n')
+        script_file.write('    export "REDIRECTOR_STATUS_$safe_redirector=${REDIRECTOR_STATUS[$redirector]}"\n')
+        script_file.write('done\n\n')
+        
+        # Export working fallbacks
+        script_file.write('export WORKING_FALLBACKS="')
+        for i, fallback in enumerate(fallback_redirectors):
+            if i > 0:
+                script_file.write(':')
+            script_file.write(fallback)
+        script_file.write('"\n\n')
+        
+        # Verify script completed successfully
+        script_file.write('echo "✅ Redirector validation completed"\n')
+        script_file.write('exit 0\n')
     
-    # Make the script executable
+    # Make script executable
     os.chmod(script_path, 0o755)
     
     # Run the script
-    print(f"Running XRootD environment detection script: {script_path}")
+    print(f"📋 Running redirector validation script: {script_path}")
     exit_code = os.system(script_path)
     
     # Clean up
     os.unlink(script_path)
     
-    # If we have Python XRootD, we can also directly test redirectors
-    if has_python_xrootd and exit_code != 0:
-        print("Using Python XRootD directly for checking redirectors")
-        with open(json_path) as f:
-            data = json.load(f)
-        
-        # Extract unique redirectors
-        redirectors = set()
-        redirector_pattern = re.compile(r'root://([^/]+)')
-        for dataset, urls in data.items():
-            for url in urls:
-                if url.startswith('root://'):
-                    match = redirector_pattern.search(url)
-                    if match:
-                        redirectors.add(match.group(1))
-        
-        # Check each redirector
-        for redirector in redirectors:
-            try:
-                fs = client.FileSystem(f'root://{redirector}')
-                status, _ = fs.ping()
-                if status.ok:
-                    print(f"✅ Redirector {redirector} is responding via direct Python XRootD")
-                else:
-                    print(f"❌ Redirector {redirector} is not responding via direct Python XRootD")
-            except Exception as e:
-                print(f"❌ Error checking redirector {redirector}: {e}")
-        
-        # Always continue with the workflow
-        return True
-    
-    return exit_code == 0 or has_python_xrootd
+    return exit_code == 0
 
 
 # Get lumi
@@ -430,7 +536,14 @@ if __name__ == "__main__":
                 if 'CI' in os.environ or 'GITLAB_CI' in os.environ:
                     # Validate all redirectors in the JSON and try fix if necessary
                     json_path = f"metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json"
-                    validate_dataset_redirectors(json_path)
+                    print(f"🔄 [{datetime.now().strftime('%H:%M:%S')}] Validating redirectors in {json_path}")
+                    
+                    validate_success = validate_and_fix_redirectors(json_path)
+                    if not validate_success:
+                        print(f"⚠️ [{datetime.now().strftime('%H:%M:%S')}] Warning: Redirector validation had issues")
+                        if types == "data":
+                            print(f"⚠️ WARNING: Skipping data workflow due to redirector validation issues")
+                            continue
                     
                     import tempfile
                     
