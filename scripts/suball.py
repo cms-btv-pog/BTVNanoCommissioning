@@ -15,6 +15,20 @@ def check_xrootd_site_availability(site_url):
     """Check if a XRootD site is responding properly"""
     import subprocess
     import re
+    import os
+    
+    # Check if xrdfs is available first
+    if os.system("which xrdfs >/dev/null 2>&1") != 0:
+        # Try to install xrootd-clients if not available
+        print("xrdfs command not found, attempting to install xrootd-clients...")
+        os.system("apt-get update -qq && apt-get install -y xrootd-client >/dev/null 2>&1")
+        
+        # Check again
+        if os.system("which xrdfs >/dev/null 2>&1") != 0:
+            print("Failed to install xrootd-client. Using global redirector as fallback.")
+            # Just assume cms-xrd-global.cern.ch is working
+            return site_url.startswith("root://cms-xrd-global.cern.ch")
+    
     
     # Extract the base URL without protocol and path
     match = re.search(r'root://([^/]+)', site_url)
