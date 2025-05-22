@@ -10,6 +10,116 @@ sys.path.insert(0, parent_dir)
 
 from runner import config_parser, scaleout_parser, debug_parser
 
+# Add this function to your suball.py script
+def check_xrootd_site_availability(site_url):
+    """Check if a XRootD site is responding properly"""
+    import subprocess
+    import re
+    
+    # Extract the base URL without protocol and path
+    match = re.search(r'root://([^/]+)', site_url)
+    if not match:
+        print(f"Invalid XRootD URL format: {site_url}")
+        return False
+        
+    base_url = match.group(1)
+    check_cmd = f"xrdfs {base_url} ping"
+    
+    try:
+        result = subprocess.run(check_cmd, shell=True, capture_output=True, timeout=10)
+        if result.returncode == 0:
+            print(f"✅ Site {base_url} is responding")
+            return True
+        else:
+            print(f"❌ Site {base_url} is not responding: {result.stderr.decode()}")
+            return False
+    except subprocess.TimeoutExpired:
+        print(f"❌ Site {base_url} timed out")
+        return False
+    except Exception as e:
+        print(f"❌ Error checking site {base_url}: {str(e)}")
+        return False
+
+# Add this function to sanitize and validate your dataset JSON
+def validate_dataset_redirectors(json_path, fallback_redirectors=None):
+    """Validate and potentially fix redirectors in a dataset JSON file"""
+    import json
+    import re
+    import os
+    
+    if fallback_redirectors is None:
+        fallback_redirectors = [
+            "cms-xrd-global.cern.ch",
+            "xrootd-cms.infn.it",
+            "cmsxrootd.fnal.gov"
+        ]
+    
+    print(f"Validating redirectors in {json_path}...")
+    
+    if not os.path.exists(json_path):
+        print(f"Error: JSON file {json_path} not found")
+        return False
+        
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+    
+    modified = False
+    
+    # Process each dataset
+    for dataset_name, files in data.items():
+        print(f"Checking dataset: {dataset_name}")
+        valid_files = []
+        
+        for file_path in files:
+            if not file_path.startswith("root://"):
+                print(f"  Skipping non-XRootD path: {file_path}")
+                valid_files.append(file_path)
+                continue
+                
+            # Extract redirector from path
+            match = re.search(r'root://([^/]+)', file_path)
+            if not match:
+                print(f"  Invalid XRootD URL: {file_path}")
+                continue
+                
+            redirector = match.group(1)
+            
+            # Check if the original redirector is responsive
+            if check_xrootd_site_availability(f"root://{redirector}"):
+                valid_files.append(file_path)
+                continue
+                
+            # Try fallback redirectors
+            store_path = file_path[file_path.find("/store/"):]
+            for fallback in fallback_redirectors:
+                fallback_url = f"root://{fallback}{store_path}"
+                if check_xrootd_site_availability(fallback_url):
+                    print(f"  Replaced {redirector} with {fallback}")
+                    valid_files.append(fallback_url)
+                    modified = True
+                    break
+            else:
+                print(f"  ⚠️ Warning: Could not find working redirector for {file_path}")
+        
+        # Update the dataset with valid files only
+        if len(valid_files) < len(files):
+            print(f"  Removed {len(files) - len(valid_files)} inaccessible files")
+            modified = True
+        
+        if not valid_files:
+            print(f"  ⚠️ Warning: No accessible files found for dataset {dataset_name}")
+            
+        data[dataset_name] = valid_files
+    
+    # Write back the updated JSON if modified
+    if modified:
+        with open(json_path, 'w') as f:
+            json.dump(data, f, indent=4)
+        print(f"Updated {json_path} with working redirectors")
+    else:
+        print(f"No changes needed for {json_path}")
+    
+    return True
 
 # Get lumi
 def get_lumi_from_web(year):
@@ -201,6 +311,14 @@ if __name__ == "__main__":
                         else:
                             runner_config += f" --{key}={value}"
                 if 'CI' in os.environ or 'GITLAB_CI' in os.environ:
+                    # Validate all redirectors in the JSON and try fix if necessary
+                    json_path = f"metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json"
+                    validate_result = validate_dataset_redirectors(json_path)
+                    
+                    if not validate_result and types == "data":
+                        print(f"⚠️ WARNING: Could not validate data redirectors in {json_path}")
+                        print(f"Due to data integrity requirements, skipping data workflow")
+                        continue  # Skip this workflow if validation fails for data
                     import tempfile
                     
                     # Create a temporary bash script to handle proxy detection and variable expansion
