@@ -201,8 +201,26 @@ if __name__ == "__main__":
                         else:
                             runner_config += f" --{key}={value}"
                 if 'CI' in os.environ or 'GITLAB_CI' in os.environ:
-                    # Set the X509 proxy path explicitly before running the command
-                    runner_config = f"export X509_USER_PROXY=/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy && {runner_config_required}{runner_config}"
+                    # Try these proxy paths in order
+                    proxy_paths = [
+                        "/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy",
+                        "/btv/software-and-algorithms/autobtv/proxy/x509_proxy",
+                        "${CI_PROJECT_DIR}/proxy/x509_proxy"
+                    ]
+                    
+                    # First print the proxy path that was used in fetch.py
+                    proxy_found = False
+                    for proxy_path in proxy_paths:
+                        check_cmd = f"if [ -f {proxy_path} ]; then echo 'Found proxy at: {proxy_path}'; exit 0; else exit 1; fi"
+                        if os.system(check_cmd) == 0:
+                            print(f"Using X509 proxy at: {proxy_path}")
+                            runner_config = f"export X509_USER_PROXY={proxy_path} && {runner_config_required}{runner_config}"
+                            proxy_found = True
+                            break
+                            
+                    if not proxy_found:
+                        print("WARNING: No proxy found in any standard location!")
+                        runner_config = runner_config_required + runner_config
                 else:
                     runner_config = runner_config_required + runner_config
 
