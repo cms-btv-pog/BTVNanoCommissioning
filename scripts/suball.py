@@ -201,38 +201,61 @@ if __name__ == "__main__":
                         else:
                             runner_config += f" --{key}={value}"
                 if 'CI' in os.environ or 'GITLAB_CI' in os.environ:
-                    # Try these proxy paths in order
-                    proxy_paths = [
-                        "/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy",
-                        "/btv/software-and-algorithms/autobtv/proxy/x509_proxy",
-                        "${CI_PROJECT_DIR}/proxy/x509_proxy"
-                    ]
+                    import tempfile
                     
-                    # First print the proxy path that was used in fetch.py
-                    proxy_found = False
-                    for proxy_path in proxy_paths:
-                        check_cmd = f"if [ -f {proxy_path} ]; then echo 'Found proxy at: {proxy_path}'; exit 0; else exit 1; fi"
-                        if os.system(check_cmd) == 0:
-                            print(f"Using X509 proxy at: {proxy_path}")
-                            runner_config = f"export X509_USER_PROXY={proxy_path} && {runner_config_required}{runner_config}"
-                            proxy_found = True
-                            break
-                            
-                    if not proxy_found:
-                        print("WARNING: No proxy found in any standard location!")
-                        runner_config = runner_config_required + runner_config
+                    # Create a temporary bash script to handle proxy detection and variable expansion
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
+                        script_path = script_file.name
+                        script_file.write('#!/bin/bash\n\n')
+                        script_file.write('echo "Starting proxy detection script"\n\n')
+                        
+                        # Try multiple proxy paths with proper shell expansion
+                        script_file.write('PROXY_FOUND=false\n')
+                        script_file.write('for PROXY_PATH in "/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy" "/btv/software-and-algorithms/autobtv/proxy/x509_proxy" "${CI_PROJECT_DIR}/proxy/x509_proxy"; do\n')
+                        script_file.write('    if [ -f "$PROXY_PATH" ]; then\n')
+                        script_file.write('        echo "Found proxy at: $PROXY_PATH"\n')
+                        script_file.write('        export X509_USER_PROXY="$PROXY_PATH"\n')
+                        script_file.write('        echo "Set X509_USER_PROXY=$X509_USER_PROXY"\n')
+                        script_file.write('        ls -la "$X509_USER_PROXY" || echo "Warning: Cannot list proxy file"\n')
+                        script_file.write('        PROXY_FOUND=true\n')
+                        script_file.write('        break\n')
+                        script_file.write('    fi\n')
+                        script_file.write('done\n\n')
+                        
+                        # Add warning if no proxy found
+                        script_file.write('if [ "$PROXY_FOUND" = false ]; then\n')
+                        script_file.write('    echo "WARNING: No proxy found in any standard location!"\n')
+                        script_file.write('fi\n\n')
+                        
+                        # Add the runner command with all environment variables preserved
+                        script_file.write(f'echo "Executing: {runner_config_required}{runner_config}"\n')
+                        script_file.write(f'{runner_config_required}{runner_config}\n')
+                        
+                        # Exit with the runner's exit code
+                        script_file.write('exit $?\n')
+                    
+                    # Make script executable
+                    os.chmod(script_path, 0o755)
+                    
+                    # Execute the script
+                    if args.debug:
+                        print(f"Executing proxy detection script: {script_path}")
+                    os.system(script_path)
+                    
+                    # Clean up
+                    os.unlink(script_path)
                 else:
                     runner_config = runner_config_required + runner_config
+                    if args.debug:
+                        print(f"run the workflow: {runner_config}")
+                    os.system(runner_config)
 
-                if args.debug:
-                    print(f"run the workflow: {runner_config}")
                 with open(
                     f"config_{args.year}_{args.campaign}_{args.scheme}_{args.version}.txt",
                     "w",
                 ) as config_list:
                     config_list.write(runner_config)
-
-                os.system(runner_config)
+                    
         if args.debug:
             print(f"workflow is finished for {wf}!")
         # Get luminosity
