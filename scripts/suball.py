@@ -200,7 +200,12 @@ if __name__ == "__main__":
 
                         else:
                             runner_config += f" --{key}={value}"
-                runner_config = runner_config_required + runner_config
+                if 'CI' in os.environ or 'GITLAB_CI' in os.environ:
+                    # Set the X509 proxy path explicitly before running the command
+                    runner_config = f"export X509_USER_PROXY=/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy && {runner_config_required}{runner_config}"
+                else:
+                    runner_config = runner_config_required + runner_config
+
                 if args.debug:
                     print(f"run the workflow: {runner_config}")
                 with open(
