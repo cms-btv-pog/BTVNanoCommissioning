@@ -283,6 +283,158 @@ def run_das_command(cmd):
         print(f"Executing local command with os.popen: {cmd}")
         result = os.popen(cmd).read().splitlines()
         return result
+    
+def check_xrootd_availability():
+    """Check if XRootD tools are available in the current environment"""
+    import subprocess
+    import shutil
+    
+    # Check for xrdfs command
+    xrdfs_available = shutil.which('xrdfs') is not None
+    
+    # Check for Python XRootD module
+    try:
+        import XRootD
+        python_xrootd_available = True
+    except ImportError:
+        python_xrootd_available = False
+    
+    # Check for gfal tools as alternative
+    gfal_available = shutil.which('gfal-ls') is not None
+    
+    print(f"Environment check: xrdfs: {'✅' if xrdfs_available else '❌'}, " 
+          f"Python XRootD: {'✅' if python_xrootd_available else '❌'}, "
+          f"gfal: {'✅' if gfal_available else '❌'}")
+    
+    return {
+        'xrdfs': xrdfs_available,
+        'python_xrootd': python_xrootd_available,
+        'gfal': gfal_available
+    }
+
+def check_site_completion(site, dataset, xrootd_tools):
+    """Check what percentage of the dataset is available at the site by directly counting files"""
+    try:
+        # Get total file list once for the entire dataset
+        in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+        
+        if in_ci:
+            total_files_cmd = f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} | grep file.name\""
+        else:
+            total_files_cmd = f"dasgoclient -query=\"file dataset={dataset} | grep file.name\""
+        
+        print(f"Getting file list for {dataset}...")
+        total_files_result = run_das_command(total_files_cmd)
+        total_files_count = len([f for f in total_files_result if f and not f.startswith('ERROR:')])
+        
+        if total_files_count == 0:
+            print(f"No files found for dataset {dataset}")
+            return 0.0
+            
+        print(f"Dataset has {total_files_count} files in total")
+        
+        # Now get files at the specific site
+        if in_ci:
+            site_files_cmd = f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} site={site} | grep file.name\""
+        else:
+            site_files_cmd = f"dasgoclient -query=\"file dataset={dataset} site={site} | grep file.name\""
+        
+        print(f"Checking files available at {site}...")
+        site_files_result = run_das_command(site_files_cmd)
+        site_files_count = len([f for f in site_files_result if f and not f.startswith('ERROR:')])
+        
+        # Calculate completion percentage
+        if total_files_count > 0 and site_files_count > 0:
+            completion_pct = (site_files_count / total_files_count) * 100
+            print(f"Site {site} has {site_files_count}/{total_files_count} files ({completion_pct:.2f}%)")
+            return completion_pct
+        else:
+            print(f"Site {site} has no valid files for this dataset")
+            return 0.0
+            
+    except Exception as e:
+        print(f"Error checking completion for site {site}: {e}")
+        import traceback
+        traceback.print_exc()
+        return 0.0
+
+def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
+    """Test if the site's redirector is currently responsive using available tools"""
+    import subprocess
+    import time
+    
+    # Skip if site not in our map
+    if site not in sites_xrootd_prefix:
+        print(f"Site {site} not found in redirector map")
+        return False
+        
+    # Get the redirector for this site
+    xrd = None
+    if isinstance(sites_xrootd_prefix[site], list):
+        xrd = sites_xrootd_prefix[site][0]
+    elif isinstance(sites_xrootd_prefix[site], str):
+        xrd = sites_xrootd_prefix[site]
+    
+    if not xrd:
+        print(f"No redirector found for site {site}")
+        return False
+        
+    # Extract the server part
+    server = xrd.replace('root://', '').split('/')[0]
+    print(f"Testing redirector {server} for site {site}...")
+    
+    # Try using xrdfs if available
+    if xrootd_tools['xrdfs']:
+        try:
+            start_time = time.time()
+            cmd = ["xrdfs", server, "ping"]
+            result = subprocess.run(cmd, capture_output=True, timeout=5)
+            response_time = time.time() - start_time
+            
+            if result.returncode == 0:
+                print(f"✅ Site {site} redirector {server} is responsive via xrdfs (response time: {response_time:.2f}s)")
+                return True
+            else:
+                print(f"❌ Site {site} redirector {server} failed xrdfs ping")
+        except Exception as e:
+            print(f"Error with xrdfs ping for {site}: {e}")
+    
+    # Try using Python XRootD if available
+    if xrootd_tools['python_xrootd']:
+        try:
+            from XRootD import client
+            start_time = time.time()
+            fs = client.FileSystem(f'root://{server}')
+            status, _ = fs.ping()
+            response_time = time.time() - start_time
+            
+            if status.ok:
+                print(f"✅ Site {site} redirector {server} is responsive via Python XRootD (response time: {response_time:.2f}s)")
+                return True
+            else:
+                print(f"❌ Site {site} redirector {server} failed Python XRootD ping: {status}")
+        except Exception as e:
+            print(f"Error with Python XRootD ping for {site}: {e}")
+    
+    # Try using gfal if available
+    if xrootd_tools['gfal']:
+        try:
+            start_time = time.time()
+            cmd = ["gfal-ls", f"root://{server}//"]
+            result = subprocess.run(cmd, capture_output=True, timeout=5)
+            response_time = time.time() - start_time
+            
+            if result.returncode == 0:
+                print(f"✅ Site {site} redirector {server} is responsive via gfal-ls (response time: {response_time:.2f}s)")
+                return True
+            else:
+                print(f"❌ Site {site} redirector {server} failed gfal-ls")
+        except Exception as e:
+            print(f"Error with gfal-ls for {site}: {e}")
+    
+    # If all methods failed
+    print(f"❌ Site {site} redirector is not responsive via any available method")
+    return False
 
 def getFilesFromDas(args):
     """Improved getFilesFromDas with multiple fallback strategies"""
@@ -406,9 +558,15 @@ def getFilesFromDas(args):
             continue
         
         # Process sites with careful error handling
+        # Check available XRootD tools first
+        xrootd_tools = check_xrootd_availability()
         xrd = None
         sites_xrootd_prefix = get_xrootd_sites_map()
-        
+
+        # Build a list of candidate sites with their scores
+        site_candidates = []
+        print(f"Evaluating {len(sites)} sites for dataset {dataset}...")
+
         for site in sites:
             if not site:
                 continue
@@ -421,23 +579,41 @@ def getFilesFromDas(args):
                 print(f"Site {site} is not in whitelist, skipping")
                 continue
             
-            # Safely handle site redirector lookup
-            try:
-                if site in sites_xrootd_prefix:
-                    if isinstance(sites_xrootd_prefix[site], list):
-                        xrd = sites_xrootd_prefix[site][0]
-                    elif isinstance(sites_xrootd_prefix[site], str):
-                        xrd = sites_xrootd_prefix[site]
-                    
-                    if xrd:
-                        print(f"Using redirector for site {site}: {xrd}")
-                        break
-            except Exception as e:
-                print(f"Error processing site {site}: {e}")
-        
-        # Fallback to global redirector if no valid site found
-        if xrd is None:
-            print(f"No valid site found for {dsname}, using global redirector: {args.redirector}")
+            # Skip if site has no XRootD access in our map
+            if site not in sites_xrootd_prefix:
+                print(f"Site {site} has no XRootD access in our map, skipping")
+                continue
+                
+            # Check site completion
+            completion = check_site_completion(site, dataset, xrootd_tools)
+            
+            # Only consider sites with at least some files
+            if completion > 0:
+                # Check responsiveness if we have any XRootD tools available
+                if xrootd_tools['xrdfs'] or xrootd_tools['python_xrootd'] or xrootd_tools['gfal']:
+                    is_responsive = check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools)
+                    if is_responsive:
+                        site_candidates.append((site, completion))
+                else:
+                    # If no XRootD tools available, just assume site is responsive but prioritize by completion
+                    print(f"⚠️ No XRootD tools available - assuming site {site} is responsive")
+                    site_candidates.append((site, completion))
+
+        # Sort sites by completion percentage (highest first)
+        site_candidates.sort(key=lambda x: x[1], reverse=True)
+
+        if site_candidates:
+            # Choose the site with highest completion
+            best_site, completion = site_candidates[0]
+            print(f"Selected site {best_site} with {completion}% dataset completion")
+            
+            # Get redirector for the best site
+            if isinstance(sites_xrootd_prefix[best_site], list):
+                xrd = sites_xrootd_prefix[best_site][0]
+            elif isinstance(sites_xrootd_prefix[best_site], str):
+                xrd = sites_xrootd_prefix[best_site]
+        else:
+            print(f"No suitable sites found for {dsname}, using global redirector")
             redirector = {
                 "infn": "root://xrootd-cms.infn.it//",
                 "fnal": "root://cmsxrootd.fnal.gov/",
