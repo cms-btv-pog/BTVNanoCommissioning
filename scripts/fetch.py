@@ -564,8 +564,8 @@ def getFilesFromDas(args):
         sites_xrootd_prefix = get_xrootd_sites_map()
 
         # Build a list of candidate sites with their scores
-        site_candidates = []
-        print(f"Evaluating {len(sites)} sites for dataset {dataset}...")
+        site_completions = []
+        print(f"Evaluating completion for {len(sites)} sites for dataset {dataset}...")
 
         for site in sites:
             if not site:
@@ -584,42 +584,55 @@ def getFilesFromDas(args):
                 print(f"Site {site} has no XRootD access in our map, skipping")
                 continue
                 
-            # Check site completion
+            # Only check completion first
             completion = check_site_completion(site, dataset, xrootd_tools)
             
-            # Only consider sites with at least some files
+            # Save all sites with files for sorting
             if completion > 0:
-                # Check responsiveness if we have any XRootD tools available
-                if xrootd_tools['xrdfs'] or xrootd_tools['python_xrootd'] or xrootd_tools['gfal']:
-                    is_responsive = check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools)
-                    if is_responsive:
-                        site_candidates.append((site, completion))
-                else:
-                    # If no XRootD tools available, just assume site is responsive but prioritize by completion
-                    print(f"⚠️ No XRootD tools available - assuming site {site} is responsive")
-                    site_candidates.append((site, completion))
+                site_completions.append((site, completion))
 
         # Sort sites by completion percentage (highest first)
-        site_candidates.sort(key=lambda x: x[1], reverse=True)
-
-        if site_candidates:
-            # Choose the site with highest completion
-            best_site, completion = site_candidates[0]
-            print(f"Selected site {best_site} with {completion}% dataset completion")
+        site_completions.sort(key=lambda x: x[1], reverse=True)
+        
+        # Now check responsiveness only for the top sites in order of completion
+        site_candidates = []
+        print(f"Found {len(site_completions)} sites with files, checking responsiveness in order of completion...")
+        
+        # Try sites in order of completion until we find a responsive one
+        for site, completion in site_completions:
+            print(f"Checking responsiveness for site {site} with {completion:.2f}% completion...")
             
-            # Get redirector for the best site
-            if isinstance(sites_xrootd_prefix[best_site], list):
-                xrd = sites_xrootd_prefix[best_site][0]
-            elif isinstance(sites_xrootd_prefix[best_site], str):
-                xrd = sites_xrootd_prefix[best_site]
-        else:
-            print(f"No suitable sites found for {dsname}, using global redirector")
+            if xrootd_tools['xrdfs'] or xrootd_tools['python_xrootd'] or xrootd_tools['gfal']:
+                is_responsive = check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools)
+                if is_responsive:
+                    site_candidates.append((site, completion))
+                    print(f"Found responsive site: {site} with {completion:.2f}% completion")
+                    break  # Stop after finding the first responsive site
+            else:
+                # If no XRootD tools available, just assume site is responsive
+                print(f"⚠️ No XRootD tools available - assuming site {site} is responsive")
+                site_candidates.append((site, completion))
+                break
+        
+        # If no sites were responsive, try the global redirector
+        if not site_candidates:
+            print(f"No responsive sites found for {dsname}, using global redirector")
             redirector = {
                 "infn": "root://xrootd-cms.infn.it//",
                 "fnal": "root://cmsxrootd.fnal.gov/",
                 "cern": "root://cms-xrd-global.cern.ch/"
             }
             xrd = redirector[args.redirector]
+        else:
+            # Use the first (and only) responsive site
+            best_site, completion = site_candidates[0]
+            print(f"Selected site {best_site} with {completion:.2f}% dataset completion")
+            
+            # Get redirector for the best site
+            if isinstance(sites_xrootd_prefix[best_site], list):
+                xrd = sites_xrootd_prefix[best_site][0]
+            elif isinstance(sites_xrootd_prefix[best_site], str):
+                xrd = sites_xrootd_prefix[best_site]
         
         if args.limit is not None:
             flist = flist[:args.limit]

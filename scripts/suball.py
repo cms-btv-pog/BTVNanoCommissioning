@@ -54,6 +54,47 @@ def check_xrootd_site_availability(site_url):
     except Exception as e:
         print(f"❌ Error checking site {base_url}: {str(e)}")
         return False
+    
+def fix_ztn_protocol_warning():
+    """Fix the 'security protocol ztn disallowed' warning"""
+    import os
+    
+    # Explicitly set security protocols to use, excluding ztn
+    os.environ['XRD_SECPROTOCOLS'] = 'gsi,tls,unix'
+    
+    # For Python XRootD, try setting the environment in the current session
+    try:
+        from XRootD import client
+        client.set_default_value('securityProtocols', 'gsi,tls,unix')
+    except (ImportError, AttributeError):
+        pass
+    
+def improve_ci_xrootd_access():
+    """Function to improve XRootD access in CI environments"""
+    import os
+    import subprocess
+    
+    # 1. Force specific XRootD security settings
+    os.environ['XRD_CONNECTIONRETRY'] = '3'  # Reduce retries to speed up checks
+    os.environ['XRD_CONNECTIONWINDOW'] = '10'  # Shorter connection window (seconds)
+    os.environ['XRD_REQUESTTIMEOUT'] = '30'  # Shorter timeout
+    
+    # 2. Explicitly set XRootD security level - disable problematic protocols
+    os.environ['XRD_SECURITYLEVEL'] = 'compatible'  # Force more compatible security
+    
+    # 3. Explicitly acknowledge proxy location
+    if 'X509_USER_PROXY' in os.environ:
+        print(f"Using X509 proxy from: {os.environ['X509_USER_PROXY']}")
+        # Verify proxy is valid
+        try:
+            output = subprocess.check_output(['grid-proxy-info', '-exists', '-valid', '1:0'], 
+                                          stderr=subprocess.STDOUT)
+            print("✅ Proxy is valid")
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️ Proxy verification failed: {e.output.decode() if hasattr(e, 'output') else str(e)}")
+            
+    # 4. Try to use more compatible authentication options
+    os.environ['XRD_PLUGIN'] = 'gsi'  # Try to force GSI authentication
 
 # Add this function to sanitize and validate your dataset JSON
 def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
@@ -625,6 +666,11 @@ if __name__ == "__main__":
                         else:
                             runner_config += f" --{key}={value}"
                 if 'CI' in os.environ or 'GITLAB_CI' in os.environ:
+                    print("🔧 Setting up XRootD environment for CI...")
+                    improve_ci_xrootd_access()
+                    fix_ztn_protocol_warning()
+                    
+                    redirector = "root://cms-xrd-global.cern.ch/"
                     # Validate all redirectors in the JSON and try fix if necessary
                     json_path = f"metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json"
                     print(f"🔄 [{datetime.now().strftime('%H:%M:%S')}] Validating redirectors in {json_path}")
