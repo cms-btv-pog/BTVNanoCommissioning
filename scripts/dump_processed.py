@@ -31,7 +31,9 @@ def dump_lumi(output, fname):
         json.dump(dicts, outfile, indent=2)
 
     lumi_in_pb = os.popen(
-        f"export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:$PATH; brilcalc lumi -c web -i {fname}_lumi.json -u /pb "
+        # Using recommended temporary Run 3 normtag
+        # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart
+        f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json -c web -i {fname}_lumi.json -u /pb \'"
     ).read()
     lumi_in_pb = lumi_in_pb[
         lumi_in_pb.find("#Summary:") : lumi_in_pb.find("#Check JSON:")
