@@ -81,20 +81,43 @@ def improve_ci_xrootd_access():
     
     # 2. Explicitly set XRootD security level - disable problematic protocols
     os.environ['XRD_SECURITYLEVEL'] = 'compatible'  # Force more compatible security
+    os.environ['XRD_SECPROTOCOLS'] = 'gsi,tls,unix'  # Explicitly exclude ztn
     
     # 3. Explicitly acknowledge proxy location
     if 'X509_USER_PROXY' in os.environ:
         print(f"Using X509 proxy from: {os.environ['X509_USER_PROXY']}")
-        # Verify proxy is valid
+        # Verify proxy is valid but don't fail if grid-proxy-info is unavailable
         try:
-            output = subprocess.check_output(['grid-proxy-info', '-exists', '-valid', '1:0'], 
-                                          stderr=subprocess.STDOUT)
-            print("✅ Proxy is valid")
-        except subprocess.CalledProcessError as e:
-            print(f"⚠️ Proxy verification failed: {e.output.decode() if hasattr(e, 'output') else str(e)}")
+            # Check if grid-proxy-info exists
+            check_cmd = subprocess.run(['which', 'grid-proxy-info'], 
+                                      capture_output=True, check=False)
+            
+            if check_cmd.returncode == 0:
+                output = subprocess.check_output(['grid-proxy-info', '-exists', '-valid', '1:0'], 
+                                              stderr=subprocess.STDOUT)
+                print("✅ Proxy is valid")
+            else:
+                print("⚠️ grid-proxy-info not available, skipping proxy validation")
+                # Alternative: check if proxy file exists and has reasonable size
+                import os.path
+                proxy_path = os.environ['X509_USER_PROXY']
+                if os.path.exists(proxy_path) and os.path.getsize(proxy_path) > 100:
+                    print(f"✅ Proxy file exists with size: {os.path.getsize(proxy_path)} bytes")
+                else:
+                    print(f"⚠️ Proxy file issues: exists={os.path.exists(proxy_path)}, "
+                          f"size={os.path.getsize(proxy_path) if os.path.exists(proxy_path) else 'N/A'}")
+        except Exception as e:
+            print(f"⚠️ Proxy verification failed: {str(e)}")
             
     # 4. Try to use more compatible authentication options
     os.environ['XRD_PLUGIN'] = 'gsi'  # Try to force GSI authentication
+    
+    # 5. Set global redirector for fallback
+    global redirector
+    redirector = "root://cms-xrd-global.cern.ch/"
+    print(f"Using global redirector: {redirector}")
+    
+    return True
 
 # Add this function to sanitize and validate your dataset JSON
 def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
