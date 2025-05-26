@@ -358,6 +358,81 @@ def check_site_completion(site, dataset, xrootd_tools):
         traceback.print_exc()
         return 0.0
 
+def test_individual_protocols(site, server):
+    """Test each authentication protocol individually to see which one works"""
+    import os
+    import time
+    from XRootD import client
+    
+    print(f"\n==== Testing Individual Authentication Protocols for {site} ====")
+    
+    # List of protocols to test in order
+    protocols = ["gsi", "tls", "unix", "pwd"]
+    
+    # Save original environment setting
+    original_secprotocols = os.environ.get('XRD_SECPROTOCOLS', None)
+    
+    results = {}
+    
+    # Test each protocol individually
+    for protocol in protocols:
+        print(f"\nTesting protocol: {protocol}")
+        
+        # Set environment to only use this protocol
+        os.environ['XRD_SECPROTOCOLS'] = protocol
+        
+        # Try connection with just this protocol
+        try:
+            start_time = time.time()
+            fs = client.FileSystem(f'root://{server}')
+            status, _ = fs.ping(timeout=5)
+            response_time = time.time() - start_time
+            
+            if status.ok:
+                print(f"✅ Protocol {protocol} WORKS for {site} (response time: {response_time:.2f}s)")
+                results[protocol] = "SUCCESS"
+                
+                # Try a simple directory listing to confirm authentication works for actual operations
+                try:
+                    status, listing = fs.dirlist("/store/", timeout=5)
+                    if status.ok:
+                        print(f"  ✅ Directory listing also succeeded with protocol {protocol}")
+                        file_count = len(listing)
+                        print(f"  Found {file_count} items in directory")
+                    else:
+                        print(f"  ⚠️ Protocol {protocol} authenticated but listing failed: {status.message}")
+                except Exception as e:
+                    print(f"  ⚠️ Error during directory listing: {e}")
+            else:
+                print(f"❌ Protocol {protocol} FAILED for {site}: {status.message}")
+                results[protocol] = f"FAILED: {status.message}"
+        except Exception as e:
+            print(f"❌ Protocol {protocol} ERROR for {site}: {e}")
+            results[protocol] = f"ERROR: {e}"
+    
+    # Restore original environment
+    if original_secprotocols:
+        os.environ['XRD_SECPROTOCOLS'] = original_secprotocols
+    else:
+        os.environ.pop('XRD_SECPROTOCOLS', None)
+    
+    # Print summary
+    print("\n==== Protocol Test Summary ====")
+    for protocol, result in results.items():
+        status_symbol = "✅" if "SUCCESS" in result else "❌"
+        print(f"{status_symbol} {protocol}: {result}")
+    
+    # Print which protocol to use in CI
+    working_protocols = [p for p, r in results.items() if "SUCCESS" in r]
+    if working_protocols:
+        print(f"\n✅ For CI environment, set XRD_SECPROTOCOLS={','.join(working_protocols)}")
+    else:
+        print("\n❌ No working protocols found for this site with your certificate")
+    
+    print("==== Test Complete ====\n")
+    
+    return working_protocols
+
 def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
     """Test if the site's redirector is currently responsive using available tools"""
     import subprocess
@@ -399,22 +474,91 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
         except Exception as e:
             print(f"Error with xrdfs ping for {site}: {e}")
     
-    # Try using Python XRootD if available
+    
+    # Print current XRootD environment settings
+    print("XRootD environment settings:")
+    xrd_vars = [var for var in os.environ if var.startswith('XRD_')]
+    for var in xrd_vars:
+        print(f"  {var}={os.environ[var]}")
+    
+    
+    # Try using Python XRootD with protocol debugging if available
     if xrootd_tools['python_xrootd']:
         try:
             from XRootD import client
+            
+            # Check authentication mechanisms configured in environment
+            auth_methods = []
+            if 'XRD_SECPROTOCOLS' in os.environ:
+                auth_methods = os.environ['XRD_SECPROTOCOLS'].split(',')
+                print(f"Configured authentication protocols: {', '.join(auth_methods)}")
+            else:
+                print("No explicit authentication protocols configured in XRD_SECPROTOCOLS")
+                print("XRootD will try default protocols in this order: gsi, tls, unix, pwd")
+            
+            # Try with explicit protocol debugging
+            print("Attempting XRootD connection with debug information...")
             start_time = time.time()
+            
+            # Create a connection with detailed flags
             fs = client.FileSystem(f'root://{server}')
-            status, _ = fs.ping()
+            
+            # Execute a ping operation
+            status, response = fs.ping()
             response_time = time.time() - start_time
             
             if status.ok:
                 print(f"✅ Site {site} redirector {server} is responsive via Python XRootD (response time: {response_time:.2f}s)")
+                working_protocols = test_individual_protocols(site, server)
+                try:
+                    # Check if QueryCode exists in this version of XRootD
+                    if hasattr(client, 'QueryCode'):
+                        protocol_status, protocol_response = fs.query(client.QueryCode.PROTOCOL, "")
+                        if protocol_status.ok:
+                            print(f"Protocol information: {protocol_response}")
+                            
+                            # Try to get security info
+                            security_status, security_response = fs.query(client.QueryCode.CONFIG, "sec")
+                            if security_status.ok:
+                                print(f"Security configuration: {security_response}")
+                    else:
+                        # Alternative approach for older XRootD versions
+                        print("QueryCode not available in this XRootD version")
+                        
+                        # Try to use the version info method which is available in most versions
+                        try:
+                            status, response = fs.query(0, "")  # 0 is often kXR_Qconfig
+                            if status.ok:
+                                print(f"Server configuration: {response}")
+                        except Exception as e2:
+                            print(f"Could not query server configuration: {e2}")
+                            
+                        # Try to print client version info
+                        try:
+                            print(f"XRootD client version: {XRootD.client.utils.version()}")
+                        except Exception:
+                            pass
+                except Exception as e:
+                    print(f"Error getting protocol details: {e}")
                 return True
             else:
-                print(f"❌ Site {site} redirector {server} failed Python XRootD ping: {status}")
+                error_code = status.code
+                error_message = status.message
+                print(f"❌ Site {site} redirector {server} failed Python XRootD ping:")
+                print(f"   Error code: {error_code}, Message: {error_message}")
+                
+                # Check for auth failure specifically
+                if "auth failed" in error_message.lower() or "no protocols left" in error_message.lower():
+                    print("Authentication failure detected. Details:")
+                    print(f"  - Current user: {os.environ.get('USER', 'unknown')}")
+                    print(f"  - X509_USER_PROXY: {os.environ.get('X509_USER_PROXY', 'not set')}")
+                    print(f"  - XRD_PLUGIN: {os.environ.get('XRD_PLUGIN', 'not set')}")
+                    print(f"  - XRD_SECPROTOCOLS: {os.environ.get('XRD_SECPROTOCOLS', 'not set')}")
         except Exception as e:
             print(f"Error with Python XRootD ping for {site}: {e}")
+    
+    
+    
     
     # Try using gfal if available
     if xrootd_tools['gfal']:
@@ -434,7 +578,7 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
     
     # If all methods failed
     print(f"❌ Site {site} redirector is not responsive via any available method")
-    return False
+    return False    
 
 def getFilesFromDas(args):
     """Improved getFilesFromDas with multiple fallback strategies"""
