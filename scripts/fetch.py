@@ -358,11 +358,145 @@ def check_site_completion(site, dataset, xrootd_tools):
         traceback.print_exc()
         return 0.0
 
+def verify_x509_proxy():
+    """Verify X509 proxy certificate exists and is valid before XRootD operations"""
+    import os
+    import subprocess
+    import time
+    
+    print("\n==== Verifying X509 Proxy Certificate ====")
+    
+    # Check if we're in CI environment
+    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    
+    # 1. Check if X509_USER_PROXY environment variable is set
+    proxy_path = os.environ.get('X509_USER_PROXY', None)
+    if not proxy_path:
+        print("⚠️ X509_USER_PROXY environment variable not set")
+        
+        # For CI, try common locations
+        if in_ci:
+            ci_proxy_paths = [
+                "/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy",
+                "/btv/software-and-algorithms/autobtv/proxy/x509_proxy",
+                os.path.join(os.environ.get('CI_PROJECT_DIR', ''), "proxy/x509_proxy")
+            ]
+            
+            for path in ci_proxy_paths:
+                if os.path.exists(path):
+                    print(f"✅ Found proxy in CI location: {path}")
+                    os.environ['X509_USER_PROXY'] = path
+                    proxy_path = path
+                    break
+            
+            if not proxy_path:
+                print("❌ No proxy found in standard CI locations")
+                return False
+        else:
+            # For non-CI, try default locations
+            default_paths = [
+                os.path.join(os.environ.get('HOME', ''), "x509up_u" + str(os.getuid())),
+                "/tmp/x509up_u" + str(os.getuid())
+            ]
+            
+            for path in default_paths:
+                if os.path.exists(path):
+                    print(f"✅ Found proxy in default location: {path}")
+                    os.environ['X509_USER_PROXY'] = path
+                    proxy_path = path
+                    break
+            
+            if not proxy_path:
+                print("❌ No proxy found in default locations")
+                return False
+    
+    # 2. Check if proxy file exists
+    if not os.path.exists(proxy_path):
+        print(f"❌ Proxy file does not exist at path: {proxy_path}")
+        return False
+    
+    # 3. Check file permissions and size
+    try:
+        file_stat = os.stat(proxy_path)
+        file_size = file_stat.st_size
+        file_mode = file_stat.st_mode
+        
+        if file_size < 100:  # Sanity check for minimum proxy size
+            print(f"❌ Proxy file is too small ({file_size} bytes), likely invalid")
+            return False
+            
+        print(f"✅ Proxy file exists with size: {file_size} bytes")
+    except Exception as e:
+        print(f"❌ Error checking proxy file: {e}")
+        return False
+    
+    # 4. Check if proxy is valid and not expired
+    try:
+        # First try with grid-proxy-info if available
+        if not in_ci:  # Skip in CI as it often doesn't have grid tools
+            try:
+                result = subprocess.run(['grid-proxy-info', '-exists', '-valid', '1:0'], 
+                                     stderr=subprocess.STDOUT, check=False)
+                if result.returncode == 0:
+                    print("✅ Proxy is valid (verified via grid-proxy-info)")
+                    return True
+                else:
+                    print("❌ Proxy is invalid or expired (grid-proxy-info check failed)")
+            except FileNotFoundError:
+                print("⚠️ grid-proxy-info not found, trying alternative verification")
+        
+        # Alternative: Check with openssl directly
+        try:
+            # Extract expiration date with openssl
+            result = subprocess.run(
+                ['openssl', 'x509', '-in', proxy_path, '-noout', '-enddate'],
+                capture_output=True, text=True, check=True
+            )
+            
+            # Parse expiration time
+            expiry_line = result.stdout.strip()
+            if expiry_line.startswith("notAfter="):
+                expiry_str = expiry_line[9:]  # Remove "notAfter=" prefix
+                
+                # Convert to timestamp for comparison
+                import time
+                from datetime import datetime
+                expiry_time = datetime.strptime(expiry_str, "%b %d %H:%M:%S %Y %Z")
+                current_time = datetime.now()
+                
+                if expiry_time > current_time:
+                    time_left = expiry_time - current_time
+                    hours_left = time_left.total_seconds() / 3600
+                    print(f"✅ Proxy is valid until {expiry_str} ({hours_left:.1f} hours remaining)")
+                    return True
+                else:
+                    print(f"❌ Proxy expired at {expiry_str}")
+                    return False
+        except Exception as e:
+            print(f"⚠️ Could not verify proxy expiration: {e}")
+            # If we can't check expiration but file exists, assume it's valid
+            return True
+    
+    except Exception as e:
+        print(f"❌ Error during proxy verification: {e}")
+        return False
+    
+    print("==== End of Proxy Verification ====\n")
+    return True
+
 def test_individual_protocols(site, server):
     """Test each authentication protocol individually to see which one works"""
     import os
     import time
     from XRootD import client
+    
+    # Check proxy first
+    if not hasattr(test_individual_protocols, 'proxy_verified'):
+        proxy_valid = verify_x509_proxy()
+        test_individual_protocols.proxy_verified = True
+        if not proxy_valid:
+            print("⚠️ WARNING: Protocol tests may fail due to proxy issues")
+    
     
     print(f"\n==== Testing Individual Authentication Protocols for {site} ====")
     
@@ -483,9 +617,17 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
     
     
     # Try using Python XRootD with protocol debugging if available
+    # Verify proxy if using Python XRootD (which requires authentication)
     if xrootd_tools['python_xrootd']:
+        if not hasattr(check_site_responsiveness, 'proxy_verified'):
+            proxy_valid = verify_x509_proxy()
+            check_site_responsiveness.proxy_verified = True  # Only verify once per run
+            if not proxy_valid:
+                print("⚠️ WARNING: XRootD authentication may fail due to proxy issues")
+    
         try:
             from XRootD import client
+            import XRootD
             
             # Check authentication mechanisms configured in environment
             auth_methods = []
@@ -582,6 +724,10 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
 
 def getFilesFromDas(args):
     """Improved getFilesFromDas with multiple fallback strategies"""
+    proxy_valid = verify_x509_proxy()
+    if not proxy_valid:
+        print("⚠️ WARNING: No valid grid proxy found. XRootD operations may fail.")
+        # Continue anyway but warn the user
     # Check if we're in GitLab CI
     in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
     fset = []
