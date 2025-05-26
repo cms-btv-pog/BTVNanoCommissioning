@@ -117,7 +117,86 @@ def improve_ci_xrootd_access():
     redirector = "root://cms-xrd-global.cern.ch/"
     print(f"Using global redirector: {redirector}")
     
+    # Add stronger timeout controls specifically for CI
+    os.environ['XRD_REQUESTTIMEOUT'] = '60'  # Increase from 30 to 60 seconds
+    os.environ['XRD_CONNECTIONWINDOW'] = '30'  # Longer connection window for slow networks
+    os.environ['XRD_STREAMERRORWINDOW'] = '300'  # Time to wait after a stream error
+    os.environ['XRD_STREAMTIMEOUT'] = '60'  # Stream timeout 
+    
+    # Add memory caching for better performance
+    os.environ['XRD_READAHEADSIZE'] = '2097152'  # 2MB read-ahead
+    os.environ['XRD_READCACHESIZE'] = '10485760'  # 10MB cache
+    
+    # Disable IPv6 which can cause delays
+    os.environ['XRD_PREFERIPV4'] = 'true'
+    
+    # Add extra redirectors - adjust the default timeouts in uproot/XRootD
+    try:
+        import uproot
+        # Patch uproot's XRootD timeout at the module level
+        uproot.open.defaults["xrootd_handler"] = uproot.MultithreadedXRootDSource
+        uproot.open.defaults["timeout"] = 120  # Increase default timeout for all operations
+        print("✅ Applied uproot XRootD timeout patches")
+    except (ImportError, AttributeError) as e:
+        print(f"⚠️ Could not patch uproot: {e}")
+        
     return True
+    
+def add_file_level_fallbacks():
+    """Monkey-patch uproot to use fallback redirectors for individual files"""
+    import os
+    
+    try:
+        import uproot
+        from uproot.source.xrootd import XRootDSource
+        import functools
+        
+        # Store the original open method
+        original_open = XRootDSource._open
+        
+        # Create a list of fallback redirectors
+        fallbacks = [
+            "root://cms-xrd-global.cern.ch/",
+            "root://xrootd-cms.infn.it/",
+            "root://cmsxrootd.fnal.gov/"
+        ]
+        
+        # Define our wrapper function with fallbacks
+        @functools.wraps(original_open)
+        def open_with_fallbacks(self):
+            try:
+                return original_open(self)
+            except Exception as original_error:
+                # Extract the file path after /store/
+                if "/store/" in self._file_path:
+                    file_path = "/store/" + self._file_path.split("/store/")[1]
+                    
+                    # Try all fallback redirectors
+                    for fallback in fallbacks:
+                        try:
+                            print(f"⚠️ Primary redirector failed, trying fallback: {fallback}")
+                            # Temporarily modify the file path
+                            original_path = self._file_path
+                            self._file_path = f"{fallback}{file_path}"
+                            
+                            # Try to open with this redirector
+                            result = original_open(self)
+                            print(f"✅ Successfully accessed file via fallback: {fallback}")
+                            return result
+                        except Exception as fallback_error:
+                            # Restore the original path before trying the next fallback
+                            self._file_path = original_path
+                            print(f"❌ Fallback {fallback} also failed: {str(fallback_error)}")
+                    
+                # If all fallbacks fail or file path doesn't contain /store/, raise original error
+                raise original_error
+        
+        # Apply our monkey patch
+        XRootDSource._open = open_with_fallbacks
+        print("✅ Applied XRootD fallback system")
+        
+    except (ImportError, AttributeError) as e:
+        print(f"⚠️ Could not set up XRootD fallbacks: {e}")
 
 # Add this function to sanitize and validate your dataset JSON
 def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
@@ -452,7 +531,7 @@ def validate_and_fix_redirectors(json_path, fallback_redirectors=None):
             py_script_file.write('    with open(json_file, "w") as f:\n')
             py_script_file.write('        json.dump(data, f, indent=4)\n')
             py_script_file.write('    print(f"\\n✅ Updated JSON saved to {json_file}")\n')
-            py_script_file.write('    print(f"📊 Stats: {stats[\\"total\\"]} URLs processed, {stats[\\"fixed\\"]} fixed, {stats[\\"failed\\"]} failed")\n')
+            py_script_file.write('    print(f"📊 Stats: {stats[\'total\']} URLs processed, {stats[\'fixed\']} fixed, {stats[\'failed\']} failed")\n')
             py_script_file.write('else:\n')
             py_script_file.write('    print("✅ No changes needed to JSON file")\n')
         
@@ -692,6 +771,7 @@ if __name__ == "__main__":
                     print("🔧 Setting up XRootD environment for CI...")
                     improve_ci_xrootd_access()
                     fix_ztn_protocol_warning()
+                    add_file_level_fallbacks()  # Add this new function
                     
                     redirector = "root://cms-xrd-global.cern.ch/"
                     # Validate all redirectors in the JSON and try fix if necessary
