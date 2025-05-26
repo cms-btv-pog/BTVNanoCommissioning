@@ -300,20 +300,14 @@ def run_xrootd_command(cmd, server=None, timeout=30):
             script_file.write('echo "Starting XRootD operation from temp script"\n')
             script_file.write('echo "Command: ' + cmd + '"\n\n')
             
-            # Find and set up proxy
-            script_file.write('echo "Setting up X509 proxy for XRootD..."\n')
-            script_file.write('PROXY_FOUND=false\n')
-            script_file.write('for PROXY_PATH in "/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy" "/btv/software-and-algorithms/autobtv/proxy/x509_proxy" "${CI_PROJECT_DIR}/proxy/x509_proxy"; do\n')
-            script_file.write('    if [ -f "$PROXY_PATH" ]; then\n')
-            script_file.write('        export X509_USER_PROXY="$PROXY_PATH"\n')
-            script_file.write('        echo "Found and using proxy at $X509_USER_PROXY"\n')
-            script_file.write('        ls -la "$X509_USER_PROXY"\n')
-            script_file.write('        PROXY_FOUND=true\n')
-            script_file.write('        break\n')
-            script_file.write('    fi\n')
-            script_file.write('done\n\n')
-            
-            script_file.write('if [ "$PROXY_FOUND" = false ]; then\n')
+            # Use the same simple and effective proxy detection as run_das_command
+            script_file.write('echo "Checking for proxy..."\n')
+            script_file.write('if [ -n "$X509_USER_PROXY" ] && [ -f "$X509_USER_PROXY" ]; then\n')
+            script_file.write('    echo "Using proxy from $X509_USER_PROXY"\n')
+            script_file.write('elif [ -f "${CI_PROJECT_DIR}/proxy/x509_proxy" ]; then\n')
+            script_file.write('    export X509_USER_PROXY="${CI_PROJECT_DIR}/proxy/x509_proxy"\n')
+            script_file.write('    echo "Found and using proxy at ${X509_USER_PROXY}"\n')
+            script_file.write('else\n')
             script_file.write('    echo "WARNING: No proxy found! XRootD operations may fail."\n')
             script_file.write('fi\n\n')
             
@@ -321,13 +315,10 @@ def run_xrootd_command(cmd, server=None, timeout=30):
             script_file.write('# Set up XRootD environment\n')
             script_file.write('export XRD_CONNECTIONRETRY=3\n')
             script_file.write('export XRD_REQUESTTIMEOUT=60\n')
-            script_file.write('export XRD_CONNECTIONWINDOW=30\n')
-            script_file.write('export XRD_STREAMERRORWINDOW=300\n')
-            script_file.write('export XRD_PREFERIPV4=true\n')
             script_file.write('export XRD_PLUGIN=gsi\n')
-            script_file.write('export XRD_SECPROTOCOLS=gsi,tls,unix\n\n')
+            script_file.write('export XRD_SECPROTOCOLS=gsi\n\n')
             
-            # Add CMS environment if available
+            # Source CMS environment
             script_file.write('if [ -f /cvmfs/cms.cern.ch/cmsset_default.sh ]; then\n')
             script_file.write('    source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
             script_file.write('    echo "Sourced CMS environment"\n')
@@ -337,7 +328,6 @@ def run_xrootd_command(cmd, server=None, timeout=30):
             script_file.write('echo "Executing XRootD command..."\n')
             script_file.write(f'{cmd}\n')
             script_file.write('XROOTD_EXIT_CODE=$?\n')
-            script_file.write('echo "XRootD command exit code: $XROOTD_EXIT_CODE"\n')
             script_file.write('exit $XROOTD_EXIT_CODE\n')
         
         # Make script executable
