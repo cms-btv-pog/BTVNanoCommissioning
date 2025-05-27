@@ -191,7 +191,7 @@ def run_das_command(cmd):
     #print(f"Original command: {cmd}")
     
     # Check if we're in GitLab CI
-    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    in_ci = determine_execution_mode()
     
     if in_ci:
         # Extract the query part
@@ -586,7 +586,7 @@ def check_site_completion(site, dataset, xrootd_tools):
     """Check what percentage of the dataset is available at the site by directly counting files"""
     try:
         # Get total file list once for the entire dataset
-        in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+        in_ci = determine_execution_mode()
         
         if in_ci:
             total_files_cmd = f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} | grep file.name\""
