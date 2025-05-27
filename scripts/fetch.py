@@ -151,6 +151,34 @@ def get_xrootd_sites_map():
 
     return json.load(open(".sites_map.json"))
 
+def determine_execution_mode():
+    """
+    Determine whether to use CI execution mode or local execution mode.
+    Returns True for CI mode, False for local mode.
+    """
+    import os
+    
+    # First check if we're in CI at all
+    in_ci_environment = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    
+    # If not in CI, always use local execution mode
+    if not in_ci_environment:
+        return False
+    
+    # If in CI, check if we're in the btv_coffea environment
+    conda_env = os.environ.get('CONDA_DEFAULT_ENV', '')
+    conda_prefix = os.environ.get('CONDA_PREFIX', '')
+    
+    in_btv_coffea = ('btv_coffea' in conda_env or 'btv_coffea' in conda_prefix)
+    
+    # If we're in the btv_coffea environment in CI, use local execution mode
+    if in_btv_coffea:
+        print("📌 Detected btv_coffea environment in CI - using local execution mode")
+        return False
+        
+    # Otherwise, use CI execution mode
+    return True
+
 def run_das_command(cmd):
     """Run a DAS command with proper environment in micromamba"""
     import os
@@ -163,7 +191,7 @@ def run_das_command(cmd):
     #print(f"Original command: {cmd}")
     
     # Check if we're in GitLab CI
-    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    in_ci = determine_execution_mode()
     
     if in_ci:
         # Extract the query part
@@ -291,7 +319,7 @@ def run_python_xrootd_ping(server, site, timeout=10):
     import os
     
     # Check if we're in CI
-    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    in_ci = determine_execution_mode()
     
     if in_ci:
         # Create a temporary Python script that will be executed by bash
@@ -435,7 +463,7 @@ def run_xrdfs_command(server, timeout=5):
     import time
     
     # Check if we're in CI
-    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    in_ci = determine_execution_mode()
     
     if in_ci:
         with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
@@ -558,7 +586,7 @@ def check_site_completion(site, dataset, xrootd_tools):
     """Check what percentage of the dataset is available at the site by directly counting files"""
     try:
         # Get total file list once for the entire dataset
-        in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+        in_ci = determine_execution_mode()
         
         if in_ci:
             total_files_cmd = f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} | grep file.name\""
@@ -708,7 +736,7 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
             start_time = time.time()
             
             # Run xrdfs command directly in local mode
-            in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+            in_ci = determine_execution_mode()
             if not in_ci:
                 # Direct local execution
                 cmd = ["xrdfs", server, "ping"]
@@ -779,7 +807,7 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
 def getFilesFromDas(args):
     """Improved getFilesFromDas with multiple fallback strategies"""
     # Check if we're in GitLab CI
-    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    in_ci = determine_execution_mode()
     fset = []
     with open(args.input) as fp:
         lines = fp.readlines()
@@ -1152,7 +1180,7 @@ def direct_das_query(dataset_name, campaign_pattern):
     
     try:
         # Check if we're in CI environment
-        in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+        in_ci = determine_execution_mode()
         
         if not in_ci:
             # For local environment - use direct dasgoclient call
