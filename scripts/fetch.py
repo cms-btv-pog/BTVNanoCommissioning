@@ -426,6 +426,105 @@ except Exception as e:
                 'message': str(e),
                 'response_time': time.time() - start_time
             }
+            
+def run_xrdfs_command(server, timeout=5):
+    """Run xrdfs command directly in bash script for CI environment"""
+    import tempfile
+    import subprocess
+    import os
+    import time
+    
+    # Check if we're in CI
+    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    
+    if in_ci:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
+            script_path = script_file.name
+            script_file.write('#!/bin/bash\n\n')
+            script_file.write('echo "Starting xrdfs operation from temp script"\n\n')
+            
+            # Use the same proxy detection as run_das_command
+            script_file.write('echo "Checking for proxy..."\n')
+            script_file.write('if [ -n "$X509_USER_PROXY" ] && [ -f "$X509_USER_PROXY" ]; then\n')
+            script_file.write('    echo "Using proxy from $X509_USER_PROXY"\n')
+            script_file.write('elif [ -f "${CI_PROJECT_DIR}/proxy/x509_proxy" ]; then\n')
+            script_file.write('    export X509_USER_PROXY="${CI_PROJECT_DIR}/proxy/x509_proxy"\n')
+            script_file.write('    echo "Found and using proxy at ${X509_USER_PROXY}"\n')
+            script_file.write('else\n')
+            script_file.write('    echo "WARNING: No proxy found! XRootD operations may fail."\n')
+            script_file.write('fi\n\n')
+            
+            # Set up XRootD environment variables
+            script_file.write('# Set up XRootD environment\n')
+            script_file.write('export XRD_CONNECTIONRETRY=3\n')
+            script_file.write('export XRD_REQUESTTIMEOUT=60\n')
+            script_file.write('export XRD_PLUGIN=gsi\n')
+            script_file.write('export XRD_SECPROTOCOLS=gsi\n\n')
+            
+            # Source CMS environment
+            script_file.write('if [ -f /cvmfs/cms.cern.ch/cmsset_default.sh ]; then\n')
+            script_file.write('    source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
+            script_file.write('    echo "Sourced CMS environment"\n')
+            script_file.write('fi\n\n')
+            
+            # Find xrdfs executable
+            script_file.write('# Find xrdfs executable\n')
+            script_file.write('XRDFS_PATH=$(which xrdfs 2>/dev/null)\n')
+            script_file.write('if [ -z "$XRDFS_PATH" ]; then\n')
+            script_file.write('    for candidate in "/cvmfs/cms.cern.ch/slc7_amd64_gcc820/cms/xrootd/4.8.5-pafccj3/bin/xrdfs" "/usr/bin/xrdfs"; do\n')
+            script_file.write('        if [ -f "$candidate" ]; then\n')
+            script_file.write('            XRDFS_PATH="$candidate"\n')
+            script_file.write('            echo "Found xrdfs at $XRDFS_PATH"\n')
+            script_file.write('            break\n')
+            script_file.write('        fi\n')
+            script_file.write('    done\n')
+            script_file.write('else\n')
+            script_file.write('    echo "Using xrdfs from PATH: $XRDFS_PATH"\n')
+            script_file.write('fi\n\n')
+            
+            script_file.write('if [ -z "$XRDFS_PATH" ]; then\n')
+            script_file.write('    echo "ERROR: xrdfs not found!"\n')
+            script_file.write('    exit 1\n')
+            script_file.write('fi\n\n')
+            
+            # Execute the xrdfs command
+            script_file.write('echo "Executing xrdfs ping command..."\n')
+            script_file.write(f'$XRDFS_PATH {server} ping\n')
+            script_file.write('XRDFS_EXIT_CODE=$?\n')
+            script_file.write('echo "xrdfs exit code: $XRDFS_EXIT_CODE"\n')
+            script_file.write('exit $XRDFS_EXIT_CODE\n')
+        
+        # Make script executable
+        os.chmod(script_path, 0o755)
+        
+        try:
+            # Execute the bash script
+            start_time = time.time()
+            result = subprocess.run([script_path], 
+                                   capture_output=True, 
+                                   text=True,
+                                   timeout=timeout)
+            response_time = time.time() - start_time
+            
+            return {
+                'success': result.returncode == 0,
+                'returncode': result.returncode,
+                'stdout': result.stdout,
+                'stderr': result.stderr,
+                'response_time': response_time
+            }
+        finally:
+            # Clean up temp files
+            os.unlink(script_path)
+    else:
+        # For local execution, this function should not be called
+        # Return a clear error
+        return {
+            'success': False,
+            'returncode': -1,
+            'message': "run_xrdfs_command called in local mode",
+            'response_time': 0
+        }
     
 def check_xrootd_availability():
     """Check if XRootD tools are available in the current environment"""
@@ -608,16 +707,31 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
         try:
             start_time = time.time()
             
-            # Use the bash script wrapper for CI
-            cmd = f"xrdfs {server} ping"
-            result = run_python_xrootd_ping(server, site)
-            response_time = time.time() - start_time
-            
-            if result['returncode'] == 0:
-                print(f"✅ Site {site} redirector {server} is responsive via xrdfs (response time: {response_time:.2f}s)")
-                return True
+            # Run xrdfs command directly in local mode
+            in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+            if not in_ci:
+                # Direct local execution
+                cmd = ["xrdfs", server, "ping"]
+                result = subprocess.run(cmd, capture_output=True, timeout=5)
+                response_time = time.time() - start_time
+                
+                if result.returncode == 0:
+                    print(f"✅ Site {site} redirector {server} is responsive via xrdfs (response time: {response_time:.2f}s)")
+                    return True
+                else:
+                    print(f"❌ Site {site} redirector {server} failed xrdfs ping")
             else:
-                print(f"❌ Site {site} redirector {server} failed xrdfs ping")
+                # Use the bash script wrapper for CI
+                result = run_xrdfs_command(server, timeout=5)
+                response_time = result.get('response_time', 0)
+                
+                if result.get('success', False):
+                    print(f"✅ Site {site} redirector {server} is responsive via xrdfs (response time: {response_time:.2f}s)")
+                    return True
+                else:
+                    print(f"❌ Site {site} redirector {server} failed xrdfs ping")
+                    if 'stdout' in result:
+                        print(result['stdout'])
         except Exception as e:
             print(f"Error with xrdfs ping for {site}: {e}")
     
