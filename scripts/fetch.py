@@ -179,6 +179,35 @@ def determine_execution_mode():
     # Otherwise, use CI execution mode
     return True
 
+def get_dasgoclient_command():
+    """Get the full path to dasgoclient executable"""
+    import os
+    import shutil
+    
+    # Check if explicitly set in environment
+    das_path = os.environ.get('DASGOCLIENT_PATH', '')
+    if das_path and os.path.exists(das_path):
+        return das_path
+    
+    # Check if it's in PATH
+    in_path = shutil.which('dasgoclient')
+    if in_path:
+        return 'dasgoclient'
+    
+    # Try standard locations
+    for path in [
+        '/cvmfs/cms.cern.ch/common/dasgoclient',
+        '/cms.cern.ch/common/dasgoclient',
+        '/usr/local/bin/dasgoclient'
+    ]:
+        if os.path.exists(path):
+            print(f"Found dasgoclient at: {path}")
+            return path
+    
+    # Fallback to the name and let the system handle it
+    print("WARNING: Could not find dasgoclient, using default name")
+    return 'dasgoclient'
+
 def run_das_command(cmd):
     """Run a DAS command with proper environment in micromamba"""
     import os
@@ -308,7 +337,14 @@ def run_das_command(cmd):
             
     else:
         # Local environment - unchanged
-        print(f"Executing local command with os.popen: {cmd}")
+        dasgoclient_path = get_dasgoclient_command()
+        
+        # Replace dasgoclient with full path if needed
+        if dasgoclient_path != 'dasgoclient' and 'dasgoclient' in cmd:
+            cmd = cmd.replace('dasgoclient', dasgoclient_path)
+            print(f"Using full dasgoclient path: {cmd}")
+        
+        print("Executing local command with os.popen:", cmd)
         result = os.popen(cmd).read().splitlines()
         return result
     
