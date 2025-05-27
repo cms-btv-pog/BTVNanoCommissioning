@@ -807,16 +807,20 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
             # Use the bash script wrapper for Python XRootD
             result = run_python_xrootd_ping(server, site)
             
-            if result['success']:
+            if result.get('success', False):
                 print(f"✅ Site {site} redirector {server} is responsive via Python XRootD")
-                # Print stdout to see all the details
-                print(result['stdout'])
+                # Only try to print stdout if it exists, otherwise print the message
+                if 'stdout' in result:
+                    print(result['stdout'])
+                elif 'message' in result:
+                    print(f"Response info: {result.get('message', '')}")
                 return True
             else:
                 print(f"❌ Site {site} redirector {server} failed Python XRootD ping:")
-                print(result['stdout'])  # Show the detailed output
-                if 'stderr' in result:
-                    print(result['stderr'])
+                # Safely access all potential keys
+                for key in ['stdout', 'stderr', 'message']:
+                    if key in result:
+                        print(f"{key}: {result[key]}")
         except Exception as e:
             print(f"Error with Python XRootD ping for {site}: {e}")
     
