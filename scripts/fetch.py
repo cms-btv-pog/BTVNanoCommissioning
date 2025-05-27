@@ -284,23 +284,74 @@ def run_das_command(cmd):
         result = os.popen(cmd).read().splitlines()
         return result
     
-def run_xrootd_command(cmd, server=None, timeout=30):
-    """Run an XRootD command with proper environment setup in CI"""
-    import os
-    import subprocess
+def run_python_xrootd_ping(server, site, timeout=10):
+    """Run Python XRootD ping operation through a bash script to ensure proxy is properly set"""
     import tempfile
+    import subprocess
+    import os
     
-    # Check if we're in GitLab CI
+    # Check if we're in CI
     in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
     
     if in_ci:
+        # Create a temporary Python script that will be executed by bash
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as python_file:
+            python_path = python_file.name
+            
+            # Write a self-contained Python script
+            python_file.write('''
+import sys
+import os
+import time
+from XRootD import client
+
+# Get server from command line
+server = sys.argv[1]
+site = sys.argv[2]
+
+# Print environment info
+print("XRootD environment settings:")
+xrd_vars = [var for var in os.environ if var.startswith('XRD_')]
+for var in xrd_vars:
+    print(f"  {var}={os.environ[var]}")
+
+if 'X509_USER_PROXY' in os.environ:
+    print(f"Using X509_USER_PROXY: {os.environ['X509_USER_PROXY']}")
+    if os.path.exists(os.environ['X509_USER_PROXY']):
+        print(f"  Proxy file exists, size: {os.path.getsize(os.environ['X509_USER_PROXY'])} bytes")
+    else:
+        print(f"  WARNING: Proxy file doesn't exist!")
+
+# Try the connection
+print("Attempting XRootD connection...")
+start_time = time.time()
+
+try:
+    # Create a connection with detailed flags
+    fs = client.FileSystem(f'root://{server}')
+    
+    # Execute a ping operation
+    status, response = fs.ping()
+    response_time = time.time() - start_time
+    
+    if status.ok:
+        print(f"SUCCESS: Site {site} redirector {server} responsive ({response_time:.2f}s)")
+        sys.exit(0)
+    else:
+        print(f"FAILED: {status.message}")
+        sys.exit(1)
+except Exception as e:
+    print(f"ERROR: {str(e)}")
+    sys.exit(2)
+''')
+        
+        # Create the bash wrapper script that sets up the environment
         with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
             script_path = script_file.name
             script_file.write('#!/bin/bash\n\n')
-            script_file.write('echo "Starting XRootD operation from temp script"\n')
-            script_file.write('echo "Command: ' + cmd + '"\n\n')
+            script_file.write('echo "Starting XRootD Python operation from temp script"\n\n')
             
-            # Use the same simple and effective proxy detection as run_das_command
+            # Use the same proxy detection as run_das_command
             script_file.write('echo "Checking for proxy..."\n')
             script_file.write('if [ -n "$X509_USER_PROXY" ] && [ -f "$X509_USER_PROXY" ]; then\n')
             script_file.write('    echo "Using proxy from $X509_USER_PROXY"\n')
@@ -324,58 +375,56 @@ def run_xrootd_command(cmd, server=None, timeout=30):
             script_file.write('    echo "Sourced CMS environment"\n')
             script_file.write('fi\n\n')
             
-            # Execute the XRootD command
-            script_file.write('echo "Executing XRootD command..."\n')
-            script_file.write(f'{cmd}\n')
+            # Execute the Python script
+            script_file.write(f'python3 {python_path} {server} {site}\n')
             script_file.write('XROOTD_EXIT_CODE=$?\n')
             script_file.write('exit $XROOTD_EXIT_CODE\n')
         
-        # Make script executable
+        # Make scripts executable
         os.chmod(script_path, 0o755)
+        os.chmod(python_path, 0o644)
         
-        # Execute the script
         try:
+            # Execute the bash script
             result = subprocess.run([script_path], 
                                    capture_output=True, 
                                    text=True,
                                    timeout=timeout)
             
-            if result.returncode != 0:
-                print(f"XRootD command failed with code {result.returncode}")
-                print(f"Error: {result.stderr}")
-            
+            success = result.returncode == 0
             return {
+                'success': success,
                 'returncode': result.returncode,
                 'stdout': result.stdout,
                 'stderr': result.stderr
-            }
-        except subprocess.TimeoutExpired:
-            print(f"XRootD command timed out after {timeout} seconds")
-            return {
-                'returncode': 1,
-                'stdout': '',
-                'stderr': f'Command timed out after {timeout} seconds'
             }
         finally:
-            # Clean up the temp script
+            # Clean up temp files
             os.unlink(script_path)
+            os.unlink(python_path)
     else:
-        # For local execution, just run the command directly
+        # For local execution, use direct Python approach
+        from XRootD import client
+        import time
+        
+        start_time = time.time()
         try:
-            result = subprocess.run(cmd.split(), 
-                                   capture_output=True, 
-                                   text=True,
-                                   timeout=timeout)
+            fs = client.FileSystem(f'root://{server}')
+            status, response = fs.ping()
+            response_time = time.time() - start_time
+            
+            success = status.ok
+            message = "" if success else status.message
             return {
-                'returncode': result.returncode,
-                'stdout': result.stdout,
-                'stderr': result.stderr
+                'success': success,
+                'message': message,
+                'response_time': response_time
             }
-        except subprocess.TimeoutExpired:
+        except Exception as e:
             return {
-                'returncode': 1,
-                'stdout': '',
-                'stderr': f'Command timed out after {timeout} seconds'
+                'success': False,
+                'message': str(e),
+                'response_time': time.time() - start_time
             }
     
 def check_xrootd_availability():
@@ -452,145 +501,12 @@ def check_site_completion(site, dataset, xrootd_tools):
         traceback.print_exc()
         return 0.0
 
-def verify_x509_proxy():
-    """Verify X509 proxy certificate exists and is valid before XRootD operations"""
-    import os
-    import subprocess
-    import time
-    
-    print("\n==== Verifying X509 Proxy Certificate ====")
-    
-    # Check if we're in CI environment
-    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
-    
-    # 1. Check if X509_USER_PROXY environment variable is set
-    proxy_path = os.environ.get('X509_USER_PROXY', None)
-    if not proxy_path:
-        print("⚠️ X509_USER_PROXY environment variable not set")
-        
-        # For CI, try common locations
-        if in_ci:
-            ci_proxy_paths = [
-                "/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy",
-                "/btv/software-and-algorithms/autobtv/proxy/x509_proxy",
-                os.path.join(os.environ.get('CI_PROJECT_DIR', ''), "proxy/x509_proxy")
-            ]
-            
-            for path in ci_proxy_paths:
-                if os.path.exists(path):
-                    print(f"✅ Found proxy in CI location: {path}")
-                    os.environ['X509_USER_PROXY'] = path
-                    proxy_path = path
-                    break
-            
-            if not proxy_path:
-                print("❌ No proxy found in standard CI locations")
-                return False
-        else:
-            # For non-CI, try default locations
-            default_paths = [
-                os.path.join(os.environ.get('HOME', ''), "x509up_u" + str(os.getuid())),
-                "/tmp/x509up_u" + str(os.getuid())
-            ]
-            
-            for path in default_paths:
-                if os.path.exists(path):
-                    print(f"✅ Found proxy in default location: {path}")
-                    os.environ['X509_USER_PROXY'] = path
-                    proxy_path = path
-                    break
-            
-            if not proxy_path:
-                print("❌ No proxy found in default locations")
-                return False
-    
-    # 2. Check if proxy file exists
-    if not os.path.exists(proxy_path):
-        print(f"❌ Proxy file does not exist at path: {proxy_path}")
-        return False
-    
-    # 3. Check file permissions and size
-    try:
-        file_stat = os.stat(proxy_path)
-        file_size = file_stat.st_size
-        file_mode = file_stat.st_mode
-        
-        if file_size < 100:  # Sanity check for minimum proxy size
-            print(f"❌ Proxy file is too small ({file_size} bytes), likely invalid")
-            return False
-            
-        print(f"✅ Proxy file exists with size: {file_size} bytes")
-    except Exception as e:
-        print(f"❌ Error checking proxy file: {e}")
-        return False
-    
-    # 4. Check if proxy is valid and not expired
-    try:
-        # First try with grid-proxy-info if available
-        if not in_ci:  # Skip in CI as it often doesn't have grid tools
-            try:
-                result = subprocess.run(['grid-proxy-info', '-exists', '-valid', '1:0'], 
-                                     stderr=subprocess.STDOUT, check=False)
-                if result.returncode == 0:
-                    print("✅ Proxy is valid (verified via grid-proxy-info)")
-                    return True
-                else:
-                    print("❌ Proxy is invalid or expired (grid-proxy-info check failed)")
-            except FileNotFoundError:
-                print("⚠️ grid-proxy-info not found, trying alternative verification")
-        
-        # Alternative: Check with openssl directly
-        try:
-            # Extract expiration date with openssl
-            result = subprocess.run(
-                ['openssl', 'x509', '-in', proxy_path, '-noout', '-enddate'],
-                capture_output=True, text=True, check=True
-            )
-            
-            # Parse expiration time
-            expiry_line = result.stdout.strip()
-            if expiry_line.startswith("notAfter="):
-                expiry_str = expiry_line[9:]  # Remove "notAfter=" prefix
-                
-                # Convert to timestamp for comparison
-                import time
-                from datetime import datetime
-                expiry_time = datetime.strptime(expiry_str, "%b %d %H:%M:%S %Y %Z")
-                current_time = datetime.now()
-                
-                if expiry_time > current_time:
-                    time_left = expiry_time - current_time
-                    hours_left = time_left.total_seconds() / 3600
-                    print(f"✅ Proxy is valid until {expiry_str} ({hours_left:.1f} hours remaining)")
-                    return True
-                else:
-                    print(f"❌ Proxy expired at {expiry_str}")
-                    return False
-        except Exception as e:
-            print(f"⚠️ Could not verify proxy expiration: {e}")
-            # If we can't check expiration but file exists, assume it's valid
-            return True
-    
-    except Exception as e:
-        print(f"❌ Error during proxy verification: {e}")
-        return False
-    
-    print("==== End of Proxy Verification ====\n")
-    return True
 
 def test_individual_protocols(site, server):
     """Test each authentication protocol individually to see which one works"""
     import os
     import time
     from XRootD import client
-    
-    # Check proxy first
-    if not hasattr(test_individual_protocols, 'proxy_verified'):
-        proxy_valid = verify_x509_proxy()
-        test_individual_protocols.proxy_verified = True
-        if not proxy_valid:
-            print("⚠️ WARNING: Protocol tests may fail due to proxy issues")
-    
     
     print(f"\n==== Testing Individual Authentication Protocols for {site} ====")
     
@@ -694,7 +610,7 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
             
             # Use the bash script wrapper for CI
             cmd = f"xrdfs {server} ping"
-            result = run_xrootd_command(cmd, server, timeout=5)
+            result = run_python_xrootd_ping(server, site)
             response_time = time.time() - start_time
             
             if result['returncode'] == 0:
@@ -708,38 +624,21 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
     # Try using Python XRootD
     if xrootd_tools['python_xrootd']:
         try:
-            # For Python XRootD, we need to ensure the proxy is set up
-            in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
-            if in_ci:
-                # Run a simple proxy setup script before using Python XRootD
-                proxy_result = run_xrootd_command("echo 'Setting up proxy for Python XRootD'", timeout=2)
-                # The script will have set up the proxy in the environment
+            print("Attempting XRootD connection through bash script...")
             
-            from XRootD import client
+            # Use the bash script wrapper for Python XRootD
+            result = run_python_xrootd_ping(server, site)
             
-            # Print current XRootD environment settings
-            print("XRootD environment settings:")
-            xrd_vars = [var for var in os.environ if var.startswith('XRD_')]
-            for var in xrd_vars:
-                print(f"  {var}={os.environ[var]}")
-                
-            # Try with explicit protocol debugging
-            print("Attempting XRootD connection with debug information...")
-            start_time = time.time()
-            
-            # Create a connection with detailed flags
-            fs = client.FileSystem(f'root://{server}')
-            
-            # Execute a ping operation
-            status, response = fs.ping()
-            response_time = time.time() - start_time
-            
-            if status.ok:
-                print(f"✅ Site {site} redirector {server} is responsive via Python XRootD (response time: {response_time:.2f}s)")
-                # Rest of the function remains the same
+            if result['success']:
+                print(f"✅ Site {site} redirector {server} is responsive via Python XRootD")
+                # Print stdout to see all the details
+                print(result['stdout'])
                 return True
             else:
-                print(f"❌ Site {site} redirector {server} failed Python XRootD ping: {status.message}")
+                print(f"❌ Site {site} redirector {server} failed Python XRootD ping:")
+                print(result['stdout'])  # Show the detailed output
+                if 'stderr' in result:
+                    print(result['stderr'])
         except Exception as e:
             print(f"Error with Python XRootD ping for {site}: {e}")
     
@@ -765,10 +664,6 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools):
 
 def getFilesFromDas(args):
     """Improved getFilesFromDas with multiple fallback strategies"""
-    proxy_valid = verify_x509_proxy()
-    if not proxy_valid:
-        print("⚠️ WARNING: No valid grid proxy found. XRootD operations may fail.")
-        # Continue anyway but warn the user
     # Check if we're in GitLab CI
     in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
     fset = []
