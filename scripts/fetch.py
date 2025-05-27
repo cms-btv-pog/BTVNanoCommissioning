@@ -191,7 +191,7 @@ def run_das_command(cmd):
     #print(f"Original command: {cmd}")
     
     # Check if we're in GitLab CI
-    in_ci = determine_execution_mode()
+    in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
     
     if in_ci:
         # Extract the query part
@@ -586,7 +586,7 @@ def check_site_completion(site, dataset, xrootd_tools):
     """Check what percentage of the dataset is available at the site by directly counting files"""
     try:
         # Get total file list once for the entire dataset
-        in_ci = determine_execution_mode()
+        in_ci = 'CI' in os.environ or 'GITLAB_CI' in os.environ
         
         if in_ci:
             total_files_cmd = f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} | grep file.name\""
@@ -1184,7 +1184,7 @@ def direct_das_query(dataset_name, campaign_pattern):
         
         if not in_ci:
             # For local environment - use direct dasgoclient call
-            cmd = f"/cvmfs/cms.cern.ch/common/dasgoclient -query=\"instance=prod/global {query}\""
+            cmd = f"dasgoclient -query=\"instance=prod/global {query}\""
             print(f"Local command: {cmd}")
             # Use the already-working run_das_command function instead of os.popen
             output = run_das_command(cmd)
