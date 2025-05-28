@@ -151,6 +151,7 @@ options:
 You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
 
 
+
 ```bash
 # with merge map, compare ttbar with data
 python scripts/comparison.py -i "*.coffea" --mergemap '{"ttbar": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8","TTto4Q_TuneCP5_13p6TeV_powheg-pythia8","TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8],"data":["MuonRun2022C-27Jun2023-v1","MuonRun2022D-27Jun2023-v1"]}' -r ttbar -c data -v mu_pt  -p ttdilep_sf
@@ -159,6 +160,19 @@ python scripts/comparison.py -i datac.coffea,datad.coffea -r MuonRun2022C-27Jun2
 
 ```
 
+In [#128](https://github.com/cms-btv-pog/BTVNanoCommissioning/pull/128), comparisons with same dataset name is possible, but require different configurations for mergemap
+
+```json
+{
+# group the name of coffea file and key name later
+"fname":{
+"reference" : "coffea file of reference" 
+"comparison 1" : "coffea file of comparison 1"
+"comparison 2" : "coffea file of comparison 2"
+},
+"dataset":["dataset name"] # list of dataset names, "ttbar": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8","TTto4Q_TuneCP5_13p6TeV_powheg-pythia8"]
+}
+```
 
 
  ```
@@ -178,7 +192,7 @@ options:
   --ext EXT             prefix name
   --com COM             sqrt(s) in TeV
   --mergemap MERGEMAP
-                        Group list of sample(keys in coffea) as reference/compare set as dictionary format. Keys would be the new lables of the group
+                        Group list of sample(keys in coffea) as reference/compare set as dictionary format. Keys would be the new lables of the group. Now also accept .json file
    --autorebin AUTOREBIN
                         Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)
    --xlabel XLABEL      rename the label for x-axis
