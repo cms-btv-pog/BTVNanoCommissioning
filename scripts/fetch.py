@@ -151,34 +151,23 @@ def get_xrootd_sites_map():
 
     return json.load(open(".sites_map.json"))
 
-def join_xrootd_path(redirector, filepath):
+def _get_pfn_for_site(path, rules):
     """
-    Intelligently join redirector and filepath for XRootD URLs
-    while preserving existing formats and fixing only problematic cases.
+    Utility function that converts the file path to a valid pfn matching
+    the file path with the site rules (regexes).
     """
-    # If filepath is already a complete URL, return it unchanged
-    if filepath.startswith('root://'):
-        return filepath
-        
-    # If redirector doesn't end with root:// protocol, assume it's just a path
-    if not redirector.startswith('root://'):
-        return filepath
-    
-    # Fix only the obvious error case - triple slash
-    if redirector.endswith('/') and filepath.startswith('//'):
-        # Remove one slash from filepath to avoid creating ///
-        filepath = filepath[1:]
-        
-    # Normal join preserving existing slash patterns
-    if redirector.endswith('/') and filepath.startswith('/'):
-        # Both have slashes, remove one
-        return redirector + filepath[1:]
-    elif not redirector.endswith('/') and not filepath.startswith('/'):
-        # Neither has slash, add one
-        return redirector + '/' + filepath
+    if isinstance(rules, dict):
+        for rule, pfn in rules.items():
+            if m := re.match(rule, path):
+                grs = m.groups()
+                for i in range(len(grs)):
+                    pfn = pfn.replace(f"${i+1}", grs[i])
+                return pfn
     else:
-        # One has slash, which is what we want
-        return redirector + filepath
+        # not adding any slash as the path usually starts with it
+        if path.startswith("/"):
+             path = path[1:]
+        return rules + "/" + path
     
 def determine_execution_mode():
     """
@@ -1076,9 +1065,9 @@ def getFilesFromDas(args):
         
         # Add files to dictionary
         if dsname not in fdict:
-            fdict[dsname] = [join_xrootd_path(xrd, f) for f in flist if len(f) > 1]
+            fdict[dsname] = [_get_pfn_for_site(f, xrd) for f in flist if len(f) > 1]
         else:
-            fdict[dsname].extend([join_xrootd_path(xrd, f) for f in flist if len(f) > 1])
+            fdict[dsname].extend([_get_pfn_for_site(f, xrd) for f in flist if len(f) > 1])
         
         print(f"Added {len(fdict[dsname])} files for dataset {dsname}")
     
