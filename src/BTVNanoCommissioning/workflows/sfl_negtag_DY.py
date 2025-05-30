@@ -1,9 +1,9 @@
 import awkward as ak
 import numpy as np
-import os
-import uproot
+import os  # noqa: F401
+import uproot  # noqa: F401
 from coffea import processor
-from coffea.analysis_tools import Weights
+from coffea.analysis_tools import Weights  # noqa: F401
 
 from BTVNanoCommissioning.utils.correction import (
     load_lumi,
@@ -12,13 +12,13 @@ from BTVNanoCommissioning.utils.correction import (
     common_shifts,
 )
 
-from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
+from BTVNanoCommissioning.helpers.func import update, dump_lumi
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
-    jet_id,
+    jet_id,  # noqa: F401
     mu_idiso,
     ele_mvatightid,
     MET_filters,
@@ -65,7 +65,12 @@ class NanoProcessor(processor.ProcessorABC):
         isRealData = not hasattr(events, "genWeight")
 
         # TODO: check which triggers to use
-        triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8", "Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"]
+        triggers = [
+            "Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8",
+            "Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",
+        ]
+
+        # print("Available HLT paths:\n", events.HLT.fields)
 
         histname = "sfl_negtag_DY"
         output = {} if self.noHist else histogrammer(events, histname)
@@ -93,36 +98,79 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Muon cuts
         # TODO: check if muon object selection cuts could be optimised
-        muons = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
-
+        muons = events.Muon[
+            (events.Muon.pt > 12)
+            & mu_idiso(events, self._campaign)
+            & (abs(events.Muon.eta) < 2.5)
+        ]
+        muons_tag = ak.with_field(
+            muons, ak.full_like(muons.pt, 13, dtype=int), "flavor"
+        )
         # Electron cuts
         # TODO: check if electron object selection cuts could be optimised
         electrons = events.Electron[
-            (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
+            (events.Electron.pt > 15)
+            & ele_mvatightid(events, self._campaign)
+            & (abs(events.Electron.eta) < 2.5)
         ]
 
+        electrons_tag = ak.with_field(
+            electrons, ak.full_like(electrons.pt, 11, dtype=int), "flavor"
+        )
+
         # TODO add requirement to have at least two electrons or at least two muons
-        req_dilep = True
+        nmu = ak.num(muons, axis=1)
+        nel = ak.num(electrons, axis=1)
+        req_dilep = (nmu >= 2) | (nel >= 2)
 
-        # TODO: implement logic to find lepton pairs from muons and electrons 
-
+        # TODO: implement logic to find lepton pairs from muons and electrons
+        leptons = ak.concatenate([muons_tag, electrons_tag], axis=1)
+        dilepton = ak.combinations(leptons, 2, fields=["l1", "l2"])
+        dilepton = dilepton[
+            (dilepton.l1.charge != dilepton.l2.charge)
+            & (dilepton.l1.flavor == dilepton.l2.flavor)
+        ]
+        closest_to_Z = ak.argmin(
+            abs((dilepton.l1 + dilepton.l2).mass - 91),
+            axis=1,
+            keepdims=True,
+        )
+        closest_to_Z = closest_to_Z[
+            ~ak.is_none(closest_to_Z, axis=-1)
+        ]  # equivalent to ak.drop_none()
+        dilepton = dilepton[closest_to_Z]
+        leptons = ak.concatenate([dilepton.l1, dilepton.l2], axis=1)  # update leptons
         # TODO: implement dilepton reconstruction
         # # dilepton
-        # dilep_mass = lepton0[:, 0] + lepton1[:, 0]
-        # req_dilepmass = (
-        #     (dilep_mass.mass > 81) & (dilep_mass.mass < 101) & (dilep_mass.pt > 15)
-        # )
+        dilep_system = dilepton.l1 + dilepton.l2
+        req_dilepmass = ak.any(
+            (dilep_system.mass > 81)
+            & (dilep_system.mass < 101)
+            & (dilep_system.pt > 15),
+            axis=1,
+        )
 
         # TODO: add jet selection
+        overlap_l1 = ak.all(
+            events.Jet.metric_table(dilepton.l1) > 0.4, axis=2, mask_identity=True
+        )
+        overlap_l2 = ak.all(
+            events.Jet.metric_table(dilepton.l2) > 0.4, axis=2, mask_identity=True
+        )
         jets = events.Jet[
-            (events.Jet.pt > 20) # TODO: add more selection cuts (e.g. check utils/selection.py for jet_id(...))
+            (events.Jet.pt > 20)
+            & (abs(events.Jet.eta) < 2.5)
+            & overlap_l1
+            & overlap_l2
+            & jet_id(events, self._campaign)
+            # TODO: add more selection cuts (e.g. check utils/selection.py for jet_id(...))
         ]
 
         req_jets = ak.num(jets.pt) >= 1
 
         # event level selection
         event_level = ak.fill_none(
-            req_lumi & req_trig & req_jets, # & req_dilep & req_dilepmass,
+            req_lumi & req_trig & req_jets & req_dilep & req_dilepmass & req_metfilter,
             False,
         )
         # return empty arrays if no events are surviving the selection
@@ -144,13 +192,42 @@ class NanoProcessor(processor.ProcessorABC):
         # Selected objects #
         ####################
         # TODO: add selected objects, such as electron pair / muon pair from Z and leading jet in event
-
-
+        positive_lepton = ak.where(dilepton.l1.charge > 0, dilepton.l1, dilepton.l2)
+        negative_lepton = ak.where(dilepton.l1.charge < 0, dilepton.l1, dilepton.l2)
+        pruned_dilep = dilepton.l1[event_level] + dilepton.l2[event_level]
+        smu = leptons[(dilepton.l1.flavor == 13) & event_level]
+        sel = leptons[(dilepton.l1.flavor == 11) & event_level]
+        # print("dilepton structure", dilepton)
+        # print("dilepton structure", dilepton.l1)
+        # print("dilepton structure", dilepton.l1.flavor)
+        # print("leptons", leptons)
+        # print("leptons", leptons.flavor)
         # Only store events which survive event selection ("pruned events")
         pruned_ev = events[event_level]
+        print("events", len(events))
+        print("pruned_events", len(pruned_ev))
+        # print("pruned events field", pruned_ev.fields)
+        # print("somthing to prove this file been executed")
         # jets
         pruned_ev["SelJet"] = jets[event_level][:, :1]
         pruned_ev["njet"] = ak.count(jets[event_level].pt, axis=1)
+        pruned_ev["dilep"] = pruned_dilep
+        pruned_ev["dilep", "pt"] = pruned_dilep.pt
+        pruned_ev["dilep", "eta"] = pruned_dilep.eta
+        pruned_ev["dilep", "phi"] = pruned_dilep.phi
+        pruned_ev["dilep", "mass"] = pruned_dilep.mass
+        pruned_ev["posl"] = positive_lepton[event_level]
+        pruned_ev["negl"] = negative_lepton[event_level]
+        # pruned_ev["SelMuon"] = smu
+        # pruned_ev["SelMuon", "pt"] = smu.pt
+        # pruned_ev["SelMuon", "eta"] = smu.eta
+        # pruned_ev["SelMuon", "phi"] = smu.phi
+        # pruned_ev["SelMuon", "charge"] = smu.charge
+        # pruned_ev["SelElectron"] = sel
+        # pruned_ev["SelElectron", "pt"] = sel.pt
+        # pruned_ev["SelElectron", "eta"] = sel.eta
+        # pruned_ev["SelElectron", "phi"] = sel.phi
+        # pruned_ev["SelElectron", "charge"] = sel.charge
 
         # muons
         # pruned_ev["posl"] = sposmu
@@ -170,8 +247,8 @@ class NanoProcessor(processor.ProcessorABC):
         # pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
 
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
-        if "PFCands" in events.fields:
-            pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
+        # if "PFCands" in events.fields:
+        #     pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
 
         ####################
         #     Output       #

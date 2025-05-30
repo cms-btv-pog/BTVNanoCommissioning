@@ -1,9 +1,6 @@
 import awkward as ak
 import numpy as np
-import os
-import uproot
 from coffea import processor
-from coffea.analysis_tools import Weights
 
 from BTVNanoCommissioning.utils.correction import (
     load_lumi,
@@ -209,6 +206,8 @@ class NanoProcessor(processor.ProcessorABC):
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
         pruned_ev["SelJet"] = event_jet[event_level]
+        print("before selection", len(events))
+        print("after selection", len(pruned_ev))
         if isMu:
             pruned_ev["MuonPlus"] = sposmu
             pruned_ev["MuonMinus"] = snegmu

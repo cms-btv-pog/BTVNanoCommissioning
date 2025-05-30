@@ -1,7 +1,6 @@
 from BTVNanoCommissioning.utils.selection import btag_wp_dict
 from BTVNanoCommissioning.helpers.definitions import (
     definitions,
-    SV_definitions,
     disc_list,
 )
 import hist as Hist
@@ -65,7 +64,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             "jet",
             "mu",
         ]  # store basic 4-vector, pt,eta, phi, mass for the object
-        _hist_dict[f"dr_mujet0"] = Hist.Hist(
+        _hist_dict["dr_mujet0"] = Hist.Hist(
             syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
         )  # create cutstomize histogram
     elif "QCD" == workflow:
@@ -89,7 +88,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         )
         for i in ["soft_l"]:
             if i == "soft_l":
-                _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
+                _hist_dict["soft_l_pfRelIso04_all"] = Hist.Hist(
                     syst_axis,
                     flav_axis,
                     softliso_axis,
@@ -108,8 +107,14 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
         )
     elif "sfl_negtag_DY" == workflow:
-        obj_list = []
+        obj_list = ["dilep"]
         # TODO: add objects to list and do things with them
+        _hist_dict["dilep_pt"] = Hist.Hist(syst_axis, pt_axis, Hist.storage.Weight())
+        _hist_dict["dilep_mass"] = Hist.Hist(
+            syst_axis,
+            Hist.axis.Regular(60, 75, 105, name="pt", label=" $p_{T}$ [GeV]"),
+            Hist.storage.Weight(),
+        )
         # FIXME: commented SVJet related histogram until fixing linkinf of BTVNano
         # _hist_dict["dr_SVjet0"] = Hist.Hist(
         #     syst_axis, flav_axis, dr_SV_axis, Hist.storage.Weight()
@@ -269,7 +274,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         _hist_dict["dr_hmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["hl", "sl", "soft_l"]:
             if i == "soft_l":
-                _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
+                _hist_dict["soft_l_pfRelIso04_all"] = Hist.Hist(
                     syst_axis, flav_axis, softliso_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dxy"] = Hist.Hist(
@@ -317,7 +322,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         _hist_dict["dr_hmusmu"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         for i in ["hl", "soft_l"]:
             if i == "soft_l":
-                _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
+                _hist_dict["soft_l_pfRelIso04_all"] = Hist.Hist(
                     syst_axis, flav_axis, softliso_axis, Hist.storage.Weight()
                 )
                 _hist_dict[f"{i}_dxy"] = Hist.Hist(
@@ -386,7 +391,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         )
         for i in ["hl", "soft_l"]:
             if i == "soft_l":
-                _hist_dict[f"soft_l_pfRelIso04_all"] = Hist.Hist(
+                _hist_dict["soft_l_pfRelIso04_all"] = Hist.Hist(
                     syst_axis,
                     flav_axis,
                     osss_axis,
@@ -536,19 +541,16 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         for obj in obj_list:
             # mujet pt passing tagger WPs
             if "mujet" in obj:
-                if "cutbased" in workflow:
-                    for tagger in btag_wp_dict[year + "_" + campaign].keys():
-                        for wp in btag_wp_dict[year + "_" + campaign][tagger][
-                            "c"
-                        ].keys():
-                            if not "No" in wp:
-                                _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
-                                    syst_axis,
-                                    flav_axis,
-                                    osss_axis,
-                                    pt_axis,
-                                    Hist.storage.Weight(),
-                                )
+                for tagger in btag_wp_dict[year + "_" + campaign].keys():
+                    for wp in btag_wp_dict[year + "_" + campaign][tagger]["c"].keys():
+                        if "No" not in wp:
+                            _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
+                                syst_axis,
+                                flav_axis,
+                                osss_axis,
+                                pt_axis,
+                                Hist.storage.Weight(),
+                            )
 
             if "jet" in obj or "soft_l" in obj:
                 if obj == "soft_l":
@@ -818,7 +820,6 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 and "btag" not in histname
                 and histname in pruned_ev.SelJet.fields
             ):
-
                 h.fill(
                     syst,
                     flatten(genflavor),
@@ -872,7 +873,6 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 and "hl" in pruned_ev.fields
                 and histname.replace("hl_", "") in pruned_ev.hl.fields
             ):
-
                 h.fill(
                     syst,
                     flatten(pruned_ev.hl[histname.replace("hl_", "")]),
@@ -895,7 +895,6 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 and histname.replace("ele_", "") in pruned_ev.SelElectron.fields
                 and "Plus" not in pruned_ev.fields
             ):
-
                 h.fill(
                     syst,
                     flatten(pruned_ev.SelElectron[histname.replace("ele_", "")]),
@@ -933,7 +932,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     weight=weight,
                 )
             # Soft muon histograms
-            elif "soft_l" in histname and not "ptratio" in histname:
+            elif "soft_l" in histname and "ptratio" not in histname:
                 h.fill(
                     syst,
                     smflav,
