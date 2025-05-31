@@ -226,29 +226,64 @@ def access_xrootd_file(url, xrootd_tools):
     """Try to access file with variants of the URL using both stat and open"""
     from XRootD import client
     
+    import signal
+    
+    # Define a timeout handler
+    class TimeoutException(Exception):
+        pass
+    
+    def timeout_handler(signum, frame):
+        raise TimeoutException("Operation timed out")
+    
+    timeout = 40  # 40 seconds timeout
+    
     url_variants = normalize_xrootd_url(url)
     
     for variant in url_variants:
-        # First try stat method
+        # First try stat method with timeout
         try:
+            # Set the timeout alarm
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout)
+            
             xrd_client = client.FileSystem(variant)
             status, response = xrd_client.stat(variant)
+            
+            # Clear the alarm if successful
+            signal.alarm(0)
+            
             if status.ok:
                 print(f"✅ File access successful via stat with URL: {variant}")
                 return True, variant
+        except TimeoutException:
+            print(f"⚠️ Stat timed out after {timeout}s with URL variant {variant}")
+            signal.alarm(0)  # Clear the alarm
         except Exception as e:
             print(f"❌ Stat failed with URL variant {variant}: {e}")
+            signal.alarm(0)  # Clear the alarm
         
-        # If stat fails, try direct file open (what root -l does)
+        # If stat fails, try direct file open with timeout
         try:
+            # Set the timeout alarm
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout)
+            
             file_client = client.File()
             open_status, _ = file_client.open(variant)
+            
+            # Clear the alarm if successful
+            signal.alarm(0)
+            
             if open_status.ok:
                 print(f"✅ File access successful via open with URL: {variant}")
                 file_client.close()
                 return True, variant
+        except TimeoutException:
+            print(f"⚠️ Open timed out after {timeout}s with URL variant {variant}")
+            signal.alarm(0)  # Clear the alarm
         except Exception as e:
             print(f"❌ Open failed with URL variant {variant}: {e}")
+            signal.alarm(0)  # Clear the alarm
     
     return False, None
 
