@@ -68,7 +68,22 @@ def add_file_level_fallbacks():
     except (ImportError, AttributeError) as e:
         print(f"⚠️ Could not set up XRootD fallbacks: {e}")
 
-
+def should_refresh_dataset(json_file, max_age_minutes=10):
+    """Check if the dataset JSON file needs refreshing based on its age"""
+    import os
+    import time
+    
+    if not os.path.exists(json_file):
+        return True  # File doesn't exist, must fetch
+    
+    file_mtime = os.path.getmtime(json_file)
+    current_time = time.time()
+    age_in_minutes = (current_time - file_mtime) / 60
+    
+    if age_in_minutes > max_age_minutes:
+        print(f"⚠️ Dataset file {json_file} is {age_in_minutes:.1f} minutes old, needs refreshing")
+        return True
+    return False
 
 # Get lumi
 def get_lumi_from_web(year):
@@ -224,42 +239,40 @@ if __name__ == "__main__":
                     raise Exception(
                         f"metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json not exist"
                     )
+                    
+                json_file = f"metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json"
+
+                # Check if dataset needs refreshing because of age
+                if should_refresh_dataset(json_file):
+                    print(f"Refreshing dataset: {json_file}")
+                    fetch_cmd = f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation"
+                    os.system(fetch_cmd)
+                    
                 runner_config_required = f"python runner.py --wf {wf} --json metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json {overwrite} --campaign {args.campaign} --year {args.year}"
                 runner_config = ""
+                limit_added = False  # Track if we've already added a limit flag
+
                 for key, value in vars(args).items():
                     # Required info or things not relevant for runner, skip
-                    if key in [
-                        "workflow",
-                        "json",
-                        "campaign",
-                        "year",
-                        "scheme",
-                        "DAS_campaign",
-                        "version",
-                        "local",
-                        "debug",
-                    ]:
+                    # Skip keys that don't apply to runner
+                    if key in ["workflow", "json", "campaign", "year", "scheme", "DAS_campaign", 
+                            "version", "local", "debug"]:
                         continue
-                    if key in [
-                        "isArray",
-                        "noHist",
-                        "overwrite",
-                        "validate",
-                        "skipbadfiles",
-                    ]:
+                        
+                    # Handle boolean flags
+                    if key in ["isArray", "noHist", "overwrite", "validate", "skipbadfiles"]:
                         if value == True:
                             runner_config += f" --{key}"
                     elif value is not None:
-                        if (
-                            "Validation" == args.scheme
-                            and types == "MC"
-                            and "limit" not in key
-                        ):
-                            runner_config += " --limit 50"
-
+                        if key == "limit":
+                            runner_config += f" --{key}={value}"
+                            limit_added = True
                         else:
                             runner_config += f" --{key}={value}"
-                
+
+                # Add limit for MC validation if not already present
+                if "Validation" == args.scheme and types == "MC" and not limit_added:
+                    runner_config += " --limit 50"
                 runner_config = runner_config_required + runner_config
                 if args.debug:
                     print(f"run the workflow: {runner_config}")

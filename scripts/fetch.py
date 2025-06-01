@@ -810,35 +810,49 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools, dataset_f
     import time
     import os
     import subprocess  # Add missing import for gfal-ls
+    import random
     
     # Skip if site not in our map
     if site not in sites_xrootd_prefix:
         print(f"Site {site} not found in redirector map")
         return False
     
-    # If we have actual files, use the first one to test access
+    # If we have actual files, use multiple files to test access
     if dataset_files and len(dataset_files) > 0:
-        test_file = dataset_files[0]
-        #print(f"Testing accessibility of real file: {test_file}")
+        # Select 3 random files for testing (or fewer if less are available)
+        sample_size = min(3, len(dataset_files))
+        test_files = random.sample(dataset_files, sample_size)
         
-        # Construct the full PFN using the site's redirector rules
-        full_pfn = _get_pfn_for_site(test_file, sites_xrootd_prefix[site])
-        #print(f"Constructed PFN: {full_pfn}")
-        # Use the existing access_xrootd_file function
-        success, working_url = access_xrootd_file(full_pfn, xrootd_tools)
+        print(f"Testing accessibility of {sample_size} random files for site {site}...")
         
-        if success:
-            print(f"✅ Site {site} file access successful with URL: {working_url}")
-            parts = working_url.split('store/')
-            redirector = parts[0]
-            site_url_formats[site] = {
-                "url": working_url,
-                "redirector": redirector
-            }
+        # Test each file
+        successful_files = 0
+        for idx, test_file in enumerate(test_files):
+            # Construct the full PFN using the site's redirector rules
+            full_pfn = _get_pfn_for_site(test_file, sites_xrootd_prefix[site])
+            # Use the existing access_xrootd_file function
+            success, working_url = access_xrootd_file(full_pfn, xrootd_tools)
+            
+            if success:
+                print(f"✅ File {idx+1}/{sample_size} accessible: {working_url}")
+                successful_files += 1
+                if successful_files == 1:  # Save the first successful redirector format
+                    parts = working_url.split('store/')
+                    redirector = parts[0]
+                    site_url_formats[site] = {
+                        "url": working_url,
+                        "redirector": redirector
+                    }
+            else:
+                print(f"❌ File {idx+1}/{sample_size} NOT accessible")
+        
+        # Site is considered responsive only if ALL files are accessible
+        if successful_files == sample_size:
+            print(f"✅ Site {site} passes with all {sample_size} files accessible")
             return True
         else:
-            print(f"❌ Site {site} file access failed for all URL variants")
-            
+            print(f"❌ Site {site} fails with only {successful_files}/{sample_size} files accessible")
+            return False
         # Test file accessibility using Python XRootD
         if xrootd_tools['python_xrootd']:
             try:
