@@ -3,6 +3,7 @@ import awkward as ak
 import numpy as np
 import sys, json, glob
 import os
+import subprocess
 
 
 def dump_lumi(output, fname):
@@ -29,16 +30,65 @@ def dump_lumi(output, fname):
 
     with open(f"{fname}_lumi.json", "w") as outfile:
         json.dump(dicts, outfile, indent=2)
+    json_path = f"{fname}_lumi.json"
+    # Create a brilcalc script that can be executed separately
+    script_path = f"{fname}_get_lumi.sh"
+    with open(script_path, "w") as script:
+        script.write("#!/bin/bash\n\n")
+        script.write("# Luminosity calculation script\n")
+        script.write("# Can be executed on lxplus or similar environment with brilcalc available\n\n")
+        
+        # Setup brilcalc environment
+        script.write("# Setup brilcalc environment\n")
+        script.write("export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:$PATH\n")
+        
+        # Run brilcalc and save output to a file
+        script.write(f"\n# Run brilcalc\n")
+        script.write(f"brilcalc lumi -c web -i {json_path} -u /pb > {fname}_lumi_calc.txt\n")
+        script.write("exit_code=$?\n")
+        script.write("if [ $exit_code -ne 0 ]; then\n")
+        script.write(f"    echo \"ERROR: brilcalc failed with exit code $exit_code\" >> {fname}_lumi_calc.txt\n")
+        script.write("    echo \"1.0\" > {fname}_lumi_value.txt\n")
+        script.write("    exit $exit_code\n")
+        script.write("fi\n")
+        
+        # Extract and print the final number
+        script.write("\n# Extract the luminosity value\n")
+        script.write(f"if grep -q \"#Summary\" {fname}_lumi_calc.txt; then\n")
+        script.write(f"    total_lumi=$(grep -A 2 \"#Summary\" {fname}_lumi_calc.txt | tail -1 | awk -F '|' '{{print $(NF-1)}}')\n")
+        script.write("    echo \"Luminosity: $total_lumi /pb\"\n")
+        script.write(f"    echo $total_lumi > {fname}_lumi_value.txt\n")
+        script.write("else\n")
+        script.write("    echo \"ERROR: Could not find luminosity summary in output\"\n")
+        script.write(f"    echo \"1.0\" > {fname}_lumi_value.txt\n")
+        script.write("fi\n")
 
-    lumi_in_pb = os.popen(
-        f"export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:$PATH; brilcalc lumi -c web -i {fname}_lumi.json -u /pb "
-    ).read()
-    lumi_in_pb = lumi_in_pb[
-        lumi_in_pb.find("#Summary:") : lumi_in_pb.find("#Check JSON:")
-    ]
-    lumi_in_pb = float(lumi_in_pb.split("\n")[-3].split("|")[-2])
-
-    print(f"Luminosity in pb: {lumi_in_pb}")
+    # Make the script executable
+    os.chmod(script_path, 0o755)
+    print(f"Created luminosity calculation script: {script_path}")
+    
+    # Now actually RUN the script!
+    try:
+        print(f"Executing luminosity script: {script_path}")
+        subprocess.run([script_path], check=True)
+        
+        # Read the luminosity value from the output file
+        lumi_value_file = f"{fname}_lumi_value.txt"
+        if os.path.exists(lumi_value_file):
+            with open(lumi_value_file, 'r') as f:
+                lumi_value = f.read().strip()
+                try:
+                    lumi_in_pb = float(lumi_value)
+                    print(f"Luminosity: {lumi_in_pb} /pb")
+                    return lumi_in_pb
+                except ValueError:
+                    print(f"Could not convert luminosity '{lumi_value}' to float")
+        
+        print("Luminosity value file not found or empty")
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing luminosity script: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 
 def dump_dataset(output, fname, alljson):
