@@ -211,21 +211,20 @@ def normalize_xrootd_url(url):
             # Remove ONLY the port, keeping everything else identical
             no_port_url = url.replace(f":{port_pattern}", "")
             urls.append(no_port_url)
-            print(f"Created no-port variant: {no_port_url}")
+            #print(f"Created no-port variant: {no_port_url}")
         except Exception as e:
             print(f"Error extracting port: {e}")
-    else:
-        print(f"No port found in URL, skipping variant creation")
+    #else:
+    #    print(f"No port found in URL, skipping variant creation")
     
     # Always include original URL as an option
     urls.append(url)
     
     return urls
 
-def access_xrootd_file(url, xrootd_tools):
+def access_xrootd_file(url, xrootd_tools, check_all_variants=False):
     """Try to access file with variants of the URL using both stat and open"""
     from XRootD import client
-    
     import signal
     
     # Define a timeout handler
@@ -238,8 +237,10 @@ def access_xrootd_file(url, xrootd_tools):
     timeout = 40  # 40 seconds timeout
     
     url_variants = normalize_xrootd_url(url)
+    success_results = []
     
     for variant in url_variants:
+        variant_success = False
         # First try stat method with timeout
         try:
             # Set the timeout alarm
@@ -253,37 +254,44 @@ def access_xrootd_file(url, xrootd_tools):
             signal.alarm(0)
             
             if status.ok:
-                print(f"✅ File access successful via stat with URL: {variant}")
-                return True, variant
+                variant_success = True
+                success_results.append((True, variant, "stat"))
+                if not check_all_variants:
+                    return True, variant
         except TimeoutException:
             print(f"⚠️ Stat timed out after {timeout}s with URL variant {variant}")
             signal.alarm(0)  # Clear the alarm
         except Exception as e:
             print(f"❌ Stat failed with URL variant {variant}: {e}")
             signal.alarm(0)  # Clear the alarm
-        
+        if not variant_success:
         # If stat fails, try direct file open with timeout
-        try:
-            # Set the timeout alarm
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(timeout)
-            
-            file_client = client.File()
-            open_status, _ = file_client.open(variant)
-            
-            # Clear the alarm if successful
-            signal.alarm(0)
-            
-            if open_status.ok:
-                print(f"✅ File access successful via open with URL: {variant}")
-                file_client.close()
-                return True, variant
-        except TimeoutException:
-            print(f"⚠️ Open timed out after {timeout}s with URL variant {variant}")
-            signal.alarm(0)  # Clear the alarm
-        except Exception as e:
-            print(f"❌ Open failed with URL variant {variant}: {e}")
-            signal.alarm(0)  # Clear the alarm
+            try:
+                # Set the timeout alarm
+                signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(timeout)
+                
+                file_client = client.File()
+                open_status, _ = file_client.open(variant)
+                
+                # Clear the alarm if successful
+                signal.alarm(0)
+                
+                if open_status.ok:
+                    file_client.close()
+                    success_results.append((True, variant, "open"))
+                    if not check_all_variants:
+                        return True, variant
+            except TimeoutException:
+                print(f"⚠️ Open timed out after {timeout}s with URL variant {variant}")
+                signal.alarm(0)  # Clear the alarm
+            except Exception as e:
+                print(f"❌ Open failed with URL variant {variant}: {e}")
+                signal.alarm(0)  # Clear the alarm
+    # If we get here and check_all_variants=True, we need to check if any variant succeeded
+    if success_results:
+        # Return the first success (or you could choose based on other criteria)
+        return success_results[0][0], success_results[0][1]
     
     return False, None
 
@@ -817,26 +825,36 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools, dataset_f
         print(f"Site {site} not found in redirector map")
         return False
     
-    # If we have actual files, use multiple files to test access
+    # If we have actual files, test ALL files in the dataset
     if dataset_files and len(dataset_files) > 0:
-        # Select 3 random files for testing (or fewer if less are available)
-        sample_size = min(3, len(dataset_files))
-        test_files = random.sample(dataset_files, sample_size)
+        total_files = len(dataset_files)
+        print(f"Testing accessibility of all {total_files} files for site {site}...")
         
-        print(f"Testing accessibility of {sample_size} random files for site {site}...")
-        
+        # Determine print frequency based on dataset size
+        if total_files < 20:
+            print_frequency = 5
+        elif total_files < 120:
+            print_frequency = 10
+        else:
+            print_frequency = 50
+            
         # Test each file
         successful_files = 0
-        for idx, test_file in enumerate(test_files):
+        failed_files = []
+        for idx, test_file in enumerate(dataset_files):
             # Construct the full PFN using the site's redirector rules
             full_pfn = _get_pfn_for_site(test_file, sites_xrootd_prefix[site])
             # Use the existing access_xrootd_file function
-            success, working_url = access_xrootd_file(full_pfn, xrootd_tools)
+            success, working_url = access_xrootd_file(full_pfn, xrootd_tools, check_all_variants=True)
             
             if success:
-                print(f"✅ File {idx+1}/{sample_size} accessible: {working_url}")
                 successful_files += 1
-                if successful_files == 1:  # Save the first successful redirector format
+                # Only print status for certain files based on frequency
+                if (idx + 1) % print_frequency == 0 or idx == 0 or idx == total_files - 1:
+                    print(f"✅ File {idx+1}/{total_files} accessible: {working_url}")
+                
+                # Save the first successful redirector format
+                if successful_files == 1:
                     parts = working_url.split('store/')
                     redirector = parts[0]
                     site_url_formats[site] = {
@@ -844,44 +862,14 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools, dataset_f
                         "redirector": redirector
                     }
             else:
-                print(f"❌ File {idx+1}/{sample_size} NOT accessible")
+                print(f"❌ File {idx+1}/{total_files} NOT accessible")
+                # Fail fast - stop checking as soon as one file fails
+                print(f"❌ Site {site} fails - file {idx+1}/{total_files} not accessible")
+                return False
         
-        # Site is considered responsive only if ALL files are accessible
-        if successful_files == sample_size:
-            print(f"✅ Site {site} passes with all {sample_size} files accessible")
-            return True
-        else:
-            print(f"❌ Site {site} fails with only {successful_files}/{sample_size} files accessible")
-            return False
-        # Test file accessibility using Python XRootD
-        if xrootd_tools['python_xrootd']:
-            try:
-                from XRootD import client
-                start_time = time.time()
-                xrd_client = client.FileSystem(full_pfn)
-                status, response = xrd_client.stat(full_pfn)
-                response_time = time.time() - start_time
-                
-                if status.ok:
-                    print(f"✅ Site {site} file access successful ({response_time:.2f}s)")
-                    return True
-                else:
-                    print(f"❌ Site {site} file access failed: {status.message}")
-            except Exception as e:
-                print(f"Error testing file access for {site}: {e}")
-        
-        # Fallback to xrdfs stat
-        if xrootd_tools['xrdfs']:
-            try:
-                cmd = ["xrdfs", "stat", full_pfn]
-                result = subprocess.run(cmd, capture_output=True, timeout=10)
-                if result.returncode == 0:
-                    print(f"✅ Site {site} file access successful via xrdfs")
-                    return True
-                else:
-                    print(f"❌ Site {site} file access failed via xrdfs")
-            except Exception as e:
-                print(f"Error with xrdfs for {site}: {e}")
+        # If we've checked all files and they're all accessible, the site passes
+        print(f"✅ Site {site} passes with all {total_files} files accessible")
+        return True
     else:    
         # Get the redirector for this site
         xrd = None

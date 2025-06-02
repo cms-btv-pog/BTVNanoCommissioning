@@ -32,7 +32,7 @@ def dump_lumi(output, fname):
         json.dump(dicts, outfile, indent=2)
     json_path = f"{fname}_lumi.json"
     # Create a brilcalc script that can be executed separately
-    script_path = f"{fname}_get_lumi.sh"
+    script_path = os.path.abspath(f"{fname}_get_lumi.sh")
     with open(script_path, "w") as script:
         script.write("#!/bin/bash\n\n")
         script.write("# Luminosity calculation script\n")
@@ -70,7 +70,8 @@ def dump_lumi(output, fname):
     # Now actually RUN the script!
     try:
         print(f"Executing luminosity script: {script_path}")
-        subprocess.run([script_path], check=True)
+        print(f"Current working directory: {os.getcwd()}")
+        subprocess.run([script_path], check=True, capture_output=True)
         
         # Read the luminosity value from the output file
         lumi_value_file = f"{fname}_lumi_value.txt"
