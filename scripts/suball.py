@@ -159,7 +159,14 @@ if __name__ == "__main__":
         action="store_true",
         help="Run local debug test with small set of dataset with iterative executor",
     )
-
+    # Add test_lumi flag
+    # TODO: remove after testing
+    parser.add_argument(
+        "--test_lumi",
+        action="store_true",
+        help="Test luminosity calculation with limited dataset (20 files)",
+    )
+    
     args = parser.parse_args()
     # summarize diffeerent group for study
     scheme = {
@@ -273,6 +280,12 @@ if __name__ == "__main__":
                 # Add limit for MC validation if not already present
                 if "Validation" == args.scheme and types == "MC" and not limit_added:
                     runner_config += " --limit 50"
+                # TODO: remove after testing
+                # Add test_lumi limited processing (20 files) if flag is set
+                elif args.test_lumi and not limit_added:
+                    runner_config += " --limit 20"
+                    limit_added = True
+                    print(f"⚠️ Running in test_lumi mode with 20 files limit for {types}")
                 runner_config = runner_config_required + runner_config
                 if args.debug:
                     print(f"run the workflow: {runner_config}")

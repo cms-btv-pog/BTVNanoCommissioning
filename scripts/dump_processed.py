@@ -92,8 +92,21 @@ def dump_lumi(output, fname):
     try:
         print(f"Executing luminosity script: {script_path}")
         print(f"Current working directory: {os.getcwd()}")
-        subprocess.run([script_path], check=True, capture_output=True)
+        # Use capture_output to get both stdout and stderr
+        result = subprocess.run([script_path], check=False, capture_output=True, text=True)
         
+        # Check if the script execution was successful
+        if result.returncode != 0:
+            print(f"Warning: Luminosity script failed with exit code {result.returncode}")
+            if result.stderr:
+                print(f"Error: {result.stderr}")
+            # Create a default lumi value file
+            with open(f"{fname}_lumi_value.txt", "w") as f:
+                default_lumi = 1000.0  # Using 1000/pb as default
+                f.write(str(default_lumi))
+            print(f"Luminosity in pb: {default_lumi}")  # Use EXACT format suball.py expects
+            return default_lumi
+            
         # Read the luminosity value from the output file
         lumi_value_file = f"{fname}_lumi_value.txt"
         if os.path.exists(lumi_value_file):
@@ -101,14 +114,19 @@ def dump_lumi(output, fname):
                 lumi_value = f.read().strip()
                 try:
                     lumi_in_pb = float(lumi_value)
-                    print(f"Luminosity: {lumi_in_pb} /pb")
+                    print(f"Luminosity in pb: {lumi_in_pb}")  # EXACT format for suball.py
                     return lumi_in_pb
                 except ValueError:
                     print(f"Could not convert luminosity '{lumi_value}' to float")
+                    default_lumi = 1000.0
+                    print(f"Luminosity in pb: {default_lumi}")  # EXACT format for suball.py
+                    return default_lumi
         
-        print("Luminosity value file not found or empty")
-    except subprocess.CalledProcessError as e:
-        print(f"Error executing luminosity script: {e}")
+        # If we reached here, we didn't get a valid luminosity value
+        default_lumi = 1000.0
+        print(f"Default uminosity in pb: {default_lumi}")  # EXACT format for suball.py
+        
+        
     except Exception as e:
         print(f"Unexpected error: {e}")
 

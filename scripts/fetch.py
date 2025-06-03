@@ -118,6 +118,9 @@ site_url_formats = {}
 
 # Based on https://github.com/PocketCoffea/PocketCoffea/blob/main/pocket_coffea/utils/rucio.py
 def get_xrootd_sites_map():
+    
+    in_ci_env = 'CI' in os.environ or 'GITLAB_CI' in os.environ
+    
     sites_xrootd_access = defaultdict(dict)
     # Check if the cache file has been modified in the last 10 minutes
     cache_valid = False
@@ -130,7 +133,7 @@ def get_xrootd_sites_map():
         if file_time > sixty_minutes_ago:
             cache_valid = True
             
-    if not os.path.exists(".sites_map.json") or not cache_valid:
+    if not os.path.exists(".sites_map.json") or not cache_valid or in_ci_env:
         print("Loading SITECONF info")
         sites = [
             (s, "/cvmfs/cms.cern.ch/SITECONF/" + s + "/storage.json")
