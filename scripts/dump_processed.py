@@ -38,9 +38,30 @@ def dump_lumi(output, fname):
         script.write("# Luminosity calculation script\n")
         script.write("# Can be executed on lxplus or similar environment with brilcalc available\n\n")
         
-        # Setup brilcalc environment
+        # Setup brilcalc environment with multiple options
         script.write("# Setup brilcalc environment\n")
-        script.write("export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:$PATH\n")
+        script.write("if [ -f /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env ]; then\n")
+        script.write("    # Method 1: Preferred container image (newest method)\n")
+        script.write("    source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env\n")
+        script.write("    echo 'Using brilcalc container environment'\n")
+        script.write("elif [ -f /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate ]; then\n")
+        script.write("    # Method 2: brilconda3 environment\n")
+        script.write("    source /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate\n")
+        script.write("    export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:/cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker:$PATH\n")
+        script.write("    echo 'Using brilconda3 environment'\n")
+        script.write("else\n")
+        script.write("    # Method 3: Fallback to PATH-based setup\n")
+        script.write("    export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:/cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker:$PATH\n")
+        script.write("    echo 'Added brilcalc to PATH'\n")
+        script.write("fi\n\n")
+        
+        # Verify brilcalc is available
+        script.write("# Verify brilcalc is available\n")
+        script.write("if ! command -v brilcalc &> /dev/null; then\n")
+        script.write("    echo \"ERROR: brilcalc command not found in environment\"\n")
+        script.write(f"    echo \"1.0\" > {fname}_lumi_value.txt\n")
+        script.write("    exit 1\n")
+        script.write("fi\n\n")
         
         # Run brilcalc and save output to a file
         script.write(f"\n# Run brilcalc\n")

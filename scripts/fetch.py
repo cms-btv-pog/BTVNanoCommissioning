@@ -201,6 +201,8 @@ def normalize_xrootd_url(url):
     
     # Handle port removal only - nothing else should change
     urls = []
+    # Always include original URL as an option
+    urls.append(url)
     
     # Check if there's a port number in the server part
     server_part = url.split('/')[2]
@@ -215,10 +217,7 @@ def normalize_xrootd_url(url):
         except Exception as e:
             print(f"Error extracting port: {e}")
     #else:
-    #    print(f"No port found in URL, skipping variant creation")
-    
-    # Always include original URL as an option
-    urls.append(url)
+    #    print(f"No port found in URL, skipping variant creation")  
     
     return urls
 
@@ -241,53 +240,57 @@ def access_xrootd_file(url, xrootd_tools, check_all_variants=False):
     
     for variant in url_variants:
         variant_success = False
-        # First try stat method with timeout
+        
+        # First try direct file open with timeout
         try:
             # Set the timeout alarm
             signal.signal(signal.SIGALRM, timeout_handler)
             signal.alarm(timeout)
             
-            xrd_client = client.FileSystem(variant)
-            status, response = xrd_client.stat(variant)
+            file_client = client.File()
+            open_status, _ = file_client.open(variant)
             
             # Clear the alarm if successful
             signal.alarm(0)
             
-            if status.ok:
+            if open_status.ok:
+                file_client.close()
                 variant_success = True
-                success_results.append((True, variant, "stat"))
+                success_results.append((True, variant, "open"))
                 if not check_all_variants:
                     return True, variant
         except TimeoutException:
-            print(f"⚠️ Stat timed out after {timeout}s with URL variant {variant}")
+            print(f"⚠️ Open timed out after {timeout}s with URL variant {variant}")
             signal.alarm(0)  # Clear the alarm
         except Exception as e:
-            print(f"❌ Stat failed with URL variant {variant}: {e}")
+            print(f"❌ Open failed with URL variant {variant}: {e}")
             signal.alarm(0)  # Clear the alarm
+        
+        # If open fails, try stat method with timeout
         if not variant_success:
-        # If stat fails, try direct file open with timeout
             try:
                 # Set the timeout alarm
                 signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(timeout)
                 
-                file_client = client.File()
-                open_status, _ = file_client.open(variant)
+                xrd_client = client.FileSystem(variant)
+                status, response = xrd_client.stat(variant)
                 
                 # Clear the alarm if successful
                 signal.alarm(0)
                 
-                if open_status.ok:
-                    file_client.close()
-                    success_results.append((True, variant, "open"))
+                if status.ok:
+                    variant_success = True
+                    success_results.append((True, variant, "stat"))
                     if not check_all_variants:
                         return True, variant
             except TimeoutException:
-                print(f"⚠️ Open timed out after {timeout}s with URL variant {variant}")
+                print(f"⚠️ Stat timed out after {timeout}s with URL variant {variant}")
                 signal.alarm(0)  # Clear the alarm
             except Exception as e:
-                print(f"❌ Open failed with URL variant {variant}: {e}")
+                print(f"❌ Stat failed with URL variant {variant}: {e}")
                 signal.alarm(0)  # Clear the alarm
+    
     # If we get here and check_all_variants=True, we need to check if any variant succeeded
     if success_results:
         # Return the first success (or you could choose based on other criteria)
