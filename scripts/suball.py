@@ -263,7 +263,7 @@ if __name__ == "__main__":
                     # Required info or things not relevant for runner, skip
                     # Skip keys that don't apply to runner
                     if key in ["workflow", "json", "campaign", "year", "scheme", "DAS_campaign", 
-                            "version", "local", "debug"]:
+                            "version", "local", "debug", "test_lumi"]:
                         continue
                         
                     # Handle boolean flags
@@ -280,7 +280,8 @@ if __name__ == "__main__":
                 # Add limit for MC validation if not already present
                 if "Validation" == args.scheme and types == "MC" and not limit_added:
                     runner_config += " --limit 50"
-                # TODO: remove after testing
+                    imit_added = True
+                    print(f"⚠️ Running Validation with 50 files limit for MC")
                 # Add test_lumi limited processing (20 files) if flag is set
                 elif args.test_lumi and not limit_added:
                     runner_config += " --limit 20"
