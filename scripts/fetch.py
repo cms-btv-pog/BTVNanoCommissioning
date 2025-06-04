@@ -1057,7 +1057,20 @@ def getFilesFromDas(args):
         
         # Try to get dsname safely
         try:
-            dsname = dataset.split('/')[1]  # Primary dataset name
+            primary_name = dataset.split('/')[1]
+            run_period = None
+            
+            # Extract Run period from the dataset path
+            # Format is typically /MuonEG/Run2024X-PromptReco-v1/NANOAOD
+            if len(dataset.split('/')) > 2:
+                second_part = dataset.split('/')[2]
+                if second_part.startswith('Run'):
+                    run_period = second_part.split('-')[0]  # Gets 'Run2024X'
+            
+            if run_period and args.campaign == 'prompt_dataMC':
+                dsname = f"{primary_name}{run_period}"
+            else:
+                dsname = primary_name
         except IndexError:
             print(f"ERROR: Cannot parse dataset name from '{dataset}'")
             print("Using the entire string as the dataset name")

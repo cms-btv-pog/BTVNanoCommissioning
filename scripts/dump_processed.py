@@ -94,7 +94,11 @@ def dump_lumi(output, fname):
         print(f"Current working directory: {os.getcwd()}")
         # Use capture_output to get both stdout and stderr
         result = subprocess.run([script_path], check=False, capture_output=True, text=True)
-        
+        # Always print stdout and stderr for debugging
+        if result.stdout:
+            print(f"Script stdout:\n{result.stdout}")
+        if result.stderr:
+            print(f"Script stderr:\n{result.stderr}")
         # Check if the script execution was successful
         if result.returncode != 0:
             print(f"Warning: Luminosity script failed with exit code {result.returncode}")
