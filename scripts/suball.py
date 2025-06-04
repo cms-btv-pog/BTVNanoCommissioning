@@ -279,12 +279,12 @@ if __name__ == "__main__":
 
                 # Add limit for MC validation if not already present
                 if "Validation" == args.scheme and types == "MC" and not limit_added:
-                    runner_config += " --limit 50"
+                    runner_config += " --limit 20" ###TODO: change to 50 after testing
                     imit_added = True
                     print(f"⚠️ Running Validation with 50 files limit for MC")
                 # Add test_lumi limited processing (20 files) if flag is set
                 elif args.test_lumi and not limit_added:
-                    runner_config += " --limit 20"
+                    runner_config += " --limit 15"
                     limit_added = True
                     print(f"⚠️ Running in test_lumi mode with 20 files limit for {types}")
                 runner_config = runner_config_required + runner_config
