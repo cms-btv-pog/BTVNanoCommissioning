@@ -36,49 +36,60 @@ def dump_lumi(output, fname):
     with open(script_path, "w") as script:
         script.write("#!/bin/bash\n\n")
         script.write("# Luminosity calculation script\n")
-        script.write("# Can be executed on lxplus or similar environment with brilcalc available\n\n")
         
-        # Setup brilcalc environment with multiple options
-        script.write("# Check for brilcalc in multiple locations\n")
-        script.write("if [ -f /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env ]; then\n")
-        script.write("    source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env\n")
-        script.write("    echo 'BRIL Work Suite should now be available.'\n")
-        script.write("    echo 'Using brilcalc container environment'\n")
-        script.write("    # Ensure brilcalc is in PATH\n")
-        script.write("    if [ -f /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilcalc ]; then\n")
-        script.write("        export PATH=/cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker:$PATH\n")
-        script.write("    fi\n")
-        script.write("elif [ -f /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate ]; then\n")
-        script.write("    # Method 2: brilconda3 environment\n")
-        script.write("    source /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate\n")
-        script.write("    export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:/cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker:$PATH\n")
-        script.write("    echo 'Using brilconda3 environment'\n")
+        # Detect CI environment
+        script.write("# Detect CI environment\n")
+        script.write('if [ -n "$CI" ] || [ -n "$GITLAB_CI" ] || [ -n "$GITHUB_ACTIONS" ]; then\n')
+        script.write('    IN_CI=true\n')
+        script.write('else\n')
+        script.write('    IN_CI=false\n')
+        script.write('fi\n\n')
+        
+        # Use container in CI, direct execution otherwise
+        script.write("# Execute brilcalc either directly or via container\n")
+        script.write("if $IN_CI; then\n")
+        
+        # In CI: Use Singularity to run brilcalc from CERN container
+        script.write("    echo 'Running in CI environment - using Singularity container'\n")
+        script.write("    # Pull the BRIL container image\n")
+        script.write("    CONTAINER_IMG=/tmp/brilconda.sif\n")
+        script.write("    if [ ! -f $CONTAINER_IMG ]; then\n")
+        script.write("        singularity pull $CONTAINER_IMG docker://gitlab-registry.cern.ch/cms-bril/brilconda:latest\n")
+        script.write("    fi\n\n")
+        
+        # Run brilcalc via Singularity with correct volume mounts
+        script.write(f"    # Create working directory for container\n")
+        script.write(f"    WORKDIR=$(pwd)\n")
+        script.write(f"    # Run brilcalc via Singularity\n")
+        script.write(f"    singularity exec -B $WORKDIR:/work $CONTAINER_IMG bash -c \"cd /work && brilcalc lumi -c web -i {os.path.basename(json_path)} -u /pb > {os.path.basename(fname)}_lumi_calc.txt\"\n")
+        script.write("    BRIL_EXIT=$?\n")
+        
         script.write("else\n")
-        script.write("    # Method 3: Fallback to PATH-based setup\n")
-        script.write("    export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:/cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker:$PATH\n")
-        script.write("    echo 'Added brilcalc to PATH'\n")
+        # Standard setup for non-CI environments
+        script.write("    # Regular environment setup\n")
+        script.write("    if [ -f /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env ]; then\n")
+        script.write("        source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env\n")
+        script.write("        echo 'Using brilcalc container environment'\n")
+        script.write("    elif [ -f /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate ]; then\n")
+        script.write("        source /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate\n")
+        script.write("        echo 'Using brilconda3 environment'\n")
+        script.write("    fi\n")
+        
+        # Run brilcalc directly
+        script.write(f"    brilcalc lumi -c web -i {json_path} -u /pb > {fname}_lumi_calc.txt\n")
+        script.write("    BRIL_EXIT=$?\n")
         script.write("fi\n\n")
         
-        # Verify brilcalc is available
-        script.write("# Verify brilcalc is available\n")
-        script.write("if ! command -v brilcalc &> /dev/null; then\n")
-        script.write("    echo \"ERROR: brilcalc command not found in environment\"\n")
-        script.write(f"    echo \"1.0\" > {fname}_lumi_value.txt\n")
+        # Process results regardless of method
+        script.write("# Process results\n")
+        script.write("if [ $BRIL_EXIT -ne 0 ]; then\n")
+        script.write(f"    echo \"ERROR: brilcalc failed with exit code $BRIL_EXIT\"\n")
+        script.write(f"    echo \"1000.0\" > {fname}_lumi_value.txt\n")
         script.write("    exit 1\n")
         script.write("fi\n\n")
         
-        # Run brilcalc and save output to a file
-        script.write(f"\n# Run brilcalc\n")
-        script.write(f"brilcalc lumi -c web -i {json_path} -u /pb > {fname}_lumi_calc.txt\n")
-        script.write("exit_code=$?\n")
-        script.write("if [ $exit_code -ne 0 ]; then\n")
-        script.write(f"    echo \"ERROR: brilcalc failed with exit code $exit_code\" >> {fname}_lumi_calc.txt\n")
-        script.write("    echo \"1.0\" > {fname}_lumi_value.txt\n")
-        script.write("    exit $exit_code\n")
-        script.write("fi\n")
-        
-        # Extract and print the final number
-        script.write("\n# Extract the luminosity value\n")
+        # Rest of your script for extracting values remains the same
+        script.write("# Extract the luminosity value\n")
         script.write(f"if grep -q \"#Summary\" {fname}_lumi_calc.txt; then\n")
         script.write(f"    total_lumi=$(grep -A 2 \"#Summary\" {fname}_lumi_calc.txt | tail -1 | awk -F '|' '{{print $(NF-1)}}')\n")
         script.write("    echo \"Luminosity: $total_lumi /pb\"\n")
