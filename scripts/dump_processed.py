@@ -39,11 +39,15 @@ def dump_lumi(output, fname):
         script.write("# Can be executed on lxplus or similar environment with brilcalc available\n\n")
         
         # Setup brilcalc environment with multiple options
-        script.write("# Setup brilcalc environment\n")
+        script.write("# Check for brilcalc in multiple locations\n")
         script.write("if [ -f /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env ]; then\n")
-        script.write("    # Method 1: Preferred container image (newest method)\n")
         script.write("    source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env\n")
+        script.write("    echo 'BRIL Work Suite should now be available.'\n")
         script.write("    echo 'Using brilcalc container environment'\n")
+        script.write("    # Ensure brilcalc is in PATH\n")
+        script.write("    if [ -f /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilcalc ]; then\n")
+        script.write("        export PATH=/cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker:$PATH\n")
+        script.write("    fi\n")
         script.write("elif [ -f /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate ]; then\n")
         script.write("    # Method 2: brilconda3 environment\n")
         script.write("    source /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate\n")
