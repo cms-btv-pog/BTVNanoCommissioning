@@ -45,40 +45,39 @@ def dump_lumi(output, fname):
         script.write('    IN_CI=false\n')
         script.write('fi\n\n')
         
-        # Use container in CI, direct execution otherwise
-        script.write("# Execute brilcalc either directly or via container\n")
+        # Replace the CI section with this practical implementation
         script.write("if $IN_CI; then\n")
-        
-        # In CI: Use Singularity to run brilcalc from CERN container
-        script.write("    echo 'Running in CI environment - using Singularity container'\n")
-        script.write("    # Pull the BRIL container image\n")
-        script.write("    CONTAINER_IMG=/tmp/brilconda.sif\n")
-        script.write("    if [ ! -f $CONTAINER_IMG ]; then\n")
-        script.write("        singularity pull $CONTAINER_IMG docker://gitlab-registry.cern.ch/cms-bril/brilconda:latest\n")
+        script.write("    echo 'Running in CI environment'\n")
+            
+        # Try pip installation first (according to official docs)
+        script.write("    # Try pip installation of brilws as documented at cms-service-lumi.web.cern.ch\n")
+        script.write("    if ! command -v brilcalc &> /dev/null; then\n")
+        script.write("        echo 'Installing brilws via pip...'\n")
+        script.write("        pip install --user brilws\n")
+        script.write("        export PATH=$HOME/.local/bin:$PATH\n")
         script.write("    fi\n\n")
-        
-        # Run brilcalc via Singularity with correct volume mounts
-        script.write(f"    # Create working directory for container\n")
-        script.write(f"    WORKDIR=$(pwd)\n")
-        script.write(f"    # Run brilcalc via Singularity\n")
-        script.write(f"    singularity exec -B $WORKDIR:/work $CONTAINER_IMG bash -c \"cd /work && brilcalc lumi -c web -i {os.path.basename(json_path)} -u /pb > {os.path.basename(fname)}_lumi_calc.txt\"\n")
-        script.write("    BRIL_EXIT=$?\n")
-        
-        script.write("else\n")
-        # Standard setup for non-CI environments
-        script.write("    # Regular environment setup\n")
-        script.write("    if [ -f /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env ]; then\n")
-        script.write("        source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env\n")
-        script.write("        echo 'Using brilcalc container environment'\n")
-        script.write("    elif [ -f /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate ]; then\n")
-        script.write("        source /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate\n")
-        script.write("        echo 'Using brilconda3 environment'\n")
+
+        # Check if installation succeeded
+        script.write("    # Check if brilcalc is now available\n")
+        script.write("    if command -v brilcalc &> /dev/null; then\n")
+        script.write("        echo 'Successfully installed/found brilcalc'\n")
+        script.write(f"        brilcalc lumi -c web -i {os.path.basename(json_path)} -u /pb > {os.path.basename(fname)}_lumi_calc.txt\n")
+        script.write("        BRIL_EXIT=$?\n")
+        script.write("    else\n")
+        script.write("        echo 'Brilcalc installation failed, trying Docker...'\n")
+
+        # Try Docker if available
+        script.write("        # Try Docker if available\n")
+        script.write("        if command -v docker &> /dev/null; then\n")
+        script.write("            echo 'Using Docker to run brilcalc'\n")
+        script.write(f"            docker run --rm -v $(pwd):/data cms-bril/brilcalc:latest brilcalc lumi -c web -i /data/{os.path.basename(json_path)} -u /pb > {os.path.basename(fname)}_lumi_calc.txt\n")
+        script.write("            BRIL_EXIT=$?\n")
+        script.write("         else\n")
+        script.write("            # Neither pip install nor Docker worked\n")
+        script.write("            echo 'ERROR: Could not access brilcalc through any method'\n")
+        script.write("            BRIL_EXIT=1\n")
+        script.write("        fi\n")
         script.write("    fi\n")
-        
-        # Run brilcalc directly
-        script.write(f"    brilcalc lumi -c web -i {json_path} -u /pb > {fname}_lumi_calc.txt\n")
-        script.write("    BRIL_EXIT=$?\n")
-        script.write("fi\n\n")
         
         # Process results regardless of method
         script.write("# Process results\n")
