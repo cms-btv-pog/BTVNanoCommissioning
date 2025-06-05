@@ -72,12 +72,26 @@ def dump_lumi(output, fname):
         script.write("            echo 'Using Docker to run brilcalc'\n")
         script.write(f"            docker run --rm -v $(pwd):/data cms-bril/brilcalc:latest brilcalc lumi -c web -i /data/{os.path.basename(json_path)} -u /pb > {os.path.basename(fname)}_lumi_calc.txt\n")
         script.write("            BRIL_EXIT=$?\n")
-        script.write("         else\n")
+        script.write("        else\n")
         script.write("            # Neither pip install nor Docker worked\n")
         script.write("            echo 'ERROR: Could not access brilcalc through any method'\n")
         script.write("            BRIL_EXIT=1\n")
         script.write("        fi\n")
         script.write("    fi\n")
+        
+        script.write("else\n")  # This else matches the earlier "if $IN_CI; then"
+        script.write("    # Regular environment setup for non-CI\n")
+        script.write("    if [ -f /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env ]; then\n")
+        script.write("        source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env\n")
+        script.write("        echo 'BRIL Work Suite should now be available.'\n")
+        script.write("        echo 'Using brilcalc container environment'\n")
+        script.write("    elif [ -f /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate ]; then\n")
+        script.write("        source /cvmfs/cms-bril.cern.ch/brilconda3/bin/activate\n")
+        script.write("        echo 'Using brilconda3 environment'\n")
+        script.write("    fi\n")
+        script.write(f"    brilcalc lumi -c web -i {json_path} -u /pb > {fname}_lumi_calc.txt\n")
+        script.write("    BRIL_EXIT=$?\n")
+        script.write("fi\n")
         
         # Process results regardless of method
         script.write("# Process results\n")

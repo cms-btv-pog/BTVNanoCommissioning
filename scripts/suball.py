@@ -351,9 +351,7 @@ if __name__ == "__main__":
                 if not args.local:
                     os.system(f"mkdir -p {args.campaign}{args.version}/{wf}")
                     os.system(f"cp scripts/index.php {args.campaign}{args.version}/.")
-                    os.system(
-                        f"xrdcp -r  {args.campaign}{args.version}/ root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/{args.scheme}/."
-                    )
+                    os.system(f"eos cp -r {args.campaign}{args.version}/{wf} /eos/user/b/btvweb/www/Commissioning/dataMC/{args.scheme}/{args.campaign}{args.version}/")
                     os.system(f"cp scripts/index.php {args.campaign}/{wf}/.")
                     os.system(
                         f"cp hists_{wf}_*_{args.campaign}_{args.year}_{wf}/*.coffea {args.campaign}/{wf}/."
@@ -362,9 +360,7 @@ if __name__ == "__main__":
                         f"cp plot/{wf}_{args.campaign}_{args.year}{args.version}/* {args.campaign}{args.version}/{wf}/."
                     )
                     overwrite = "-f " if args.overwrite else ""
-                    os.system(
-                        f"xrdcp -r -p {overwrite} {args.campaign}{args.version}/{wf} root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/{args.scheme}/{args.campaign}{args.version}/."
-                    )
+                    os.system(f"eos cp -r {args.campaign}{args.version}/{wf} /eos/user/b/btvweb/www/Commissioning/dataMC/{args.scheme}/{args.campaign}{args.version}/")
             else:
                 raise Exception(
                     f"No input coffea hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea or hists_{wf}_MC_{args.campaign}_{args.year}_{wf}/hists_{wf}_MC_{args.campaign}_{args.year}_{wf}.coffea"
