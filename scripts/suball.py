@@ -11,6 +11,177 @@ sys.path.insert(0, parent_dir)
 
 from runner import config_parser, scaleout_parser, debug_parser
   
+# Add this function after your imports
+
+def create_eos_upload_script():
+    """Create a bash script for reliable EOS uploads"""
+    upload_script = os.path.join(os.path.dirname(__file__), "upload_to_eos.sh")
+    
+    # Only create the script if it doesn't exist
+    if not os.path.exists(upload_script):
+        print("Creating EOS upload script...")
+        with open(upload_script, "w") as f:
+            f.write("""#!/bin/bash
+# EOS Upload Script for BTVNanoCommissioning
+
+set -e
+
+CAMPAIGN=$1
+VERSION=$2
+WF=$3
+SCHEME=$4
+FORCE=$5
+YEAR="2024"  # You can make this a parameter if needed
+
+# Parse force flag
+if [[ "$FORCE" == "--force" ]]; then
+    OVERWRITE="-f"
+else
+    OVERWRITE=""
+fi
+
+# Colors for better output
+GREEN='\\033[0;32m'
+YELLOW='\\033[1;33m'
+RED='\\033[0;31m'
+NC='\\033[0m' # No Color
+
+echo -e "${GREEN}=== BTV Commissioning EOS Upload ===${NC}"
+echo "Campaign: $CAMPAIGN"
+echo "Workflow: $WF"
+echo "Target: /eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION"
+
+# Ensure EOS client is available
+ensure_eos_client() {
+    echo -e "${YELLOW}Checking for EOS client...${NC}"
+    if ! command -v eos &> /dev/null; then
+        echo -e "${YELLOW}EOS client not found, attempting to use xrdcp${NC}"
+        if ! command -v xrdcp &> /dev/null; then
+            echo -e "${RED}Neither eos nor xrdcp available${NC}"
+            return 1
+        fi
+        return 0
+    fi
+    echo -e "${GREEN}EOS client available${NC}"
+    return 0
+}
+
+# Set up authentication for EOS
+setup_auth() {
+    echo -e "${YELLOW}Setting up authentication...${NC}"
+    
+    # Try various authentication methods
+    if [ -f "$HOME/.globus/usercert.pem" ] && [ -f "$HOME/.globus/userkey.pem" ]; then
+        echo "Grid certificate found"
+        voms-proxy-init -voms cms -rfc -valid 24:00
+        return 0
+    fi
+    
+    if command -v kinit &> /dev/null && [ -n "$KRB5_PRINCIPAL" ]; then
+        echo "Using Kerberos authentication"
+        if [ -n "$KRB5_KEYTAB" ]; then
+            kinit -kt "$KRB5_KEYTAB" "$KRB5_PRINCIPAL"
+        else
+            echo "No keytab found. Please enter your Kerberos password:"
+            kinit "$KRB5_PRINCIPAL"
+        fi
+        return 0
+    fi
+    
+    if [ -n "$EOS_TOKEN" ]; then
+        echo "Using EOS token from environment"
+        mkdir -p ~/.eos
+        echo "$EOS_TOKEN" > ~/.eos/token
+        chmod 600 ~/.eos/token
+        export XrdSecPROTOCOL=sss
+        return 0
+    fi
+    
+    echo -e "${YELLOW}No explicit authentication found, will try default credentials${NC}"
+    return 0
+}
+
+# Create local directories
+create_local_dirs() {
+    echo -e "${YELLOW}Creating local directories...${NC}"
+    mkdir -p "$CAMPAIGN$VERSION/$WF"
+    cp scripts/index.php "$CAMPAIGN$VERSION/." || echo "Warning: index.php not copied to campaign dir"
+    cp scripts/index.php "$CAMPAIGN/$WF/." || echo "Warning: index.php not copied to workflow dir"
+    
+    # Copy coffea files
+    echo "Copying coffea files..."
+    cp hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea "$CAMPAIGN/$WF/." || {
+        echo -e "${RED}Warning: Failed to copy coffea files${NC}"
+    }
+    
+    # Copy plot files
+    echo "Copying plot files..."
+    cp plot/${WF}_${CAMPAIGN}_${YEAR}${VERSION}/* "$CAMPAIGN$VERSION/$WF/." || {
+        echo -e "${RED}Warning: Failed to copy plot files${NC}"
+    }
+    
+    echo -e "${GREEN}Local directories prepared${NC}"
+}
+
+# Upload files to EOS
+upload_to_eos() {
+    echo -e "${YELLOW}Uploading to EOS...${NC}"
+    TARGET_DIR="/eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION"
+    
+    # First try using direct eos commands if available
+    if command -v eos &> /dev/null; then
+        echo "Using eos commands for upload"
+        eos mkdir -p "$TARGET_DIR" || echo "Warning: Could not create directory on EOS"
+        eos cp -r "$CAMPAIGN$VERSION/$WF" "$TARGET_DIR/" || {
+            echo -e "${RED}eos cp failed, falling back to xrdcp${NC}"
+            upload_with_xrdcp
+        }
+    else
+        # Use xrdcp
+        upload_with_xrdcp
+    fi
+}
+
+# Upload using xrdcp as fallback
+upload_with_xrdcp() {
+    echo "Using xrdcp for upload"
+    xrdcp -r $OVERWRITE "$CAMPAIGN$VERSION/$WF" "root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/" 
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}xrdcp failed${NC}"
+        echo "Retrying with recursive directory creation..."
+        xrdcp -r -p --mkdir $OVERWRITE "$CAMPAIGN$VERSION/$WF" "root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/" 
+        if [ $? -ne 0 ]; then
+            echo -e "${RED}All upload methods failed${NC}"
+            return 1
+        fi
+    fi
+    echo -e "${GREEN}Upload successful using xrdcp${NC}"
+    return 0
+}
+
+# Main execution flow
+main() {
+    # Create local directories first (always needed)
+    create_local_dirs
+    
+    # Ensure EOS client is available
+    ensure_eos_client
+    
+    # Set up authentication
+    setup_auth
+    
+    # Upload to EOS
+    upload_to_eos
+    
+    echo -e "${GREEN}BTV Commissioning upload completed${NC}"
+}
+
+# Run the main function
+main
+""")
+        os.chmod(upload_script, 0o755)
+        print(f"Created EOS upload script: {upload_script}")
+    return upload_script
     
 def add_file_level_fallbacks():
     """Monkey-patch uproot to use fallback redirectors for individual files"""
@@ -349,18 +520,28 @@ if __name__ == "__main__":
                 if args.debug:
                     print(f"Upload plots&coffea to eos: {wf}")
                 if not args.local:
+                    # Create and execute the EOS upload script
+                    upload_script = create_eos_upload_script()
+                    force_flag = "--force" if args.overwrite else ""
+                    
+                    if args.debug:
+                        print(f"Upload plots & coffea to EOS: {wf}")
+                    
+                    # First create local directories and copy files (for reliability)
                     os.system(f"mkdir -p {args.campaign}{args.version}/{wf}")
                     os.system(f"cp scripts/index.php {args.campaign}{args.version}/.")
-                    os.system(f"eos cp -r {args.campaign}{args.version}/{wf} /eos/user/b/btvweb/www/Commissioning/dataMC/{args.scheme}/{args.campaign}{args.version}/")
                     os.system(f"cp scripts/index.php {args.campaign}/{wf}/.")
-                    os.system(
-                        f"cp hists_{wf}_*_{args.campaign}_{args.year}_{wf}/*.coffea {args.campaign}/{wf}/."
-                    )
-                    os.system(
-                        f"cp plot/{wf}_{args.campaign}_{args.year}{args.version}/* {args.campaign}{args.version}/{wf}/."
-                    )
-                    overwrite = "-f " if args.overwrite else ""
-                    os.system(f"eos cp -r {args.campaign}{args.version}/{wf} /eos/user/b/btvweb/www/Commissioning/dataMC/{args.scheme}/{args.campaign}{args.version}/")
+                    os.system(f"cp hists_{wf}_*_{args.campaign}_{args.year}_{wf}/*.coffea {args.campaign}/{wf}/.")
+                    os.system(f"cp plot/{wf}_{args.campaign}_{args.year}{args.version}/* {args.campaign}{args.version}/{wf}/.")
+                    
+                    # Now call the upload script for the actual EOS transfer
+                    upload_cmd = f"{upload_script} {args.campaign} {args.version} {wf} {args.scheme} {force_flag}"
+                    print(f"Executing: {upload_cmd}")
+                    exit_code = os.system(upload_cmd)
+                    
+                    if exit_code != 0:
+                        print(f"Warning: EOS upload script exited with code {exit_code}")
+                        print("Local copies of files have still been created successfully")
             else:
                 raise Exception(
                     f"No input coffea hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea or hists_{wf}_MC_{args.campaign}_{args.year}_{wf}/hists_{wf}_MC_{args.campaign}_{args.year}_{wf}.coffea"

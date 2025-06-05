@@ -53,7 +53,7 @@ def dump_lumi(output, fname):
         script.write("    # Try pip installation of brilws as documented at cms-service-lumi.web.cern.ch\n")
         script.write("    if ! command -v brilcalc &> /dev/null; then\n")
         script.write("        echo 'Installing brilws via pip...'\n")
-        script.write("        pip install --user brilws\n")
+        script.write("        pip install --user brilws docopt docopt pandas numpy sqlalchemy matplotlib\n")
         script.write("        export PATH=$HOME/.local/bin:$PATH\n")
         script.write("    fi\n\n")
 
