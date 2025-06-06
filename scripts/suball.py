@@ -17,8 +17,8 @@ def create_eos_upload_script():
     """Create a bash script for reliable EOS uploads"""
     upload_script = os.path.join(os.path.dirname(__file__), "upload_to_eos.sh")
     
-    # Only create the script if it doesn't exist
-    if not os.path.exists(upload_script):
+    # Only create the script if it doesn't exist or force overwrite
+    if not os.path.exists(upload_script) or True:  # Always recreate for now to fix the syntax error
         print("Creating EOS upload script...")
         with open(upload_script, "w") as f:
             f.write("""#!/bin/bash
@@ -49,6 +49,7 @@ NC='\\033[0m' # No Color
 echo -e "${GREEN}=== BTV Commissioning EOS Upload ===${NC}"
 echo "Campaign: $CAMPAIGN"
 echo "Workflow: $WF"
+echo "Scheme: $SCHEME"
 echo "Target: /eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION"
 
 # Ensure EOS client is available
@@ -106,6 +107,7 @@ create_local_dirs() {
     echo -e "${YELLOW}Creating local directories...${NC}"
     mkdir -p "$CAMPAIGN/$WF"
     mkdir -p "$CAMPAIGN$VERSION/$WF"
+    
     # Copy index files (with error handling)
     cp scripts/index.php "$CAMPAIGN$VERSION/." || echo "Warning: Could not copy index.php to campaign dir"
     cp scripts/index.php "$CAMPAIGN/$WF/." || echo "Warning: Could not copy index.php to workflow dir"
@@ -115,7 +117,7 @@ create_local_dirs() {
     if ls hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea 1>/dev/null 2>&1; then
         cp hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea "$CAMPAIGN/$WF/."
     else
-        echo "${YELLOW}Warning: No coffea files found matching pattern${NC}"
+        echo -e "${YELLOW}Warning: No coffea files found matching pattern${NC}"
     fi
     
     # Copy plot files with explicit error handling
@@ -123,11 +125,11 @@ create_local_dirs() {
     if ls plot/${WF}_${CAMPAIGN}_${YEAR}${VERSION}/* 1>/dev/null 2>&1; then
         cp plot/${WF}_${CAMPAIGN}_${YEAR}${VERSION}/* "$CAMPAIGN$VERSION/$WF/."
     else
-        echo "${YELLOW}Warning: No plot files found matching pattern${NC}"
+        echo -e "${YELLOW}Warning: No plot files found matching pattern${NC}"
     fi
     
     echo -e "${GREEN}Local directories prepared${NC}"
-}}
+}
 
 # Upload files to EOS
 upload_to_eos() {
@@ -527,30 +529,26 @@ if __name__ == "__main__":
                 if args.debug:
                     print(f"Upload plots&coffea to eos: {wf}")
                 if not args.local:
-                    # Create and execute the EOS upload script
+                    # Ensure local directories exist
                     os.system(f"mkdir -p {args.campaign}/{wf}")
                     os.system(f"mkdir -p {args.campaign}{args.version}/{wf}")
                     
-                    # Copy files to local directories
-                    os.system(f"cp scripts/index.php {args.campaign}{args.version}/. || echo 'Warning: Could not copy index.php'")
-                    os.system(f"cp scripts/index.php {args.campaign}/{wf}/. || echo 'Warning: Could not copy index.php'")
-                    
-                    # Copy coffea and plot files with more specific paths
-                    os.system(f"cp hists_{wf}_*_{args.campaign}_{args.year}_{wf}/*.coffea {args.campaign}/{wf}/. || echo 'Warning: No coffea files found'")
-                    os.system(f"cp plot/{wf}_{args.campaign}_{args.year}{args.version}/* {args.campaign}{args.version}/{wf}/. || echo 'Warning: No plot files found'")
-                    
-                    # Create upload script
+                    # Create and get the upload script path
                     upload_script = create_eos_upload_script()
                     force_flag = "--force" if args.overwrite else ""
                     
-                    # Execute upload script with correct parameters
+                    if args.debug:
+                        print(f"Upload plots & coffea to EOS: {wf}")
+                    
+                    # Execute the upload script with the correct parameters
                     upload_cmd = f"{upload_script} {args.campaign} {args.version} {wf} {args.scheme} {force_flag}"
                     print(f"Executing: {upload_cmd}")
                     exit_code = os.system(upload_cmd)
                     
                     if exit_code != 0:
                         print(f"Warning: EOS upload script exited with code {exit_code}")
-                        print("Local copies of files have still been created successfully")
+                        # Continue with local copies
+                        print("Local copies of files have been created")
             else:
                 raise Exception(
                     f"No input coffea hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea or hists_{wf}_MC_{args.campaign}_{args.year}_{wf}/hists_{wf}_MC_{args.campaign}_{args.year}_{wf}.coffea"
