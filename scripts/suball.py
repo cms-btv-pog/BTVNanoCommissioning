@@ -141,6 +141,31 @@ setup_auth() {
         return 0
     fi
     
+    # Check for existing proxy files in common locations
+    if [ -f "/tmp/x509up_u$(id -u)" ]; then
+        echo "Found proxy in /tmp/x509up_u$(id -u)"
+        export X509_USER_PROXY="/tmp/x509up_u$(id -u)"
+        voms-proxy-info -all || echo "Could not read proxy info"
+        return 0
+    fi
+    
+    # Check GitLab CI specific location
+    if [ -f "/builds/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy" ]; then
+        echo "Found GitLab CI proxy file"
+        export X509_USER_PROXY="/builds/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy"
+        voms-proxy-info -all || echo "Could not read proxy info"
+        return 0
+    fi
+    
+    # If we find a proxy file in the current directory or parent directories
+    PROXY_FILE=$(find $HOME -name "x509_proxy" -o -name "x509up_*" 2>/dev/null | head -1)
+    if [ -n "$PROXY_FILE" ]; then
+        echo "Found proxy file: $PROXY_FILE"
+        export X509_USER_PROXY="$PROXY_FILE"
+        voms-proxy-info -all || echo "Could not read proxy info"
+        return 0
+    fi
+    
     if command -v kinit &> /dev/null && [ -n "$KRB5_PRINCIPAL" ]; then
         echo "Using Kerberos authentication"
         if [ -n "$KRB5_KEYTAB" ]; then
@@ -175,21 +200,45 @@ create_local_dirs() {
     cp scripts/index.php "$CAMPAIGN$VERSION/." || echo "Warning: Could not copy index.php to campaign dir"
     cp scripts/index.php "$CAMPAIGN/$WF/." || echo "Warning: Could not copy index.php to workflow dir"
     
-    # Copy coffea files with explicit error handling
+    # Debug - list all hists directories to see what's available
+    echo "DEBUG: Available hists directories:"
+    find . -name "hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}" -type d | sort
+    
+    # Debug - list all plot directories to see what's available
+    echo "DEBUG: Available plot directories:"
+    find . -name "plot" -type d | sort
+    find ./plot -name "${WF}_${CAMPAIGN}_${YEAR}${VERSION}*" -type d 2>/dev/null | sort
+    
+    # Copy coffea files with explicit error handling - more flexible pattern
     echo "Copying coffea files..."
-    if ls hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea 1>/dev/null 2>&1; then
-        cp hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea "$CAMPAIGN/$WF/."
+    for COFFEA_DIR in $(find . -name "hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}" -type d); do
+        echo "Checking coffea dir: $COFFEA_DIR"
+        if [ -d "$COFFEA_DIR" ] && [ "$(find "$COFFEA_DIR" -name "*.coffea" | wc -l)" -gt 0 ]; then
+            echo "Copying from $COFFEA_DIR/*.coffea to $CAMPAIGN/$WF/"
+            cp "$COFFEA_DIR"/*.coffea "$CAMPAIGN/$WF/." || echo "Warning: Could not copy from $COFFEA_DIR"
+        fi
+    done
+    
+    # Copy plot files with explicit error handling - more flexible pattern
+    echo "Copying plot files..."
+    if [ -d "plot" ]; then
+        for PLOT_DIR in $(find ./plot -name "${WF}_${CAMPAIGN}_${YEAR}${VERSION}*" -type d 2>/dev/null); do
+            echo "Found plot dir: $PLOT_DIR"
+            if [ -d "$PLOT_DIR" ] && [ "$(find "$PLOT_DIR" -name "*.png" -o -name "*.pdf" | wc -l)" -gt 0 ]; then
+                echo "Copying from $PLOT_DIR/* to $CAMPAIGN$VERSION/$WF/"
+                cp "$PLOT_DIR"/* "$CAMPAIGN$VERSION/$WF/." || echo "Warning: Could not copy from $PLOT_DIR"
+            fi
+        done
     else
-        echo -e "${YELLOW}Warning: No coffea files found matching pattern${NC}"
+        echo -e "${YELLOW}Warning: Plot directory 'plot' does not exist${NC}"
     fi
     
-    # Copy plot files with explicit error handling
-    echo "Copying plot files..."
-    if ls plot/${WF}_${CAMPAIGN}_${YEAR}${VERSION}/* 1>/dev/null 2>&1; then
-        cp plot/${WF}_${CAMPAIGN}_${YEAR}${VERSION}/* "$CAMPAIGN$VERSION/$WF/."
-    else
-        echo -e "${YELLOW}Warning: No plot files found matching pattern${NC}"
-    fi
+    # Verify files were copied
+    echo "DEBUG: Files in $CAMPAIGN/$WF directory:"
+    ls -la "$CAMPAIGN/$WF" || echo "Directory is empty or doesn't exist"
+    
+    echo "DEBUG: Files in $CAMPAIGN$VERSION/$WF directory:"
+    ls -la "$CAMPAIGN$VERSION/$WF" || echo "Directory is empty or doesn't exist"
     
     echo -e "${GREEN}Local directories prepared${NC}"
 }
@@ -694,8 +743,13 @@ if __name__ == "__main__":
                 if args.debug:
                     print(f"Upload plots&coffea to eos: {wf}")
                 if not args.local:
+                    
                     if args.debug:
                         print("Checking for EOS client...")
+                        print(f"Checking for script files in path...")
+                    os.system("find . -name 'index.php'")
+                    os.system(f"find . -name 'hists_{wf}_*_*' -type d")
+                    os.system(f"find . -name 'plot' -type d")
                     ensure_eos = ensure_eos_client()
                     # Ensure local directories exist
                     os.system(f"mkdir -p {args.campaign}/{wf}")
@@ -707,6 +761,10 @@ if __name__ == "__main__":
                     
                     if args.debug:
                         print(f"Upload plots & coffea to EOS: {wf}")
+                        # Optionally print the script contents for debugging
+                        with open(upload_script, 'r') as f:
+                            print(f"Upload script contents:")
+                            print(f.read())
                     
                     # Execute the upload script with the correct parameters
                     upload_cmd = f"{upload_script} {args.campaign} {args.version} {wf} {args.scheme} {force_flag}"
