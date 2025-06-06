@@ -1211,6 +1211,7 @@ def getFilesFromDas(args):
                 site_candidates.append((site, completion))
                 break
         
+        best_site = None
         # If no sites were responsive, try the global redirector
         if not site_candidates:
             print(f"No responsive sites found for {dsname}, using global redirector")
@@ -1266,7 +1267,7 @@ def getFilesFromDas(args):
             fdict[dsname] = validated_paths
         else:
             # Same logic for the else clause
-            if best_site in site_url_formats:
+            if best_site and best_site in site_url_formats:
                 redirector = site_url_formats[best_site]["redirector"]
                 print(f"Using redirector for site {best_site}: {redirector}")
                 
