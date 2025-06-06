@@ -104,24 +104,30 @@ setup_auth() {
 # Create local directories
 create_local_dirs() {
     echo -e "${YELLOW}Creating local directories...${NC}"
+    mkdir -p "$CAMPAIGN/$WF"
     mkdir -p "$CAMPAIGN$VERSION/$WF"
-    cp scripts/index.php "$CAMPAIGN$VERSION/." || echo "Warning: index.php not copied to campaign dir"
-    cp scripts/index.php "$CAMPAIGN/$WF/." || echo "Warning: index.php not copied to workflow dir"
+    # Copy index files (with error handling)
+    cp scripts/index.php "$CAMPAIGN$VERSION/." || echo "Warning: Could not copy index.php to campaign dir"
+    cp scripts/index.php "$CAMPAIGN/$WF/." || echo "Warning: Could not copy index.php to workflow dir"
     
-    # Copy coffea files
+    # Copy coffea files with explicit error handling
     echo "Copying coffea files..."
-    cp hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea "$CAMPAIGN/$WF/." || {
-        echo -e "${RED}Warning: Failed to copy coffea files${NC}"
-    }
+    if ls hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea 1>/dev/null 2>&1; then
+        cp hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea "$CAMPAIGN/$WF/."
+    else
+        echo "${YELLOW}Warning: No coffea files found matching pattern${NC}"
+    fi
     
-    # Copy plot files
+    # Copy plot files with explicit error handling
     echo "Copying plot files..."
-    cp plot/${WF}_${CAMPAIGN}_${YEAR}${VERSION}/* "$CAMPAIGN$VERSION/$WF/." || {
-        echo -e "${RED}Warning: Failed to copy plot files${NC}"
-    }
+    if ls plot/${WF}_${CAMPAIGN}_${YEAR}${VERSION}/* 1>/dev/null 2>&1; then
+        cp plot/${WF}_${CAMPAIGN}_${YEAR}${VERSION}/* "$CAMPAIGN$VERSION/$WF/."
+    else
+        echo "${YELLOW}Warning: No plot files found matching pattern${NC}"
+    fi
     
     echo -e "${GREEN}Local directories prepared${NC}"
-}
+}}
 
 # Upload files to EOS
 upload_to_eos() {
@@ -344,7 +350,8 @@ if __name__ == "__main__":
         # scale factor workflows
         "SF": ["BTA_ttbar", "BTA_addPFMuons"],
         # Use for prompt data MC checks for analysis
-        "Validation": ["ttdilep_sf", "ctag_Wc_sf"],
+        #"Validation": ["ttdilep_sf", "ctag_Wc_sf"],
+        "Validation": ["ttdilep_sf"], ### TODO: change to all after testing
         # commissioning workflows
         "default_comissioning": [
             "ttdilep_sf",
@@ -521,20 +528,22 @@ if __name__ == "__main__":
                     print(f"Upload plots&coffea to eos: {wf}")
                 if not args.local:
                     # Create and execute the EOS upload script
+                    os.system(f"mkdir -p {args.campaign}/{wf}")
+                    os.system(f"mkdir -p {args.campaign}{args.version}/{wf}")
+                    
+                    # Copy files to local directories
+                    os.system(f"cp scripts/index.php {args.campaign}{args.version}/. || echo 'Warning: Could not copy index.php'")
+                    os.system(f"cp scripts/index.php {args.campaign}/{wf}/. || echo 'Warning: Could not copy index.php'")
+                    
+                    # Copy coffea and plot files with more specific paths
+                    os.system(f"cp hists_{wf}_*_{args.campaign}_{args.year}_{wf}/*.coffea {args.campaign}/{wf}/. || echo 'Warning: No coffea files found'")
+                    os.system(f"cp plot/{wf}_{args.campaign}_{args.year}{args.version}/* {args.campaign}{args.version}/{wf}/. || echo 'Warning: No plot files found'")
+                    
+                    # Create upload script
                     upload_script = create_eos_upload_script()
                     force_flag = "--force" if args.overwrite else ""
                     
-                    if args.debug:
-                        print(f"Upload plots & coffea to EOS: {wf}")
-                    
-                    # First create local directories and copy files (for reliability)
-                    os.system(f"mkdir -p {args.campaign}{args.version}/{wf}")
-                    os.system(f"cp scripts/index.php {args.campaign}{args.version}/.")
-                    os.system(f"cp scripts/index.php {args.campaign}/{wf}/.")
-                    os.system(f"cp hists_{wf}_*_{args.campaign}_{args.year}_{wf}/*.coffea {args.campaign}/{wf}/.")
-                    os.system(f"cp plot/{wf}_{args.campaign}_{args.year}{args.version}/* {args.campaign}{args.version}/{wf}/.")
-                    
-                    # Now call the upload script for the actual EOS transfer
+                    # Execute upload script with correct parameters
                     upload_cmd = f"{upload_script} {args.campaign} {args.version} {wf} {args.scheme} {force_flag}"
                     print(f"Executing: {upload_cmd}")
                     exit_code = os.system(upload_cmd)
