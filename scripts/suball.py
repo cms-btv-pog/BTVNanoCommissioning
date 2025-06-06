@@ -97,19 +97,22 @@ prepare_files() {
         echo "Warning: index.php not found in scripts directory"
     fi
     
-    # Find all coffea files - use more flexible patterns
+    # Find all coffea files - FIXED pattern to match actual file structure
     echo "Finding coffea files..."
     COFFEA_FILES_COUNT=0
     
-    # Try specific pattern first
-    for COFFEA_FILE in $(find . -path "*/hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea" 2>/dev/null); do
+    # Direct pattern for exact coffea files
+    echo "Looking for coffea files matching exact pattern: ./hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea"
+    for COFFEA_FILE in $(find . -name "hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}.coffea" 2>/dev/null); do
         echo "Found coffea file: $COFFEA_FILE"
         cp "$COFFEA_FILE" ./upload_tmp/coffea/$CAMPAIGN/$WF/
         COFFEA_FILES_COUNT=$((COFFEA_FILES_COUNT + 1))
     done
     
-    # If no files found, try broader pattern
+    # If no files found, try broader patterns
     if [ $COFFEA_FILES_COUNT -eq 0 ]; then
+        echo "No coffea files found with exact pattern, trying broader patterns..."
+        # Try to find coffea files in subdirectories
         for COFFEA_FILE in $(find . -path "*/hists_${WF}_*/*.coffea" 2>/dev/null); do
             echo "Found coffea file with broader pattern: $COFFEA_FILE"
             cp "$COFFEA_FILE" ./upload_tmp/coffea/$CAMPAIGN/$WF/
@@ -176,7 +179,7 @@ prepare_files() {
     return 0
 }
 
-# Upload using xrdcp
+# Upload using xrdcp - FIXED to not use unsupported --mkdir option
 upload_files() {
     echo -e "${YELLOW}Uploading files...${NC}"
     UPLOAD_SUCCESS=0
@@ -189,8 +192,12 @@ upload_files() {
         echo "DEBUG: xrdcp source: ./upload_tmp/coffea/$CAMPAIGN/$WF/"
         echo "DEBUG: xrdcp target: $TARGET_PATH"
         
-        # Create target directory and upload
-        xrdcp -r -p --mkdir $OVERWRITE ./upload_tmp/coffea/$CAMPAIGN/$WF/ "$TARGET_PATH"
+        # Create directories first using xrdfs
+        echo "Creating target directories using xrdfs..."
+        xrdfs root://eosuser.cern.ch/ mkdir -p /eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN/$WF
+        
+        # Then upload using xrdcp without --mkdir
+        xrdcp -r -p $OVERWRITE ./upload_tmp/coffea/$CAMPAIGN/$WF/ "$TARGET_PATH"
         XRDCP_STATUS=$?
         
         if [ $XRDCP_STATUS -eq 0 ]; then
@@ -211,8 +218,12 @@ upload_files() {
         echo "DEBUG: xrdcp source: ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/"
         echo "DEBUG: xrdcp target: $TARGET_PATH"
         
-        # Create target directory and upload
-        xrdcp -r -p --mkdir $OVERWRITE ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/ "$TARGET_PATH"
+        # Create directories first using xrdfs
+        echo "Creating target directories using xrdfs..."
+        xrdfs root://eosuser.cern.ch/ mkdir -p /eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/$WF
+        
+        # Then upload using xrdcp without --mkdir
+        xrdcp -r -p $OVERWRITE ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/ "$TARGET_PATH"
         XRDCP_STATUS=$?
         
         if [ $XRDCP_STATUS -eq 0 ]; then
