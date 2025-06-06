@@ -130,7 +130,7 @@ def dump_lumi(output, fname):
         script.write("        if ! command -v brilcalc &> /dev/null; then\n")
         script.write("            echo 'Installing brilws with specific dependencies...'\n")
         script.write("            # Install specific older SQLAlchemy version that has frontier\n")
-        script.write("            pip install --user sqlalchemy==1.4.46\n")
+        script.write("            pip install --user sqlalchemy==1.2.19\n")
         script.write("            # Install prettytable first - this was missing before\n")
         script.write("            pip install --user prettytable\n")
         script.write("            pip install --user brilws docopt pandas schema cx-Oracle PyYAML\n")
