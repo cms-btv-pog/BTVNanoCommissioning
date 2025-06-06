@@ -11,82 +11,15 @@ sys.path.insert(0, parent_dir)
 
 from runner import config_parser, scaleout_parser, debug_parser
   
-# Add this function after your imports
-def ensure_eos_client():
-    """Install EOS client if not available"""
-    import os
-    import subprocess
-    
-    # Check if eos command exists
-    has_eos = subprocess.call("which eos > /dev/null", shell=True) == 0
-    
-    if not has_eos:
-        print("EOS client not found. Attempting to install...")
-        
-        # Create a script to install EOS client
-        with open("install_eos_client.sh", "w") as f:
-            f.write("""#!/bin/bash
-set -e
-
-# Add CERN repository for EOS client
-echo "Adding CERN repositories..."
-if [ -f /etc/os-release ]; then
-    source /etc/os-release
-    if [[ "$ID" == "centos" ]] || [[ "$ID" == "scientific" ]]; then
-        # For CentOS/SLC
-        sudo yum install -y epel-release
-        sudo rpm -Uvh https://linuxsoft.cern.ch/cern/centos7/cern-get-certificate.rpm
-        sudo rpm -Uvh https://linuxsoft.cern.ch/cern/centos7/cern-get-keytab.rpm
-        sudo rpm -Uvh https://linuxsoft.cern.ch/cern/centos7/cern-get-sso-cookie.rpm
-        sudo rpm -Uvh https://linuxsoft.cern.ch/cern/centos7/CERN-CA-certs.rpm
-        sudo wget -O /etc/yum.repos.d/cern-eos.repo https://linuxsoft.cern.ch/eos/centos/7/eos.repo
-        sudo yum install -y eos-client
-    elif [[ "$ID" == "ubuntu" ]] || [[ "$ID" == "debian" ]]; then
-        # For Ubuntu/Debian
-        wget -q -O - https://linuxsoft.cern.ch/cern/centos/7/cern.key | sudo apt-key add -
-        echo "deb https://linuxsoft.cern.ch/cern/ubuntu/$(lsb_release -sc) stable" | sudo tee /etc/apt/sources.list.d/cern.list
-        sudo apt-get update
-        sudo apt-get install -y eos-client
-    else
-        echo "Unsupported OS: $ID"
-        exit 1
-    fi
-else
-    echo "Cannot determine OS type"
-    exit 1
-fi
-
-# Test EOS client installation
-echo "Testing EOS client..."
-eos --version
-""")
-        
-        # Make executable
-        os.chmod("install_eos_client.sh", 0o755)
-        
-        # Try to run as sudo if available
-        has_sudo = subprocess.call("which sudo > /dev/null", shell=True) == 0
-        
-        if has_sudo:
-            print("Running installation with sudo...")
-            return subprocess.call("sudo ./install_eos_client.sh", shell=True) == 0
-        else:
-            print("Running installation without sudo...")
-            return subprocess.call("./install_eos_client.sh", shell=True) == 0
-    
-    return True
 
 def create_eos_upload_script():
-    """Create a bash script for reliable EOS uploads"""
+    """Create a bash script for reliable file uploads using xrdcp only"""
     upload_script = os.path.join(os.path.dirname(__file__), "upload_to_eos.sh")
     
-    # Only create the script if it doesn't exist or force overwrite
-    if not os.path.exists(upload_script) or True:  # Always recreate for now to fix the syntax error
-        print("Creating EOS upload script...")
-        with open(upload_script, "w") as f:
-            f.write("""#!/bin/bash
-# EOS Upload Script for BTVNanoCommissioning
-
+    print("Creating upload script using xrdcp...")
+    with open(upload_script, "w") as f:
+        f.write("""#!/bin/bash
+# Simple Upload Script for BTVNanoCommissioning using xrdcp only
 set -e
 
 CAMPAIGN=$1
@@ -109,52 +42,26 @@ YELLOW='\\033[1;33m'
 RED='\\033[0;31m'
 NC='\\033[0m' # No Color
 
-echo -e "${GREEN}=== BTV Commissioning EOS Upload ===${NC}"
+echo -e "${GREEN}=== BTV Commissioning Upload ===${NC}"
 echo "Campaign: $CAMPAIGN"
 echo "Workflow: $WF"
 echo "Scheme: $SCHEME"
 echo "Target: /eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION"
 
-# Ensure EOS client is available
-ensure_eos_client() {
-    echo -e "${YELLOW}Checking for EOS client...${NC}"
-    if ! command -v eos &> /dev/null; then
-        echo -e "${YELLOW}EOS client not found, attempting to use xrdcp${NC}"
-        if ! command -v xrdcp &> /dev/null; then
-            echo -e "${RED}Neither eos nor xrdcp available${NC}"
-            return 1
-        fi
-        return 0
-    fi
-    echo -e "${GREEN}EOS client available${NC}"
-    return 0
-}
-
-# Set up authentication for EOS
+# Set up authentication for uploads
 setup_auth() {
     echo -e "${YELLOW}Setting up authentication...${NC}"
-    
-    # Try various authentication methods
-    if [ -f "$HOME/.globus/usercert.pem" ] && [ -f "$HOME/.globus/userkey.pem" ]; then
-        echo "Grid certificate found"
-        voms-proxy-init -voms cms -rfc -valid 24:00
-        return 0
-    fi
     
     # Check for existing proxy files in common locations
     if [ -f "/tmp/x509up_u$(id -u)" ]; then
         echo "Found proxy in /tmp/x509up_u$(id -u)"
         export X509_USER_PROXY="/tmp/x509up_u$(id -u)"
-        voms-proxy-info -all || echo "Could not read proxy info"
-        return 0
     fi
     
     # Check GitLab CI specific location
     if [ -f "/builds/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy" ]; then
         echo "Found GitLab CI proxy file"
         export X509_USER_PROXY="/builds/cms-analysis/btv/software-and-algorithms/autobtv/proxy/x509_proxy"
-        voms-proxy-info -all || echo "Could not read proxy info"
-        return 0
     fi
     
     # If we find a proxy file in the current directory or parent directories
@@ -162,248 +69,206 @@ setup_auth() {
     if [ -n "$PROXY_FILE" ]; then
         echo "Found proxy file: $PROXY_FILE"
         export X509_USER_PROXY="$PROXY_FILE"
-        voms-proxy-info -all || echo "Could not read proxy info"
-        return 0
     fi
     
-    if command -v kinit &> /dev/null && [ -n "$KRB5_PRINCIPAL" ]; then
-        echo "Using Kerberos authentication"
-        if [ -n "$KRB5_KEYTAB" ]; then
-            kinit -kt "$KRB5_KEYTAB" "$KRB5_PRINCIPAL"
-        else
-            echo "No keytab found. Please enter your Kerberos password:"
-            kinit "$KRB5_PRINCIPAL"
-        fi
-        return 0
+    # Display proxy info if available
+    if [ -n "$X509_USER_PROXY" ]; then
+        voms-proxy-info -all 2>/dev/null || echo "Cannot read proxy info"
+    else
+        echo -e "${YELLOW}No proxy file found, will try default authentication${NC}"
     fi
-    
-    if [ -n "$EOS_TOKEN" ]; then
-        echo "Using EOS token from environment"
-        mkdir -p ~/.eos
-        echo "$EOS_TOKEN" > ~/.eos/token
-        chmod 600 ~/.eos/token
-        export XrdSecPROTOCOL=sss
-        return 0
-    fi
-    
-    echo -e "${YELLOW}No explicit authentication found, will try default credentials${NC}"
-    return 0
 }
 
-# Create local directories
-create_local_dirs() {
-    echo -e "${YELLOW}Creating local directories...${NC}"
-    mkdir -p "$CAMPAIGN/$WF"
-    mkdir -p "$CAMPAIGN$VERSION/$WF"
+# Find all relevant files and prepare upload structure
+prepare_files() {
+    echo -e "${YELLOW}Preparing files for upload...${NC}"
     
-    # Copy index files (with error handling)
-    cp scripts/index.php "$CAMPAIGN$VERSION/." || echo "Warning: Could not copy index.php to campaign dir"
-    cp scripts/index.php "$CAMPAIGN/$WF/." || echo "Warning: Could not copy index.php to workflow dir"
+    # Create temporary directories for collecting files
+    mkdir -p ./upload_tmp/coffea/$CAMPAIGN/$WF
+    mkdir -p ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF
     
-    # Debug - list all hists directories to see what's available
-    echo "DEBUG: Available hists directories:"
-    find . -name "hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}" -type d | sort
+    # Copy index files
+    if [ -f "scripts/index.php" ]; then
+        cp scripts/index.php ./upload_tmp/coffea/$CAMPAIGN/
+        cp scripts/index.php ./upload_tmp/coffea/$CAMPAIGN/$WF/
+        cp scripts/index.php ./upload_tmp/plots/$CAMPAIGN$VERSION/
+        cp scripts/index.php ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/
+    else
+        echo "Warning: index.php not found in scripts directory"
+    fi
     
-    # Debug - list all plot directories to see what's available
-    echo "DEBUG: Available plot directories:"
-    find . -name "plot" -type d | sort
-    find ./plot -name "${WF}_${CAMPAIGN}_${YEAR}${VERSION}*" -type d 2>/dev/null | sort
+    # Find all coffea files - use more flexible patterns
+    echo "Finding coffea files..."
+    COFFEA_FILES_COUNT=0
     
-    # Copy coffea files with explicit error handling - more flexible pattern
-    echo "Copying coffea files..."
-    for COFFEA_DIR in $(find . -name "hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}" -type d); do
-        echo "Checking coffea dir: $COFFEA_DIR"
-        if [ -d "$COFFEA_DIR" ] && [ "$(find "$COFFEA_DIR" -name "*.coffea" | wc -l)" -gt 0 ]; then
-            echo "Copying from $COFFEA_DIR/*.coffea to $CAMPAIGN/$WF/"
-            cp "$COFFEA_DIR"/*.coffea "$CAMPAIGN/$WF/." || echo "Warning: Could not copy from $COFFEA_DIR"
-        fi
+    # Try specific pattern first
+    for COFFEA_FILE in $(find . -path "*/hists_${WF}_*_${CAMPAIGN}_${YEAR}_${WF}/*.coffea" 2>/dev/null); do
+        echo "Found coffea file: $COFFEA_FILE"
+        cp "$COFFEA_FILE" ./upload_tmp/coffea/$CAMPAIGN/$WF/
+        COFFEA_FILES_COUNT=$((COFFEA_FILES_COUNT + 1))
     done
     
-    # Copy plot files with explicit error handling - more flexible pattern
-    echo "Copying plot files..."
-    if [ -d "plot" ]; then
-        for PLOT_DIR in $(find ./plot -name "${WF}_${CAMPAIGN}_${YEAR}${VERSION}*" -type d 2>/dev/null); do
-            echo "Found plot dir: $PLOT_DIR"
-            if [ -d "$PLOT_DIR" ] && [ "$(find "$PLOT_DIR" -name "*.png" -o -name "*.pdf" | wc -l)" -gt 0 ]; then
-                echo "Copying from $PLOT_DIR/* to $CAMPAIGN$VERSION/$WF/"
-                cp "$PLOT_DIR"/* "$CAMPAIGN$VERSION/$WF/." || echo "Warning: Could not copy from $PLOT_DIR"
-            fi
+    # If no files found, try broader pattern
+    if [ $COFFEA_FILES_COUNT -eq 0 ]; then
+        for COFFEA_FILE in $(find . -path "*/hists_${WF}_*/*.coffea" 2>/dev/null); do
+            echo "Found coffea file with broader pattern: $COFFEA_FILE"
+            cp "$COFFEA_FILE" ./upload_tmp/coffea/$CAMPAIGN/$WF/
+            COFFEA_FILES_COUNT=$((COFFEA_FILES_COUNT + 1))
         done
-    else
-        echo -e "${YELLOW}Warning: Plot directory 'plot' does not exist${NC}"
     fi
     
-    # Verify files were copied
-    echo "DEBUG: Files in $CAMPAIGN/$WF directory:"
-    ls -la "$CAMPAIGN/$WF" || echo "Directory is empty or doesn't exist"
+    # Find all plot files - use multiple patterns
+    echo "Finding plot files..."
+    PLOT_FILES_COUNT=0
     
-    echo "DEBUG: Files in $CAMPAIGN$VERSION/$WF directory:"
-    ls -la "$CAMPAIGN$VERSION/$WF" || echo "Directory is empty or doesn't exist"
+    # Look in the plot directory with flexible patterns
+    # Try specific pattern first (workflow_campaign_year)
+    for PLOT_FILE in $(find ./plot -path "*/${WF}_${CAMPAIGN}_${YEAR}*/*" -name "*.png" -o -name "*.pdf" 2>/dev/null); do
+        echo "Found plot file: $PLOT_FILE"
+        cp "$PLOT_FILE" ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/
+        PLOT_FILES_COUNT=$((PLOT_FILES_COUNT + 1))
+    done
     
-    echo -e "${GREEN}Local directories prepared${NC}"
-}
-
-# Upload files to EOS
-upload_to_eos() {
-    echo -e "${YELLOW}Uploading to EOS...${NC}"
-    TARGET_DIR="/eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION"
-    
-    # Debug info
-    echo "DEBUG: Current directory: $(pwd)"
-    echo "DEBUG: Directory contents:"
-    ls -la "$CAMPAIGN$VERSION/$WF" || echo "Directory does not exist!"
-    
-    # First try using direct eos commands if available
-    if command -v eos &> /dev/null; then
-        echo "Using eos commands for upload"
-        echo "DEBUG: EOS version: $(eos --version 2>&1)"
-        echo "DEBUG: EOS env vars:"
-        env | grep -i eos || echo "No EOS environment variables found"
-        
-        # Create target directory with verbose output
-        echo "DEBUG: Creating directory: $TARGET_DIR"
-        eos mkdir -p "$TARGET_DIR" 
-        EOS_MKDIR_STATUS=$?
-        echo "DEBUG: EOS mkdir exit status: $EOS_MKDIR_STATUS"
-        
-        # Try to list directory to verify creation
-        echo "DEBUG: Attempting to list target directory:"
-        eos ls -la "$TARGET_DIR" || echo "Cannot list target directory!"
-        
-        # Copy files with verbose output
-        echo "DEBUG: Copying from: $CAMPAIGN$VERSION/$WF"
-        echo "DEBUG: Copying to: $TARGET_DIR/"
-        eos cp -r "$CAMPAIGN$VERSION/$WF" "$TARGET_DIR/" 
-        EOS_CP_STATUS=$?
-        echo "DEBUG: EOS cp exit status: $EOS_CP_STATUS"
-        
-        if [ $EOS_CP_STATUS -ne 0 ]; then
-            echo -e "${RED}eos cp failed with status $EOS_CP_STATUS, falling back to xrdcp${NC}"
-            upload_with_xrdcp
-        fi
-    else
-        # Debug info for fallback
-        echo "DEBUG: EOS command not found"
-        echo "DEBUG: Available tools:"
-        which xrdcp xrdfs voms-proxy-info 2>/dev/null || echo "No common grid tools found"
-        echo "DEBUG: Proxy info:"
-        [ -f /tmp/x509up_u$(id -u) ] && ls -la /tmp/x509up_u$(id -u) || echo "No proxy file found"
-        voms-proxy-info -all 2>/dev/null || echo "Cannot get proxy info"
-        
-        # Use xrdcp
-        upload_with_xrdcp
+    # Try a more general pattern based on workflow name
+    if [ $PLOT_FILES_COUNT -eq 0 ]; then
+        for PLOT_FILE in $(find ./plot -path "*/${WF}_*/*" -name "*.png" -o -name "*.pdf" 2>/dev/null); do
+            echo "Found plot file with broader pattern: $PLOT_FILE"
+            cp "$PLOT_FILE" ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/
+            PLOT_FILES_COUNT=$((PLOT_FILES_COUNT + 1))
+        done
     fi
-}
-
-# Upload using xrdcp as fallback
-upload_with_xrdcp() {
-    echo "Using xrdcp for upload"
-    echo "DEBUG: xrdcp version: $(xrdcp --version 2>&1 || echo 'Cannot get version')"
-    echo "DEBUG: Source path: $CAMPAIGN$VERSION/$WF"
-    echo "DEBUG: Target path: root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/"
-    echo "DEBUG: Source files:"
-    ls -la "$CAMPAIGN$VERSION/$WF" || echo "Source directory does not exist or is empty"
     
-    # Try initial upload
-    xrdcp -r -v $OVERWRITE "$CAMPAIGN$VERSION/$WF" "root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/" 
-    XRDCP_STATUS=$?
-    echo "DEBUG: xrdcp exit status: $XRDCP_STATUS"
-    
-    if [ $XRDCP_STATUS -ne 0 ]; then
-        echo -e "${RED}xrdcp failed with status $XRDCP_STATUS${NC}"
-        echo "DEBUG: Network connectivity test:"
-        ping -c 2 eosuser.cern.ch || echo "Cannot ping eosuser.cern.ch"
-        traceroute -m 5 eosuser.cern.ch || echo "Cannot trace route to eosuser.cern.ch"
-        
-        echo "Retrying with recursive directory creation..."
-        xrdcp -r -v -p --mkdir $OVERWRITE "$CAMPAIGN$VERSION/$WF" "root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/" 
-        XRDCP_RETRY_STATUS=$?
-        echo "DEBUG: xrdcp retry exit status: $XRDCP_RETRY_STATUS"
-        
-        if [ $XRDCP_RETRY_STATUS -ne 0 ]; then
-            echo -e "${RED}All upload methods failed${NC}"
-            return 1
-        fi
+    # Last resort - check if any files in the plot directory match the workflow name pattern
+    if [ $PLOT_FILES_COUNT -eq 0 ]; then
+        for PLOT_FILE in $(find ./plot -path "*${WF}*/*" -name "*.png" -o -name "*.pdf" 2>/dev/null); do
+            echo "Found plot file with workflow in path: $PLOT_FILE"
+            cp "$PLOT_FILE" ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/
+            PLOT_FILES_COUNT=$((PLOT_FILES_COUNT + 1))
+        done
     fi
-    echo -e "${GREEN}Upload successful using xrdcp${NC}"
+    
+    # Check if the workflow name is part of a different format
+    if [ $PLOT_FILES_COUNT -eq 0 ]; then
+        # Look for files with ttdilep_sf (for example) somewhere in the path
+        for PLOT_FILE in $(find ./plot -type f \( -name "*.png" -o -name "*.pdf" \) | grep -i "${WF}" 2>/dev/null); do
+            echo "Found plot file with workflow in filename: $PLOT_FILE"
+            cp "$PLOT_FILE" ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/
+            PLOT_FILES_COUNT=$((PLOT_FILES_COUNT + 1))
+        done
+    fi
+    
+    # Report found files
+    echo "Found $COFFEA_FILES_COUNT coffea files and $PLOT_FILES_COUNT plot files"
+    
+    # List files for verification
+    echo "Coffea files to upload:"
+    ls -la ./upload_tmp/coffea/$CAMPAIGN/$WF/
+    
+    echo "Plot files to upload:"
+    ls -la ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/
+    
+    # Check if we have any files to upload
+    if [ $COFFEA_FILES_COUNT -eq 0 ] && [ $PLOT_FILES_COUNT -eq 0 ]; then
+        echo -e "${RED}No files found to upload!${NC}"
+        return 1
+    fi
+    
     return 0
+}
+
+# Upload using xrdcp
+upload_files() {
+    echo -e "${YELLOW}Uploading files...${NC}"
+    UPLOAD_SUCCESS=0
+    
+    # Upload coffea files if any exist
+    if [ -n "$(ls -A ./upload_tmp/coffea/$CAMPAIGN/$WF/ 2>/dev/null)" ]; then
+        echo "Uploading coffea files..."
+        TARGET_PATH="root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN/"
+        
+        echo "DEBUG: xrdcp source: ./upload_tmp/coffea/$CAMPAIGN/$WF/"
+        echo "DEBUG: xrdcp target: $TARGET_PATH"
+        
+        # Create target directory and upload
+        xrdcp -r -p --mkdir $OVERWRITE ./upload_tmp/coffea/$CAMPAIGN/$WF/ "$TARGET_PATH"
+        XRDCP_STATUS=$?
+        
+        if [ $XRDCP_STATUS -eq 0 ]; then
+            echo -e "${GREEN}Coffea files uploaded successfully${NC}"
+            UPLOAD_SUCCESS=1
+        else
+            echo -e "${RED}Failed to upload coffea files, status: $XRDCP_STATUS${NC}"
+        fi
+    else
+        echo "No coffea files to upload"
+    fi
+    
+    # Upload plot files if any exist
+    if [ -n "$(ls -A ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/ 2>/dev/null)" ]; then
+        echo "Uploading plot files..."
+        TARGET_PATH="root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/"
+        
+        echo "DEBUG: xrdcp source: ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/"
+        echo "DEBUG: xrdcp target: $TARGET_PATH"
+        
+        # Create target directory and upload
+        xrdcp -r -p --mkdir $OVERWRITE ./upload_tmp/plots/$CAMPAIGN$VERSION/$WF/ "$TARGET_PATH"
+        XRDCP_STATUS=$?
+        
+        if [ $XRDCP_STATUS -eq 0 ]; then
+            echo -e "${GREEN}Plot files uploaded successfully${NC}"
+            UPLOAD_SUCCESS=1
+        else
+            echo -e "${RED}Failed to upload plot files, status: $XRDCP_STATUS${NC}"
+        fi
+    else
+        echo "No plot files to upload"
+    fi
+    
+    # Cleanup
+    echo "Cleaning up temporary files..."
+    rm -rf ./upload_tmp
+    
+    if [ $UPLOAD_SUCCESS -eq 1 ]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Main execution flow
 main() {
-    # Create local directories first (always needed)
-    create_local_dirs
-    
-    # Ensure EOS client is available
-    ensure_eos_client
-    
     # Set up authentication
     setup_auth
     
-    # Upload to EOS
-    upload_to_eos
+    # Prepare files for upload
+    prepare_files
+    PREP_STATUS=$?
     
-    echo -e "${GREEN}BTV Commissioning upload completed${NC}"
+    if [ $PREP_STATUS -ne 0 ]; then
+        echo -e "${RED}Failed to prepare files for upload${NC}"
+        return 1
+    fi
+    
+    # Upload files
+    upload_files
+    UPLOAD_STATUS=$?
+    
+    if [ $UPLOAD_STATUS -eq 0 ]; then
+        echo -e "${GREEN}Upload completed successfully${NC}"
+        return 0
+    else
+        echo -e "${RED}Upload failed${NC}"
+        return 1
+    fi
 }
 
 # Run the main function
 main
 """)
-        os.chmod(upload_script, 0o755)
-        print(f"Created EOS upload script: {upload_script}")
+    os.chmod(upload_script, 0o755)
+    print(f"Created upload script: {upload_script}")
     return upload_script
-
-def eos_python_wrapper(command):
-    """Python wrapper for EOS commands using XRootD"""
-    import subprocess
-    from XRootD import client
-    
-    # Parse command
-    cmd_parts = command.split()
-    if len(cmd_parts) < 2:
-        print(f"Invalid EOS command: {command}")
-        return 1
-    
-    action = cmd_parts[1]
-    
-    # Create XRootD client
-    fs = client.FileSystem("root://eosuser.cern.ch")
-    
-    if action == "mkdir":
-        # Handle mkdir command
-        if "-p" in cmd_parts:
-            # Remove -p flag
-            cmd_parts.remove("-p")
-        
-        path = cmd_parts[-1].replace("/eos/user/", "/")
-        status, _ = fs.mkdir(path, flags=client.MkDirFlags.MAKEPATH)
-        return 0 if status.ok else 1
-        
-    elif action == "cp":
-        # Handle copy command
-        is_recursive = "-r" in cmd_parts
-        if is_recursive:
-            cmd_parts.remove("-r")
-        
-        source = cmd_parts[-2]
-        target = cmd_parts[-1]
-        
-        if target.startswith("/eos/"):
-            target = target.replace("/eos/user/", "/")
-            # For recursive copy, we need to use xrdcp
-            if is_recursive:
-                return subprocess.call(f"xrdcp -r {source} root://eosuser.cern.ch/{target}", shell=True)
-            else:
-                # For single file copy
-                with open(source, "rb") as src_file:
-                    content = src_file.read()
-                    status, _ = fs.write(target, content)
-                    return 0 if status.ok else 1
-    
-    # Fallback to xrdfs for other commands
-    print(f"Using xrdfs for: {command}")
-    converted_cmd = command.replace("eos ", "xrdfs root://eosuser.cern.ch ")
-    return subprocess.call(converted_cmd, shell=True)
     
 def add_file_level_fallbacks():
     """Monkey-patch uproot to use fallback redirectors for individual files"""
@@ -745,26 +610,23 @@ if __name__ == "__main__":
                 if not args.local:
                     
                     if args.debug:
-                        print("Checking for EOS client...")
-                        print(f"Checking for script files in path...")
-                    os.system("find . -name 'index.php'")
-                    os.system(f"find . -name 'hists_{wf}_*_*' -type d")
-                    os.system(f"find . -name 'plot' -type d")
-                    ensure_eos = ensure_eos_client()
-                    # Ensure local directories exist
-                    os.system(f"mkdir -p {args.campaign}/{wf}")
-                    os.system(f"mkdir -p {args.campaign}{args.version}/{wf}")
-                    
+                        print(f"Preparing to upload files for {wf}...")
+                        print("Searching for files to upload:")
+                        
+                        # Look for coffea files
+                        print("\nLooking for coffea files:")
+                        os.system(f"find . -name 'hists_{wf}_*' -type d | sort")
+                        os.system(f"find . -name '*.coffea' | grep {wf} | head -10")
+                        
+                        # Look for plot files with very flexible patterns
+                        print("\nLooking for plot files:")
+                        os.system(f"find ./plot -type d | sort")
+                        os.system(f"find ./plot -name '*.png' | head -5")
+                        os.system(f"find ./plot -path '*{wf}*' -name '*.png' | head -5")
+                        
                     # Create and get the upload script path
                     upload_script = create_eos_upload_script()
                     force_flag = "--force" if args.overwrite else ""
-                    
-                    if args.debug:
-                        print(f"Upload plots & coffea to EOS: {wf}")
-                        # Optionally print the script contents for debugging
-                        with open(upload_script, 'r') as f:
-                            print(f"Upload script contents:")
-                            print(f.read())
                     
                     # Execute the upload script with the correct parameters
                     upload_cmd = f"{upload_script} {args.campaign} {args.version} {wf} {args.scheme} {force_flag}"
@@ -772,7 +634,7 @@ if __name__ == "__main__":
                     exit_code = os.system(upload_cmd)
                     
                     if exit_code != 0:
-                        print(f"Warning: EOS upload script exited with code {exit_code}")
+                        print(f"Warning: Upload script exited with code {exit_code}")
                         # Continue with local copies
                         print("Local copies of files have been created")
             else:
