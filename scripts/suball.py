@@ -12,6 +12,69 @@ sys.path.insert(0, parent_dir)
 from runner import config_parser, scaleout_parser, debug_parser
   
 # Add this function after your imports
+def ensure_eos_client():
+    """Install EOS client if not available"""
+    import os
+    import subprocess
+    
+    # Check if eos command exists
+    has_eos = subprocess.call("which eos > /dev/null", shell=True) == 0
+    
+    if not has_eos:
+        print("EOS client not found. Attempting to install...")
+        
+        # Create a script to install EOS client
+        with open("install_eos_client.sh", "w") as f:
+            f.write("""#!/bin/bash
+set -e
+
+# Add CERN repository for EOS client
+echo "Adding CERN repositories..."
+if [ -f /etc/os-release ]; then
+    source /etc/os-release
+    if [[ "$ID" == "centos" ]] || [[ "$ID" == "scientific" ]]; then
+        # For CentOS/SLC
+        sudo yum install -y epel-release
+        sudo rpm -Uvh https://linuxsoft.cern.ch/cern/centos7/cern-get-certificate.rpm
+        sudo rpm -Uvh https://linuxsoft.cern.ch/cern/centos7/cern-get-keytab.rpm
+        sudo rpm -Uvh https://linuxsoft.cern.ch/cern/centos7/cern-get-sso-cookie.rpm
+        sudo rpm -Uvh https://linuxsoft.cern.ch/cern/centos7/CERN-CA-certs.rpm
+        sudo wget -O /etc/yum.repos.d/cern-eos.repo https://linuxsoft.cern.ch/eos/centos/7/eos.repo
+        sudo yum install -y eos-client
+    elif [[ "$ID" == "ubuntu" ]] || [[ "$ID" == "debian" ]]; then
+        # For Ubuntu/Debian
+        wget -q -O - https://linuxsoft.cern.ch/cern/centos/7/cern.key | sudo apt-key add -
+        echo "deb https://linuxsoft.cern.ch/cern/ubuntu/$(lsb_release -sc) stable" | sudo tee /etc/apt/sources.list.d/cern.list
+        sudo apt-get update
+        sudo apt-get install -y eos-client
+    else
+        echo "Unsupported OS: $ID"
+        exit 1
+    fi
+else
+    echo "Cannot determine OS type"
+    exit 1
+fi
+
+# Test EOS client installation
+echo "Testing EOS client..."
+eos --version
+""")
+        
+        # Make executable
+        os.chmod("install_eos_client.sh", 0o755)
+        
+        # Try to run as sudo if available
+        has_sudo = subprocess.call("which sudo > /dev/null", shell=True) == 0
+        
+        if has_sudo:
+            print("Running installation with sudo...")
+            return subprocess.call("sudo ./install_eos_client.sh", shell=True) == 0
+        else:
+            print("Running installation without sudo...")
+            return subprocess.call("./install_eos_client.sh", shell=True) == 0
+    
+    return True
 
 def create_eos_upload_script():
     """Create a bash script for reliable EOS uploads"""
@@ -136,15 +199,48 @@ upload_to_eos() {
     echo -e "${YELLOW}Uploading to EOS...${NC}"
     TARGET_DIR="/eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION"
     
+    # Debug info
+    echo "DEBUG: Current directory: $(pwd)"
+    echo "DEBUG: Directory contents:"
+    ls -la "$CAMPAIGN$VERSION/$WF" || echo "Directory does not exist!"
+    
     # First try using direct eos commands if available
     if command -v eos &> /dev/null; then
         echo "Using eos commands for upload"
-        eos mkdir -p "$TARGET_DIR" || echo "Warning: Could not create directory on EOS"
-        eos cp -r "$CAMPAIGN$VERSION/$WF" "$TARGET_DIR/" || {
-            echo -e "${RED}eos cp failed, falling back to xrdcp${NC}"
+        echo "DEBUG: EOS version: $(eos --version 2>&1)"
+        echo "DEBUG: EOS env vars:"
+        env | grep -i eos || echo "No EOS environment variables found"
+        
+        # Create target directory with verbose output
+        echo "DEBUG: Creating directory: $TARGET_DIR"
+        eos mkdir -p "$TARGET_DIR" 
+        EOS_MKDIR_STATUS=$?
+        echo "DEBUG: EOS mkdir exit status: $EOS_MKDIR_STATUS"
+        
+        # Try to list directory to verify creation
+        echo "DEBUG: Attempting to list target directory:"
+        eos ls -la "$TARGET_DIR" || echo "Cannot list target directory!"
+        
+        # Copy files with verbose output
+        echo "DEBUG: Copying from: $CAMPAIGN$VERSION/$WF"
+        echo "DEBUG: Copying to: $TARGET_DIR/"
+        eos cp -r "$CAMPAIGN$VERSION/$WF" "$TARGET_DIR/" 
+        EOS_CP_STATUS=$?
+        echo "DEBUG: EOS cp exit status: $EOS_CP_STATUS"
+        
+        if [ $EOS_CP_STATUS -ne 0 ]; then
+            echo -e "${RED}eos cp failed with status $EOS_CP_STATUS, falling back to xrdcp${NC}"
             upload_with_xrdcp
-        }
+        fi
     else
+        # Debug info for fallback
+        echo "DEBUG: EOS command not found"
+        echo "DEBUG: Available tools:"
+        which xrdcp xrdfs voms-proxy-info 2>/dev/null || echo "No common grid tools found"
+        echo "DEBUG: Proxy info:"
+        [ -f /tmp/x509up_u$(id -u) ] && ls -la /tmp/x509up_u$(id -u) || echo "No proxy file found"
+        voms-proxy-info -all 2>/dev/null || echo "Cannot get proxy info"
+        
         # Use xrdcp
         upload_with_xrdcp
     fi
@@ -153,12 +249,29 @@ upload_to_eos() {
 # Upload using xrdcp as fallback
 upload_with_xrdcp() {
     echo "Using xrdcp for upload"
-    xrdcp -r $OVERWRITE "$CAMPAIGN$VERSION/$WF" "root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/" 
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}xrdcp failed${NC}"
+    echo "DEBUG: xrdcp version: $(xrdcp --version 2>&1 || echo 'Cannot get version')"
+    echo "DEBUG: Source path: $CAMPAIGN$VERSION/$WF"
+    echo "DEBUG: Target path: root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/"
+    echo "DEBUG: Source files:"
+    ls -la "$CAMPAIGN$VERSION/$WF" || echo "Source directory does not exist or is empty"
+    
+    # Try initial upload
+    xrdcp -r -v $OVERWRITE "$CAMPAIGN$VERSION/$WF" "root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/" 
+    XRDCP_STATUS=$?
+    echo "DEBUG: xrdcp exit status: $XRDCP_STATUS"
+    
+    if [ $XRDCP_STATUS -ne 0 ]; then
+        echo -e "${RED}xrdcp failed with status $XRDCP_STATUS${NC}"
+        echo "DEBUG: Network connectivity test:"
+        ping -c 2 eosuser.cern.ch || echo "Cannot ping eosuser.cern.ch"
+        traceroute -m 5 eosuser.cern.ch || echo "Cannot trace route to eosuser.cern.ch"
+        
         echo "Retrying with recursive directory creation..."
-        xrdcp -r -p --mkdir $OVERWRITE "$CAMPAIGN$VERSION/$WF" "root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/" 
-        if [ $? -ne 0 ]; then
+        xrdcp -r -v -p --mkdir $OVERWRITE "$CAMPAIGN$VERSION/$WF" "root://eosuser.cern.ch//eos/user/b/btvweb/www/Commissioning/dataMC/$SCHEME/$CAMPAIGN$VERSION/" 
+        XRDCP_RETRY_STATUS=$?
+        echo "DEBUG: xrdcp retry exit status: $XRDCP_RETRY_STATUS"
+        
+        if [ $XRDCP_RETRY_STATUS -ne 0 ]; then
             echo -e "${RED}All upload methods failed${NC}"
             return 1
         fi
@@ -190,6 +303,58 @@ main
         os.chmod(upload_script, 0o755)
         print(f"Created EOS upload script: {upload_script}")
     return upload_script
+
+def eos_python_wrapper(command):
+    """Python wrapper for EOS commands using XRootD"""
+    import subprocess
+    from XRootD import client
+    
+    # Parse command
+    cmd_parts = command.split()
+    if len(cmd_parts) < 2:
+        print(f"Invalid EOS command: {command}")
+        return 1
+    
+    action = cmd_parts[1]
+    
+    # Create XRootD client
+    fs = client.FileSystem("root://eosuser.cern.ch")
+    
+    if action == "mkdir":
+        # Handle mkdir command
+        if "-p" in cmd_parts:
+            # Remove -p flag
+            cmd_parts.remove("-p")
+        
+        path = cmd_parts[-1].replace("/eos/user/", "/")
+        status, _ = fs.mkdir(path, flags=client.MkDirFlags.MAKEPATH)
+        return 0 if status.ok else 1
+        
+    elif action == "cp":
+        # Handle copy command
+        is_recursive = "-r" in cmd_parts
+        if is_recursive:
+            cmd_parts.remove("-r")
+        
+        source = cmd_parts[-2]
+        target = cmd_parts[-1]
+        
+        if target.startswith("/eos/"):
+            target = target.replace("/eos/user/", "/")
+            # For recursive copy, we need to use xrdcp
+            if is_recursive:
+                return subprocess.call(f"xrdcp -r {source} root://eosuser.cern.ch/{target}", shell=True)
+            else:
+                # For single file copy
+                with open(source, "rb") as src_file:
+                    content = src_file.read()
+                    status, _ = fs.write(target, content)
+                    return 0 if status.ok else 1
+    
+    # Fallback to xrdfs for other commands
+    print(f"Using xrdfs for: {command}")
+    converted_cmd = command.replace("eos ", "xrdfs root://eosuser.cern.ch ")
+    return subprocess.call(converted_cmd, shell=True)
     
 def add_file_level_fallbacks():
     """Monkey-patch uproot to use fallback redirectors for individual files"""
@@ -529,6 +694,9 @@ if __name__ == "__main__":
                 if args.debug:
                     print(f"Upload plots&coffea to eos: {wf}")
                 if not args.local:
+                    if args.debug:
+                        print("Checking for EOS client...")
+                    ensure_eos = ensure_eos_client()
                     # Ensure local directories exist
                     os.system(f"mkdir -p {args.campaign}/{wf}")
                     os.system(f"mkdir -p {args.campaign}{args.version}/{wf}")
