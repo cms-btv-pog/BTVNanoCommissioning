@@ -68,7 +68,7 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
         ## Create histograms
-        output = {"": None} if self.noHist else histogrammer(events, "ttdilep_sf")
+        output = {} if self.noHist else histogrammer(events, "ttdilep_sf")
 
         if shift_name is None:
             if isRealData:
