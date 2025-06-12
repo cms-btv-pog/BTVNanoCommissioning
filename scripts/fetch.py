@@ -424,11 +424,37 @@ def getFilesFromDas(args):
             # Safely handle site redirector lookup
             try:
                 if site in sites_xrootd_prefix:
+                    if in_ci:
+                        site_queries = [
+                            f"/cms.cern.ch/common/dasgoclient -query=\"file site={site} dataset={dataset}\"",
+                            f"/cms.cern.ch/common/dasgoclient -query=\"file site={site} dataset={dataset} instance=prod/global\"",
+                            f"/cms.cern.ch/common/dasgoclient -query=\"file site={site} dataset={dataset} instance=prod/phys03\""
+                        ]
+                    else:
+                        site_queries = [
+                            f"dasgoclient -query=\"file site={site} dataset={dataset}\"",
+                            f"dasgoclient -query=\"file site={site} dataset={dataset} instance=prod/global\"",
+                            f"dasgoclient -query=\"file site={site} dataset={dataset} instance=prod/phys03\""
+                        ]
+                    for query in site_queries:
+                        print(f"Checking how many files on site {site}")
+                        files_on_site = run_das_command(query)
+                        if files_on_site:
+                            print(f"Found {len(files_on_site)} files on site {site}")
+                            break
+                    if not files_on_site:
+                        print(f"WARNING: Found {len(files_on_site)} files on site {site}")
+                        continue
+                    elif args.limit is not None and len(files_on_site) < len(flist):
+                        continue
+                    elif len(files_on_site) < len(flist):
+                        continue
+
                     if isinstance(sites_xrootd_prefix[site], list):
                         xrd = sites_xrootd_prefix[site][0]
                     elif isinstance(sites_xrootd_prefix[site], str):
                         xrd = sites_xrootd_prefix[site]
-                    
+                    print(f"Site {site} xrd = {xrd}")
                     if xrd:
                         print(f"Using redirector for site {site}: {xrd}")
                         break
