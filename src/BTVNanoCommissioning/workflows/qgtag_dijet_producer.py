@@ -87,11 +87,10 @@ class NanoProcessor(processor.ProcessorABC):
             "sumw": processor.defaultdict_accumulator(float),
             **_hist_event_dict,
         }
-        if shift_name is None:
-            if isRealData:
-                output["sumw"] = len(events)
-            else:
-                output["sumw"] = ak.sum(events.genWeight)
+        if isRealData:
+            output["sumw"] = len(events)
+        else:
+            output["sumw"] = ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
@@ -208,6 +207,7 @@ class NanoProcessor(processor.ProcessorABC):
                 )
             return {dataset: output}
 
+
         ##===>  Ntuplization  : store custom information
         ####################
         # Selected objects # : Pruned objects with reduced event_level
@@ -282,6 +282,8 @@ class NanoProcessor(processor.ProcessorABC):
                 isRealData,
                 othersData=othersData,
             )
+
+        print({dataset: output})
 
         return {dataset: output}
 
