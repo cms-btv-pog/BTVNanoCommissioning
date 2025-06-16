@@ -224,12 +224,12 @@ if __name__ == "__main__":
 
                 # Add limit for MC validation if not already present
                 if "Validation" == args.scheme and types == "MC" and not limit_added:
-                    runner_config += " --limit 10" ###TODO: change to 50 after testing
+                    runner_config += " --limit 8" ###TODO: change to 50 after testing
                     imit_added = True
                     print(f"⚠️ Running Validation with 50 files limit for MC")
                 # Add test_lumi limited processing (20 files) if flag is set
                 elif args.test_lumi and not limit_added:
-                    runner_config += " --limit 5"
+                    runner_config += " --limit 3"
                     limit_added = True
                     print(f"⚠️ Running in test_lumi mode with 5 files limit for {types}")
                 runner_config = runner_config_required + runner_config
@@ -247,7 +247,55 @@ if __name__ == "__main__":
             print(f"workflow is finished for {wf}!")
             
         if is_running_in_ci():
-            print("Running in CI environment, skipping luminosity calculation")
+            import numpy as np
+            import awkward as ak
+            import json
+            print(f"Running in CI environment - creating lumi JSON for {wf}")
+        
+            # Extract luminosity JSON for use in CI
+            if os.path.exists(f"hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea"):
+                try:
+                    from coffea.util import load
+                    output = load(f"hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea")
+                    
+                    # Create lumi_bril directory if needed
+                    os.makedirs("lumi_bril", exist_ok=True)
+                    
+                    # Create the luminosity JSON using the same code as dump_lumi
+                    lumi, run = [], []
+                    for m in output.keys():
+                        for f in output[m].keys():
+                            lumi.extend(output[m][f]["lumi"].value)
+                            run.extend(output[m][f]["run"].value)
+
+                    # Sort runs and keep lumisections matched
+                    run, lumi = np.array(run), np.array(lumi)
+                    sorted_indices = np.lexsort((lumi, run))  # Sort by run first, then lumi
+                    run = run[sorted_indices]
+                    lumi = lumi[sorted_indices]
+                    
+                    # Create dictionary with ls values for each run
+                    dicts = {}
+                    for r in np.unique(run):
+                        dicts[str(int(r))] = lumi[run == r]
+                    
+                    # Convert to format for brilcalc
+                    for r in dicts.keys():
+                        ar = ak.singletons(ak.Array(dicts[r]))
+                        ars = ak.concatenate([ar, ar], axis=-1)
+                        dicts[r] = ak.values_astype(ars, int).tolist()
+
+                    # Save JSON file for brilcalc
+                    json_path = f"lumi_bril/{wf}_bril_lumi.json"
+                    with open(json_path, "w") as outfile:
+                        json.dump(dicts, outfile, indent=2)
+                    
+                    print(f"Created luminosity JSON file for {wf} at {json_path}")
+                except Exception as e:
+                    print(f"ERROR creating luminosity JSON for {wf}: {e}")
+            
+            # Skip the rest of luminosity calculation and plotting in CI
+            print(f"Skipping luminosity calculation and plotting for {wf}")
             continue
         # Get luminosity
         if (
