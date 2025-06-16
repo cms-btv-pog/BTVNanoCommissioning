@@ -253,46 +253,65 @@ if __name__ == "__main__":
             print(f"Running in CI environment - creating lumi JSON for {wf}")
         
             # Extract luminosity JSON for use in CI
-            if os.path.exists(f"hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea"):
+            coffea_file = f"hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea"
+            if os.path.exists(coffea_file):
                 try:
                     from coffea.util import load
-                    output = load(f"hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea")
                     
                     # Create lumi_bril directory if needed
                     os.makedirs("lumi_bril", exist_ok=True)
                     
-                    # Create the luminosity JSON using the same code as dump_lumi
+                    # Create the same structure as dump_processed.py expects
+                    # The key is the coffea file path, value is the loaded coffea file
+                    output = {coffea_file: load(coffea_file)}
+                    
+                    # Now follow the exact same logic as in dump_lumi
                     lumi, run = [], []
-                    for m in output.keys():
-                        for f in output[m].keys():
-                            lumi.extend(output[m][f]["lumi"].value)
-                            run.extend(output[m][f]["run"].value)
-
-                    # Sort runs and keep lumisections matched
-                    run, lumi = np.array(run), np.array(lumi)
-                    sorted_indices = np.lexsort((lumi, run))  # Sort by run first, then lumi
-                    run = run[sorted_indices]
-                    lumi = lumi[sorted_indices]
+                    for m in output.keys():  # m is the coffea file path
+                        for f in output[m].keys():  # f is the dataset key inside the coffea file
+                            if "lumi" in output[m][f] and "run" in output[m][f]:
+                                try:
+                                    lumi.extend(output[m][f]["lumi"].value)
+                                    run.extend(output[m][f]["run"].value)
+                                except Exception as e:
+                                    print(f"  Error extracting run/lumi from {f}: {e}")
                     
-                    # Create dictionary with ls values for each run
-                    dicts = {}
-                    for r in np.unique(run):
-                        dicts[str(int(r))] = lumi[run == r]
-                    
-                    # Convert to format for brilcalc
-                    for r in dicts.keys():
-                        ar = ak.singletons(ak.Array(dicts[r]))
-                        ars = ak.concatenate([ar, ar], axis=-1)
-                        dicts[r] = ak.values_astype(ars, int).tolist()
-
-                    # Save JSON file for brilcalc
-                    json_path = f"lumi_bril/{wf}_bril_lumi.json"
-                    with open(json_path, "w") as outfile:
-                        json.dump(dicts, outfile, indent=2)
-                    
-                    print(f"Created luminosity JSON file for {wf} at {json_path}")
+                    if len(run) > 0 and len(lumi) > 0:
+                        print(f"Found {len(run)} run/lumi pairs, creating JSON")
+                        
+                        # Sort runs and keep lumisections matched
+                        run, lumi = np.array(run), np.array(lumi)
+                        sorted_indices = np.lexsort((lumi, run))  # Sort by run first, then lumi
+                        run = run[sorted_indices]
+                        lumi = lumi[sorted_indices]
+                        
+                        # Create dictionary with ls values for each run
+                        dicts = {}
+                        for r in np.unique(run):
+                            # Make sure to cast to int to avoid string keys
+                            dicts[str(int(r))] = lumi[run == r]
+                        
+                        # Convert to format for brilcalc (exactly as in dump_lumi)
+                        for r in dicts.keys():
+                            ar = ak.singletons(ak.Array(dicts[r]))
+                            ars = ak.concatenate([ar, ar], axis=-1)
+                            dicts[r] = ak.values_astype(ars, int).tolist()
+                        
+                        # Save JSON file for brilcalc
+                        json_path = f"lumi_bril/{wf}_bril_lumi.json"
+                        with open(json_path, "w") as outfile:
+                            json.dump(dicts, outfile, indent=2)
+                        
+                        print(f"Created luminosity JSON file for {wf} at {json_path}")
+                    else:
+                        print(f"No run/lumi information found for {wf}")
+                        # Create an empty file so we know we tried
+                        with open(f"lumi_bril/{wf}_bril_empty.json", "w") as outfile:
+                            json.dump({}, outfile)
                 except Exception as e:
                     print(f"ERROR creating luminosity JSON for {wf}: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             # Skip the rest of luminosity calculation and plotting in CI
             print(f"Skipping luminosity calculation and plotting for {wf}")
