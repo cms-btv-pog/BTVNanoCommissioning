@@ -168,6 +168,7 @@ def get_xrootd_sites_map():
 
     return json.load(open(".sites_map.json"))
 
+
 def _get_pfn_for_site(path, rules):
     """
     Utility function that converts the file path to a valid pfn matching
@@ -366,11 +367,13 @@ def run_das_command(cmd):
     import tempfile
     
     # Add debug info 
+
     #print(f"\n==== DAS Command Debug Information ====")
     #print(f"Original command: {cmd}")
     
     # Check if we're in GitLab CI
     in_ci = determine_execution_mode()
+
     
     if in_ci:
         # Extract the query part
@@ -415,7 +418,6 @@ def run_das_command(cmd):
             script_file.write('    echo "WARNING: Could not find cmsset_default.sh"\n')
             script_file.write('fi\n\n')
             
-            # Try each possible path for dasgoclient and STORE THE FULL PATH
             script_file.write('echo "Searching for dasgoclient:"\n')
             script_file.write('DASGOCLIENT=""\n')  # Changed variable name to match usage below
             script_file.write('if [ -f /cms.cern.ch/common/dasgoclient ]; then\n')
@@ -488,6 +490,7 @@ def run_das_command(cmd):
             
     else:
         # Local environment - unchanged
+
         dasgoclient_path = get_dasgoclient_command()
         
         # Replace dasgoclient with full path if needed
@@ -1070,6 +1073,7 @@ def getFilesFromDas(args):
             else:
                 # This is MC - use only the primary dataset name
                 dsname = primary_name
+
         except IndexError:
             print(f"ERROR: Cannot parse dataset name from '{dataset}'")
             print("Using the entire string as the dataset name")
@@ -1096,7 +1100,9 @@ def getFilesFromDas(args):
             if flist:  # If we already have files, no need to try other queries
                 break
                 
+
             #print(f"Trying DAS query: {query}")
+
             try:
                 flist = run_das_command(query)
                 if flist:
@@ -1129,7 +1135,9 @@ def getFilesFromDas(args):
             if sites:  # If we already have sites, no need to try other queries
                 break
                 
+
             #print(f"Trying site query: {query}")
+
             try:
                 sites = run_das_command(query)
                 if sites:
@@ -1176,6 +1184,7 @@ def getFilesFromDas(args):
                 print(f"Site {site} is not in whitelist, skipping")
                 continue
             
+
             # Skip if site has no XRootD access in our map
             if site not in sites_xrootd_prefix:
                 print(f"Site {site} has no XRootD access in our map, skipping")
@@ -1215,12 +1224,14 @@ def getFilesFromDas(args):
         # If no sites were responsive, try the global redirector
         if not site_candidates:
             print(f"No responsive sites found for {dsname}, using global redirector")
+
             redirector = {
                 "infn": "root://xrootd-cms.infn.it//",
                 "fnal": "root://cmsxrootd.fnal.gov/",
                 "cern": "root://cms-xrd-global.cern.ch/"
             }
             xrd = redirector[args.redirector]
+
         else:
             # Use the first (and only) responsive site
             best_site, completion = site_candidates[0]
@@ -1245,12 +1256,14 @@ def getFilesFromDas(args):
                     "cern": "root://cms-xrd-global.cern.ch/"
                 }
                 xrd = redirector[args.redirector]
+
         
         if args.limit is not None:
             flist = flist[:args.limit]
         
         # Add files to dictionary
         if dsname not in fdict:
+
             if best_site in site_url_formats:
                 redirector = site_url_formats[best_site]["redirector"]
                 print(f"Using redirector for site {best_site}: {redirector}")
@@ -1455,6 +1468,7 @@ def direct_das_query(dataset_name, campaign_pattern):
         if not in_ci:
             # For local environment - use direct dasgoclient call
             cmd = f"dasgoclient -query=\"instance=prod/global {query}\""
+
             print(f"Local command: {cmd}")
             # Use the already-working run_das_command function instead of os.popen
             output = run_das_command(cmd)
