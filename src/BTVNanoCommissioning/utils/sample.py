@@ -1,8 +1,31 @@
 predefined_sample = {
     "TT1L": {
-        "data": ["Muon0"], # FIXME: for some reason fetch.py isn't working with 2024 data
-        "MC": [ # FIXME: add more MC once NanoAOD v15 is out
+        "data": [
+            "Muon0",
+            "Muon1",
+            "EGamma0",
+            "EGamma1"
+        ],
+        "MC": [ # FIXME: still missing some MC
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+            "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+            "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+            "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+            "WtoLNu-4Jets_Bin-1J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "WtoLNu-4Jets_Bin-2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "WtoLNu-4Jets_Bin-3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "WtoLNu-4Jets_Bin-4J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            "WWtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+            "WWto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+            "WZtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+            "WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
+            "WZto3LNu_TuneCP5_13p6TeV_powheg-pythia8",
+            "ZZto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+            "ZZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
+            "ZZto4L_TuneCP5_13p6TeV_powheg-pythia8",
         ],
     },
 

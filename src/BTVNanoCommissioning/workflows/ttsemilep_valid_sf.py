@@ -284,45 +284,45 @@ class NanoProcessor(processor.ProcessorABC):
                 pruned_ev[f"btagPNetBvCt_{i}"] = ak.Array(np.where(BvC > 0.0, 1.0 - (1.0 - BvC)**0.5, -1.0))
                 pruned_ev[f"btagPNetHFvLFt_{i}"] = ak.Array(np.where(HFvLF > 0.0, 1.0 - (1.0 - HFvLF)**0.5, -1.0))
                 # UParT
-                CvB = pruned_ev.SelJet[:, i].btagUParTAK4CvB
-                CvNotB = pruned_ev.SelJet[:, i].btagUParTAK4CvNotB # Not needed for UParT v2
-                CvL = pruned_ev.SelJet[:, i].btagUParTAK4CvL
-                probc = ak.Array(np.where((CvB > 0.0) & (CvNotB > 0.0), CvB * CvNotB / (CvB - CvNotB * CvB + CvNotB), -1.0))
-                probbc = ak.Array(np.where((CvB > 0.0) & (CvNotB > 0.0), CvNotB / (CvB - CvNotB * CvB + CvNotB), -1.0))
-                probudsg = ak.Array(np.where((CvL > 0.0) & (probc > 0.0), (1.0 - CvL) * probc / CvL, -1.0))
-                BvC = ak.Array(np.where(CvB > 0.0, 1.0 - CvB, -1.0))
-                HFvLF = ak.Array(np.where(
-                    (probbc > 0.0) & (probudsg > 0.0),
-                    probbc / (probbc + probudsg), -1.0
-                ))
-                pruned_ev[f"btagUParTAK4probc_{i}"] = probc
-                pruned_ev[f"btagUParTAK4probbc_{i}"] = probbc
-                pruned_ev[f"btagUParTAK4probudsg_{i}"] = probudsg
-                pruned_ev[f"btagUParTAK4BvC_{i}"] = BvC
-                pruned_ev[f"btagUParTAK4HFvLF_{i}"] = HFvLF
-                pruned_ev[f"btagUParTAK4BvCt_{i}"] = ak.Array(np.where(BvC > 0.0, 1.0 - (1.0 - BvC)**0.5, -1.0))
-                pruned_ev[f"btagUParTAK4HFvLFt_{i}"] = ak.Array(np.where(HFvLF > 0.0, 1.0 - (1.0 - HFvLF)**0.5, -1.0))
-                # UParT v2
-                # probudg = pruned_ev.SelJet[:, i].btagUParTAK4UDG
-                # SvUDG = pruned_ev.SelJet[:, i].btagUParTAK4SvUDG
-                # probs = ak.Array(np.where((SvUDG > 0.0) & (probudg > 0.0), SvUDG * probudg / (1.0 - SvUDG), -1.0))
-                # probc = ak.Array(np.where(
-                #     (CvL > 0.0) & (probs > 0.0) & (probudg > 0.0),
-                #     CvL * (probs + probudg) / (1.0 - CvL), -1.0
-                # ))
-                # probbbblepb = ak.Array(np.where((CvB > 0.0) & (probc > 0.0), (1.0 - CvB) * probc / CvB, -1.0))
+                # CvB = pruned_ev.SelJet[:, i].btagUParTAK4CvB
+                # CvNotB = pruned_ev.SelJet[:, i].btagUParTAK4CvNotB # Not needed for UParT v2
+                # CvL = pruned_ev.SelJet[:, i].btagUParTAK4CvL
+                # probc = ak.Array(np.where((CvB > 0.0) & (CvNotB > 0.0), CvB * CvNotB / (CvB - CvNotB * CvB + CvNotB), -1.0))
+                # probbc = ak.Array(np.where((CvB > 0.0) & (CvNotB > 0.0), CvNotB / (CvB - CvNotB * CvB + CvNotB), -1.0))
+                # probudsg = ak.Array(np.where((CvL > 0.0) & (probc > 0.0), (1.0 - CvL) * probc / CvL, -1.0))
                 # BvC = ak.Array(np.where(CvB > 0.0, 1.0 - CvB, -1.0))
                 # HFvLF = ak.Array(np.where(
-                #     (probbbblepb > 0.0) & (probc > 0.0) & (probs > 0.0) & (probudg > 0.0),
-                #     (probbbblepb + probc) / (probbbblepb + probc + probs + probudg), -1.0
+                #     (probbc > 0.0) & (probudsg > 0.0),
+                #     probbc / (probbc + probudsg), -1.0
                 # ))
-                # pruned_ev[f"btagUParTAK4probs_{i}"] = probs
                 # pruned_ev[f"btagUParTAK4probc_{i}"] = probc
-                # pruned_ev[f"btagUParTAK4probbbblepb_{i}"] = probbbblepb
+                # pruned_ev[f"btagUParTAK4probbc_{i}"] = probbc
+                # pruned_ev[f"btagUParTAK4probudsg_{i}"] = probudsg
                 # pruned_ev[f"btagUParTAK4BvC_{i}"] = BvC
                 # pruned_ev[f"btagUParTAK4HFvLF_{i}"] = HFvLF
                 # pruned_ev[f"btagUParTAK4BvCt_{i}"] = ak.Array(np.where(BvC > 0.0, 1.0 - (1.0 - BvC)**0.5, -1.0))
                 # pruned_ev[f"btagUParTAK4HFvLFt_{i}"] = ak.Array(np.where(HFvLF > 0.0, 1.0 - (1.0 - HFvLF)**0.5, -1.0))
+                # UParT v2
+                probudg = pruned_ev.SelJet[:, i].btagUParTAK4UDG
+                SvUDG = pruned_ev.SelJet[:, i].btagUParTAK4SvUDG
+                probs = ak.Array(np.where((SvUDG > 0.0) & (probudg > 0.0), SvUDG * probudg / (1.0 - SvUDG), -1.0))
+                probc = ak.Array(np.where(
+                    (CvL > 0.0) & (probs > 0.0) & (probudg > 0.0),
+                    CvL * (probs + probudg) / (1.0 - CvL), -1.0
+                ))
+                probbbblepb = ak.Array(np.where((CvB > 0.0) & (probc > 0.0), (1.0 - CvB) * probc / CvB, -1.0))
+                BvC = ak.Array(np.where(CvB > 0.0, 1.0 - CvB, -1.0))
+                HFvLF = ak.Array(np.where(
+                    (probbbblepb > 0.0) & (probc > 0.0) & (probs > 0.0) & (probudg > 0.0),
+                    (probbbblepb + probc) / (probbbblepb + probc + probs + probudg), -1.0
+                ))
+                pruned_ev[f"btagUParTAK4probs_{i}"] = probs
+                pruned_ev[f"btagUParTAK4probc_{i}"] = probc
+                pruned_ev[f"btagUParTAK4probbbblepb_{i}"] = probbbblepb
+                pruned_ev[f"btagUParTAK4BvC_{i}"] = BvC
+                pruned_ev[f"btagUParTAK4HFvLF_{i}"] = HFvLF
+                pruned_ev[f"btagUParTAK4BvCt_{i}"] = ak.Array(np.where(BvC > 0.0, 1.0 - (1.0 - BvC)**0.5, -1.0))
+                pruned_ev[f"btagUParTAK4HFvLFt_{i}"] = ak.Array(np.where(HFvLF > 0.0, 1.0 - (1.0 - HFvLF)**0.5, -1.0))
 
         ####################
         #     Output       #

@@ -580,7 +580,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             if (
                 disc not in events.Jet.fields and
                 "BvC" not in disc and "HFvLF" not in disc and
-                # "probs" not in disc and "probbbblepb" not in disc and # Needed for UParT v2
+                "probs" not in disc and "probbbblepb" not in disc and # Needed for UParT v2
                 "probc" not in disc and "probudsg" not in disc and "probbc" not in disc
             ):
                 continue
@@ -950,7 +950,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         flav, seljet = flavs, seljets
                     if (
                         "BvC" in histname or "HFvLF" in histname or
-                        # "probs" in histname or "probbbblepb" in histname or # Needed for UParT v2
+                        "probs" in histname or "probbbblepb" in histname or # Needed for UParT v2
                         "probc" in histname or "probudsg" in histname or "probbc" in histname
                     ):
                         h.fill(
