@@ -476,16 +476,17 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         for obj in obj_list:
             # mujet pt passing tagger WPs
             if "mujet" in obj:
-                for tagger in btag_wp_dict[year + "_" + campaign].keys():
-                    for wp in btag_wp_dict[year + "_" + campaign][tagger]["c"].keys():
-                        if not "No" in wp:
-                            _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
-                                syst_axis,
-                                flav_axis,
-                                osss_axis,
-                                pt_axis,
-                                Hist.storage.Weight(),
-                            )
+                if "cutbased" in workflow:
+                    for tagger in btag_wp_dict[year + "_" + campaign].keys():
+                        for wp in btag_wp_dict[year + "_" + campaign][tagger]["c"].keys():
+                            if not "No" in wp:
+                                _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
+                                    syst_axis,
+                                    flav_axis,
+                                    osss_axis,
+                                    pt_axis,
+                                    Hist.storage.Weight(),
+                                )
 
             if "jet" in obj or "soft_l" in obj:
                 if obj == "soft_l":
