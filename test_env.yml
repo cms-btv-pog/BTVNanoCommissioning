@@ -1,7 +1,7 @@
 name: btv_coffea
 channels:
   - conda-forge
-  - defaults
+
 dependencies:
   - python[version='<=3.10']
   - voms
