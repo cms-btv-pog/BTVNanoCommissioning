@@ -42,6 +42,7 @@ You can still install additional packages itself by `pip install $PACKAGE`
 
 `conda/micromamba activate btv_coffea` is required to setup
 
-
+Make sure that 'dasgoclient' command is found by ensuring it is in your `$PATH` variable.
+Need it be, run `export PATH="/cvmfs/cms.cern.ch/common/:${PATH}"`
 ### Other installation options for coffea
 See [https://coffeateam.github.io/coffea/installation.html](https://coffeateam.github.io/coffea/installation.html)
