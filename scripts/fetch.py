@@ -359,6 +359,7 @@ def get_dasgoclient_command():
     print("WARNING: Could not find dasgoclient, using default name")
     return 'dasgoclient'
 
+
 def run_das_command(cmd):
     """Run a DAS command with proper environment in micromamba"""
     import os
@@ -375,119 +376,155 @@ def run_das_command(cmd):
     in_ci = determine_execution_mode()
 
     
+
+
+ 
     if in_ci:
         # Extract the query part
         match = re.search(r'-query="([^"]+)"', cmd)
         if match:
             query = match.group(1)
-            escaped_query = query.replace('*', '\\*')
+            escaped_query = query.replace("*", "\\*")
             escaped_cmd = cmd.replace(f'-query="{query}"', f'-query="{escaped_query}"')
         else:
             escaped_cmd = cmd
-        
+
         # Fix paths for CI
-        if '/common/dasgoclient' in escaped_cmd and not '/cms.cern.ch/common/dasgoclient' in escaped_cmd:
-            escaped_cmd = escaped_cmd.replace('/common/dasgoclient', '/cms.cern.ch/common/dasgoclient')
-        
+        if (
+            "/common/dasgoclient" in escaped_cmd
+            and not "/cms.cern.ch/common/dasgoclient" in escaped_cmd
+        ):
+            escaped_cmd = escaped_cmd.replace(
+                "/common/dasgoclient", "/cms.cern.ch/common/dasgoclient"
+            )
+
         # COMPLETELY DIFFERENT APPROACH: Write a script file and execute it
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".sh", delete=False
+        ) as script_file:
             script_path = script_file.name
-            script_file.write('#!/bin/bash\n\n')
+            script_file.write("#!/bin/bash\n\n")
             script_file.write('echo "Starting DAS query from temp script"\n')
             script_file.write('echo "Command: ' + escaped_cmd + '"\n')
-            
+
             # Add this near the beginning of your script generation, after the shebang
             script_file.write('echo "Checking for proxy..."\n')
-            script_file.write('if [ -n "$X509_USER_PROXY" ] && [ -f "$X509_USER_PROXY" ]; then\n')
+            script_file.write(
+                'if [ -n "$X509_USER_PROXY" ] && [ -f "$X509_USER_PROXY" ]; then\n'
+            )
             script_file.write('    echo "Using proxy from $X509_USER_PROXY"\n')
-            script_file.write('elif [ -f "${CI_PROJECT_DIR}/proxy/x509_proxy" ]; then\n')
-            script_file.write('    export X509_USER_PROXY="${CI_PROJECT_DIR}/proxy/x509_proxy"\n')
-            script_file.write('    echo "Found and using proxy at ${X509_USER_PROXY}"\n')
-            script_file.write('else\n')
-            script_file.write('    echo "WARNING: No proxy found! DAS queries may fail."\n')
-            script_file.write('fi\n\n')
-            
+            script_file.write(
+                'elif [ -f "${CI_PROJECT_DIR}/proxy/x509_proxy" ]; then\n'
+            )
+            script_file.write(
+                '    export X509_USER_PROXY="${CI_PROJECT_DIR}/proxy/x509_proxy"\n'
+            )
+            script_file.write(
+                '    echo "Found and using proxy at ${X509_USER_PROXY}"\n'
+            )
+            script_file.write("else\n")
+            script_file.write(
+                '    echo "WARNING: No proxy found! DAS queries may fail."\n'
+            )
+            script_file.write("fi\n\n")
+
             # Add all possible CMS environment setup paths
-            script_file.write('if [ -f /cms.cern.ch/cmsset_default.sh ]; then\n')
-            script_file.write('    source /cms.cern.ch/cmsset_default.sh\n')
+            script_file.write("if [ -f /cms.cern.ch/cmsset_default.sh ]; then\n")
+            script_file.write("    source /cms.cern.ch/cmsset_default.sh\n")
             script_file.write('    echo "Sourced /cms.cern.ch/cmsset_default.sh"\n')
-            script_file.write('elif [ -f /cvmfs/cms.cern.ch/cmsset_default.sh ]; then\n')
-            script_file.write('    source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
-            script_file.write('    echo "Sourced /cvmfs/cms.cern.ch/cmsset_default.sh"\n')
-            script_file.write('else\n')
+            script_file.write(
+                "elif [ -f /cvmfs/cms.cern.ch/cmsset_default.sh ]; then\n"
+            )
+            script_file.write("    source /cvmfs/cms.cern.ch/cmsset_default.sh\n")
+            script_file.write(
+                '    echo "Sourced /cvmfs/cms.cern.ch/cmsset_default.sh"\n'
+            )
+            script_file.write("else\n")
             script_file.write('    echo "WARNING: Could not find cmsset_default.sh"\n')
-            script_file.write('fi\n\n')
-            
+            script_file.write("fi\n\n")
+
             script_file.write('echo "Searching for dasgoclient:"\n')
-            script_file.write('DASGOCLIENT=""\n')  # Changed variable name to match usage below
-            script_file.write('if [ -f /cms.cern.ch/common/dasgoclient ]; then\n')
+            script_file.write(
+                'DASGOCLIENT=""\n'
+            )  # Changed variable name to match usage below
+            script_file.write("if [ -f /cms.cern.ch/common/dasgoclient ]; then\n")
             script_file.write('    echo "Found at /cms.cern.ch/common/dasgoclient"\n')
             script_file.write('    DASGOCLIENT="/cms.cern.ch/common/dasgoclient"\n')
-            script_file.write('elif [ -f /cvmfs/cms.cern.ch/common/dasgoclient ]; then\n')
-            script_file.write('    echo "Found at /cvmfs/cms.cern.ch/common/dasgoclient"\n')
-            script_file.write('    DASGOCLIENT="/cvmfs/cms.cern.ch/common/dasgoclient"\n')
-            script_file.write('fi\n\n')
+            script_file.write(
+                "elif [ -f /cvmfs/cms.cern.ch/common/dasgoclient ]; then\n"
+            )
+            script_file.write(
+                '    echo "Found at /cvmfs/cms.cern.ch/common/dasgoclient"\n'
+            )
+            script_file.write(
+                '    DASGOCLIENT="/cvmfs/cms.cern.ch/common/dasgoclient"\n'
+            )
+            script_file.write("fi\n\n")
 
             # Add error checking for dasgoclient
             script_file.write('if [ -z "$DASGOCLIENT" ]; then\n')
             script_file.write('    echo "ERROR: dasgoclient not found!"\n')
-            script_file.write('    exit 1\n')
-            script_file.write('fi\n\n')
+            script_file.write("    exit 1\n")
+            script_file.write("fi\n\n")
 
             # Extract the query and run it - properly handle the extraction
             query_match = re.search(r'-query="([^"]+)"', cmd)
             if query_match:
                 query = query_match.group(1)
                 # Remove double asterisks which cause problems
-                query = query.replace('**', '*')
+                query = query.replace("**", "*")
                 # Add quotes around the query and execute with proper syntax
-                script_file.write(f'echo "Executing command: $DASGOCLIENT -query=\\"{query}\\""\n')
+                script_file.write(
+                    f'echo "Executing command: $DASGOCLIENT -query=\\"{query}\\""\n'
+                )
                 script_file.write(f'$DASGOCLIENT -query="{query}"\n')
             else:
-                script_file.write(f'{cmd}\n')
-        
+                script_file.write(f"{cmd}\n")
+
         # Make script executable
         os.chmod(script_path, 0o755)
-        #print(f"Created temporary script at: {script_path}")
-        
+        # print(f"Created temporary script at: {script_path}")
+
         # Execute the script
         try:
             print(f"Executing script: {script_path}")
-            result = subprocess.run([script_path], 
-                                   capture_output=True, 
-                                   text=True)
-            
+            result = subprocess.run([script_path], capture_output=True, text=True)
+
             print(f"Script return code: {result.returncode}")
-            
+
             if result.stdout:
                 print(f"Script stdout (first 800 chars): {result.stdout[:800]}")
             if result.stderr:
                 print(f"Script stderr: {result.stderr}")
-                
+
             if result.returncode != 0:
                 print(f"Script failed with code {result.returncode}")
                 return []
-                
-            output = [line for line in result.stdout.strip().split('\n') if line]
+
+            output = [line for line in result.stdout.strip().split("\n") if line]
             # Remove the script's debug lines from output
-            output = [line for line in output if not line.startswith("Starting") and 
-                                               not line.startswith("Sourced") and
-                                               not line.startswith("Found") and
-                                               not line.startswith("Using") and
-                                               not line.startswith("Command") and
-                                               not line.startswith("Checking") and
-                                               not line.startswith("Searching") and
-                                               not line.startswith("Trying") and
-                                               not line.startswith("Executing")]
+            output = [
+                line
+                for line in output
+                if not line.startswith("Starting")
+                and not line.startswith("Sourced")
+                and not line.startswith("Found")
+                and not line.startswith("Using")
+                and not line.startswith("Command")
+                and not line.startswith("Checking")
+                and not line.startswith("Searching")
+                and not line.startswith("Trying")
+                and not line.startswith("Executing")
+            ]
             return output
-            
+
         except Exception as e:
             print(f"Exception executing script: {e}")
             return []
         finally:
             # Clean up the temp script
             os.unlink(script_path)
-            
+
     else:
         # Local environment - unchanged
 
@@ -1025,10 +1062,12 @@ def validate_xrootd_path(path):
     
     return path
 
+
 def getFilesFromDas(args):
     """Improved getFilesFromDas with multiple fallback strategies"""
     # Check if we're in GitLab CI    
     in_ci = determine_execution_mode()
+
     fset = []
     with open(args.input) as fp:
         lines = fp.readlines()
@@ -1043,23 +1082,26 @@ def getFilesFromDas(args):
     if args.whitelist_sites is not None:
         args.whitelist_sites = args.whitelist_sites.split(",")
         print("whitelist sites:", args.whitelist_sites)
-        
+
     # Track failed datasets for summary report
     failed_datasets = []
-    
+
     for dataset in fset:
         if dataset.startswith("#") or dataset.strip() == "":
             continue
 
         dataset = dataset.strip()
         print(f"\n===== Processing dataset: '{dataset}' =====")
-        
+
         # Validate dataset format
-        if not dataset.startswith('/'):
-            print(f"WARNING: Dataset '{dataset}' does not start with '/' - trying anyway")
-        
+        if not dataset.startswith("/"):
+            print(
+                f"WARNING: Dataset '{dataset}' does not start with '/' - trying anyway"
+            )
+
         # Try to get dsname safely
         try:
+
             # Extract primary dataset name
             primary_name = dataset.split('/')[1]
             # More precise check for data: should contain "/Run20XX" pattern
@@ -1074,34 +1116,36 @@ def getFilesFromDas(args):
                 # This is MC - use only the primary dataset name
                 dsname = primary_name
 
+
         except IndexError:
             print(f"ERROR: Cannot parse dataset name from '{dataset}'")
             print("Using the entire string as the dataset name")
-            dsname = dataset.replace('/', '_').strip()
-        
+            dsname = dataset.replace("/", "_").strip()
+
         # Try multiple DAS query approaches
         flist = []
         if in_ci:
             das_queries = [
-            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset}\"",
-            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} instance=prod/global\"",
-            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} instance=prod/phys03\"",
-            f"/cms.cern.ch/common/dasgoclient -query=\"file dataset=*{dataset}*\""
-        ]
+                f'/cms.cern.ch/common/dasgoclient -query="file dataset={dataset}"',
+                f'/cms.cern.ch/common/dasgoclient -query="file dataset={dataset} instance=prod/global"',
+                f'/cms.cern.ch/common/dasgoclient -query="file dataset={dataset} instance=prod/phys03"',
+                f'/cms.cern.ch/common/dasgoclient -query="file dataset=*{dataset}*"',
+            ]
         else:
             das_queries = [
-                f"dasgoclient -query=\"file dataset={dataset}\"",
-                f"dasgoclient -query=\"file dataset={dataset} instance=prod/global\"",
-                f"dasgoclient -query=\"file dataset={dataset} instance=prod/phys03\"",
-                f"dasgoclient -query=\"file dataset=*{dataset}*\""
+                f'dasgoclient -query="file dataset={dataset}"',
+                f'dasgoclient -query="file dataset={dataset} instance=prod/global"',
+                f'dasgoclient -query="file dataset={dataset} instance=prod/phys03"',
+                f'dasgoclient -query="file dataset=*{dataset}*"',
             ]
-        
+
         for query in das_queries:
             if flist:  # If we already have files, no need to try other queries
                 break
                 
 
             #print(f"Trying DAS query: {query}")
+
 
             try:
                 flist = run_das_command(query)
@@ -1110,33 +1154,36 @@ def getFilesFromDas(args):
                     break
             except Exception as e:
                 print(f"Error with DAS query: {e}")
-        
+
         if not flist:
-            print(f"WARNING: No files found for dataset '{dataset}' after trying all queries")
+            print(
+                f"WARNING: No files found for dataset '{dataset}' after trying all queries"
+            )
             failed_datasets.append(dataset)
             continue
-        
+
         # Get sites with multiple fallback strategies
         sites = []
         if in_ci:
             site_queries = [
-                f"/cms.cern.ch/common/dasgoclient -query=\"site dataset={dataset}\"",
-                f"/cms.cern.ch/common/dasgoclient -query=\"site dataset={dataset} instance=prod/global\"",
-                f"/cms.cern.ch/common/dasgoclient -query=\"site dataset={dataset} instance=prod/phys03\""
+                f'/cms.cern.ch/common/dasgoclient -query="site dataset={dataset}"',
+                f'/cms.cern.ch/common/dasgoclient -query="site dataset={dataset} instance=prod/global"',
+                f'/cms.cern.ch/common/dasgoclient -query="site dataset={dataset} instance=prod/phys03"',
             ]
         else:
             site_queries = [
-                f"dasgoclient -query=\"site dataset={dataset}\"",
-                f"dasgoclient -query=\"site dataset={dataset} instance=prod/global\"",
-                f"dasgoclient -query=\"site dataset={dataset} instance=prod/phys03\""
+                f'dasgoclient -query="site dataset={dataset}"',
+                f'dasgoclient -query="site dataset={dataset} instance=prod/global"',
+                f'dasgoclient -query="site dataset={dataset} instance=prod/phys03"',
             ]
-        
+
         for query in site_queries:
             if sites:  # If we already have sites, no need to try other queries
                 break
                 
 
             #print(f"Trying site query: {query}")
+
 
             try:
                 sites = run_das_command(query)
@@ -1145,37 +1192,41 @@ def getFilesFromDas(args):
                     break
             except Exception as e:
                 print(f"Error with site query: {e}")
-        
+
         # Fallback to default redirector if no sites found
         if not sites:
-            print(f"WARNING: No sites found for dataset '{dataset}', using global redirector")
+            print(
+                f"WARNING: No sites found for dataset '{dataset}', using global redirector"
+            )
             redirector = {
                 "infn": "root://xrootd-cms.infn.it//",
                 "fnal": "root://cmsxrootd.fnal.gov/",
-                "cern": "root://cms-xrd-global.cern.ch/"
+                "cern": "root://cms-xrd-global.cern.ch/",
             }
             xrd = redirector[args.redirector]
             if args.limit is not None:
-                flist = flist[:args.limit]
+                flist = flist[: args.limit]
             if dsname not in fdict:
                 fdict[dsname] = [xrd + f for f in flist if len(f) > 1]
             else:
                 fdict[dsname].extend([xrd + f for f in flist if len(f) > 1])
             continue
-        
+
         # Process sites with careful error handling
         xrootd_tools = check_xrootd_availability()
         xrd = None
         sites_xrootd_prefix = get_xrootd_sites_map()
 
+
         # First gather completion information for all sites without checking responsiveness
         site_completions = []
         print(f"Evaluating completion for {len(sites)} sites for dataset {dataset}...")
 
+
         for site in sites:
             if not site:
                 continue
-                
+
             # Handle site blacklisting/whitelisting
             if args.blacklist_sites is not None and site in args.blacklist_sites:
                 print(f"Site {site} is blacklisted, skipping")
@@ -1183,6 +1234,7 @@ def getFilesFromDas(args):
             if args.whitelist_sites is not None and site not in args.whitelist_sites:
                 print(f"Site {site} is not in whitelist, skipping")
                 continue
+
             
 
             # Skip if site has no XRootD access in our map
@@ -1225,12 +1277,14 @@ def getFilesFromDas(args):
         if not site_candidates:
             print(f"No responsive sites found for {dsname}, using global redirector")
 
+
             redirector = {
                 "infn": "root://xrootd-cms.infn.it//",
                 "fnal": "root://cmsxrootd.fnal.gov/",
-                "cern": "root://cms-xrd-global.cern.ch/"
+                "cern": "root://cms-xrd-global.cern.ch/",
             }
             xrd = redirector[args.redirector]
+
 
         else:
             # Use the first (and only) responsive site
@@ -1259,8 +1313,8 @@ def getFilesFromDas(args):
 
         
         if args.limit is not None:
-            flist = flist[:args.limit]
-        
+            flist = flist[: args.limit]
+
         # Add files to dictionary
         if dsname not in fdict:
 
@@ -1279,6 +1333,7 @@ def getFilesFromDas(args):
             validated_paths = [validate_xrootd_path(p) for p in paths]
             fdict[dsname] = validated_paths
         else:
+
             # Same logic for the else clause
             if best_site and best_site in site_url_formats:
                 redirector = site_url_formats[best_site]["redirector"]
@@ -1294,15 +1349,16 @@ def getFilesFromDas(args):
             validated_paths = [validate_xrootd_path(p) for p in paths]
             fdict[dsname].extend(validated_paths)
         
+
         print(f"Added {len(fdict[dsname])} files for dataset {dsname}")
-    
+
     # Report on failures
     if failed_datasets:
         print("\n===== SUMMARY OF FAILED DATASETS =====")
         for ds in failed_datasets:
             print(f"- {ds}")
         print(f"Total: {len(failed_datasets)} failed datasets out of {len(fset)}")
-    
+
     return fdict
 
 
@@ -1448,6 +1504,7 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
 
     return sample_dict
 
+
 def direct_das_query(dataset_name, campaign_pattern):
     """
     Execute a DAS query using the existing run_das_command function
@@ -1455,19 +1512,21 @@ def direct_das_query(dataset_name, campaign_pattern):
     """
     # Remove extra asterisks which cause problems
     clean_pattern = campaign_pattern.replace("**", "*")
-    
+
     # Build query for dataset discovery
     query = f"dataset=/{dataset_name}/*{clean_pattern}*/NANOAOD*"
-    
+
     print(f"Executing direct DAS query: {query}")
-    
+
     try:
         # Check if we're in CI environment
+
         in_ci = determine_execution_mode()
         
         if not in_ci:
             # For local environment - use direct dasgoclient call
             cmd = f"dasgoclient -query=\"instance=prod/global {query}\""
+
 
             print(f"Local command: {cmd}")
             # Use the already-working run_das_command function instead of os.popen
@@ -1475,27 +1534,27 @@ def direct_das_query(dataset_name, campaign_pattern):
         else:
             # For CI environment - use the two-step approach
             # First query without wildcards in the campaign pattern
-            basic_query = f"/cms.cern.ch/common/dasgoclient -query=\"dataset=/{dataset_name}/*{clean_pattern}*/NANOAOD* instance=prod/global\""
+            basic_query = f'/cms.cern.ch/common/dasgoclient -query="dataset=/{dataset_name}/*{clean_pattern}*/NANOAOD* instance=prod/global"'
             print(f"CI basic query: {basic_query}")
-            
+
             # Use the existing run_das_command function
             all_datasets = run_das_command(basic_query)
-            
-            #if not all_datasets:
+
+            # if not all_datasets:
             #    print(f"No datasets found for {dataset_name}")
             #    return []
-                
+
             # Now filter datasets matching our pattern criteria
-            #pattern_core = clean_pattern.replace("*", "")
-            #print(f"Filtering with pattern core: '{pattern_core}'")
-            
-            #matching_datasets = [
-            #    ds for ds in all_datasets 
+            # pattern_core = clean_pattern.replace("*", "")
+            # print(f"Filtering with pattern core: '{pattern_core}'")
+
+            # matching_datasets = [
+            #    ds for ds in all_datasets
             #    if pattern_core in ds and "NANOAOD" in ds
-            #]
-            
+            # ]
+
             output = all_datasets
-        
+
         # Check results
         if output and output[0]:
             # Filter out validation errors
@@ -1513,13 +1572,15 @@ def direct_das_query(dataset_name, campaign_pattern):
         else:
             print(f"No datasets found matching: {query}")
             return []
-            
+
     except Exception as e:
         print(f"Error executing DAS query: {e}")
         import traceback
+
         traceback.print_exc()
         return []
-    
+
+
 def main(args):
 
     if args.from_workflow:
@@ -1569,15 +1630,19 @@ def main(args):
             dataset = direct_das_query(l, args.DAS_campaign)
 
             if not dataset:
-                print(f"WARNING: No datasets found for {l} with campaign {args.DAS_campaign}")
+                print(
+                    f"WARNING: No datasets found for {l} with campaign {args.DAS_campaign}"
+                )
                 continue  # Skip this dataset if query fails
-            
+
             if dataset[0] == "":
                 print(l, "not Found! List all campaigns")
                 dataset = direct_das_query(l, args.DAS_campaign)
 
                 if not dataset:
-                    print(f"WARNING: No datasets found for {l} with campaign {args.DAS_campaign}")
+                    print(
+                        f"WARNING: No datasets found for {l} with campaign {args.DAS_campaign}"
+                    )
                     continue  # Skip this dataset if query fails
                 if dataset[0] == "":
                     print(f"{l} is not a valid dataset")
@@ -1590,7 +1655,7 @@ def main(args):
                 args.DAS_campaign = input(f"which campaign? \n {campaigns} \n")
                 dataset = direct_das_query(l, args.DAS_campaign)
 
-                if dataset and not any('ERROR:' in d for d in dataset):
+                if dataset and not any("ERROR:" in d for d in dataset):
                     outf.write(dataset[0] + "\n")
                 else:
                     print(f"WARNING: Skipping invalid dataset result for {l}")
@@ -1608,19 +1673,19 @@ def main(args):
 
                     dataset = direct_das_query(l, args.DAS_campaign)
 
-                    if dataset and not any('ERROR:' in d for d in dataset):
+                    if dataset and not any("ERROR:" in d for d in dataset):
                         outf.write(dataset[0] + "\n")
                     else:
                         print(f"WARNING: Skipping invalid dataset result for {l}")
                 else:
                     for d in dataset:
-                        if not 'ERROR:' in d:
+                        if not "ERROR:" in d:
                             outf.write(d + "\n")
                         else:
                             print(f"WARNING: Skipping invalid dataset result: {d}")
 
             else:
-                if dataset and not any('ERROR:' in d for d in dataset):
+                if dataset and not any("ERROR:" in d for d in dataset):
                     outf.write(dataset[0] + "\n")
                 else:
                     print(f"WARNING: Skipping invalid dataset result for {l}")
