@@ -400,7 +400,7 @@ def wp_dict(year, campaign):
     """
     year :
     """
-    global btag_wp_dict
+    # btag_wp_dicts={}
     cache_key = f"{year}_{campaign}"
 
     if cache_key in btag_wp_dict:
@@ -625,5 +625,25 @@ met_filters = {
     "Summer24": { # FIXME: add more later
         "data": [],
         "mc": [],
+    },
+    "prompt_dataMC": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
     },
 }

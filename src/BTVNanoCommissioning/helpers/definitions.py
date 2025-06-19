@@ -45,9 +45,9 @@ disc_list = [
     "btagUParTAK4UDG",
     "btagUParTAK4probs",
     "btagUParTAK4SvUDG",
-    "btagUParTAK4probudsg", # Not needed with UParT v2
+    # "btagUParTAK4probudsg", # Not needed with UParT v2
     "btagUParTAK4probc",
-    "btagUParTAK4probbc", # Not needed with UParT v2
+    # "btagUParTAK4probbc", # Not needed with UParT v2
     "btagUParTAK4probbbblepb",
     "btagUParTAK4CvL",
     "btagUParTAK4CvB",

@@ -6,7 +6,7 @@ predefined_sample = {
             "EGamma0",
             "EGamma1"
         ],
-        "MC": [ # FIXME: still missing some MC
+        "MC": [ # FIXME: still missing some MC, also move some to minor_MC category
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
@@ -27,6 +27,7 @@ predefined_sample = {
             "ZZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto4L_TuneCP5_13p6TeV_powheg-pythia8",
         ],
+        "minor_MC": [],
     },
 
     ## Commissioning WF
