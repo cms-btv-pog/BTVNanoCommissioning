@@ -478,7 +478,9 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             if "mujet" in obj:
                 if "cutbased" in workflow:
                     for tagger in btag_wp_dict[year + "_" + campaign].keys():
-                        for wp in btag_wp_dict[year + "_" + campaign][tagger]["c"].keys():
+                        for wp in btag_wp_dict[year + "_" + campaign][tagger][
+                            "c"
+                        ].keys():
                             if not "No" in wp:
                                 _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
                                     syst_axis,

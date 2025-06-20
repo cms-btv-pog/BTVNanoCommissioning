@@ -116,23 +116,24 @@ args = parser.parse_args()
 
 site_url_formats = {}
 
+
 # Based on https://github.com/PocketCoffea/PocketCoffea/blob/main/pocket_coffea/utils/rucio.py
 def get_xrootd_sites_map():
-    
-    in_ci_env = 'CI' in os.environ or 'GITLAB_CI' in os.environ
-    
+
+    in_ci_env = "CI" in os.environ or "GITLAB_CI" in os.environ
+
     sites_xrootd_access = defaultdict(dict)
     # Check if the cache file has been modified in the last 10 minutes
     cache_valid = False
     if os.path.exists(".sites_map.json"):
         file_time = os.path.getmtime(".sites_map.json")
         current_time = time.time()
-        #ten_minutes_ago = current_time - 600
+        # ten_minutes_ago = current_time - 600
         twenty_minutes_ago = current_time - 1200
         sixty_minutes_ago = current_time - 3600
         if file_time > sixty_minutes_ago:
             cache_valid = True
-            
+
     if not os.path.exists(".sites_map.json") or not cache_valid or in_ci_env:
         print("Loading SITECONF info")
         sites = [
@@ -184,79 +185,81 @@ def _get_pfn_for_site(path, rules):
     else:
         # Remove leading slash from path if present
         if path.startswith("/"):
-             path = path[1:]
-        
+            path = path[1:]
+
         # Check if adding our slash would create a triple slash
-        if rules.endswith('//'):
+        if rules.endswith("//"):
             # Redirector ends with double slash, be careful not to add another
             return rules + path
         else:
             # Normal case - add a slash between redirector and path
             return rules + "/" + path
-        
+
+
 def normalize_xrootd_url(url):
     """
     Create port and non-port variants of an XRootD URL
     """
-    
-    if not url.startswith('root://'):
+
+    if not url.startswith("root://"):
         print(f"Not an XRootD URL, returning original: {url}")
         return [url]
-    
+
     # Handle port removal only - nothing else should change
     urls = []
     # Always include original URL as an option
     urls.append(url)
-    
+
     # Check if there's a port number in the server part
-    server_part = url.split('/')[2]
-    if ':' in server_part:
+    server_part = url.split("/")[2]
+    if ":" in server_part:
         try:
             # Extract the port number pattern
-            port_pattern = server_part.split(':')[1]
+            port_pattern = server_part.split(":")[1]
             # Remove ONLY the port, keeping everything else identical
             no_port_url = url.replace(f":{port_pattern}", "")
             urls.append(no_port_url)
-            #print(f"Created no-port variant: {no_port_url}")
+            # print(f"Created no-port variant: {no_port_url}")
         except Exception as e:
             print(f"Error extracting port: {e}")
-    #else:
-    #    print(f"No port found in URL, skipping variant creation")  
-    
+    # else:
+    #    print(f"No port found in URL, skipping variant creation")
+
     return urls
+
 
 def access_xrootd_file(url, xrootd_tools, check_all_variants=False):
     """Try to access file with variants of the URL using both stat and open"""
     from XRootD import client
     import signal
-    
+
     # Define a timeout handler
     class TimeoutException(Exception):
         pass
-    
+
     def timeout_handler(signum, frame):
         raise TimeoutException("Operation timed out")
-    
+
     timeout = 40  # 40 seconds timeout
-    
+
     url_variants = normalize_xrootd_url(url)
     success_results = []
-    
+
     for variant in url_variants:
         variant_success = False
-        
+
         # First try direct file open with timeout
         try:
             # Set the timeout alarm
             signal.signal(signal.SIGALRM, timeout_handler)
             signal.alarm(timeout)
-            
+
             file_client = client.File()
             open_status, _ = file_client.open(variant)
-            
+
             # Clear the alarm if successful
             signal.alarm(0)
-            
+
             if open_status.ok:
                 file_client.close()
                 variant_success = True
@@ -269,20 +272,20 @@ def access_xrootd_file(url, xrootd_tools, check_all_variants=False):
         except Exception as e:
             print(f"❌ Open failed with URL variant {variant}: {e}")
             signal.alarm(0)  # Clear the alarm
-        
+
         # If open fails, try stat method with timeout
         if not variant_success:
             try:
                 # Set the timeout alarm
                 signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(timeout)
-                
+
                 xrd_client = client.FileSystem(variant)
                 status, response = xrd_client.stat(variant)
-                
+
                 # Clear the alarm if successful
                 signal.alarm(0)
-                
+
                 if status.ok:
                     variant_success = True
                     success_results.append((True, variant, "stat"))
@@ -294,13 +297,14 @@ def access_xrootd_file(url, xrootd_tools, check_all_variants=False):
             except Exception as e:
                 print(f"❌ Stat failed with URL variant {variant}: {e}")
                 signal.alarm(0)  # Clear the alarm
-    
+
     # If we get here and check_all_variants=True, we need to check if any variant succeeded
     if success_results:
         # Return the first success (or you could choose based on other criteria)
         return success_results[0][0], success_results[0][1]
-    
+
     return False, None
+
 
 def determine_execution_mode():
     """
@@ -308,56 +312,57 @@ def determine_execution_mode():
     Returns True for CI mode, False for local mode.
     """
     import os
-    
+
     # First check if we're in CI at all
-    in_ci_environment = 'CI' in os.environ or 'GITLAB_CI' in os.environ
-    
+    in_ci_environment = "CI" in os.environ or "GITLAB_CI" in os.environ
+
     # If not in CI, always use local execution mode
     if not in_ci_environment:
         return False
-    
+
     # If in CI, check if we're in the btv_coffea environment
-    conda_env = os.environ.get('CONDA_DEFAULT_ENV', '')
-    conda_prefix = os.environ.get('CONDA_PREFIX', '')
-    
-    in_btv_coffea = ('btv_coffea' in conda_env or 'btv_coffea' in conda_prefix)
-    
+    conda_env = os.environ.get("CONDA_DEFAULT_ENV", "")
+    conda_prefix = os.environ.get("CONDA_PREFIX", "")
+
+    in_btv_coffea = "btv_coffea" in conda_env or "btv_coffea" in conda_prefix
+
     # If we're in the btv_coffea environment in CI, use local execution mode
     if in_btv_coffea:
         print("📌 Detected btv_coffea environment in CI - using local execution mode")
         return False
-        
+
     # Otherwise, use CI execution mode
     return True
+
 
 def get_dasgoclient_command():
     """Get the full path to dasgoclient executable"""
     import os
     import shutil
-    
+
     # Check if explicitly set in environment
-    das_path = os.environ.get('DASGOCLIENT_PATH', '')
+    das_path = os.environ.get("DASGOCLIENT_PATH", "")
     if das_path and os.path.exists(das_path):
         return das_path
-    
+
     # Check if it's in PATH
-    in_path = shutil.which('dasgoclient')
+    in_path = shutil.which("dasgoclient")
     if in_path:
-        return 'dasgoclient'
-    
+        return "dasgoclient"
+
     # Try standard locations
     for path in [
-        '/cvmfs/cms.cern.ch/common/dasgoclient',
-        '/cms.cern.ch/common/dasgoclient',
-        '/usr/local/bin/dasgoclient'
+        "/cvmfs/cms.cern.ch/common/dasgoclient",
+        "/cms.cern.ch/common/dasgoclient",
+        "/usr/local/bin/dasgoclient",
     ]:
         if os.path.exists(path):
             print(f"Found dasgoclient at: {path}")
             return path
-    
+
     # Fallback to the name and let the system handle it
     print("WARNING: Could not find dasgoclient, using default name")
-    return 'dasgoclient'
+    return "dasgoclient"
 
 
 def run_das_command(cmd):
@@ -366,19 +371,15 @@ def run_das_command(cmd):
     import subprocess
     import re
     import tempfile
-    
-    # Add debug info 
 
-    #print(f"\n==== DAS Command Debug Information ====")
-    #print(f"Original command: {cmd}")
-    
+    # Add debug info
+
+    # print(f"\n==== DAS Command Debug Information ====")
+    # print(f"Original command: {cmd}")
+
     # Check if we're in GitLab CI
     in_ci = determine_execution_mode()
 
-    
-
-
- 
     if in_ci:
         # Extract the query part
         match = re.search(r'-query="([^"]+)"', cmd)
@@ -529,33 +530,36 @@ def run_das_command(cmd):
         # Local environment - unchanged
 
         dasgoclient_path = get_dasgoclient_command()
-        
+
         # Replace dasgoclient with full path if needed
-        if dasgoclient_path != 'dasgoclient' and 'dasgoclient' in cmd:
-            cmd = cmd.replace('dasgoclient', dasgoclient_path)
-            #print(f"Using full dasgoclient path: {cmd}")
-        
-        #print("Executing local command with os.popen:", cmd)
+        if dasgoclient_path != "dasgoclient" and "dasgoclient" in cmd:
+            cmd = cmd.replace("dasgoclient", dasgoclient_path)
+            # print(f"Using full dasgoclient path: {cmd}")
+
+        # print("Executing local command with os.popen:", cmd)
         result = os.popen(cmd).read().splitlines()
         return result
-    
+
 
 def run_python_xrootd_ping(server, site, timeout=10):
     """Run Python XRootD ping operation through a bash script to ensure proxy is properly set"""
     import tempfile
     import subprocess
     import os
-    
+
     # Check if we're in CI
     in_ci = determine_execution_mode()
-    
+
     if in_ci:
         # Create a temporary Python script that will be executed by bash
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as python_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as python_file:
             python_path = python_file.name
-            
+
             # Write a self-contained Python script
-            python_file.write('''
+            python_file.write(
+                """
 import sys
 import os
 import time
@@ -599,60 +603,74 @@ try:
 except Exception as e:
     print(f"ERROR: {str(e)}")
     sys.exit(2)
-''')
-        
+"""
+            )
+
         # Create the bash wrapper script that sets up the environment
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".sh", delete=False
+        ) as script_file:
             script_path = script_file.name
-            script_file.write('#!/bin/bash\n\n')
-            script_file.write('echo "Starting XRootD Python operation from temp script"\n\n')
-            
+            script_file.write("#!/bin/bash\n\n")
+            script_file.write(
+                'echo "Starting XRootD Python operation from temp script"\n\n'
+            )
+
             # Use the same proxy detection as run_das_command
             script_file.write('echo "Checking for proxy..."\n')
-            script_file.write('if [ -n "$X509_USER_PROXY" ] && [ -f "$X509_USER_PROXY" ]; then\n')
+            script_file.write(
+                'if [ -n "$X509_USER_PROXY" ] && [ -f "$X509_USER_PROXY" ]; then\n'
+            )
             script_file.write('    echo "Using proxy from $X509_USER_PROXY"\n')
-            script_file.write('elif [ -f "${CI_PROJECT_DIR}/proxy/x509_proxy" ]; then\n')
-            script_file.write('    export X509_USER_PROXY="${CI_PROJECT_DIR}/proxy/x509_proxy"\n')
-            script_file.write('    echo "Found and using proxy at ${X509_USER_PROXY}"\n')
-            script_file.write('else\n')
-            script_file.write('    echo "WARNING: No proxy found! XRootD operations may fail."\n')
-            script_file.write('fi\n\n')
-            
+            script_file.write(
+                'elif [ -f "${CI_PROJECT_DIR}/proxy/x509_proxy" ]; then\n'
+            )
+            script_file.write(
+                '    export X509_USER_PROXY="${CI_PROJECT_DIR}/proxy/x509_proxy"\n'
+            )
+            script_file.write(
+                '    echo "Found and using proxy at ${X509_USER_PROXY}"\n'
+            )
+            script_file.write("else\n")
+            script_file.write(
+                '    echo "WARNING: No proxy found! XRootD operations may fail."\n'
+            )
+            script_file.write("fi\n\n")
+
             # Set up XRootD environment variables
-            script_file.write('# Set up XRootD environment\n')
-            script_file.write('export XRD_CONNECTIONRETRY=3\n')
-            script_file.write('export XRD_REQUESTTIMEOUT=60\n')
-            script_file.write('export XRD_PLUGIN=gsi\n')
-            script_file.write('export XRD_SECPROTOCOLS=gsi\n\n')
-            
+            script_file.write("# Set up XRootD environment\n")
+            script_file.write("export XRD_CONNECTIONRETRY=3\n")
+            script_file.write("export XRD_REQUESTTIMEOUT=60\n")
+            script_file.write("export XRD_PLUGIN=gsi\n")
+            script_file.write("export XRD_SECPROTOCOLS=gsi\n\n")
+
             # Source CMS environment
-            script_file.write('if [ -f /cvmfs/cms.cern.ch/cmsset_default.sh ]; then\n')
-            script_file.write('    source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
+            script_file.write("if [ -f /cvmfs/cms.cern.ch/cmsset_default.sh ]; then\n")
+            script_file.write("    source /cvmfs/cms.cern.ch/cmsset_default.sh\n")
             script_file.write('    echo "Sourced CMS environment"\n')
-            script_file.write('fi\n\n')
-            
+            script_file.write("fi\n\n")
+
             # Execute the Python script
-            script_file.write(f'python3 {python_path} {server} {site}\n')
-            script_file.write('XROOTD_EXIT_CODE=$?\n')
-            script_file.write('exit $XROOTD_EXIT_CODE\n')
-        
+            script_file.write(f"python3 {python_path} {server} {site}\n")
+            script_file.write("XROOTD_EXIT_CODE=$?\n")
+            script_file.write("exit $XROOTD_EXIT_CODE\n")
+
         # Make scripts executable
         os.chmod(script_path, 0o755)
         os.chmod(python_path, 0o644)
-        
+
         try:
             # Execute the bash script
-            result = subprocess.run([script_path], 
-                                   capture_output=True, 
-                                   text=True,
-                                   timeout=timeout)
-            
+            result = subprocess.run(
+                [script_path], capture_output=True, text=True, timeout=timeout
+            )
+
             success = result.returncode == 0
             return {
-                'success': success,
-                'returncode': result.returncode,
-                'stdout': result.stdout,
-                'stderr': result.stderr
+                "success": success,
+                "returncode": result.returncode,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
             }
         finally:
             # Clean up temp files
@@ -662,112 +680,126 @@ except Exception as e:
         # For local execution, use direct Python approach
         from XRootD import client
         import time
-        
+
         start_time = time.time()
         try:
-            fs = client.FileSystem(f'root://{server}')
+            fs = client.FileSystem(f"root://{server}")
             status, response = fs.ping()
             response_time = time.time() - start_time
-            
+
             success = status.ok
             message = "" if success else status.message
             return {
-                'success': success,
-                'message': message,
-                'response_time': response_time
+                "success": success,
+                "message": message,
+                "response_time": response_time,
             }
         except Exception as e:
             return {
-                'success': False,
-                'message': str(e),
-                'response_time': time.time() - start_time
+                "success": False,
+                "message": str(e),
+                "response_time": time.time() - start_time,
             }
-            
+
+
 def run_xrdfs_command(server, timeout=5):
     """Run xrdfs command directly in bash script for CI environment"""
     import tempfile
     import subprocess
     import os
     import time
-    
+
     # Check if we're in CI
     in_ci = determine_execution_mode()
-    
+
     if in_ci:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as script_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".sh", delete=False
+        ) as script_file:
             script_path = script_file.name
-            script_file.write('#!/bin/bash\n\n')
+            script_file.write("#!/bin/bash\n\n")
             script_file.write('echo "Starting xrdfs operation from temp script"\n\n')
-            
+
             # Use the same proxy detection as run_das_command
             script_file.write('echo "Checking for proxy..."\n')
-            script_file.write('if [ -n "$X509_USER_PROXY" ] && [ -f "$X509_USER_PROXY" ]; then\n')
+            script_file.write(
+                'if [ -n "$X509_USER_PROXY" ] && [ -f "$X509_USER_PROXY" ]; then\n'
+            )
             script_file.write('    echo "Using proxy from $X509_USER_PROXY"\n')
-            script_file.write('elif [ -f "${CI_PROJECT_DIR}/proxy/x509_proxy" ]; then\n')
-            script_file.write('    export X509_USER_PROXY="${CI_PROJECT_DIR}/proxy/x509_proxy"\n')
-            script_file.write('    echo "Found and using proxy at ${X509_USER_PROXY}"\n')
-            script_file.write('else\n')
-            script_file.write('    echo "WARNING: No proxy found! XRootD operations may fail."\n')
-            script_file.write('fi\n\n')
-            
+            script_file.write(
+                'elif [ -f "${CI_PROJECT_DIR}/proxy/x509_proxy" ]; then\n'
+            )
+            script_file.write(
+                '    export X509_USER_PROXY="${CI_PROJECT_DIR}/proxy/x509_proxy"\n'
+            )
+            script_file.write(
+                '    echo "Found and using proxy at ${X509_USER_PROXY}"\n'
+            )
+            script_file.write("else\n")
+            script_file.write(
+                '    echo "WARNING: No proxy found! XRootD operations may fail."\n'
+            )
+            script_file.write("fi\n\n")
+
             # Set up XRootD environment variables
-            script_file.write('# Set up XRootD environment\n')
-            script_file.write('export XRD_CONNECTIONRETRY=3\n')
-            script_file.write('export XRD_REQUESTTIMEOUT=60\n')
-            script_file.write('export XRD_PLUGIN=gsi\n')
-            script_file.write('export XRD_SECPROTOCOLS=gsi\n\n')
-            
+            script_file.write("# Set up XRootD environment\n")
+            script_file.write("export XRD_CONNECTIONRETRY=3\n")
+            script_file.write("export XRD_REQUESTTIMEOUT=60\n")
+            script_file.write("export XRD_PLUGIN=gsi\n")
+            script_file.write("export XRD_SECPROTOCOLS=gsi\n\n")
+
             # Source CMS environment
-            script_file.write('if [ -f /cvmfs/cms.cern.ch/cmsset_default.sh ]; then\n')
-            script_file.write('    source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
+            script_file.write("if [ -f /cvmfs/cms.cern.ch/cmsset_default.sh ]; then\n")
+            script_file.write("    source /cvmfs/cms.cern.ch/cmsset_default.sh\n")
             script_file.write('    echo "Sourced CMS environment"\n')
-            script_file.write('fi\n\n')
-            
+            script_file.write("fi\n\n")
+
             # Find xrdfs executable
-            script_file.write('# Find xrdfs executable\n')
-            script_file.write('XRDFS_PATH=$(which xrdfs 2>/dev/null)\n')
+            script_file.write("# Find xrdfs executable\n")
+            script_file.write("XRDFS_PATH=$(which xrdfs 2>/dev/null)\n")
             script_file.write('if [ -z "$XRDFS_PATH" ]; then\n')
-            script_file.write('    for candidate in "/cvmfs/cms.cern.ch/slc7_amd64_gcc820/cms/xrootd/4.8.5-pafccj3/bin/xrdfs" "/usr/bin/xrdfs"; do\n')
+            script_file.write(
+                '    for candidate in "/cvmfs/cms.cern.ch/slc7_amd64_gcc820/cms/xrootd/4.8.5-pafccj3/bin/xrdfs" "/usr/bin/xrdfs"; do\n'
+            )
             script_file.write('        if [ -f "$candidate" ]; then\n')
             script_file.write('            XRDFS_PATH="$candidate"\n')
             script_file.write('            echo "Found xrdfs at $XRDFS_PATH"\n')
-            script_file.write('            break\n')
-            script_file.write('        fi\n')
-            script_file.write('    done\n')
-            script_file.write('else\n')
+            script_file.write("            break\n")
+            script_file.write("        fi\n")
+            script_file.write("    done\n")
+            script_file.write("else\n")
             script_file.write('    echo "Using xrdfs from PATH: $XRDFS_PATH"\n')
-            script_file.write('fi\n\n')
-            
+            script_file.write("fi\n\n")
+
             script_file.write('if [ -z "$XRDFS_PATH" ]; then\n')
             script_file.write('    echo "ERROR: xrdfs not found!"\n')
-            script_file.write('    exit 1\n')
-            script_file.write('fi\n\n')
-            
+            script_file.write("    exit 1\n")
+            script_file.write("fi\n\n")
+
             # Execute the xrdfs command
             script_file.write('echo "Executing xrdfs ping command..."\n')
-            script_file.write(f'$XRDFS_PATH {server} ping\n')
-            script_file.write('XRDFS_EXIT_CODE=$?\n')
+            script_file.write(f"$XRDFS_PATH {server} ping\n")
+            script_file.write("XRDFS_EXIT_CODE=$?\n")
             script_file.write('echo "xrdfs exit code: $XRDFS_EXIT_CODE"\n')
-            script_file.write('exit $XRDFS_EXIT_CODE\n')
-        
+            script_file.write("exit $XRDFS_EXIT_CODE\n")
+
         # Make script executable
         os.chmod(script_path, 0o755)
-        
+
         try:
             # Execute the bash script
             start_time = time.time()
-            result = subprocess.run([script_path], 
-                                   capture_output=True, 
-                                   text=True,
-                                   timeout=timeout)
+            result = subprocess.run(
+                [script_path], capture_output=True, text=True, timeout=timeout
+            )
             response_time = time.time() - start_time
-            
+
             return {
-                'success': result.returncode == 0,
-                'returncode': result.returncode,
-                'stdout': result.stdout,
-                'stderr': result.stderr,
-                'response_time': response_time
+                "success": result.returncode == 0,
+                "returncode": result.returncode,
+                "stdout": result.stdout,
+                "stderr": result.stderr,
+                "response_time": response_time,
             }
         finally:
             # Clean up temp files
@@ -776,40 +808,43 @@ def run_xrdfs_command(server, timeout=5):
         # For local execution, this function should not be called
         # Return a clear error
         return {
-            'success': False,
-            'returncode': -1,
-            'message': "run_xrdfs_command called in local mode",
-            'response_time': 0
+            "success": False,
+            "returncode": -1,
+            "message": "run_xrdfs_command called in local mode",
+            "response_time": 0,
         }
-    
+
+
 def check_xrootd_availability():
     """Check if XRootD tools are available in the current environment"""
     import subprocess
     import shutil
-    
+
     # Check for xrdfs command
-    xrdfs_available = shutil.which('xrdfs') is not None
-    
+    xrdfs_available = shutil.which("xrdfs") is not None
+
     # Check for Python XRootD module
     try:
         import XRootD
+
         python_xrootd_available = True
     except ImportError:
         python_xrootd_available = False
-    
+
     # Check for gfal tools as alternative
-    gfal_available = shutil.which('gfal-ls') is not None
-    
-    print(f"Environment check: xrdfs: {'✅' if xrdfs_available else '❌'}, " 
-          f"Python XRootD: {'✅' if python_xrootd_available else '❌'}, "
-          f"gfal: {'✅' if gfal_available else '❌'}")
-    
+    gfal_available = shutil.which("gfal-ls") is not None
+
+    print(
+        f"Environment check: xrdfs: {'✅' if xrdfs_available else '❌'}, "
+        f"Python XRootD: {'✅' if python_xrootd_available else '❌'}, "
+        f"gfal: {'✅' if gfal_available else '❌'}"
+    )
+
     return {
-        'xrdfs': xrdfs_available,
-        'python_xrootd': python_xrootd_available,
-        'gfal': gfal_available
+        "xrdfs": xrdfs_available,
+        "python_xrootd": python_xrootd_available,
+        "gfal": gfal_available,
     }
-    
 
 
 def check_site_completion(site, dataset, xrootd_tools):
@@ -817,65 +852,76 @@ def check_site_completion(site, dataset, xrootd_tools):
     try:
         # Get total file list once for the entire dataset
         in_ci = determine_execution_mode()
-        
+
         if in_ci:
-            total_files_cmd = f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} | grep file.name\""
+            total_files_cmd = f'/cms.cern.ch/common/dasgoclient -query="file dataset={dataset} | grep file.name"'
         else:
-            total_files_cmd = f"dasgoclient -query=\"file dataset={dataset} | grep file.name\""
-        
-        #print(f"Getting file list for {dataset}...")
+            total_files_cmd = (
+                f'dasgoclient -query="file dataset={dataset} | grep file.name"'
+            )
+
+        # print(f"Getting file list for {dataset}...")
         total_files_result = run_das_command(total_files_cmd)
-        total_files_count = len([f for f in total_files_result if f and not f.startswith('ERROR:')])
-        
+        total_files_count = len(
+            [f for f in total_files_result if f and not f.startswith("ERROR:")]
+        )
+
         if total_files_count == 0:
             print(f"No files found for dataset {dataset}")
             return 0.0
-            
+
         print(f"Dataset has {total_files_count} files in total")
-        
+
         # Now get files at the specific site
         if in_ci:
-            site_files_cmd = f"/cms.cern.ch/common/dasgoclient -query=\"file dataset={dataset} site={site} | grep file.name\""
+            site_files_cmd = f'/cms.cern.ch/common/dasgoclient -query="file dataset={dataset} site={site} | grep file.name"'
         else:
-            site_files_cmd = f"dasgoclient -query=\"file dataset={dataset} site={site} | grep file.name\""
-        
-        #print(f"Checking files available at {site}...")
+            site_files_cmd = f'dasgoclient -query="file dataset={dataset} site={site} | grep file.name"'
+
+        # print(f"Checking files available at {site}...")
         site_files_result = run_das_command(site_files_cmd)
-        site_files_count = len([f for f in site_files_result if f and not f.startswith('ERROR:')])
-        
+        site_files_count = len(
+            [f for f in site_files_result if f and not f.startswith("ERROR:")]
+        )
+
         # Calculate completion percentage
         if total_files_count > 0 and site_files_count > 0:
             completion_pct = (site_files_count / total_files_count) * 100
-            print(f"Site {site} has {site_files_count}/{total_files_count} files ({completion_pct:.2f}%)")
+            print(
+                f"Site {site} has {site_files_count}/{total_files_count} files ({completion_pct:.2f}%)"
+            )
             return completion_pct
         else:
             print(f"Site {site} has no valid files for this dataset")
             return 0.0
-            
+
     except Exception as e:
         print(f"Error checking completion for site {site}: {e}")
         import traceback
+
         traceback.print_exc()
         return 0.0
-    
 
-def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools, dataset_files=None):
+
+def check_site_responsiveness(
+    site, sites_xrootd_prefix, xrootd_tools, dataset_files=None
+):
     """Test if the site's redirector is currently responsive using available tools"""
     import time
     import os
     import subprocess  # Add missing import for gfal-ls
     import random
-    
+
     # Skip if site not in our map
     if site not in sites_xrootd_prefix:
         print(f"Site {site} not found in redirector map")
         return False
-    
+
     # If we have actual files, test ALL files in the dataset
     if dataset_files and len(dataset_files) > 0:
         total_files = len(dataset_files)
         print(f"Testing accessibility of all {total_files} files for site {site}...")
-        
+
         # Determine print frequency based on dataset size
         if total_files < 20:
             print_frequency = 5
@@ -883,7 +929,7 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools, dataset_f
             print_frequency = 10
         else:
             print_frequency = 50
-            
+
         # Test each file
         successful_files = 0
         failed_files = []
@@ -891,32 +937,40 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools, dataset_f
             # Construct the full PFN using the site's redirector rules
             full_pfn = _get_pfn_for_site(test_file, sites_xrootd_prefix[site])
             # Use the existing access_xrootd_file function
-            success, working_url = access_xrootd_file(full_pfn, xrootd_tools, check_all_variants=True)
-            
+            success, working_url = access_xrootd_file(
+                full_pfn, xrootd_tools, check_all_variants=True
+            )
+
             if success:
                 successful_files += 1
                 # Only print status for certain files based on frequency
-                if (idx + 1) % print_frequency == 0 or idx == 0 or idx == total_files - 1:
+                if (
+                    (idx + 1) % print_frequency == 0
+                    or idx == 0
+                    or idx == total_files - 1
+                ):
                     print(f"✅ File {idx+1}/{total_files} accessible: {working_url}")
-                
+
                 # Save the first successful redirector format
                 if successful_files == 1:
-                    parts = working_url.split('store/')
+                    parts = working_url.split("store/")
                     redirector = parts[0]
                     site_url_formats[site] = {
                         "url": working_url,
-                        "redirector": redirector
+                        "redirector": redirector,
                     }
             else:
                 print(f"❌ File {idx+1}/{total_files} NOT accessible")
                 # Fail fast - stop checking as soon as one file fails
-                print(f"❌ Site {site} fails - file {idx+1}/{total_files} not accessible")
+                print(
+                    f"❌ Site {site} fails - file {idx+1}/{total_files} not accessible"
+                )
                 return False
-        
+
         # If we've checked all files and they're all accessible, the site passes
         print(f"✅ Site {site} passes with all {total_files} files accessible")
         return True
-    else:    
+    else:
         # Get the redirector for this site
         xrd = None
         if isinstance(sites_xrootd_prefix[site], list):
@@ -927,46 +981,50 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools, dataset_f
             first_pattern = list(sites_xrootd_prefix[site].values())[0]
             # Extract just the server part (up to the first path component)
             # Check how the redirector is formatted in the dictionary
-            if '//$1' in first_pattern or '/$1' in first_pattern:
+            if "//$1" in first_pattern or "/$1" in first_pattern:
                 # Create a complete test URL with a path for testing
                 test_path = "/store/mc"  # Common valid path that should exist
                 complete_url = _get_pfn_for_site(test_path, sites_xrootd_prefix[site])
-                
+
                 # Extract just the server part for the ping test (xrdfs needs server only)
-                parts = complete_url.split('//')
+                parts = complete_url.split("//")
                 if len(parts) >= 2:
-                    server = parts[1].split('/')[0]
+                    server = parts[1].split("/")[0]
                     # Set xrd to the server with proper root:// prefix
                     xrd = f"root://{server}"
-                    
-                print(f"Using server with path for dictionary redirector: {server} (from {complete_url})")
+
+                print(
+                    f"Using server with path for dictionary redirector: {server} (from {complete_url})"
+                )
             else:
                 # For simpler dictionary patterns
-                parts = first_pattern.split('//')
+                parts = first_pattern.split("//")
                 if len(parts) >= 2:
-                    protocol = parts[0] + '//'  # root://
-                    hostname = parts[1].split('/')[0]  # hostname:port
+                    protocol = parts[0] + "//"  # root://
+                    hostname = parts[1].split("/")[0]  # hostname:port
                     xrd = f"{protocol}{hostname}"
-                    print(f"Using server part of dictionary redirector for {site}: {xrd}")
+                    print(
+                        f"Using server part of dictionary redirector for {site}: {xrd}"
+                    )
                 else:
                     print(f"Invalid redirector format for {site}: {first_pattern}")
                     return False
         elif isinstance(sites_xrootd_prefix[site], str):
             xrd = sites_xrootd_prefix[site]
-        
+
         if not xrd:
             print(f"No redirector found for site {site}")
             return False
-        
+
         # Extract the server part
-        server = xrd.replace('root://', '').split('/')[0]
-        #print(f"Testing redirector {server} for site {site}...")
-        
+        server = xrd.replace("root://", "").split("/")[0]
+        # print(f"Testing redirector {server} for site {site}...")
+
         # Try using xrdfs if available
-        if xrootd_tools['xrdfs']:
+        if xrootd_tools["xrdfs"]:
             try:
                 start_time = time.time()
-                
+
                 # Run xrdfs command directly in local mode
                 in_ci = determine_execution_mode()
                 if not in_ci:
@@ -974,98 +1032,109 @@ def check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools, dataset_f
                     cmd = ["xrdfs", server, "ping"]
                     result = subprocess.run(cmd, capture_output=True, timeout=5)
                     response_time = time.time() - start_time
-                    
+
                     if result.returncode == 0:
-                        print(f"✅ Site {site} redirector {server} is responsive via xrdfs (response time: {response_time:.2f}s)")
+                        print(
+                            f"✅ Site {site} redirector {server} is responsive via xrdfs (response time: {response_time:.2f}s)"
+                        )
                         return True
                     else:
                         print(f"❌ Site {site} redirector {server} failed xrdfs ping")
                 else:
                     # Use the bash script wrapper for CI
                     result = run_xrdfs_command(server, timeout=5)
-                    response_time = result.get('response_time', 0)
-                    
-                    if result.get('success', False):
-                        print(f"✅ Site {site} redirector {server} is responsive via xrdfs (response time: {response_time:.2f}s)")
+                    response_time = result.get("response_time", 0)
+
+                    if result.get("success", False):
+                        print(
+                            f"✅ Site {site} redirector {server} is responsive via xrdfs (response time: {response_time:.2f}s)"
+                        )
                         return True
                     else:
                         print(f"❌ Site {site} redirector {server} failed xrdfs ping")
-                        if 'stdout' in result:
-                            print(result['stdout'])
+                        if "stdout" in result:
+                            print(result["stdout"])
             except Exception as e:
                 print(f"Error with xrdfs ping for {site}: {e}")
-        
+
         # Try using Python XRootD
-        if xrootd_tools['python_xrootd']:
+        if xrootd_tools["python_xrootd"]:
             try:
                 print("Attempting XRootD connection through bash script...")
-                
+
                 # Use the bash script wrapper for Python XRootD
                 result = run_python_xrootd_ping(server, site)
-                
-                if result.get('success', False):
-                    print(f"✅ Site {site} redirector {server} is responsive via Python XRootD")
+
+                if result.get("success", False):
+                    print(
+                        f"✅ Site {site} redirector {server} is responsive via Python XRootD"
+                    )
                     # Only try to print stdout if it exists, otherwise print the message
-                    if 'stdout' in result:
-                        print(result['stdout'])
-                    elif 'message' in result:
+                    if "stdout" in result:
+                        print(result["stdout"])
+                    elif "message" in result:
                         print(f"Response info: {result.get('message', '')}")
                     return True
                 else:
-                    print(f"❌ Site {site} redirector {server} failed Python XRootD ping:")
+                    print(
+                        f"❌ Site {site} redirector {server} failed Python XRootD ping:"
+                    )
                     # Safely access all potential keys
-                    for key in ['stdout', 'stderr', 'message']:
+                    for key in ["stdout", "stderr", "message"]:
                         if key in result:
                             print(f"{key}: {result[key]}")
             except Exception as e:
                 print(f"Error with Python XRootD ping for {site}: {e}")
-        
+
         # Try using gfal if available
-        if xrootd_tools['gfal']:
+        if xrootd_tools["gfal"]:
             try:
                 start_time = time.time()
                 cmd = ["gfal-ls", f"root://{server}//"]
                 result = subprocess.run(cmd, capture_output=True, timeout=5)
                 response_time = time.time() - start_time
-                
+
                 if result.returncode == 0:
-                    print(f"✅ Site {site} redirector {server} is responsive via gfal-ls (response time: {response_time:.2f}s)")
+                    print(
+                        f"✅ Site {site} redirector {server} is responsive via gfal-ls (response time: {response_time:.2f}s)"
+                    )
                     return True
                 else:
                     print(f"❌ Site {site} redirector {server} failed gfal-ls")
             except Exception as e:
                 print(f"Error with gfal-ls for {site}: {e}")
-        
+
         # If all methods failed
         print(f"❌ Site {site} redirector is not responsive via any available method")
-        return False 
-  
+        return False
+
+
 def validate_xrootd_path(path):
     """Validate an XRootD path and fix common issues"""
-    if not path.startswith('root://'):
+    if not path.startswith("root://"):
         return path
-        
+
     # Split into server and path parts
-    parts = path.split('//')
-    
+    parts = path.split("//")
+
     if len(parts) < 2:
         return path
-        
-    server = parts[0] + '//'
-    remaining = '//'.join(parts[1:])
-    
+
+    server = parts[0] + "//"
+    remaining = "//".join(parts[1:])
+
     # Fix triple slash issue
-    if remaining.startswith('/'):
+    if remaining.startswith("/"):
         # Remove the extra leading slash
-        remaining = remaining.lstrip('/')
+        remaining = remaining.lstrip("/")
         return server + remaining
-    
+
     return path
 
 
 def getFilesFromDas(args):
     """Improved getFilesFromDas with multiple fallback strategies"""
-    # Check if we're in GitLab CI    
+    # Check if we're in GitLab CI
     in_ci = determine_execution_mode()
 
     fset = []
@@ -1103,19 +1172,18 @@ def getFilesFromDas(args):
         try:
 
             # Extract primary dataset name
-            primary_name = dataset.split('/')[1]
+            primary_name = dataset.split("/")[1]
             # More precise check for data: should contain "/Run20XX" pattern
             # Data pattern: /MuonEG/Run2024G-MINIv6NANOv15-v3/NANOAOD
-            data_run_pattern = re.search(r'/Run20\d\d[A-Z]', dataset)
-            
+            data_run_pattern = re.search(r"/Run20\d\d[A-Z]", dataset)
+
             if data_run_pattern:
                 # This is actual data with a real run period
-                run_period = dataset.split('/')[2].split('-')[0]  # Gets 'Run2024X'
+                run_period = dataset.split("/")[2].split("-")[0]  # Gets 'Run2024X'
                 dsname = f"{primary_name}{run_period}"
             else:
                 # This is MC - use only the primary dataset name
                 dsname = primary_name
-
 
         except IndexError:
             print(f"ERROR: Cannot parse dataset name from '{dataset}'")
@@ -1142,10 +1210,8 @@ def getFilesFromDas(args):
         for query in das_queries:
             if flist:  # If we already have files, no need to try other queries
                 break
-                
 
-            #print(f"Trying DAS query: {query}")
-
+            # print(f"Trying DAS query: {query}")
 
             try:
                 flist = run_das_command(query)
@@ -1180,10 +1246,8 @@ def getFilesFromDas(args):
         for query in site_queries:
             if sites:  # If we already have sites, no need to try other queries
                 break
-                
 
-            #print(f"Trying site query: {query}")
-
+            # print(f"Trying site query: {query}")
 
             try:
                 sites = run_das_command(query)
@@ -1217,11 +1281,9 @@ def getFilesFromDas(args):
         xrd = None
         sites_xrootd_prefix = get_xrootd_sites_map()
 
-
         # First gather completion information for all sites without checking responsiveness
         site_completions = []
         print(f"Evaluating completion for {len(sites)} sites for dataset {dataset}...")
-
 
         for site in sites:
             if not site:
@@ -1235,48 +1297,59 @@ def getFilesFromDas(args):
                 print(f"Site {site} is not in whitelist, skipping")
                 continue
 
-            
-
             # Skip if site has no XRootD access in our map
             if site not in sites_xrootd_prefix:
                 print(f"Site {site} has no XRootD access in our map, skipping")
                 continue
-                
+
             # Only check completion first
             completion = check_site_completion(site, dataset, xrootd_tools)
-            
+
             # Save all sites with files for sorting
             if completion > 0:
                 site_completions.append((site, completion))
 
         # Sort sites by completion percentage (highest first)
         site_completions.sort(key=lambda x: x[1], reverse=True)
-        
+
         # Now check responsiveness only for the top sites in order of completion
         site_candidates = []
-        print(f"Found {len(site_completions)} sites with files, checking responsiveness in order of completion...")
-        
+        print(
+            f"Found {len(site_completions)} sites with files, checking responsiveness in order of completion..."
+        )
+
         # Try sites in order of completion until we find a responsive one
         for site, completion in site_completions:
-            print(f"Checking responsiveness for site {site} with {completion:.2f}% completion...")
-            
-            if xrootd_tools['xrdfs'] or xrootd_tools['python_xrootd'] or xrootd_tools['gfal']:
-                is_responsive = check_site_responsiveness(site, sites_xrootd_prefix, xrootd_tools, dataset_files=flist)
+            print(
+                f"Checking responsiveness for site {site} with {completion:.2f}% completion..."
+            )
+
+            if (
+                xrootd_tools["xrdfs"]
+                or xrootd_tools["python_xrootd"]
+                or xrootd_tools["gfal"]
+            ):
+                is_responsive = check_site_responsiveness(
+                    site, sites_xrootd_prefix, xrootd_tools, dataset_files=flist
+                )
                 if is_responsive:
                     site_candidates.append((site, completion))
-                    print(f"Found responsive site: {site} with {completion:.2f}% completion")
+                    print(
+                        f"Found responsive site: {site} with {completion:.2f}% completion"
+                    )
                     break  # Stop after finding the first responsive site
             else:
                 # If no XRootD tools available, just assume site is responsive
-                print(f"⚠️ No XRootD tools available - assuming site {site} is responsive")
+                print(
+                    f"⚠️ No XRootD tools available - assuming site {site} is responsive"
+                )
                 site_candidates.append((site, completion))
                 break
-        
+
         best_site = None
         # If no sites were responsive, try the global redirector
         if not site_candidates:
             print(f"No responsive sites found for {dsname}, using global redirector")
-
 
             redirector = {
                 "infn": "root://xrootd-cms.infn.it//",
@@ -1285,19 +1358,20 @@ def getFilesFromDas(args):
             }
             xrd = redirector[args.redirector]
 
-
         else:
             # Use the first (and only) responsive site
             best_site, completion = site_candidates[0]
-            print(f"Selected site {best_site} with {completion:.2f}% dataset completion")
-            
+            print(
+                f"Selected site {best_site} with {completion:.2f}% dataset completion"
+            )
+
             # Get redirector for the best site
             if isinstance(sites_xrootd_prefix[best_site], list):
                 xrd = sites_xrootd_prefix[best_site][0]
             elif isinstance(sites_xrootd_prefix[best_site], dict):
                 # For dictionary redirectors, we need to pass the whole dictionary
                 # to _get_pfn_for_site which knows how to handle regex rules
-                #print(f"Using dictionary redirector for {best_site}: {sites_xrootd_prefix[best_site]}")
+                # print(f"Using dictionary redirector for {best_site}: {sites_xrootd_prefix[best_site]}")
                 xrd = sites_xrootd_prefix[best_site]
             elif isinstance(sites_xrootd_prefix[best_site], str):
                 xrd = sites_xrootd_prefix[best_site]
@@ -1307,11 +1381,10 @@ def getFilesFromDas(args):
                 redirector = {
                     "infn": "root://xrootd-cms.infn.it//",
                     "fnal": "root://cmsxrootd.fnal.gov/",
-                    "cern": "root://cms-xrd-global.cern.ch/"
+                    "cern": "root://cms-xrd-global.cern.ch/",
                 }
                 xrd = redirector[args.redirector]
 
-        
         if args.limit is not None:
             flist = flist[: args.limit]
 
@@ -1321,15 +1394,14 @@ def getFilesFromDas(args):
             if best_site in site_url_formats:
                 redirector = site_url_formats[best_site]["redirector"]
                 print(f"Using redirector for site {best_site}: {redirector}")
-                
+
                 # Apply the redirector to all files - clean and simple
                 paths = [f"{redirector}{f.lstrip('/')}" for f in flist if len(f) > 1]
                 print(f"Sample path: {paths[0]}")
             else:
                 # No cached format, use the standard approach
                 paths = [_get_pfn_for_site(f, xrd) for f in flist if len(f) > 1]
-    
-            
+
             validated_paths = [validate_xrootd_path(p) for p in paths]
             fdict[dsname] = validated_paths
         else:
@@ -1338,17 +1410,16 @@ def getFilesFromDas(args):
             if best_site and best_site in site_url_formats:
                 redirector = site_url_formats[best_site]["redirector"]
                 print(f"Using redirector for site {best_site}: {redirector}")
-                
+
                 # Apply the redirector to all files - clean and simple
                 paths = [f"{redirector}{f.lstrip('/')}" for f in flist if len(f) > 1]
                 print(f"Sample path: {paths[0]}")
             else:
                 # No cached format, use the standard approach
                 paths = [_get_pfn_for_site(f, xrd) for f in flist if len(f) > 1]
-            
+
             validated_paths = [validate_xrootd_path(p) for p in paths]
             fdict[dsname].extend(validated_paths)
-        
 
         print(f"Added {len(fdict[dsname])} files for dataset {dsname}")
 
@@ -1522,11 +1593,10 @@ def direct_das_query(dataset_name, campaign_pattern):
         # Check if we're in CI environment
 
         in_ci = determine_execution_mode()
-        
+
         if not in_ci:
             # For local environment - use direct dasgoclient call
-            cmd = f"dasgoclient -query=\"instance=prod/global {query}\""
-
+            cmd = f'dasgoclient -query="instance=prod/global {query}"'
 
             print(f"Local command: {cmd}")
             # Use the already-working run_das_command function instead of os.popen
