@@ -425,6 +425,8 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             _hist_dict[f"dr_{i}jet"] = Hist.Hist(
                 syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
+    elif "qgtag" in workflow:
+        pass
 
     ### Common kinematic variables histogram creation
     if "Wc_sf" not in workflow:

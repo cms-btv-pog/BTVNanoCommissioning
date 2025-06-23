@@ -285,4 +285,20 @@ predefined_sample = {
             "TTto2L2Nu_TuneCP5Up_13p6TeV_powheg-pythia8",
         ],
     },
+    "qgtag_dijet": {
+        "data": ["ZeroBias", "JetMET0", "JetMET1"],
+        "MC": [
+            "QCD-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-600to800_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1200to1500_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1500to2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        ],
+    },
 }
