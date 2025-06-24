@@ -153,10 +153,10 @@ xsection = [
         "comment": "from TOP-22-012 with PDG 2023 value",
     },
     {
-        "process_name":"TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
-        "cross_section":"2.278",
-        "energy":"13.6",
-        "comment": "from XSDB"
+        "process_name": "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
+        "cross_section": "2.278",
+        "energy": "13.6",
+        "comment": "from XSDB",
     },
     {
         "process_name": "TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8",
