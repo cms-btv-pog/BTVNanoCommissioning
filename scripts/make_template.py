@@ -64,7 +64,7 @@ def create_template(inputs, variable, mergemap, axis, lumi, output):
 
     fout = uproot.recreate(f"{variable}_{output}")
     subtract = False
-    if "osss"in axis.keys():
+    if "osss" in axis.keys():
         if "sum" in str(axis["osss"]):
             subtract = True
             axis.pop("osss")
@@ -79,8 +79,12 @@ def create_template(inputs, variable, mergemap, axis, lumi, output):
                 rebin = int(arg.autorebin)
             else:
                 rebin = np.array([float(i) for i in arg.autorebin.split(",")])
-            fout[data.replace("-", "_")] = rebin_hist(collated[data][variable][axis], collated[data][variable].axes[-1].name, rebin)
-        else:            
+            fout[data.replace("-", "_")] = rebin_hist(
+                collated[data][variable][axis],
+                collated[data][variable].axes[-1].name,
+                rebin,
+            )
+        else:
             fout[data.replace("-", "_")] = collated[data][variable][axis]
         if variable not in collated[data].keys():
             raise f"{variable} not in {data}"
