@@ -15,6 +15,21 @@ from BTVNanoCommissioning.utils.plot_utils import (
 )
 
 plt.style.use(hep.style.ROOT)
+custom_palette = [
+    "#3f90da",
+    "#ffa90e",
+    "#bd1f01",
+    "#94a4a2",
+    "#832db6",
+    "#a96b59",
+    "#e76300",
+    "#b9ac70",
+    "#717581",
+    "#92dadd",
+]
+
+# Apply the color cycle globally
+plt.rcParams["axes.prop_cycle"] = plt.cycler(color=custom_palette)
 from BTVNanoCommissioning.helpers.xs_scaler import collate
 
 bininfo = definitions()
@@ -69,7 +84,7 @@ parser.add_argument(
     "--mergemap",
     default=None,
     type=str,
-    help="Group list of sample(keys in coffea) as reference/compare set as dictionary format. Keys would be the new lables of the group",
+    help="Group list of sample(keys in coffea) as reference/compare set as dictionary format. Keys would be the new lables of the group, it can be also a .json file",
 )
 parser.add_argument(
     "--autorebin",
@@ -99,28 +114,54 @@ elif "*" in args.input:
     output = {i: load(i) for i in files}
 else:
     output = {args.input: load(args.input)}
+sample_list = []
+for f in output.keys():
+    sample_list.extend([m for m in output[f].keys()])
+
 mergemap = {}
 if not os.path.isdir(f"plot/{args.phase}_{args.ext}/"):
     os.makedirs(f"plot/{args.phase}_{args.ext}/")
+
 if args.mergemap is None:
+    # Single coffea file
     if not any(".coffea" in o for o in output.keys()):
         mergemap[args.ref] = [m for m in output.keys() if args.ref == m]
         for c in args.compared.split(","):
             mergemap[c] = [m for m in output.keys() if c == m]
+    # Multiple files
     else:
-        reflist = []
-        for f in output.keys():
-            reflist.extend([m for m in output[f].keys() if args.ref == m])
-        mergemap[args.ref] = reflist
 
-        for c in args.compared.split(","):
-            comparelist = []
+        if len(list(set(sample_list))) < len(sample_list):
+            raise Exception("coffea files contain same datasets! Need mergemap")
+        else:
+            reflist = []
             for f in output.keys():
-                comparelist.extend([m for m in output[f].keys() if c == m])
-            mergemap[c] = comparelist
+                reflist.extend([m for m in output[f].keys() if args.ref == m])
+            mergemap[args.ref] = reflist
+
+            for c in args.compared.split(","):
+                comparelist = []
+                for f in output.keys():
+                    comparelist.extend([m for m in output[f].keys() if c == m])
+                mergemap[c] = comparelist
 else:
-    mergemap = json.loads(args.mergemap)
-collated = collate(output, mergemap)
+    if "json" in args.mergemap:
+        args.mergemap = open(args.mergemap)
+        mergemap = json.load(args.mergemap)
+    else:
+        mergemap = json.loads(args.mergemap)
+# if dataset duplicated
+collated = {}
+if len(list(set(sample_list))) < len(sample_list):
+    collated[args.ref] = collate(
+        output[mergemap["fname"][args.ref]], mergemap["dataset"]
+    )
+    for c in args.compared.split(","):
+        collated[c] = collate(output[mergemap["fname"][c]], mergemap["dataset"])
+
+else:
+    collated = collate(output, mergemap)
+
 ### style settings
 if "Run" in args.ref:
     hist_type = "errorbar"
@@ -210,8 +251,6 @@ for index, discr in enumerate(var_set):
         allaxis["flav"] = sum
     if "syst" in collated[args.ref][discr].axes.name:
         allaxis["syst"] = "nominal"
-        if "btag" in discr:
-            allaxis["syst"] = "noSF"
     if "osss" in collated[args.ref][discr].axes.name:  ## do dominal OS-SS
         if args.splitOSSS is None:  # OS-SS
             collated[args.ref][discr] = (
@@ -258,12 +297,12 @@ for index, discr in enumerate(var_set):
         xlabel = axes_name(discr)
 
     text = args.ext
+    ref_norm = np.sum(collated[args.ref][discr][allaxis].values())
     if args.norm:
         text = args.ext + "\nNormalized to Ref."
         for c in args.compared.split(","):
             collated[c][discr] = collated[c][discr] * float(
-                np.sum(collated[args.ref][discr][allaxis].values())
-                / np.sum(collated[c][discr][allaxis].values())
+                ref_norm / np.sum(collated[c][discr][allaxis].values())
             )
 
     if args.sepflav:  # split into 3 panels for different flavor
@@ -283,10 +322,10 @@ for index, discr in enumerate(var_set):
         baxis = {"flav": 3}
 
         if "syst" in collated[args.ref][discr].axes.name:
-            laxis["syst"] = "noSF"
-            puaxis["syst"] = "noSF"
-            caxis["syst"] = "noSF"
-            baxis["syst"] = "noSF"
+            laxis["syst"] = "nominal"
+            puaxis["syst"] = "nominal"
+            caxis["syst"] = "nominal"
+            baxis["syst"] = "nominal"
 
         hep.histplot(
             collated[args.ref][discr][laxis] + collated[args.ref][discr][puaxis],
@@ -402,7 +441,7 @@ for index, discr in enumerate(var_set):
 
         at = AnchoredText(input_txt + "\n" + text, loc=2, frameon=False)
         ax.add_artist(at)
-        hep.mpl_magic(ax=ax)
+        hep.mpl_magic(ax=ax, soft_fail=True)
         if args.log:
             ax.set_yscale("log")
         fig.savefig(
@@ -419,6 +458,8 @@ for index, discr in enumerate(var_set):
         fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
         hep.cms.label(label, com=args.com, data=True, loc=0, ax=ax)
         ax.set_xlabel(None)
+        allaxis["syst"] = "nominal"
+
         hep.histplot(
             collated[args.ref][discr][allaxis],
             label=args.ref + " (Ref)",
@@ -439,16 +480,12 @@ for index, discr in enumerate(var_set):
                 xerr=do_xerr,
                 flow=args.flow,
             )
-            if len(ax.get_lines()) > 2 * len(args.compared.split(",")):
-                colors = ax.get_lines()[(i + 1) * 2]
-            else:
-                colors = ax.get_lines()[i + 1]
             plotratio(
                 collated[c][discr][allaxis],
-                collated[args.ref][discr][allaxis],
+                collated[args.ref][discr][{"flav": sum, "syst": "nominal"}],
                 ax=rax,
                 denom_fill_opts=None,
-                error_opts={"color": colors.get_color()},
+                error_opts={"color": custom_palette[i + 1]},
                 clear=False,
                 xerr=do_xerr,
                 flow=args.flow,
@@ -471,7 +508,7 @@ for index, discr in enumerate(var_set):
 
         at = AnchoredText(input_txt + "\n" + text, loc=2, frameon=False)
         ax.add_artist(at)
-        hep.mpl_magic(ax=ax)
+
         ax.set_ylim(bottom=0)
         logext = ""
         normtext = ""
@@ -481,7 +518,8 @@ for index, discr in enumerate(var_set):
             ax.set_yscale("log")
             logext = "_log"
             ax.set_ylim(bottom=0.1)
-            hep.mpl_magic(ax=ax)
+            hep.mpl_magic(ax=ax, soft_fail=True)
+        hep.mpl_magic(ax=ax, soft_fail=True)
         print(
             "creating:",
             f"plot/{args.phase}_{args.ext}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png",
