@@ -42,6 +42,7 @@ You can still install additional packages itself by `pip install $PACKAGE`
 
 `conda/micromamba activate btv_coffea` is required to setup
 
-
+Make sure that 'dasgoclient' command is found by ensuring it is in your `$PATH` variable.
+Please, run `source env_setup_complete.sh` after having activated the environment to make sure that the `$PATH` variable is correctly configured.
 ### Other installation options for coffea
 See [https://coffeateam.github.io/coffea/installation.html](https://coffeateam.github.io/coffea/installation.html)

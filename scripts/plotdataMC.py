@@ -607,7 +607,17 @@ for index, discr in enumerate(var_set):
     name = "all"
     if args.split == "sample":
         name = name + "_sample"
-    hep.mpl_magic(ax=ax)
+    try:
+        hep.mpl_magic(ax=ax)
+    except RuntimeError as e:
+        print(f"Warning: {e}")
+        print("Using soft_fail=True for legend placement")
+        try:
+            # Try with soft_fail=True
+            hep.mpl_magic(ax=ax, soft_fail=True)
+        except Exception as e2:
+            print(f"Still failed: {e2}")
+            # Continue anyway - the plot will still be usable
     if args.log:
         print(
             "creating:",
