@@ -110,6 +110,12 @@ if __name__ == "__main__":
         action="store_true",
         help="Run local debug test with small set of dataset with iterative executor",
     )
+    # Add test_lumi flag
+    parser.add_argument(
+        "--test_lumi",
+        action="store_true",
+        help="Test luminosity calculation with limited dataset (20 files)",
+    )
 
     args = parser.parse_args()
     # summarize diffeerent group for study
@@ -117,7 +123,8 @@ if __name__ == "__main__":
         # scale factor workflows
         "SF": ["BTA_ttbar", "BTA_addPFMuons"],
         # Use for prompt data MC checks for analysis
-        "Validation": ["ttdilep_sf", "ctag_Wc_sf"],
+        # "Validation": ["ttdilep_sf", "ctag_Wc_sf"], ###TODO: change back after testing
+        "Validation": ["ttdilep_sf"],
         # commissioning workflows
         "default_comissioning": [
             "ttdilep_sf",
@@ -215,6 +222,7 @@ if __name__ == "__main__":
                         "version",
                         "local",
                         "debug",
+                        "test_lumi",
                     ]:
                         continue
 
@@ -237,9 +245,14 @@ if __name__ == "__main__":
 
                 # Add limit for MC validation if not already present
                 if "Validation" == args.scheme and types == "MC" and not limit_added:
-                    runner_config += " --limit 50"
+                    runner_config += " --limit 8"  ###TODO: change to 50 after testing
                     imit_added = True
                     print(f"⚠️ Running Validation with 50 files limit for MC")
+                # Add test_lumi limited processing (20 files) if flag is set
+                elif args.test_lumi and not limit_added:
+                    runner_config += " --limit 3"
+                    limit_added = True
+                    print(f"⚠️ Running in test_lumi mode with 5 files limit for {types}")
                 runner_config = runner_config_required + runner_config
                 if args.debug:
                     print(f"run the workflow: {runner_config}")
