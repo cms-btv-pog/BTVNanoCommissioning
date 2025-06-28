@@ -123,7 +123,8 @@ if __name__ == "__main__":
         # scale factor workflows
         "SF": ["BTA_ttbar", "BTA_addPFMuons"],
         # Use for prompt data MC checks for analysis
-        "Validation": ["ttdilep_sf", "ctag_Wc_sf"],
+        # "Validation": ["ttdilep_sf", "ctag_Wc_sf"], ###TODO: change back after testing
+        "Validation": ["ttdilep_sf"],
         # commissioning workflows
         "default_comissioning": [
             "ttdilep_sf",
