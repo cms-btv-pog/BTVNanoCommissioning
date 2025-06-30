@@ -1,4 +1,5 @@
 from pathlib import Path
+import argparse
 
 import matplotlib.pyplot as plt
 import mplhep as hep
@@ -8,26 +9,31 @@ from matplotlib import rc_context
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
 from BTVNanoCommissioning.utils.plot_utils import MCerrorband, color_map, plotratio
 
+parser = argparse.ArgumentParser(description="Plot histograms for iterative b-tagging SFs")
+parser.add_argument(
+    "--suffix",
+    type=str,
+    help="suffix for input histograms"
+)
+args = parser.parse_args()
+
 lumi = 9451  # pb^-1
 # need to devide, mplhep uses fb^-1
 lumi_label = lumi / 1000  # fb^-1
 com = 13.6
+suffix = args.suffix
 
 # load the coffea file
-# mc_path = "/home/home1/institut_3a/zinn/analyses/BTV/BTVNanoCommissioning/hists_btag_ttbar_sf_mumu_MC_Summer23_2023_BTV_Run3_2023_Comm_MINIAODv4_NanoV12/hists_btag_ttbar_sf_mumu_MC_Summer23_2023_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.coffea"
-mc_path = "/home/home1/institut_3a/zinn/analyses/BTV/BTVNanoCommissioning/hists_btag_ttbar_sf_MC_Summer23BPix_2023_BTV_Run3_2023_Comm_MINIAODv4_NanoV12/hists_btag_ttbar_sf_MC_Summer23BPix_2023_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.coffea"
-mc_output = load(mc_path)
-
-# data_muBTV_path = "/home/home1/institut_3a/zinn/analyses/BTV/BTVNanoCommissioning/hists_btag_ttbar_sf_mumu_data_Summer23_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12/hists_btag_ttbar_sf_mumu_data_Summer23_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.coffea"
-data_muBTV_path = "/home/home1/institut_3a/zinn/analyses/BTV/BTVNanoCommissioning/hists_btag_ttbar_sf_data_Summer23BPix_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12/hists_btag_ttbar_sf_data_Summer23BPix_2023_mu_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.coffea"
-data_muBTV_output = load(data_muBTV_path)
-data_emBTV = "/home/home1/institut_3a/zinn/analyses/BTV/BTVNanoCommissioning/hists_btag_ttbar_sf_data_Summer23BPix_2023_em_BTV_Run3_2023_Comm_MINIAODv4_NanoV12/hists_btag_ttbar_sf_data_Summer23BPix_2023_em_BTV_Run3_2023_Comm_MINIAODv4_NanoV12.coffea"
-data_emBTV_output = load(data_emBTV)
+# mc_path = "/net/data_cms3a-1/fzinn/BTV/btag_sf/nobackup/Summer23BPix/btag_ttbar_sf/hists_MC/hists_MC.coffea"
+mc_path = Path(Path.cwd(), f"hists_MC_{suffix}", f"hists_MC_{suffix}.coffea")
+# data_path = "/net/data_cms3a-1/fzinn/BTV/btag_sf/nobackup/Summer23BPix/btag_ttbar_sf/hists_data/hists_data.coffea"
+data_path = Path(Path.cwd(), f"hists_data_{suffix}", f"hists_data_{suffix}.coffea")
+print(f"Loading MC from {mc_path}")
+print(f"Loading Data from {data_path}")
 
 output = {
-    "mc": mc_output,
-    "data_muBTV": data_muBTV_output,
-    # "data_emBTV": data_emBTV_output,
+    "mc": load(mc_path),
+    "data": load(data_path),
 }
 
 output = scaleSumW(output, lumi)
@@ -126,7 +132,7 @@ with rc_context(hep.style.CMS):
             )
             rax.set_ylabel("Data/MC")
 
-            save_path = Path("plots", variable)
+            save_path = Path("plots_iterative_btagSF", variable)
             save_path.mkdir(parents=True, exist_ok=True)
             fig.savefig(save_path / f"{region}.png")
             ax.set_yscale("log")
