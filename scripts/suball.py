@@ -89,7 +89,8 @@ if __name__ == "__main__":
         "-sc",
         "--scheme",
         default="Validation",
-        choices=list(workflows.keys()) + ["Validation", "Validation_tt", "SF", "default_comissioning"],
+        choices=list(workflows.keys())
+        + ["Validation", "Validation_tt", "SF", "default_comissioning"],
         help="Choose the function for dump luminosity(`lumi`)/failed files(`failed`) into json",
     )
 
@@ -116,6 +117,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Test luminosity calculation with limited dataset (20 files)",
     )
+    parser.add_argument(
+        "--limit_MC",
+        action="store_true",
+        help="Limit MC samples to 50 files regardless of workflow/scheme",
+    )
 
     args = parser.parse_args()
     # summarize diffeerent group for study
@@ -137,8 +143,9 @@ if __name__ == "__main__":
         ],
     }
     if args.scheme in workflows.keys():
-        scheme["test"] = [args.scheme]
-        args.scheme = "test"
+        scheme[args.scheme] = [args.scheme]
+        # scheme["test"] = [args.scheme]
+        # args.scheme = "test"
     # Check lumiMask exists and replace the Validation
     input_lumi_json = correction_config[args.campaign]["lumiMask"]
     if args.campaign != "prompt_dataMC" and not os.path.exists(
@@ -203,7 +210,7 @@ if __name__ == "__main__":
                 # Check if dataset needs refreshing because of age
                 if should_refresh_dataset(json_file):
                     print(f"Refreshing dataset: {json_file}")
-                    fetch_cmd = f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation --overwrite "
+                    fetch_cmd = f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation --overwrite --executor futures"
                     os.system(fetch_cmd)
 
                 runner_config_required = f"python runner.py --wf {wf} --json metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json {overwrite} --campaign {args.campaign} --year {args.year}"
@@ -224,6 +231,7 @@ if __name__ == "__main__":
                         "local",
                         "debug",
                         "test_lumi",
+                        "limit_MC",
                     ]:
                         continue
 
@@ -245,12 +253,18 @@ if __name__ == "__main__":
                             runner_config += f" --{key}={value}"
 
                 # Add limit for MC validation if not already present
-                if ("Validation" == args.scheme or "Validation_tt" == args.scheme) and types == "MC" and not limit_added:
-                    runner_config += " --limit 50"  ###TODO: change to 50 after testing
-                    imit_added = True
-                    print(f"⚠️ Running Validation with 50 files limit for MC")
+                if types == "MC" and not limit_added:
+                    # Apply limit if it's Validation or the limit_MC flag is set
+                    if (
+                        "Validation" == args.scheme
+                        or "Validation_tt" == args.scheme
+                        or args.limit_MC
+                    ):
+                        runner_config += " --limit 50"
+                        limit_added = True  # Fixed the typo
+                        print(f"⚠️ Running with 50 files limit for MC samples")
                 # Add test_lumi limited processing (20 files) if flag is set
-                #elif args.test_lumi and not limit_added:
+                # elif args.test_lumi and not limit_added:
                 #    runner_config += " --limit 5"
                 #    limit_added = True
                 #    print(f"⚠️ Running in test_lumi mode with 5 files limit for {types}")
