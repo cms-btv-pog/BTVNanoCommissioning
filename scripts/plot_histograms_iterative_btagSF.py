@@ -49,7 +49,7 @@ variables = [
 ]
 
 # this would be to BTV Framework plotting style
-# flav_labels = {"c": 4, "b": 5, "udsg": 0, "pu": 1}
+# flav_labels = {"c": [4], "b": [5], "udsg": [0], "pu": [1]}
 # color_list = [color_map[flav] for flav in flav_labels.keys()]
 
 # this is with only b,c,l
@@ -88,6 +88,54 @@ with rc_context(hep.style.CMS):
                 ][sum, :]
                 for flav in flav_labels.values()
             ]
+
+            summed_hist = histogram["nominal", sum, sum, sum, region, sum, :]
+            fig, (ax, ratio_ax) = plt.subplots(
+                2,
+                1,
+                figsize=(10, 10),
+                gridspec_kw={"height_ratios": (3, 1)},
+                sharex=True,
+            )
+            fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
+            hep.cms.label(
+                "Preliminary", com=com, lumi=lumi_label, ax=ax, loc=0, data=True
+            )
+            hep.histplot(
+                summed_hist,
+                label="MC",
+                histtype="fill",
+                yerr=True,
+                ax=ax,
+                color="#f89c20",
+            )
+            hep.histplot(
+                data_histogram["nominal", 0, sum, sum, region, sum, :],
+                label="Data",
+                histtype="errorbar",
+                color="black",
+                yerr=True,
+                ax=ax,
+            )
+            MCerrorband(summed_hist, ax=ax)
+            ax.set_xlim(0, 1)
+            ax.set_xlabel(None)
+            ax.set_ylabel("Events")
+            # plot ratio
+            rax = plotratio(
+                data_histogram["nominal", 0, sum, sum, region, sum, :],
+                summed_hist,
+                ax=ratio_ax,
+            )
+            rax.set_ylabel("Data/MC")
+
+            save_path = Path("plots_iterative_btagSF", variable)
+            save_path.mkdir(parents=True, exist_ok=True)
+            fig.tight_layout()
+            fig.savefig(save_path / f"{region}_MC_sum.png")
+            ax.set_yscale("log")
+            fig.savefig(save_path / f"{region}_MC_sum_log.png")
+            plt.close(fig)
 
             # plot sum over all eta and pt bins
             fig, (ax, ratio_ax) = plt.subplots(
@@ -166,8 +214,6 @@ with rc_context(hep.style.CMS):
             ax.set_ylabel("Events")
             ax.legend()
 
-            save_path = Path("plots", variable)
-            save_path.parent.mkdir(parents=True, exist_ok=True)
             fig.savefig(save_path / f"{region}_hists.png")
             ax.set_yscale("log")
             fig.savefig(save_path / f"{region}_hists_log.png")
@@ -181,7 +227,14 @@ with rc_context(hep.style.CMS):
                     pt_bin = f"pt{pt[0]:.0f}to{pt[1]:.0f}"
 
                     # plot for each eta and pt bin
-                    fig, ax = plt.subplots()
+                    fig, (ax, ratio_ax) = plt.subplots(
+                        2,
+                        1,
+                        figsize=(10, 10),
+                        gridspec_kw={"height_ratios": (3, 1)},
+                        sharex=True,
+                    )
+                    fig.subplots_adjust(hspace=0.06, top=0.92, bottom=0.1, right=0.97)
                     hep.cms.label(
                         "Preliminary", com=com, lumi=lumi_label, ax=ax, loc=0, data=True
                     )
@@ -196,7 +249,7 @@ with rc_context(hep.style.CMS):
                                 region,
                                 sum,
                                 :,
-                            ]
+                            ][sum, :]
                             for flav in flav_labels.values()
                             # for index in range(len(flav_axis) - 1)
                         ],
@@ -208,7 +261,7 @@ with rc_context(hep.style.CMS):
                         color=color_list,
                     )
                     hep.histplot(
-                        collated["data"][variable][
+                        data_histogram[
                             "nominal", 0, eta_index, pt_index, region, sum, :
                         ],
                         label="Data",
@@ -219,6 +272,17 @@ with rc_context(hep.style.CMS):
                     )
                     ax.set_xlim(0, 1)
                     ax.legend()
+
+                    # plot ratio
+                    rax = plotratio(
+                        data_histogram[
+                            "nominal", 0, eta_index, pt_index, region, sum, :
+                        ],
+                        histogram["nominal", sum, eta_index, pt_index, region, sum, :],
+                        ax=ratio_ax,
+                    )
+                    rax.set_ylim(0,3)
+                    rax.set_ylabel("Data/MC")
                     fig.tight_layout()
 
                     # save
