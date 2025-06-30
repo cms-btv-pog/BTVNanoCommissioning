@@ -218,8 +218,8 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             self.model_base = None
         username = os.environ.get('USER')
-        # self.out_dir_base = "/data/dust/user/pgadow/btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else "") # noqa
-        self.out_dir_base = f"/eos/user/{username[0]}/{username}/btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else "") # noqa
+        self.out_dir_base = "/data/dust/user/pgadow/btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else "") # noqa
+        # self.out_dir_base = f"/eos/user/{username[0]}/{username}/btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else "") # noqa
 
         ## Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
@@ -361,6 +361,21 @@ class NanoProcessor(processor.ProcessorABC):
         )
         event_level = ak.fill_none(event_level, False)
 
+
+        if len(events[event_level]) == 0:
+            if self.isArray:
+                array_writer(
+                    self,
+                    events[event_level],
+                    events,
+                    None,
+                    ["nominal"],
+                    dataset,
+                    isRealData,
+                    empty=True,
+                )
+            return {dataset: output}
+
         # ----------------------------
         # Object selection
         # ----------------------------
@@ -457,14 +472,21 @@ class NanoProcessor(processor.ProcessorABC):
             if tag in ev_jets.fields: taggers[tag] = get_tagger(ev_jets, tag)
 
         if not isRealData:
+            # old implementation from TTBarCalib code
+            # flavour = ak.where(
+            #     ev_jets.hadronFlavour != 0,
+            #     ev_jets.hadronFlavour,
+            #     ak.where(
+            #         (abs(ev_jets.partonFlavour) == 4) | (abs(ev_jets.partonFlavour) == 5),
+            #         ak.zeros_like(ev_jets.pt, dtype=int),
+            #         ev_jets.partonFlavour,
+            #     ),
+            # )
+            # new implementation more in line with rest of commissioning framework
             flavour = ak.where(
-                ev_jets.hadronFlavour != 0,
+                (ev_jets.partonFlavour == 0) & (ev_jets.hadronFlavour == 0),
+                ak.ones_like(ev_jets.pt, dtype=int),
                 ev_jets.hadronFlavour,
-                ak.where(
-                    (abs(ev_jets.partonFlavour) == 4) | (abs(ev_jets.partonFlavour) == 5),
-                    ak.zeros_like(ev_jets.pt, dtype=int),
-                    ev_jets.partonFlavour,
-                ),
             )
             flavour = ak.values_astype(flavour, int)
         else:
