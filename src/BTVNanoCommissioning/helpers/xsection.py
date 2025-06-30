@@ -205,6 +205,10 @@ xsection = [
         "comment": "from TOP-22-012",
     },
     {
+        "process_name": "WtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "63199.9",
+    },
+    {
         "process_name": "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "cross_section": "63199.9",
         "DAS": "/WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8/Run3Summer22NanoAODv11-126X_mcRun3_2022_realistic_v2-v2/NANOAODSIM",
