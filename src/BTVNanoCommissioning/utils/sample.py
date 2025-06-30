@@ -175,13 +175,11 @@ predefined_sample = {
             "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
-            "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
         ],
         "minor_MC": [
             "DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-            "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "WZ_TuneCP5_13p6TeV_pythia8",
             "ZZ_TuneCP5_13p6TeV_pythia8",
