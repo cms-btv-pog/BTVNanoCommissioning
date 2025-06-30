@@ -89,7 +89,7 @@ if __name__ == "__main__":
         "-sc",
         "--scheme",
         default="Validation",
-        choices=list(workflows.keys()) + ["Validation", "SF", "default_comissioning"],
+        choices=list(workflows.keys()) + ["Validation", "Validation_tt", "SF", "default_comissioning"],
         help="Choose the function for dump luminosity(`lumi`)/failed files(`failed`) into json",
     )
 
@@ -245,7 +245,7 @@ if __name__ == "__main__":
                             runner_config += f" --{key}={value}"
 
                 # Add limit for MC validation if not already present
-                if "Validation" == args.scheme and types == "MC" and not limit_added:
+                if ("Validation" == args.scheme or "Validation_tt" == args.scheme) and types == "MC" and not limit_added:
                     runner_config += " --limit 50"  ###TODO: change to 50 after testing
                     imit_added = True
                     print(f"⚠️ Running Validation with 50 files limit for MC")
