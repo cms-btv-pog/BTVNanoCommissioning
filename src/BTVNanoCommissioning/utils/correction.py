@@ -569,6 +569,10 @@ def JME_shifts(
             jets = copy.copy(nocorrjet)
             jets["orig_pt"] = ak.values_astype(nocorrjet["pt"], np.float32)
 
+            # add run information to jet
+            # needed for correctionlib
+            nocorrjet["run"] = events.run
+
             ## flatten jets
             j, nj = ak.flatten(nocorrjet), ak.num(nocorrjet)
 
