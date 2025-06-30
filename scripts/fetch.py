@@ -398,7 +398,7 @@ def determine_execution_mode():
     in_btv_coffea = "btv_coffea" in conda_env or "btv_coffea" in conda_prefix
 
     # If we're in the btv_coffea environment in CI, use local execution mode
-    if in_btv_coffea:
+    if in_btv_coffea and args.verbose:
         print("📌 Detected btv_coffea environment in CI - using local execution mode")
         return False
 
