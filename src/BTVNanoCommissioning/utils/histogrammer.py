@@ -1029,8 +1029,8 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
         # dilepton system histograms: DY workflow
         if "dilep" in pruned_ev.fields:
             output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.pt), weight=weight)
-            output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.eta), weight=weight)
-            output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.phi), weight=weight)
+            output["dilep_eta"].fill(syst, flatten(pruned_ev.dilep.eta), weight=weight)
+            output["dilep_phi"].fill(syst, flatten(pruned_ev.dilep.phi), weight=weight)
             output["dilep_mass"].fill(
                 syst, flatten(pruned_ev.dilep.mass), weight=weight
             )
