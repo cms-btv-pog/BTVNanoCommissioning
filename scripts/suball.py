@@ -111,16 +111,16 @@ if __name__ == "__main__":
         action="store_true",
         help="Run local debug test with small set of dataset with iterative executor",
     )
-    # Add test_lumi flag
-    parser.add_argument(
-        "--test_lumi",
-        action="store_true",
-        help="Test luminosity calculation with limited dataset (20 files)",
-    )
     parser.add_argument(
         "--limit_MC",
         action="store_true",
         help="Limit MC samples to 50 files regardless of workflow/scheme",
+    )
+    parser.add_argument(
+        "--validate_workflow",
+        "-vw",
+        action="store_true",
+        help="Run only data and MC samples for the workflow, skip minor MC samples",
     )
 
     args = parser.parse_args()
@@ -146,6 +146,11 @@ if __name__ == "__main__":
         scheme[args.scheme] = [args.scheme]
         # scheme["test"] = [args.scheme]
         # args.scheme = "test"
+
+    if args.validate_workflow:
+        print(
+            f"ℹ️ Running workflow '{wf}' in validation mode (only data and MC samples)"
+        )
     # Check lumiMask exists and replace the Validation
     input_lumi_json = correction_config[args.campaign]["lumiMask"]
     if args.campaign != "prompt_dataMC" and not os.path.exists(
@@ -176,11 +181,11 @@ if __name__ == "__main__":
         ):
             if args.debug:
                 print(
-                    f"Creating MC dataset: python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation --executor futures"
+                    f"Creating MC dataset: python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation"
                 )
 
             os.system(
-                f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation --executor futures"
+                f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation"
             )
             if args.debug:
                 os.system(f"ls metadata/{args.campaign}/*.json")
@@ -188,7 +193,10 @@ if __name__ == "__main__":
         ## Run the workflows
         for types in predefined_sample[wf].keys():
 
-            if (types != "data" and types != "MC") and args.scheme == "Validation":
+            if (types != "data" and types != "MC") and (
+                args.scheme == "Validation" or args.validate_workflow
+            ):
+                print(f"⚠️ Skipping minor sample type '{types}' due to validation mode")
                 continue
             print(
                 f"hists_{wf}_{types}_{args.campaign}_{args.year}_{wf}/hists_{wf}_{types}_{args.campaign}_{args.year}_{wf}.coffea"
@@ -230,8 +238,8 @@ if __name__ == "__main__":
                         "version",
                         "local",
                         "debug",
-                        "test_lumi",
                         "limit_MC",
+                        "validate_workflow",
                     ]:
                         continue
 
@@ -261,13 +269,8 @@ if __name__ == "__main__":
                         or args.limit_MC
                     ):
                         runner_config += " --limit 50"
-                        limit_added = True  # Fixed the typo
+                        limit_added = True  
                         print(f"⚠️ Running with 50 files limit for MC samples")
-                # Add test_lumi limited processing (20 files) if flag is set
-                # elif args.test_lumi and not limit_added:
-                #    runner_config += " --limit 5"
-                #    limit_added = True
-                #    print(f"⚠️ Running in test_lumi mode with 5 files limit for {types}")
                 runner_config = runner_config_required + runner_config
                 if args.debug:
                     print(f"run the workflow: {runner_config}")
