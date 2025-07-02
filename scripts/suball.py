@@ -147,10 +147,6 @@ if __name__ == "__main__":
         # scheme["test"] = [args.scheme]
         # args.scheme = "test"
 
-    if args.validate_workflow:
-        print(
-            f"ℹ️ Running workflow '{wf}' in validation mode (only data and MC samples)"
-        )
     # Check lumiMask exists and replace the Validation
     input_lumi_json = correction_config[args.campaign]["lumiMask"]
     if args.campaign != "prompt_dataMC" and not os.path.exists(
@@ -169,6 +165,10 @@ if __name__ == "__main__":
         print(f"======>{input_lumi_json} is used for {args.year}")
 
     for wf in scheme[args.scheme]:
+        if args.validate_workflow:
+            print(
+                f"ℹ️ Running workflow '{wf}' in validation mode (only data and MC samples)"
+            )
         if args.debug:
             print(f"======{wf} in {args.scheme}=====")
         overwrite = "--overwrite" if args.overwrite else ""
