@@ -69,5 +69,8 @@ pip install -e .[dev, doc] # for developer
 
 You can still install additional packages itself by `pip install $PACKAGE`
 
+Make sure that 'dasgoclient' command is found by ensuring it is in your `$PATH` variable.
+Please, run `source env_setup_complete.sh` after having activated the environment to make sure that the `$PATH` variable is correctly configured.
+
 `conda/micromamba activate btv_coffea` is required to setup
 
