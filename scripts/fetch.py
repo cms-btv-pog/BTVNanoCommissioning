@@ -320,7 +320,7 @@ def access_xrootd_file(url, xrootd_tools, check_all_variants=False):
                 f"Operation timed out after {timeout_duration} seconds"
             )
 
-    timeout = 40  # 40 seconds timeout
+    timeout = 30  # 40 seconds timeout
     url_variants = normalize_xrootd_url(url)
     success_results = []
 
@@ -400,7 +400,9 @@ def determine_execution_mode():
     # If we're in the btv_coffea environment in CI, use local execution mode
     if in_btv_coffea:
         if args.verbose:
-            print("📌 Detected btv_coffea environment in CI - using local execution mode")
+            print(
+                "📌 Detected btv_coffea environment in CI - using local execution mode"
+            )
         return False
 
     # Otherwise, use CI execution mode
@@ -1563,7 +1565,15 @@ def process_single_dataset(dataset, args_dict):
     try:
         # Force proper run period extraction from this dataset
         run_pattern = re.search(r"Run20\d\d([A-Z])", dataset)
-        expected_run = run_pattern.group(1) if run_pattern else None
+        expected_run_full = run_pattern.group(1) if run_pattern else None
+
+        # Also extract version information to distinguish between multiple versions
+        version_pattern = re.search(r"-([^-]+)-v(\d+)/", dataset)
+        version_info = (
+            f"_{version_pattern.group(1)}_v{version_pattern.group(2)}"
+            if version_pattern
+            else ""
+        )
 
         # Process just this one dataset using existing function
         result = getFilesFromDas(args)
@@ -1573,23 +1583,31 @@ def process_single_dataset(dataset, args_dict):
             dsname = next(iter(result.keys()))
             file_list = result[dsname]
 
-            # Force correct run period if needed
+            # Fix dsname if needed, preserving the actual run year and adding version
             if (
-                expected_run
+                expected_run_full
                 and "MuonEG" in dsname
-                and not f"Run2024{expected_run}" in dsname
+                and not expected_run_full in dsname
             ):
-                correct_dsname = f"MuonEGRun2024{expected_run}"
+                correct_dsname = f"MuonEG{expected_run_full}{version_info}"
                 print(f"⚠️ Fixing incorrect dsname: {dsname} → {correct_dsname}")
                 return correct_dsname, file_list
             else:
+                # For existing dsnames, append version info if it's a data sample
+                if (
+                    expected_run_full
+                    and "MuonEG" in dsname
+                    and not version_info in dsname
+                ):
+                    correct_dsname = f"{dsname}{version_info}"
+                    return correct_dsname, file_list
                 return dsname, file_list
         else:
             # Build a dsname from the dataset name as fallback
             try:
                 primary_name = dataset.split("/")[1]
-                if expected_run:
-                    dsname = f"{primary_name}Run2024{expected_run}"
+                if expected_run_full:
+                    dsname = f"{primary_name}Run2024{expected_run_full}"
                 else:
                     dsname = primary_name
             except:

@@ -112,6 +112,11 @@ if __name__ == "__main__":
         help="Run local debug test with small set of dataset with iterative executor",
     )
     parser.add_argument(
+        "--limit_MC_Wc",
+        action="store_true",
+        help="Limit MC samples to 100 files regardless of workflow/scheme",
+    )
+    parser.add_argument(
         "--limit_MC",
         action="store_true",
         help="Limit MC samples to 50 files regardless of workflow/scheme",
@@ -239,6 +244,7 @@ if __name__ == "__main__":
                         "local",
                         "debug",
                         "limit_MC",
+                        "limit_MC_Wc",
                         "validate_workflow",
                     ]:
                         continue
@@ -271,6 +277,12 @@ if __name__ == "__main__":
                         runner_config += " --limit 50"
                         limit_added = True  
                         print(f"⚠️ Running with 50 files limit for MC samples")
+                    elif (
+                        args.limit_MC_Wc
+                    ):
+                        runner_config += " --limit 100"
+                        limit_added = True  
+                        print(f"⚠️ Running with 100 files limit for MC samples")
                 runner_config = runner_config_required + runner_config
                 if args.debug:
                     print(f"run the workflow: {runner_config}")
