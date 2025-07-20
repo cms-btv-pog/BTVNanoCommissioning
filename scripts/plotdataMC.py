@@ -160,7 +160,7 @@ if (
     nj = 1
 if "emctag" in args.phase:
     input_txt = input_txt + " (e$\mu$)"
-elif "ectag" in args.phase:
+elif "ectag" in args.phase or "2D_e_" in args.phase:
     input_txt = input_txt + " (e)"
 elif "QCD" == args.phase:
     input_txt = input_txt + ""
@@ -195,7 +195,6 @@ elif "*" in args.variable:
             )
             != None
         ]
-
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):

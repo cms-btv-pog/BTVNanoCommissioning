@@ -34,12 +34,12 @@ def dump_lumi(output, fname):
     lumi_in_pb = os.popen(
         # Using recommended temporary Run 3 normtag
         # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart
-        f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json -c web -i {fname}_lumi.json -u /pb \'"
+        f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json -c web -i {fname}_lumi.json -u /pb \'"
     ).read()
     lumi_in_pb = lumi_in_pb[
         lumi_in_pb.find("#Summary:") : lumi_in_pb.find("#Check JSON:")
     ]
-    lumi_in_pb = float(lumi_in_pb.split("\n")[-3].split("|")[-2])
+    lumi_in_pb = float(lumi_in_pb.split("\n")[4].split("|")[-2])
 
     print(f"Luminosity in pb: {lumi_in_pb}")
 
