@@ -938,12 +938,11 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                             hist_to_plot = sel_jet[histname.replace(f"jet{i}_", "")]
                             weight_to_plot = weight
                             # Needed for 2D_ttsemilep workflows
-                            if i == 3:
-                                hist_mask = [False if x is None else True for x in hist_to_plot]
-                                if ak.any(np.invert(hist_mask)):
-                                    flav_to_plot = flav_to_plot[hist_mask]
-                                    weight_to_plot = weight_to_plot[hist_mask]
-                                    hist_to_plot = hist_to_plot[hist_mask]
+                            hist_mask = [False if x is None else True for x in hist_to_plot]
+                            if ak.any(np.invert(hist_mask)):
+                                flav_to_plot = flav_to_plot[hist_mask]
+                                weight_to_plot = weight_to_plot[hist_mask]
+                                hist_to_plot = hist_to_plot[hist_mask]
                             h.fill(
                                 syst,
                                 flatten(flav_to_plot),
@@ -980,12 +979,11 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         discr_to_plot = seljet[histname.replace(f"_{i}", "")]
                     weights_to_plot = weights.partial_weight(exclude=exclude_btv)
                     # Needed for 2D_ttsemilep workflows
-                    if i == 3:
-                        discr_mask = [False if x is None else True for x in discr_to_plot]
-                        if ak.any(np.invert(hist_mask)):
-                            flav_to_plot = flav_to_plot[discr_mask]
-                            discr_to_plot = discr_to_plot[discr_mask]
-                            weights_to_plot = weights_to_plot[discr_mask]
+                    discr_mask = [False if x is None else True for x in discr_to_plot]
+                    if ak.any(np.invert(hist_mask)):
+                        flav_to_plot = flav_to_plot[discr_mask]
+                        discr_to_plot = discr_to_plot[discr_mask]
+                        weights_to_plot = weights_to_plot[discr_mask]
                     h.fill(
                         syst=syst,
                         flav=flav_to_plot,
