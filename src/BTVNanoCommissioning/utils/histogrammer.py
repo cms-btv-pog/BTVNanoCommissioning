@@ -219,17 +219,15 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             _hist_dict[f"{i}_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
 
     elif "c_ttsemilep_sf" == workflow:
-        obj_list = ["mu", "MET"]
-        obj_list.append("cjet")
+        obj_list = ["mu", "MET", "cjet"]
         _hist_dict["dr_cjet"] = Hist.Hist(
             syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
         )
-        for i in range(4):
-            obj_list.append(f"jet{i}")
-
-            _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
-                syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
-            )
+        # for i in range(4):
+        #     obj_list.append(f"jet{i}")
+        #     _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
+        #         syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+        #     )
 
         for i in ["mu"]:
             _hist_dict[f"{i}_pfRelIso04_all"] = Hist.Hist(
@@ -601,7 +599,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         njet = 1
         if "ttdilep_sf" in workflow:
             njet = 2
-        elif "ttsemilep_sf" in workflow:
+        elif "ttsemilep_sf" in workflow and "c_" not in workflow[:2]:
             njet = 4
             if "btag" in disc or "ProbaN" == disc:
                 _hist_dict[f"c_{disc}"] = Hist.Hist(
