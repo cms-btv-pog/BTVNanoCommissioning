@@ -2017,6 +2017,11 @@ def main(args):
                     try:
                         dsname, file_paths = future.result()
                         if dsname and file_paths:
+                            if dsname in fdict:
+                                print(f"⚠️ Accumulating files for {dsname} (adding {len(file_paths)} files to existing {len(fdict[dsname])} files)")
+                                fdict[dsname].extend(file_paths)
+                            else:
+                                fdict[dsname] = file_paths
                             print_dataset_success(dataset, dsname, len(file_paths))
                             fdict[dsname] = file_paths
                         else:
