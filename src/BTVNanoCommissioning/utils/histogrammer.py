@@ -980,7 +980,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     weights_to_plot = weights.partial_weight(exclude=exclude_btv)
                     # Needed for 2D_ttsemilep workflows
                     discr_mask = [False if x is None else True for x in discr_to_plot]
-                    if ak.any(np.invert(hist_mask)):
+                    if ak.any(np.invert(discr_mask)):
                         flav_to_plot = flav_to_plot[discr_mask]
                         discr_to_plot = discr_to_plot[discr_mask]
                         weights_to_plot = weights_to_plot[discr_mask]
