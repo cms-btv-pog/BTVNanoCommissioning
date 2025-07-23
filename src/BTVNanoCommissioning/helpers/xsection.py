@@ -230,6 +230,12 @@ xsection = [
         "comment": "https://twiki.cern.ch/twiki/bin/view/LHCPhysics/SingleTopNNLORef with PDG 2025 values",
     },
     {
+        "process_name": "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
+        "cross_section": "2.278",
+        "energy": "13.6",
+        "comment": "from XSDB",
+    },
+    {
         "process_name": "TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8",
         "cross_section": "96.9",
         "DAS": "/TTTo2L2Nu_CP5_13p6TeV_powheg-pythia8/Run3Winter22NanoAOD-122X_mcRun3_2021_realistic_v9-v1/NANOAODSIM",
