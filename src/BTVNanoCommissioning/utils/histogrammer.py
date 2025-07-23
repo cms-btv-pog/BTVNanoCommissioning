@@ -593,11 +593,11 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
 
     ### discriminators
     for disc in disc_list:
-        if (
-            disc not in events.Jet.fields and
-            "BvC" not in disc and "HFvLF" not in disc and "2D" not in disc
-        ):
-            continue
+        if disc not in events.Jet.fields:
+            if "2D" in workflow and "BvC" not in disc and "HFvLF" not in disc and "2D" not in disc:
+                continue
+            else:
+                continue
         njet = 1
         if "ttdilep_sf" in workflow:
             njet = 2
