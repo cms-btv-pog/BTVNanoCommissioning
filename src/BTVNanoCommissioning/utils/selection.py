@@ -177,6 +177,34 @@ def btag_wp(jets, year, campaign, tagger, borc, wp):
     return jet_mask
 
 
+def calculate_new_discriminators(ith_jets):
+    probudg = ith_jets.btagUParTAK4UDG
+    SvUDG = ith_jets.btagUParTAK4SvUDG
+    probs = ak.Array(np.where(
+        (SvUDG > 0.0) & (probudg > 0.0),
+        SvUDG * probudg / (1.0 - SvUDG), -1.0
+    ))
+    CvL = ith_jets.btagUParTAK4CvL
+    probc = ak.Array(np.where(
+        (CvL > 0.0) & (probs > 0.0) & (probudg > 0.0),
+        CvL * (probs + probudg) / (1.0 - CvL), -1.0
+    ))
+    CvB = ith_jets.btagUParTAK4CvB
+    probbbblepb = ak.Array(np.where(
+        (CvB > 0.0) & (probc > 0.0),
+        (1.0 - CvB) * probc / CvB, -1.0
+    ))
+    BvC = ak.Array(np.where(
+        CvB > 0.0,
+        1.0 - CvB, -1.0
+    ))
+    HFvLF = ak.Array(np.where(
+        (probbbblepb > 0.0) & (probc > 0.0) & (probs > 0.0) & (probudg > 0.0),
+        (probbbblepb + probc) / (probbbblepb + probc + probs + probudg), -1.0
+    ))
+    return HFvLF, BvC
+
+
 def get_wp_2D(ith_jet_HFvLF_val, ith_jet_BvC_val, year, campaign, tagger):
     WP = wp_dict(year, campaign)
     for wp in WP[tagger]["2D"]["mapping"].keys():

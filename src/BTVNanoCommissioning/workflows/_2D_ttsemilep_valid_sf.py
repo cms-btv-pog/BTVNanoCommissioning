@@ -21,8 +21,9 @@ from BTVNanoCommissioning.utils.selection import (
     mu_idiso,
     ele_mvatightid,
     MET_filters,
-    btag_wp_2D,
+    calculate_new_discriminators,
     get_wp_2D,
+    btag_wp_2D,
 )
 
 
@@ -118,6 +119,7 @@ class NanoProcessor(processor.ProcessorABC):
                 & (events.Muon.pfRelIso04_all > 0.25)
             ]
         req_lep = ak.count(event_iso_lep.pt, axis=1) == 1
+
         # DY -> mumu veto
         event_iso_lep = ak.pad_none(event_iso_lep, 1, axis=1)
         if self.selMod == "semittE":
@@ -142,40 +144,11 @@ class NanoProcessor(processor.ProcessorABC):
         )
         event_jet = events.Jet[jet_sel]
         req_jets = (ak.num(event_jet.pt) >= 3) & (ak.num(event_jet.pt) <= 4)
-
-        # Calculate the discriminators
-        def calculate_new_discriminators(ith_jets):
-            probudg = ith_jets.btagUParTAK4UDG
-            SvUDG = ith_jets.btagUParTAK4SvUDG
-            probs = ak.Array(np.where(
-                (SvUDG > 0.0) & (probudg > 0.0),
-                SvUDG * probudg / (1.0 - SvUDG), -1.0
-            ))
-            CvL = ith_jets.btagUParTAK4CvL
-            probc = ak.Array(np.where(
-                (CvL > 0.0) & (probs > 0.0) & (probudg > 0.0),
-                CvL * (probs + probudg) / (1.0 - CvL), -1.0
-            ))
-            CvB = ith_jets.btagUParTAK4CvB
-            probbbblepb = ak.Array(np.where(
-                (CvB > 0.0) & (probc > 0.0),
-                (1.0 - CvB) * probc / CvB, -1.0
-            ))
-            BvC = ak.Array(np.where(
-                CvB > 0.0,
-                1.0 - CvB, -1.0
-            ))
-            HFvLF = ak.Array(np.where(
-                (probbbblepb > 0.0) & (probc > 0.0) & (probs > 0.0) & (probudg > 0.0),
-                (probbbblepb + probc) / (probbbblepb + probc + probs + probudg), -1.0
-            ))
-            return HFvLF, BvC
-
         event_jet = ak.pad_none(event_jet, 4, axis=1)
-        btagUParTAK4HFvLF1, btagUParTAK4BvC1 = calculate_new_discriminators(event_jet[:, 0])
-        btagUParTAK4HFvLF2, btagUParTAK4BvC2 = calculate_new_discriminators(event_jet[:, 1])
 
         # b-tagged jets requirement
+        btagUParTAK4HFvLF1, btagUParTAK4BvC1 = calculate_new_discriminators(event_jet[:, 0])
+        btagUParTAK4HFvLF2, btagUParTAK4BvC2 = calculate_new_discriminators(event_jet[:, 1])
         req_b_jets = btag_wp_2D(btagUParTAK4HFvLF1, btagUParTAK4BvC1, self._year, self._campaign, "UParTAK4", "B2", "B4") | btag_wp_2D(btagUParTAK4HFvLF2, btagUParTAK4BvC2, self._year, self._campaign, "UParTAK4", "B2", "B4")
 
         ## Store jet index for PFCands, create mask on the jet index

@@ -28,8 +28,8 @@ from BTVNanoCommissioning.workflows.ctag_DY_valid_sf import (
 )
 
 # 2D pseudo-continuous
-from BTVNanoCommissioning.workflows._2D_semileptt_valid_sf import (
-    NanoProcessor as _2DSemilepttValidSFProcessor,
+from BTVNanoCommissioning.workflows._2D_ttsemilep_valid_sf import (
+    NanoProcessor as _2DTTsemilepValidSFProcessor,
 )
 
 # QCD
@@ -82,10 +82,10 @@ workflows["ectag_ttsemilep_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="semittE"
 )
 workflows["2D_e_ttsemilep_sf"] = partial(
-    _2DSemilepttValidSFProcessor, selectionModifier="semittE"
+    _2DTTsemilepValidSFProcessor, selectionModifier="semittE"
 )
 workflows["2D_mu_ttsemilep_sf"] = partial(
-    _2DSemilepttValidSFProcessor, selectionModifier="semittM"
+    _2DTTsemilepValidSFProcessor, selectionModifier="semittM"
 )
 
 # QCD
