@@ -29,9 +29,16 @@ disc_list = [
     "btagRobustParTAK4CvL",
     "btagRobustParTAK4QG",
     "btagUParTAK4B",
+    "btagUParTAK4UDG",
+    "btagUParTAK4SvUDG",
     "btagUParTAK4CvL",
     "btagUParTAK4CvB",
+    "btagUParTAK4BvC",
+    "btagUParTAK4BvCt",
     "btagUParTAK4CvNotB",
+    "btagUParTAK4HFvLF",
+    "btagUParTAK4HFvLFt",
+    "btagUParTAK42D",
     "btagUParTAK4QvG",
     "btagUParTAK4TauVJet",
     ## Negative tagger
@@ -6397,6 +6404,8 @@ def axes_name(var):
             unit = unit + " CvB"
         elif "CvNotB" in var:
             unit = unit + " CvNotB"
+        elif "BvC" in var:
+            unit = unit + " BvC"
         elif "B_b" in var or "ProbB" in var:
             unit = unit + " Prob(b)"
         elif "B_bb" in var:
@@ -6405,6 +6414,10 @@ def axes_name(var):
             unit = unit + " Prob(lepb)"
         elif "B_lepb" in var:
             unit = unit + " Prob(lepb)"
+        elif "HFvLF" in var:
+            unit = unit + " HFvLF"
+        elif "2D" in var:
+            unit = unit + " 2D WP"
         elif "QvG" in var or "QG" in var:
             unit = unit + " QvG"
         elif "G" in var:

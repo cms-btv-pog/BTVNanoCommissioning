@@ -27,7 +27,12 @@ from BTVNanoCommissioning.workflows.ctag_DY_valid_sf import (
     NanoProcessor as CTAGDYValidSFProcessor,
 )
 
-##QCD
+# 2D pseudo-continuous
+from BTVNanoCommissioning.workflows._2D_ttsemilep_valid_sf import (
+    NanoProcessor as _2DTTsemilepValidSFProcessor,
+)
+
+# QCD
 from BTVNanoCommissioning.workflows.QCD_validation import (
     NanoProcessor as QCDValidProcessor,
 )
@@ -35,13 +40,13 @@ from BTVNanoCommissioning.workflows.QCD_soft_mu_validation import (
     NanoProcessor as QCDsmuValidProcessor,
 )
 
-## BTA - for SFs
+# BTA - for SFs
 from BTVNanoCommissioning.workflows.BTA_producer import (
     NanoProcessor as BTA_processor,
 )
 from BTVNanoCommissioning.workflows.BTA_ttbar_producer import (
     NanoProcessor as BTA_ttbar_processor,
-)  # ttbar -kinFit
+) # ttbar - kinFit
 
 # from BTVNanoCommissioning.workflows.example import (
 #     NanoProcessor as ExampleProcessor,
@@ -60,7 +65,6 @@ workflows["ttsemilep_sf"] = partial(
 workflows["c_ttsemilep_sf"] = partial(
     TTsemilepValidSFProcessor, selectionModifier="c_tt_semilep"
 )
-
 workflows["emctag_ttdilep_sf"] = CTAGEMDilepttValidSFProcessor
 workflows["ctag_ttdilep_sf"] = partial(
     CTAGDilepttValidSFProcessor, selectionModifier="dilepttM"
@@ -77,8 +81,14 @@ workflows["ctag_ttsemilep_noMuVeto_sf"] = partial(
 workflows["ectag_ttsemilep_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="semittE"
 )
+workflows["2D_e_ttsemilep_sf"] = partial(
+    _2DTTsemilepValidSFProcessor, selectionModifier="semittE"
+)
+workflows["2D_mu_ttsemilep_sf"] = partial(
+    _2DTTsemilepValidSFProcessor, selectionModifier="semittM"
+)
 
-##QCD
+# QCD
 workflows["QCD_sf"] = QCDValidProcessor
 workflows["QCD_smu_sf"] = QCDsmuValidProcessor
 

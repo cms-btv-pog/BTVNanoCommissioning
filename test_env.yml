@@ -18,4 +18,3 @@ dependencies:
   - parsl==2024.01.29
   - arrow
   - dask-jobqueue
-
