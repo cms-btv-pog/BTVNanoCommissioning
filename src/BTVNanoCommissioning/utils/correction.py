@@ -558,6 +558,7 @@ def JME_shifts(
                 events.fixedGridRhoFastjetAll, nocorrjet.pt
             )[0]
             nocorrjet["EventID"] = ak.broadcast_arrays(events.event, nocorrjet.pt)[0]
+            nocorrjet["run"] = ak.broadcast_arrays(events.run, nocorrjet.pt)[0]
             if not isRealData:
                 genjetidx = ak.where(nocorrjet.genJetIdx == -1, 0, nocorrjet.genJetIdx)
                 nocorrjet["Genpt"] = ak.where(
