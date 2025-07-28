@@ -162,7 +162,7 @@ correction_config = {
     "Summer24": {
         "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
         "JME": {
-            "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1", # JER are a placeholder for now (July 2025)
+            "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1",  # JER are a placeholder for now (July 2025)
             "Run2024C": "Summer24Prompt24_V1",
             "Run2024D": "Summer24Prompt24_V1",
             "Run2024E": "Summer24Prompt24_V1",
@@ -179,9 +179,7 @@ correction_config = {
         #     "ele_Reco_med 2023PromptD Electron-ID-SF": "Reco20to75",
         #     "ele_Reco_high 2023PromptD Electron-ID-SF": "RecoAbove75",
         # },
-        "jetveto": {
-            "Run2024 jetvetomap_all": "Summer24Prompt24_RunBCDEFGHI.root"
-        },
+        "jetveto": {"Run2024 jetvetomap_all": "Summer24Prompt24_RunBCDEFGHI.root"},
     },
     "prompt_dataMC": {"lumiMask": "$PROMPT_DATAMC"},
 }
