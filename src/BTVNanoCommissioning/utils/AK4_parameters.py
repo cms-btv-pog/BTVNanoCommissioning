@@ -171,6 +171,7 @@ correction_config = {
             "Run2024H": "Summer24Prompt24_V1",
             "Run2024I": "Summer24Prompt24_V1",
         },
+        "PU": "PU_weights_Summer24.histo.root",
         # "LSF": {
         #     "mu_ID": "NUM_TightID_DEN_TrackerMuons",
         #     "mu_Iso": "NUM_TightPFIso_DEN_TightID",
