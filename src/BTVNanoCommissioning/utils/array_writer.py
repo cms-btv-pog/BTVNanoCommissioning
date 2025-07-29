@@ -50,14 +50,16 @@ def array_writer(
     othersMC=["Pileup_nTrueInt", "Pileup_nPU"],  # other fields, for MC only
     empty=False,
 ):
-    if not isRealData and systname != ["nominal"]:
+    if not isRealData and not empty:
         pruned_event["weight"] = weights.weight()
         for ind_wei in weights.weightStatistics.keys():
             pruned_event[f"{ind_wei}_weight"] = weights.partial_weight(
                 include=[ind_wei]
             )
         if len(systname) > 1:
-            for syst in systname[1:]:
+            for syst in systname:
+                if syst == "nominal":
+                    continue
                 pruned_event[f"weight_syst_{syst}"] = weights.weight(modifier=syst)
 
     if empty:
