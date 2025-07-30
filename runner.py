@@ -45,7 +45,7 @@ def validate_dataset_structure(fileset):
         # Check each file in the sample
         for filename in files:
             try:
-                print(f"Validating file: {filename}")
+                #print(f"Validating file: {filename}")
                 file = uproot.open(filename)
                 events = file["Events"]
                 branches = set(events.keys())
@@ -53,7 +53,7 @@ def validate_dataset_structure(fileset):
                 # Check branch count
                 if len(branches) < 20:
                     print(f"WARNING: File has too few branches ({len(branches)}): {filename}")
-                    print(f"Branches present: {branches}")
+                    #print(f"Branches present: {branches}")
                     continue
                 
                 # Check required branches
