@@ -31,7 +31,7 @@ def validate_dataset_structure(fileset):
     required_branches = [
         "Jet_pt", "Muon_pt", "Electron_pt", 
         "PV_npvsGood", "PFMET_pt", 
-        "Jet_btagDeepFlavB", "Jet_eta", "Jet_phi",
+        "Jet_eta", "Jet_phi",
         "Muon_eta", "Muon_phi", "SV_pt"
     ]
     
@@ -70,7 +70,7 @@ def validate_dataset_structure(fileset):
                 # File passed all checks
                 valid_files.append(filename)
                 all_files_invalid = False
-                print(f"File validation successful: {filename}")
+                #print(f"File validation successful: {filename}")
                 
             except Exception as e:
                 print(f"ERROR validating file: {filename}, {e}")
