@@ -344,6 +344,9 @@ class NanoProcessor(processor.ProcessorABC):
         # does not work shape wise
         pruned_ev["njet"] = ak.count(clean_good_jets[event_level].pt, axis=1)
 
+        # add dilepton variables
+        pruned_ev["dilep"] = dilep[event_level]
+
         if self.channel == "mumu":
             pruned_ev["SelMuon"] = good_muons[event_level][:, :2]
         elif self.channel == "ee":

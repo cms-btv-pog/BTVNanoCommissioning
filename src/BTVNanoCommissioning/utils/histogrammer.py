@@ -223,6 +223,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             "jet0",
             "jet1",
             "MET",
+            "dilep",
         ]  # store basic 4-vector, pt,eta, phi, mass for the object
         if "ee" in workflow:
             obj_list.append("ele")
@@ -231,6 +232,10 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             obj_list.append("ele")
         elif "mumu" in workflow:
             obj_list.append("mu")
+        # delta R between jets
+        _hist_dict["dr_jets"] = Hist.Hist(
+            syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
+        )
     elif "c_ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
         obj_list.append("cjet")
@@ -920,7 +925,10 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 output["njet"].fill(syst, pruned_ev.njet, weight=weight)
             # Jet kinmeatics & deltaR between jet and lepton
             elif (
-                "jet" in histname and "posl" not in histname and "negl" not in histname
+                "jet" in histname
+                and "posl" not in histname
+                and "negl" not in histname
+                and "iterative" not in histname
             ):
                 for i in range(nj):
                     if f"jet{i}" not in histname:
@@ -981,6 +989,15 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                             discr=seljet[histname.replace(f"_{i}", "")],
                             weight=weight,
                         )
+
+            if histname == "dr_jets":
+                # take flavor of the first jet
+                h.fill(
+                    syst=syst,
+                    flav=genflavor[:, 0],
+                    dr=pruned_ev.SelJet[:,0].delta_r(pruned_ev.SelJet[:, 1]),
+                    weight=weights.partial_weight(exclude=exclude_btv),
+                )
             
             if "iterative" in histname:
                 # we only want to fill in the probe jet
@@ -991,26 +1008,6 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     tagger_name = histname.replace("iterative_", "")
                     is_HF = pruned_ev[f"{tagger_name}_region_HF_jet{jet_index}"]
                     is_LF = pruned_ev[f"{tagger_name}_region_LF_jet{jet_index}"]
-                    h.fill(
-                        syst=syst,
-                        flav=flavor[is_HF],
-                        eta=seljet.eta[is_HF],
-                        pt=seljet.pt[is_HF],
-                        region="HF",
-                        jet_index=jet_index,
-                        discr=seljet[tagger_name][is_HF],
-                        weight=weights.partial_weight(exclude=exclude_btv)[is_HF],
-                    )
-                    h.fill(
-                        syst=syst,
-                        flav=flavor[is_LF],
-                        eta=seljet.eta[is_LF],
-                        pt=seljet.pt[is_LF],
-                        region="LF",
-                        jet_index=jet_index,
-                        discr=seljet[tagger_name][is_LF],
-                        weight=weights.partial_weight(exclude=exclude_btv)[is_LF],
-                    )
                     if not isRealData and "btag" in SF_map.keys():
                         h.fill(
                             syst=syst,
@@ -1031,6 +1028,44 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                             jet_index=jet_index,
                             discr=seljet[tagger_name][is_LF],
                             weight=weight[is_LF],
+                        )
+                    else:
+                        h.fill(
+                            syst=syst,
+                            flav=flavor[is_HF],
+                            eta=seljet.eta[is_HF],
+                            pt=seljet.pt[is_HF],
+                            region="HF",
+                            jet_index=jet_index,
+                            discr=seljet[tagger_name][is_HF],
+                            weight=weights.partial_weight(exclude=exclude_btv)[is_HF],
+                        )
+                        h.fill(
+                            syst=syst,
+                            flav=flavor[is_LF],
+                            eta=seljet.eta[is_LF],
+                            pt=seljet.pt[is_LF],
+                            region="LF",
+                            jet_index=jet_index,
+                            discr=seljet[tagger_name][is_LF],
+                            weight=weights.partial_weight(exclude=exclude_btv)[is_LF],
+                        )
+                    for obj in ["jet0", "jet1"]:
+                        output[f"iterative_{tagger_name}_{obj}_pt"].fill(
+                            syst=syst,
+                            flav=flavor[is_HF],
+                            region="HF",
+                            jet_index=jet_index,
+                            discr=seljet["pt"][is_HF],
+                            weight=weights.partial_weight(exclude=exclude_btv)[is_HF],
+                        )
+                        output[f"iterative_{tagger_name}_{obj}_pt"].fill(
+                            syst=syst,
+                            flav=flavor[is_LF],
+                            region="LF",
+                            jet_index=jet_index,
+                            discr=seljet["pt"][is_LF],
+                            weight=weights.partial_weight(exclude=exclude_btv)[is_LF],
                         )
                     # for channel in ["ee", "emu", "mumu"]:
                     #     channel_mask = pruned_ev[f"ch_{channel}"]
@@ -1166,8 +1201,8 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
         # dilepton system histograms: DY workflow
         if "dilep" in pruned_ev.fields:
             output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.pt), weight=weight)
-            output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.eta), weight=weight)
-            output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.phi), weight=weight)
+            output["dilep_eta"].fill(syst, flatten(pruned_ev.dilep.eta), weight=weight)
+            output["dilep_phi"].fill(syst, flatten(pruned_ev.dilep.phi), weight=weight)
             output["dilep_mass"].fill(
                 syst, flatten(pruned_ev.dilep.mass), weight=weight
             )
