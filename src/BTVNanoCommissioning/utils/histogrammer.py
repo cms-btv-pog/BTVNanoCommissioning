@@ -403,31 +403,28 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                 syst_axis, flav_axis, osss_axis, ptratio_axis, Hist.storage.Weight()
             )
 
-    elif "2D_e_ttsemilep_sf" == workflow:
-        obj_list = ["ele", "MET"]
+    elif "2D_" in workflow and "_ttsemilep_sf" in workflow:
+        obj_list = ["MET"]
         for i in range(4):
             obj_list.append(f"jet{i}")
-        _hist_dict[f"ele_pfRelIso04_all"] = Hist.Hist(syst_axis, iso_axis, Hist.storage.Weight())
-        _hist_dict[f"ele_dxy"] = Hist.Hist(syst_axis, dxy_axis, Hist.storage.Weight())
-        _hist_dict[f"ele_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
+
         _hist_dict[f"w_mt"] = Hist.Hist(
             syst_axis,
             mt_axis,
             Hist.storage.Weight(),
         )
 
-    elif "2D_mu_ttsemilep_sf" == workflow:
-        obj_list = ["mu", "MET"]
-        for i in range(4):
-            obj_list.append(f"jet{i}")
-        _hist_dict[f"mu_pfRelIso04_all"] = Hist.Hist(syst_axis, iso_axis, Hist.storage.Weight())
-        _hist_dict[f"mu_dxy"] = Hist.Hist(syst_axis, dxy_axis, Hist.storage.Weight())
-        _hist_dict[f"mu_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
-        _hist_dict[f"w_mt"] = Hist.Hist(
-            syst_axis,
-            mt_axis,
-            Hist.storage.Weight(),
-        )
+        if "_e_" in workflow:
+            obj_list.append("ele")
+            _hist_dict[f"ele_pfRelIso04_all"] = Hist.Hist(syst_axis, iso_axis, Hist.storage.Weight())
+            _hist_dict[f"ele_dxy"] = Hist.Hist(syst_axis, dxy_axis, Hist.storage.Weight())
+            _hist_dict[f"ele_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
+
+        elif "_mu_" in workflow:
+            obj_list.append("mu")
+            _hist_dict[f"mu_pfRelIso04_all"] = Hist.Hist(syst_axis, iso_axis, Hist.storage.Weight())
+            _hist_dict[f"mu_dxy"] = Hist.Hist(syst_axis, dxy_axis, Hist.storage.Weight())
+            _hist_dict[f"mu_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
 
     elif "DY_sf" in workflow:
         obj_list = ["posl", "negl", "dilep", "jet0"]
@@ -1093,7 +1090,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 syst, flatten(pruned_ev.dilep.mass), weight=weight
             )
 
-        if "MET" in pruned_ev.fields:
+        if "MET_pt" in output.keys():
             output["MET_pt"].fill(syst, flatten(pruned_ev.MET.pt), weight=weight)
             output["MET_phi"].fill(syst, flatten(pruned_ev.MET.phi), weight=weight)
 
