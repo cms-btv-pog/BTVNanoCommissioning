@@ -106,31 +106,21 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             ParT_name = "btagRobustParTAK4B"
 
-
         self.b_tagger_config = {
-            "deepjet": {
-                "working_points": {
-                    "loose": 0.0614,
-                    "medium": 0.3196,
-                    "tight": 0.73,
-                },
-                "flag": "btagDeepFlavB",
+            "btagDeepFlavB": {
+                "loose": 0.0614,
+                "medium": 0.3196,
+                "tight": 0.73,
             },
-            "PNet": {
-                "working_points": {
-                    "loose": 0.1,
-                    "medium": 0.5,
-                    "tight": 0.9,
-                },
-                "flag": "btagPNetB",
+            "btagPNetB": {
+                "loose": 0.1,
+                "medium": 0.5,
+                "tight": 0.9,
             },
-            "ParT": {
-                "working_points": {
-                    "loose": 0.0897,
-                    "medium": 0.451,
-                    "tight": 0.8604,
-                },
-                "flag": ParT_name,
+            ParT_name: {
+                "loose": 0.0897,
+                "medium": 0.451,
+                "tight": 0.8604,
             },
         }
 
@@ -375,41 +365,34 @@ class NanoProcessor(processor.ProcessorABC):
         #  Tag and Probe   #
         ####################
 
-        for tagger_config in self.b_tagger_config.values():
-            tagger_name = tagger_config["flag"]
+        for tagger_name in self.b_tagger_config.keys():
             for i_jet in range(2):
-                pruned_ev[f"{tagger_name}_region_HF_jet{i_jet}"] = np.zeros(len(pruned_ev.njet), dtype=bool)
-                pruned_ev[f"{tagger_name}_region_LF_jet{i_jet}"] = np.zeros(len(pruned_ev.njet), dtype=bool)
+                pruned_ev[f"{tagger_name}_region_HF_jet{i_jet}"] = np.zeros(
+                    len(pruned_ev.njet), dtype=bool
+                )
+                pruned_ev[f"{tagger_name}_region_LF_jet{i_jet}"] = np.zeros(
+                    len(pruned_ev.njet), dtype=bool
+                )
 
         for i_tag_jet, i_probe_jet in [(0, 1), (1, 0)]:
-            for tagger_config in self.b_tagger_config.values():
+            for tagger_name, tagger_config in self.b_tagger_config.items():
                 b_score_btag = ak.fill_none(
                     ak.firsts(
-                        pruned_ev["SelJet"][:, i_tag_jet : i_tag_jet + 1][
-                            tagger_config["flag"]
-                        ]
+                        pruned_ev["SelJet"][:, i_tag_jet : i_tag_jet + 1][tagger_name]
                     ),
                     np.nan,
                 )
 
                 tag_jet_cut = {
-                    "HF": b_score_btag >= tagger_config["working_points"]["medium"],
-                    "LF": b_score_btag <= tagger_config["working_points"]["loose"],
+                    "HF": b_score_btag >= tagger_config["medium"],
+                    "LF": b_score_btag <= tagger_config["loose"],
                 }
 
                 is_HF = reduce_and(tag_jet_cut["HF"], lepton_region_cut_HF[event_level])
                 is_LF = reduce_and(tag_jet_cut["LF"], lepton_region_cut_LF[event_level])
                 assert not ak.any(is_HF & is_LF)
-                # pruned_ev[f"{tagger_config['flag']}_region_HF"] = reduce_or(
-                #     pruned_ev[f"{tagger_config['flag']}_region_HF"],
-                #     is_HF
-                # )
-                # pruned_ev[f"{tagger_config['flag']}_region_LF"] = reduce_or(
-                #     pruned_ev[f"{tagger_config['flag']}_region_LF"],
-                #     is_LF
-                # )
-                pruned_ev[f"{tagger_config['flag']}_region_HF_jet{i_probe_jet}"] = is_HF
-                pruned_ev[f"{tagger_config['flag']}_region_LF_jet{i_probe_jet}"] = is_LF
+                pruned_ev[f"{tagger_name}_region_HF_jet{i_probe_jet}"] = is_HF
+                pruned_ev[f"{tagger_name}_region_LF_jet{i_probe_jet}"] = is_LF
 
         ####################
         #     Output       #
