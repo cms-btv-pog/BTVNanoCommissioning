@@ -291,7 +291,7 @@ def load_SF(year, campaign, syst=False):
 
         ## JME corrections
         elif SF == "JME":
-            if "name" in config[campaign]["JME"].keys():
+            if "name" in config[campaign].get("JME", {}).keys():
 
                 if not os.path.exists(
                     f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/jec_compiled_{config[campaign]['JME']['name']}.pkl.gz"
@@ -1308,7 +1308,11 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                     ele_pt_mid = np.clip(ele_pt, 20.1, 74.9)
                     ele_pt_low = np.where(ele_pt >= 20.0, 19.9, ele_pt)
                     ele_pt_high = np.clip(ele_pt, 75.0, 500.0)
-                    if "Summer23" in correct_map["campaign"]:
+                    if correct_map["campaign"] in (
+                        "Summer23",
+                        "Summer23BPix",
+                        "Summer24",
+                    ):
                         sfs_low = np.where(
                             (ele_pt <= 20.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
@@ -1531,7 +1535,11 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             ), np.where(masknone, 1.0, sfs_down)
                 ## Other files
                 else:
-                    if "Summer23" in correct_map["campaign"]:
+                    if correct_map["campaign"] in (
+                        "Summer23",
+                        "Summer23BPix",
+                        "Summer24",
+                    ):
                         sfs = np.where(
                             masknone,
                             1.0,

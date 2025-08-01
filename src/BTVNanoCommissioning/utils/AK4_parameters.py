@@ -160,6 +160,21 @@ correction_config = {
             "MC": "calibeHistoWrite_MC2023_Summer23BPix.root",
         },
     },
+    "Summer24": {
+        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
+        "PU": "PU_weights_Summer24.histo.root",
+        "JME": {
+            "MC": "Summer24Prompt24_V1",
+            "Run2024C": "Summer24Prompt24_V1",
+            "Run2024D": "Summer24Prompt24_V1",
+            "Run2024E": "Summer24Prompt24_V1",
+            "Run2024F": "Summer24Prompt24_V1",
+            "Run2024G": "Summer24Prompt24_V1",
+            "Run2024H": "Summer24Prompt24_V1",
+            "Run2024I": "Summer24Prompt24_V1",
+            "jername": "Summer23BPixPrompt23_RunD_JRV1_MC",
+        }
+    },
     "Winter24": {
         "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
         # "JME": {
