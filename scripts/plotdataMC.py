@@ -146,7 +146,7 @@ elif "DY" in args.phase:
     input_txt = "DY+jets"
 elif "QCD" in args.phase:
     input_txt = "QCD"
-elif "semilep" in args.phase:
+elif "semilep" in args.phase or "TT1L" in args.phase:
     input_txt = r"t$\bar{t}$ semileptonic"
     nj = 4
 elif "dilep" in args.phase:
@@ -160,7 +160,7 @@ if (
     nj = 1
 if "emctag" in args.phase:
     input_txt = input_txt + " (e$\mu$)"
-elif "ectag" in args.phase:
+elif "ectag" in args.phase or "2D_e_" in args.phase:
     input_txt = input_txt + " (e)"
 elif "QCD" == args.phase:
     input_txt = input_txt + ""
@@ -195,7 +195,6 @@ elif "*" in args.variable:
             )
             != None
         ]
-
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
@@ -584,6 +583,10 @@ for index, discr in enumerate(var_set):
     else:
         xlabel = axes_name(discr)
     rax.set_xlabel(xlabel)
+    if "2D" in discr:
+        xtickpos = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]
+        xticklabels = ["L0", "C0", "C1", "C2", "C3", "C4", "B0", "B1", "B2", "B3", "B4"]
+        rax.set_xticks(xtickpos, xticklabels)
     if "sample" in args.split:
         ax.legend(ncols=2, prop={"size": 16})
     else:
