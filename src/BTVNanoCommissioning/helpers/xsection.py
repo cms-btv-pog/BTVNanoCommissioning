@@ -21,6 +21,37 @@ Example of a cross section dictionary:
 """
 
 xsection = [
+    # TODO: the cross sections for DYto2E/Mu/Tau are not correct! just ~ Dyto2L / 3
+    {
+        "process_name": "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "2270",
+        "energy": "13.6",
+    },
+    {
+        "process_name": "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "2270",
+        "energy": "13.6",
+    },
+    {
+        "process_name": "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "2270",
+        "energy": "13.6",
+    },
+    {
+        "process_name": "DYto2E_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
+        "cross_section": "2270",
+        "energy": "13.6",
+    },
+    {
+        "process_name": "DYto2Mu_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
+        "cross_section": "2270",
+        "energy": "13.6",
+    },
+    {
+        "process_name": "DYto2Tau_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
+        "cross_section": "2270",
+        "energy": "13.6",
+    },
     {
         "process_name": "DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
         "cross_section": "19317.5",
