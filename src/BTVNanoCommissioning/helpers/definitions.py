@@ -6369,6 +6369,8 @@ def axes_name(var):
         unit = " $p_T$ [GeV]"
     elif "mass" in var:
         unit = " mass [GeV]"
+    elif "mt" in var:
+        unit = " $m_T$ [GeV]"
     elif "eta" in var:
         unit = " $\\eta$"
     elif "phi" in var:

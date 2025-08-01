@@ -159,7 +159,7 @@ class NanoProcessor(processor.ProcessorABC):
         ## Other cuts
 
         ## MET cuts
-        MET = ak.zip(
+        event_MET = ak.zip(
             {
                 "pt": events.PuppiMET.pt,
                 "eta": ak.zeros_like(events.PuppiMET.pt),
@@ -168,7 +168,7 @@ class NanoProcessor(processor.ProcessorABC):
             },
             with_name="PtEtaPhiMLorentzVector",
         )
-        req_MET = MET.pt > 50
+        req_MET = event_MET.pt > 50
         req_metfilter = MET_filters(events, self._campaign)
 
         ## Cut on tranverse W mass
@@ -176,8 +176,8 @@ class NanoProcessor(processor.ProcessorABC):
         event_dphi = event_iso_lep[:, 0].phi - events.PuppiMET.phi
         event_dphi = np.where(event_dphi < np.pi, event_dphi + 2 * np.pi, event_dphi)
         event_dphi = np.where(event_dphi > np.pi, event_dphi - 2 * np.pi, event_dphi)
-        event_mWtrans = np.sqrt(2 * event_iso_lep[:, 0].pt * events.PuppiMET.pt * (1 - np.cos(event_dphi)))
-        req_mWtrans = event_mWtrans > 40
+        event_Wmt = np.sqrt(2 * event_iso_lep[:, 0].pt * events.PuppiMET.pt * (1 - np.cos(event_dphi)))
+        req_Wmt = event_Wmt > 40
 
         event_level = ak.fill_none(
             req_lumi
@@ -188,7 +188,7 @@ class NanoProcessor(processor.ProcessorABC):
             & req_b_jets
             & req_MET
             & req_metfilter
-            & req_mWtrans,
+            & req_Wmt,
             False
         )
         if len(events[event_level]) == 0:
@@ -218,6 +218,8 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
         if "PFCands" in events.fields:
             pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
+        pruned_ev["MET"] = event_MET[event_level]
+        pruned_ev["w_mt"] = event_Wmt[event_level]
 
         for i in range(4):
             btagUParTAK4HFvLF, btagUParTAK4BvC = calculate_new_discriminators(pruned_ev.SelJet[:, i])

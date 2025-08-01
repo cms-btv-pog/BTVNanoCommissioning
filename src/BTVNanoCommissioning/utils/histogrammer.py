@@ -410,6 +410,11 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         _hist_dict[f"ele_pfRelIso04_all"] = Hist.Hist(syst_axis, iso_axis, Hist.storage.Weight())
         _hist_dict[f"ele_dxy"] = Hist.Hist(syst_axis, dxy_axis, Hist.storage.Weight())
         _hist_dict[f"ele_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
+        _hist_dict[f"w_mt"] = Hist.Hist(
+            syst_axis,
+            mt_axis,
+            Hist.storage.Weight(),
+        )
 
     elif "2D_mu_ttsemilep_sf" == workflow:
         obj_list = ["mu", "MET"]
@@ -418,6 +423,11 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         _hist_dict[f"mu_pfRelIso04_all"] = Hist.Hist(syst_axis, iso_axis, Hist.storage.Weight())
         _hist_dict[f"mu_dxy"] = Hist.Hist(syst_axis, dxy_axis, Hist.storage.Weight())
         _hist_dict[f"mu_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
+        _hist_dict[f"w_mt"] = Hist.Hist(
+            syst_axis,
+            mt_axis,
+            Hist.storage.Weight(),
+        )
 
     elif "DY_sf" in workflow:
         obj_list = ["posl", "negl", "dilep", "jet0"]
@@ -1077,14 +1087,17 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
         # dilepton system histograms: DY workflow
         if "dilep" in pruned_ev.fields:
             output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.pt), weight=weight)
-            output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.eta), weight=weight)
-            output["dilep_pt"].fill(syst, flatten(pruned_ev.dilep.phi), weight=weight)
+            output["dilep_eta"].fill(syst, flatten(pruned_ev.dilep.eta), weight=weight)
+            output["dilep_phi"].fill(syst, flatten(pruned_ev.dilep.phi), weight=weight)
             output["dilep_mass"].fill(
                 syst, flatten(pruned_ev.dilep.mass), weight=weight
             )
 
-        if "MET" in output.keys():
+        if "MET" in pruned_ev.fields:
             output["MET_pt"].fill(syst, flatten(pruned_ev.MET.pt), weight=weight)
             output["MET_phi"].fill(syst, flatten(pruned_ev.MET.phi), weight=weight)
+
+        if "w_mt" in pruned_ev.fields:
+            output["w_mt"].fill(syst, flatten(pruned_ev.w_mt), weight=weight)
 
     return output
