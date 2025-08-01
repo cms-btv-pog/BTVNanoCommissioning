@@ -1,33 +1,47 @@
 from pathlib import Path
 import argparse
+import warnings
+import math
 
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 import mplhep as hep
 from coffea.util import load
 from matplotlib import rc_context
 
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
-from BTVNanoCommissioning.utils.plot_utils import MCerrorband, color_map, plotratio
+from BTVNanoCommissioning.utils.plot_utils import MCerrorband, plotratio
 
-parser = argparse.ArgumentParser(description="Plot histograms for iterative b-tagging SFs")
+parser = argparse.ArgumentParser(
+    description="Plot histograms for iterative b-tagging SFs"
+)
+parser.add_argument("--suffix", type=str, help="suffix for input histograms", default="")
 parser.add_argument(
-    "--suffix",
-    type=str,
-    help="suffix for input histograms"
+    "--separate-bins",
+    "-s",
+    action="store_true",
+    help="plot each eta and pt bin separately",
+)
+parser.add_argument(
+    "--lumi",
+    help="luminosity in pb^-1",
+    type=float,
 )
 args = parser.parse_args()
 
-lumi = 9451  # pb^-1
+lumi = args.lumi  # pb^-1
 # need to devide, mplhep uses fb^-1
 lumi_label = lumi / 1000  # fb^-1
 com = 13.6
 suffix = args.suffix
+# if suffix != "":
+suffix = f"_{suffix}"
 
 # load the coffea file
 # mc_path = "/net/data_cms3a-1/fzinn/BTV/btag_sf/nobackup/Summer23BPix/btag_ttbar_sf/hists_MC/hists_MC.coffea"
-mc_path = Path(Path.cwd(), f"hists_MC_{suffix}", f"hists_MC_{suffix}.coffea")
+mc_path = Path(Path.cwd(), f"hists_MC{suffix}", f"hists_MC{suffix}.coffea")
 # data_path = "/net/data_cms3a-1/fzinn/BTV/btag_sf/nobackup/Summer23BPix/btag_ttbar_sf/hists_data/hists_data.coffea"
-data_path = Path(Path.cwd(), f"hists_data_{suffix}", f"hists_data_{suffix}.coffea")
+data_path = Path(Path.cwd(), f"hists_data{suffix}", f"hists_data{suffix}.coffea")
 print(f"Loading MC from {mc_path}")
 print(f"Loading Data from {data_path}")
 
@@ -46,6 +60,7 @@ variables = [
     "iterative_btagDeepFlavB",
     "iterative_btagPNetB",
     "iterative_btagRobustParTAK4B",
+    "iterative_btagUParTAK4B",
 ]
 
 # this would be to BTV Framework plotting style
@@ -73,10 +88,32 @@ COLORS = {
 color_list = [COLORS[flav] for flav in flav_labels.keys()]
 
 
-with rc_context(hep.style.CMS):
+def set_yaxis_limit_ratio(ax: Axes) -> None:
+    """Set the y-axis limit for the ratio plot.
+
+    Sets the y-axis limit between 0 and 2,
+    Takes the current y-axis limit and sets:
+    - the lower limit to 0 if it is below 0
+    - the upper limit rounded up to the nearest 0.1
+        if it is above 2, set to 2
+
+    :param ax: the axes to set the limit for
+    :type ax: Axes
+    """
+    ax.set_ylim(
+        max(0, ax.get_ylim()[0]),
+        min(2, math.ceil(10 * ax.get_ylim()[1]) / 10),
+    )
+
+
+with rc_context(hep.style.CMS) as cms, warnings.catch_warnings() as catch_warnings:
+    warnings.simplefilter("ignore", category=UserWarning)
     for variable in variables:
-        histogram = collated["mc"][variable]
-        data_histogram = collated["data"][variable]
+        try:
+            histogram = collated["mc"][variable]
+            data_histogram = collated["data"][variable]
+        except KeyError as e:
+            warnings.warn(f"Variable {variable} not in the files: {e}")
         # syst, flav, eta, pt, region, jet_index, discr
 
         for region in histogram.axes["region"]:
@@ -89,6 +126,7 @@ with rc_context(hep.style.CMS):
                 for flav in flav_labels.values()
             ]
 
+            # sum of MC histograms
             summed_hist = histogram["nominal", sum, sum, sum, region, sum, :]
             fig, (ax, ratio_ax) = plt.subplots(
                 2,
@@ -128,8 +166,12 @@ with rc_context(hep.style.CMS):
                 ax=ratio_ax,
             )
             rax.set_ylabel("Data/MC")
+            set_yaxis_limit_ratio(rax)
 
-            save_path = Path("plots_iterative_btagSF", variable)
+            # title
+            fig.suptitle(f"{region=}")
+
+            save_path = Path("plots_iterative_btagSF", suffix, variable)
             save_path.mkdir(parents=True, exist_ok=True)
             fig.tight_layout()
             fig.savefig(save_path / f"{region}_MC_sum.png")
@@ -137,6 +179,7 @@ with rc_context(hep.style.CMS):
             fig.savefig(save_path / f"{region}_MC_sum_log.png")
             plt.close(fig)
 
+            # MC histograms stacked
             # plot sum over all eta and pt bins
             fig, (ax, ratio_ax) = plt.subplots(
                 2,
@@ -178,16 +221,20 @@ with rc_context(hep.style.CMS):
                 histogram["nominal", sum, sum, sum, region, sum, :],
                 ax=ratio_ax,
             )
+            set_yaxis_limit_ratio(rax)
             rax.set_ylabel("Data/MC")
 
-            save_path = Path("plots_iterative_btagSF", variable)
+            fig.suptitle(f"{region=}")
+
+            save_path = Path("plots_iterative_btagSF", suffix, variable)
             save_path.mkdir(parents=True, exist_ok=True)
+            fig.tight_layout()
             fig.savefig(save_path / f"{region}.png")
             ax.set_yscale("log")
             fig.savefig(save_path / f"{region}_log.png")
             plt.close(fig)
 
-            # plot not stacked
+            # MC histograms separately
             fig, ax = plt.subplots(
                 1,
                 1,
@@ -214,10 +261,16 @@ with rc_context(hep.style.CMS):
             ax.set_ylabel("Events")
             ax.legend()
 
+            fig.suptitle(f"{region=}")
+            fig.tight_layout()
+
             fig.savefig(save_path / f"{region}_hists.png")
             ax.set_yscale("log")
             fig.savefig(save_path / f"{region}_hists_log.png")
             plt.close(fig)
+
+            if not args.separate_bins:
+                continue
 
             save_path_split = save_path / "eta_pt_bins"
             save_path_split.mkdir(parents=True, exist_ok=True)
@@ -281,8 +334,9 @@ with rc_context(hep.style.CMS):
                         histogram["nominal", sum, eta_index, pt_index, region, sum, :],
                         ax=ratio_ax,
                     )
-                    rax.set_ylim(0,3)
+                    set_yaxis_limit_ratio(rax)
                     rax.set_ylabel("Data/MC")
+                    fig.suptitle(f"{region=}")
                     fig.tight_layout()
 
                     # save

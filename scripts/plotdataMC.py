@@ -171,7 +171,7 @@ elif "dilep" in args.phase:
     nj = 2
 # TODO: check nj and label
 elif "btag_ttbar" in args.phase:
-    input_txt = r"t$\bar{t}$ dileptonic"
+    input_txt = r"t$\bar{t}$ dileptonic (it-sf)"
     nj = 2
 if (
     "njet" in args.variable.split(",")
@@ -227,6 +227,9 @@ else:
     var_set = args.variable.split(",")
 print("plotting variables:", var_set)
 for index, discr in enumerate(var_set):
+    if "iterative" in discr:
+        print(f"Skipping {discr} as it is not a valid variable for plotting.")
+        continue
     try:
         if not isinstance(collated["mc"][discr], hist.hist.Hist):
             continue
