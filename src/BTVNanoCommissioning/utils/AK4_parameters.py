@@ -138,8 +138,9 @@ correction_config = {
         "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
         "PU": "puwei_Summer23BPix.histo.root",
         "JME": {
-            "MC": "Summer23BPixPrompt23_V1 Summer23BPixPrompt23_RunD_JRV1",
+            "MC": "Summer23BPixPrompt23_V1",
             "Run2023D": "Summer23BPixPrompt23_RunD_V1",
+            "jername": "Summer23BPixPrompt23_RunD_JRV1_MC",
         },
         # "JME": "jec_compiled.pkl.gz",
         "LSF": {
@@ -158,6 +159,21 @@ correction_config = {
             "Run2023D-22Sep2023_v2": "calibeHistoWrite_Data2023D-22Sep2023_v2.root",
             "MC": "calibeHistoWrite_MC2023_Summer23BPix.root",
         },
+    },
+    "Summer24": {
+        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
+        "PU": "PU_weights_Summer24.histo.root",
+        "JME": {
+            "MC": "Summer24Prompt24_V1",
+            "Run2024C": "Summer24Prompt24_V1",
+            "Run2024D": "Summer24Prompt24_V1",
+            "Run2024E": "Summer24Prompt24_V1",
+            "Run2024F": "Summer24Prompt24_V1",
+            "Run2024G": "Summer24Prompt24_V1",
+            "Run2024H": "Summer24Prompt24_V1",
+            "Run2024I": "Summer24Prompt24_V1",
+            "jername": "Summer23BPixPrompt23_RunD_JRV1_MC",
+        }
     },
     "Winter24": {
         "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
@@ -181,3 +197,50 @@ correction_config = {
     },
     "prompt_dataMC": {"lumiMask": "$PROMPT_DATAMC"},
 }
+
+
+# jes sources for the full set according to
+# https://cms-jerc.web.cern.ch/Recommendations/#case-i
+jes_sources_full_set = (
+    "AbsoluteMPFBias",
+    "AbsoluteScale",
+    "AbsoluteStat",
+    "FlavorQCD",
+    "Fragmentation",
+    "PileUpDataMC",
+    "PileUpPtBB",
+    "PileUpPtEC1",
+    "PileUpPtEC2",
+    "PileUpPtHF",
+    "PileUpPtRef",
+    "RelativeFSR",
+    "RelativeJEREC1",
+    "RelativeJEREC2",
+    "RelativeJERHF",
+    "RelativePtBB",
+    "RelativePtEC1",
+    "RelativePtEC2",
+    "RelativePtHF",
+    "RelativeBal",
+    "RelativeSample",
+    "RelativeStatEC",
+    "RelativeStatFSR",
+    "RelativeStatHF",
+    "SinglePionECAL",
+    "SinglePionHCAL",
+    "TimePtEta",
+)
+jes_sources_reduced_set = (
+    # "Absolute",
+    # "Absolute_2017",
+    # "BBEC1",
+    # "BBEC1_2017",
+    # "EC2",
+    # "EC2_2017",
+    # "FlavorQCD",
+    # "HF",
+    # "HF_2017",
+    # "RelativeBal",
+    # "RelativeSample_2017",
+    "Total",
+)

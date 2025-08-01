@@ -16,6 +16,7 @@ from coffea.btag_tools import BTagScaleFactor
 from BTVNanoCommissioning.helpers.func import update, _compile_jec_, _load_jmefactory
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
+from BTVNanoCommissioning.utils.AK4_parameters import jes_sources_full_set, jes_sources_reduced_set
 
 
 def load_SF(year, campaign, syst=False):
@@ -290,7 +291,7 @@ def load_SF(year, campaign, syst=False):
 
         ## JME corrections
         elif SF == "JME":
-            if "name" in config[campaign]["JME"].keys():
+            if "name" in config[campaign].get("JME", {}).keys():
 
                 if not os.path.exists(
                     f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/jec_compiled_{config[campaign]['JME']['name']}.pkl.gz"
@@ -314,19 +315,19 @@ def load_SF(year, campaign, syst=False):
                     f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jet_jerc.json.gz"
                 )
                 correct_map["JME_cfg"] = config[campaign]["JME"]
-                for dataset in correct_map["JME_cfg"].keys():
-                    if (
-                        np.all(
-                            np.char.find(
-                                np.array(list(correct_map["JME"].keys())),
-                                correct_map["JME_cfg"][dataset],
-                            )
-                        )
-                        == -1
-                    ):
-                        raise (
-                            f"{dataset} has no JEC map : {correct_map['JME_cfg'][dataset]} available"
-                        )
+                # for dataset in correct_map["JME_cfg"].keys():
+                #     if (
+                #         np.all(
+                #             np.char.find(
+                #                 np.array(list(correct_map["JME"].keys())),
+                #                 correct_map["JME_cfg"][dataset],
+                #             )
+                #         )
+                #         == -1
+                #     ):
+                #         raise (
+                #             f"{dataset} has no JEC map : {correct_map['JME_cfg'][dataset]} available"
+                #         )
         elif SF == "JMAR":
             if os.path.exists(
                 f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jmar.json.gz"
@@ -547,8 +548,10 @@ def JME_shifts(
                 else:
                     jecname = jecname[0] + "_DATA"
             else:
-                jecname = correct_map["JME_cfg"]["MC"].split(" ")[0] + "_MC"
-                jrname = correct_map["JME_cfg"]["MC"].split(" ")[1] + "_MC"
+                # jecname = correct_map["JME_cfg"]["MC"].split("_")[0] + "_MC"
+                # jrname = correct_map["JME_cfg"]["MC"].split("_")[1] + "_MC"
+                jecname =correct_map["JME_cfg"]["MC"] + "_MC"
+                jrname = correct_map["JME_cfg"]["jername"]
 
             # store the original jet info
             nocorrjet = events.Jet
@@ -566,6 +569,10 @@ def JME_shifts(
             jets = copy.copy(nocorrjet)
             jets["orig_pt"] = ak.values_astype(nocorrjet["pt"], np.float32)
 
+            # add run information to jet
+            # needed for correctionlib
+            nocorrjet["run"] = events.run
+
             ## flatten jets
             j, nj = ak.flatten(nocorrjet), ak.num(nocorrjet)
 
@@ -579,7 +586,6 @@ def JME_shifts(
                 corrFactor = JECflatCorrFactor
 
             else:
-
                 JERSF = correct_map["JME"][f"{jrname}_ScaleFactor_AK4PFPuppi"]
                 JERptres = correct_map["JME"][f"{jrname}_PtResolution_AK4PFPuppi"]
                 ## For MC, correct the jet pT with JEC first
@@ -614,7 +620,7 @@ def JME_shifts(
 
             ## JEC variations
             if not isRealData and systematic != False:
-                if systematic != "JERC_split":
+                if (systematic != "split") and (systematic != "reduced"):
                     jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
                     jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
                     unc_jets, unc_met = {}, {}
@@ -650,48 +656,10 @@ def JME_shifts(
                             jets.pt_raw,
                         ).phi
 
-                        JERSF_input_var = get_corr_inputs(j, JERSF, var)
-
-                        ## JER variations
-                        unc_jets[f"JER{var}"] = copy.copy(nocorrjet)
-                        unc_met[f"JER{var}"] = copy.copy(nocorrmet)
-                        j["JERSF"] = JERSF.evaluate(*JERSF_input_var)
-                        JERsmear_input_var = get_corr_inputs(j, sf_jersmear)
-
-                        unc_jets[f"JER{var}"]["pt"] = jets["pt"] * ak.unflatten(
-                            JECflatCorrFactor
-                            * sf_jersmear.evaluate(*JERsmear_input_var),
-                            nj,
-                        )
-                        unc_jets[f"JER{var}"]["mass"] = jets["mass"] * ak.unflatten(
-                            JECflatCorrFactor
-                            * sf_jersmear.evaluate(*JERsmear_input_var),
-                            nj,
-                        )
-                        unc_met[f"JER{var}"]["pt"] = corrected_polar_met(
-                            nocorrmet.pt,
-                            nocorrmet.phi,
-                            unc_jets[f"JER{var}"]["pt"],
-                            jets.phi,
-                            jets.pt_raw,
-                        ).pt
-                        unc_met[f"JER{var}"]["phi"] = corrected_polar_met(
-                            nocorrmet.pt,
-                            nocorrmet.phi,
-                            unc_jets[f"JER{var}"]["pt"],
-                            jets.phi,
-                            jets.pt_raw,
-                        ).phi
                     jets["JES_Total"] = ak.zip(
                         {
                             "up": unc_jets["JES_Totalup"],
                             "down": unc_jets["JES_Totaldown"],
-                        }
-                    )
-                    jets["JER"] = ak.zip(
-                        {
-                            "up": unc_jets["JERup"],
-                            "down": unc_jets["JERdown"],
                         }
                     )
                     met["JES_Total"] = ak.zip(
@@ -700,15 +668,114 @@ def JME_shifts(
                             "down": unc_met["JES_Totaldown"],
                         }
                     )
-                    met["JER"] = ak.zip(
-                        {
-                            "up": unc_met["JERup"],
-                            "down": unc_met["JERdown"],
-                        }
-                    )
+                    
                 else:
-                    raise NotImplementedError
+                    jme_correct_map = correct_map["JME"]
+                    unc_jets = {}
+                    unc_met = {}
+                    if systematic == "split":
+                        jes_sources_set = jes_sources_full_set
+                    elif systematic == "reduced":
+                        jes_sources_set = jes_sources_reduced_set
+                    else:
+                        raise ValueError(
+                            f"Unknown JES source set: {systematic}. Use 'split' or 'reduced'."
+                        )
+                    for jes_source in jes_sources_set:
+                        jes_source_key = f"{jecname}_{jes_source}_AK4PFPuppi"
+                        jesunc = ak.unflatten(
+                            jme_correct_map[jes_source_key].evaluate(j.eta, j.pt), nj
+                        )
+                        for var, fac in zip(["up", "down"], [1.0, -1.0]):
+                            unc_jets[f"JES_{jes_source}{var}"] = copy.copy(nocorrjet)
+                            unc_met[f"JES_{jes_source}{var}"] = copy.copy(nocorrmet)
 
+                            unc_jets[f"JES_{jes_source}{var}"]["pt"] = ak.values_astype(
+                                jets["pt"]
+                                * (ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc),
+                                np.float32,
+                            )
+                            unc_jets[f"JES_{jes_source}{var}"]["mass"] = ak.values_astype(
+                                jets["mass"]
+                                * (ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc),
+                                np.float32,
+                            )
+                            unc_met[f"JES_{jes_source}{var}"]["pt"] = corrected_polar_met(
+                                nocorrmet.pt,
+                                nocorrmet.phi,
+                                unc_jets[f"JES_{jes_source}{var}"]["pt"],
+                                jets.phi,
+                                jets.pt_raw,
+                            ).pt
+                            unc_met[f"JES_{jes_source}{var}"]["phi"] = corrected_polar_met(
+                                nocorrmet.pt,
+                                nocorrmet.phi,
+                                unc_jets[f"JES_{jes_source}{var}"]["pt"],
+                                jets.phi,
+                                jets.pt_raw,
+                            ).phi
+
+                        jets[f"JES_{jes_source}"] = ak.zip(
+                            {
+                                "up": unc_jets[f"JES_{jes_source}up"],
+                                "down": unc_jets[f"JES_{jes_source}down"],
+                            }
+                        )
+                        met[f"JES_{jes_source}"] = ak.zip(
+                            {
+                                "up": unc_met[f"JES_{jes_source}up"],
+                                "down": unc_met[f"JES_{jes_source}down"],
+                            }
+                        )
+
+                    # raise NotImplementedError
+                
+                # JER variations
+                for var in ("up", "down"):
+                    JERSF_input_var = get_corr_inputs(j, JERSF, var)
+
+                    unc_jets[f"JER{var}"] = copy.copy(nocorrjet)
+                    unc_met[f"JER{var}"] = copy.copy(nocorrmet)
+                    j["JERSF"] = JERSF.evaluate(*JERSF_input_var)
+                    JERsmear_input_var = get_corr_inputs(j, sf_jersmear)
+
+                    unc_jets[f"JER{var}"]["pt"] = jets["pt"] * ak.unflatten(
+                        JECflatCorrFactor
+                        * sf_jersmear.evaluate(*JERsmear_input_var),
+                        nj,
+                    )
+                    unc_jets[f"JER{var}"]["mass"] = jets["mass"] * ak.unflatten(
+                        JECflatCorrFactor
+                        * sf_jersmear.evaluate(*JERsmear_input_var),
+                        nj,
+                    )
+                    unc_met[f"JER{var}"]["pt"] = corrected_polar_met(
+                        nocorrmet.pt,
+                        nocorrmet.phi,
+                        unc_jets[f"JER{var}"]["pt"],
+                        jets.phi,
+                        jets.pt_raw,
+                    ).pt
+                    unc_met[f"JER{var}"]["phi"] = corrected_polar_met(
+                        nocorrmet.pt,
+                        nocorrmet.phi,
+                        unc_jets[f"JER{var}"]["pt"],
+                        jets.phi,
+                        jets.pt_raw,
+                    ).phi
+
+                jets["JER"] = ak.zip(
+                    {
+                        "up": unc_jets["JERup"],
+                        "down": unc_jets["JERdown"],
+                    }
+                )
+                met["JER"] = ak.zip(
+                    {
+                        "up": unc_met["JERup"],
+                        "down": unc_met["JERdown"],
+                    }
+                )
         else:
             if isRealData:
                 if "2016preVFP_UL" == campaign:
@@ -742,10 +809,9 @@ def JME_shifts(
             ## systematics
         if not isRealData:
             if systematic != False:
-                if systematic == "split":
-                    for jes in met.fields:
-                        if "JES" not in jes or "Total" in jes:
-                            continue
+                if systematic == "split" or systematic == "reduced":
+                    for jes in jes_sources_set:
+                        jes = f"JES_{jes}"
                         shifts += [
                             (
                                 {
@@ -798,23 +864,23 @@ def JME_shifts(
                                 "UESDown",
                             ),
                         ]
-                    if "JER" in jets.fields:
-                        shifts += [
-                            (
-                                {
-                                    "Jet": jets.JER.up,
-                                    "MET": met.JER.up,
-                                },
-                                "JERUp",
-                            ),
-                            (
-                                {
-                                    "Jet": jets.JER.down,
-                                    "MET": met.JER.down,
-                                },
-                                "JERDown",
-                            ),
-                        ]
+                if "JER" in jets.fields:
+                    shifts += [
+                        (
+                            {
+                                "Jet": jets.JER.up,
+                                "MET": met.JER.up,
+                            },
+                            "JERUp",
+                        ),
+                        (
+                            {
+                                "Jet": jets.JER.down,
+                                "MET": met.JER.down,
+                            },
+                            "JERDown",
+                        ),
+                    ]
 
     else:
         met = events.PuppiMET
@@ -1213,6 +1279,7 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
 ### Lepton SFs
 def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
     allele = ele if ele.ndim > 1 else ak.singletons(ele)
+    allele = ak.pad_none(allele, ele.ndim)
 
     for sf in correct_map["EGM_cfg"].keys():
         ## Only apply SFs for lepton pass HLT filter
@@ -1225,7 +1292,8 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             ele = allele[:, nele]
             ele_eta = ak.fill_none(ele.eta, -2.5)
             ele_pt = ak.fill_none(ele.pt, 20)
-            mask = ele.pt > 20.0
+            ele_phi = ak.fill_none(ele.phi, 0.0)
+
             masknone = ak.is_none(ele.pt)
             sfs_alle, sfs_alle_up, sfs_alle_down = (
                 np.ones_like(allele[:, 0].pt),
@@ -1237,43 +1305,47 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                 ## Reco SF -splitted pT
                 if "Reco" in sf:
                     ## phi is used in Summer23
-                    ele_pt = np.clip(ele.pt, 20.1, 74.9)
-                    ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
-                    ele_pt_high = np.clip(ele.pt, 75.0, 500.0)
-                    if "Summer23" in correct_map["campaign"]:
+                    ele_pt_mid = np.clip(ele_pt, 20.1, 74.9)
+                    ele_pt_low = np.where(ele_pt >= 20.0, 19.9, ele_pt)
+                    ele_pt_high = np.clip(ele_pt, 75.0, 500.0)
+                    if correct_map["campaign"] in (
+                        "Summer23",
+                        "Summer23BPix",
+                        "Summer24",
+                    ):
                         sfs_low = np.where(
-                            (ele.pt <= 20.0) & (~masknone),
+                            (ele_pt <= 20.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoBelow20",
                                 ele_eta,
                                 ele_pt_low,
-                                ele.phi,
+                                ele_phi,
                             ),
                             1.0,
                         )
                         sfs_high = np.where(
-                            (ele.pt > 75.0) & (~masknone),
+                            (ele_pt > 75.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoAbove75",
                                 ele_eta,
                                 ele_pt_high,
-                                ele.phi,
+                                ele_phi,
                             ),
                             sfs_low,
                         )
                         sfs = np.where(
-                            (ele.pt > 20.0) & (ele.pt <= 75.0) & (~masknone),
+                            (ele_pt > 20.0) & (ele_pt <= 75.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
                                 "Reco20to75",
                                 ele_eta,
-                                ele_pt,
-                                ele.phi,
+                                ele_pt_mid,
+                                ele_phi,
                             ),
                             sfs_high,
                         )
@@ -1281,74 +1353,74 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         sfs = np.where(masknone, 1.0, sfs)
                         if syst != False:
                             sfs_up_low = np.where(
-                                (ele.pt <= 20.0) & ~masknone,
+                                (ele_pt <= 20.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
                                     "RecoBelow20",
                                     ele_eta,
                                     ele_pt_low,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                                 0.0,
                             )
                             sfs_down_low = np.where(
-                                (ele.pt <= 20.0) & ~masknone,
+                                (ele_pt <= 20.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "RecoBelow20",
                                     ele_eta,
                                     ele_pt_low,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                                 0.0,
                             )
                             sfs_up_high = np.where(
-                                (ele.pt > 75.0) & (~masknone),
+                                (ele_pt > 75.0) & (~masknone),
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
                                     "RecoAbove75",
                                     ele_eta,
                                     ele_pt_high,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                                 sfs_up_low,
                             )
                             sfs_down_high = np.where(
-                                (ele.pt > 75.0) & (~masknone),
+                                (ele_pt > 75.0) & (~masknone),
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "RecoAbove75",
                                     ele_eta,
                                     ele_pt_high,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                                 sfs_down_low,
                             )
                             sfs_up = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele_pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
                                     "Reco20to75",
                                     ele_eta,
-                                    ele_pt,
-                                    ele.phi,
+                                    ele_pt_mid,
+                                    ele_phi,
                                 ),
                                 sfs_up_high,
                             )
                             sfs_down = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele_pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "Reco20to75",
                                     ele_eta,
-                                    ele_pt,
-                                    ele.phi,
+                                    ele_pt_mid,
+                                    ele_phi,
                                 ),
                                 sfs_down_high,
                             )
@@ -1359,7 +1431,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                     else:
 
                         sfs_low = np.where(
-                            (ele.pt <= 20.0) & (~masknone),
+                            (ele_pt <= 20.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1370,7 +1442,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             1.0,
                         )
                         sfs_high = np.where(
-                            (ele.pt > 75.0) & (~masknone),
+                            (ele_pt > 75.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1381,9 +1453,9 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             sfs_low,
                         )
                         sfs = np.where(
-                            (ele.pt > 20.0) & (ele.pt <= 75.0) & (~masknone),
+                            (ele_pt > 20.0) & (ele_pt <= 75.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                sf.split(" ")[1], "sf", "Reco20to75", ele_eta, ele_pt
+                                sf.split(" ")[1], "sf", "Reco20to75", ele_eta, ele_pt_mid
                             ),
                             sfs_high,
                         )
@@ -1392,7 +1464,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
                         if syst:
                             sfs_up_low = np.where(
-                                (ele.pt <= 20.0) & ~masknone,
+                                (ele_pt <= 20.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -1403,7 +1475,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 0.0,
                             )
                             sfs_down_low = np.where(
-                                (ele.pt <= 20.0) & ~masknone,
+                                (ele_pt <= 20.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -1414,7 +1486,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 0.0,
                             )
                             sfs_up_high = np.where(
-                                (ele.pt > 75.0) & (~masknone),
+                                (ele_pt > 75.0) & (~masknone),
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -1425,7 +1497,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_up_low,
                             )
                             sfs_down_high = np.where(
-                                (ele.pt > 75.0) & (~masknone),
+                                (ele_pt > 75.0) & (~masknone),
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -1436,24 +1508,24 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_down_low,
                             )
                             sfs_up = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele_pt > 20.0) & (ele_pt <= 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
                                     "Reco20to75",
                                     ele_eta,
-                                    ele_pt,
+                                    ele_pt_mid,
                                 ),
                                 sfs_up_high,
                             )
                             sfs_down = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele_pt > 20.0) & (ele_pt <= 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "Reco20to75",
                                     ele_eta,
-                                    ele_pt,
+                                    ele_pt_mid,
                                 ),
                                 sfs_down_high,
                             )
@@ -1463,7 +1535,11 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             ), np.where(masknone, 1.0, sfs_down)
                 ## Other files
                 else:
-                    if "Summer23" in correct_map["campaign"]:
+                    if correct_map["campaign"] in (
+                        "Summer23",
+                        "Summer23BPix",
+                        "Summer24",
+                    ):
                         sfs = np.where(
                             masknone,
                             1.0,
@@ -1473,7 +1549,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 correct_map["EGM_cfg"][sf],
                                 ele_eta,
                                 ele_pt,
-                                ele.phi,
+                                ele_phi,
                             ),
                         )
 
@@ -1487,7 +1563,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     correct_map["EGM_cfg"][sf],
                                     ele_eta,
                                     ele_pt,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                             )
                             sfs_down = np.where(
@@ -1499,7 +1575,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     correct_map["EGM_cfg"][sf],
                                     ele_eta,
                                     ele_pt,
-                                    ele.phi,
+                                    ele_phi,
                                 ),
                             )
                     else:
@@ -1595,6 +1671,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
 def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
     allmu = mu if mu.ndim > 1 else ak.singletons(mu)
+    allmu = ak.pad_none(allmu, mu.ndim)
     for sf in correct_map["MUO_cfg"].keys():
         ## Only apply SFs for lepton pass HLT filter
         if not isHLT and "HLT" in sf:
@@ -1611,8 +1688,13 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
             mu = allmu[:, nmu]
             masknone = ak.is_none(mu.pt)
 
-            mu_pt = np.clip(mu.pt, 15.0, 199.9)
-            mu_eta = np.clip(np.abs(mu.eta), 0.0, 2.4)
+            # ensure that no none values are present, np.clip cannot handle this
+            # nones are masked out in the sfs calculation
+            mu_pt = ak.fill_none(mu.pt, 0.0)
+            mu_eta = ak.fill_none(mu.eta, 0.0)
+
+            mu_pt = np.clip(mu_pt, 15.0, 199.9)
+            mu_eta = np.clip(np.abs(mu_eta), 0.0, 2.4)
             mask = mu_pt > 30
             sfs = 1.0
             if "correctionlib" in str(type(correct_map["MUO"])):
@@ -2045,8 +2127,11 @@ def common_shifts(self, events):
     shifts = []
     if "JME" in self.SF_map.keys():
         syst_JERC = self.isSyst
-        if self.isSyst == "JERC_split":
-            syst_JERC = "split"
+        # if self.isSyst == "JERC_split":
+        #     syst_JERC = "split"
+        # first test if not false -> is name -> split JERC_
+        if self.isSyst and self.isSyst.startswith("JERC_"):
+            syst_JERC = self.isSyst.split("_")[1]
         shifts = JME_shifts(
             shifts,
             self.SF_map,

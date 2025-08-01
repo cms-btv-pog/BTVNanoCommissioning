@@ -18,6 +18,7 @@ color_map = {
     "VV": "#7f3c8d",
     "Z+jets": "#e68310",
     "W+jets": "#80ba5a",
+    "DY": "#ff0026",
     "QCD": "#e73f74",
     "QCD($\\mu$)": "#a5aa99",
     "udsg": "tab:blue",
@@ -52,9 +53,9 @@ sample_mergemap = {
     ],
     # diboson
     "VV": [
-        "WW_TuneCP5_13p6TeV-pythia8",
-        "WZ_TuneCP5_13p6TeV-pythia8",
-        "ZZ_TuneCP5_13p6TeV-pythia8"
+        "WW_TuneCP5_13p6TeV_pythia8",
+        "WZ_TuneCP5_13p6TeV_pythia8",
+        "ZZ_TuneCP5_13p6TeV_pythia8"
         # decay
         "ZZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
         "ZZto2Nu2Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -73,13 +74,22 @@ sample_mergemap = {
         "DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
         "DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
     ],
+    "DY": [
+        "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "DYto2E_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
+        "DYto2Mu_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
+        "DYto2Tau_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
+    ],
     "W+jets": [
-        "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8",
-        "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        # "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8",
+        # "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         # jet binned sample
         "WtoLNu-4Jets_1J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "WtoLNu-4Jets_2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "WtoLNu-4Jets_3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "WtoLNu-4Jets_4J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
     ],
     # QCD
     "QCD": [

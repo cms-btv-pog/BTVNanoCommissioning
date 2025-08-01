@@ -129,8 +129,8 @@ def config_parser(parser):
         "--isSyst",
         default="False",
         type=str,
-        choices=["False", "all", "weight_only", "JERC_split", "JP_MC"],
-        help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
+        choices=["False", "all", "weight_only", "JERC_split", "JERC_reduced", "JP_MC"],
+        help="Run with systematics, all, weight_only(no JERC uncertainties included),JERC_split, None",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
     parser.add_argument(
@@ -455,6 +455,7 @@ if __name__ == "__main__":
             condor_extra.append(f"export PATH={pathvar}:$PATH")
         else:
             condor_extra.append(f"cd {os.getcwd()}")
+            condor_extra.insert(0, f"export PATH={pathvar}:$PATH")
 
             # Check if Conda is available
             conda_check_command = "command -v conda"
