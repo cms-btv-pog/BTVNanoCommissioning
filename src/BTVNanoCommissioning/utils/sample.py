@@ -70,6 +70,8 @@ predefined_sample = {
             "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             # "TWminus_DR_AtLeastOneLepton_TuneCP5_13p6TeV_powheg-pythia8",
             # "TbarWplus_DR_AtLeastOneLepton_TuneCP5_13p6TeV_powheg-pythia8",
+            "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+            "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             # vv
@@ -77,8 +79,16 @@ predefined_sample = {
             "WZ_TuneCP5_13p6TeV_pythia8",
             "ZZ_TuneCP5_13p6TeV_pythia8",
             # dy
+            # before 2024
             "DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            # after 2024
+            "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            "DYto2E_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
+            "DYto2Mu_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
+            "DYto2Tau_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
             # wjets to lnu
             # "WtoLNu-2Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8",
