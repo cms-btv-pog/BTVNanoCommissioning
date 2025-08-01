@@ -2022,8 +2022,7 @@ def main(args):
                                 fdict[dsname].extend(file_paths)
                             else:
                                 fdict[dsname] = file_paths
-                            print_dataset_success(dataset, dsname, len(file_paths))
-                            fdict[dsname] = file_paths
+                            print_dataset_success(dataset, dsname, len(fdict[dsname]))
                         else:
                             print_dataset_empty(dataset)
                     except Exception as exc:
