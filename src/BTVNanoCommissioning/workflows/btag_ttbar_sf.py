@@ -95,6 +95,9 @@ class NanoProcessor(processor.ProcessorABC):
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
         self.channel = selectionModifier
+        self._workflow = "btag_ttbar_sf"
+        if self.channel in ("mumu", "ee", "emu"):
+            self._workflow += f"_{self.channel}"
         ## Load corrections
         self.SF_map = load_SF(year=self._year, campaign=self._campaign)
 
@@ -161,7 +164,7 @@ class NanoProcessor(processor.ProcessorABC):
             if self.noHist
             else histogrammer(
                 events,
-                workflow="btag_ttbar_sf",
+                workflow=self._workflow,
                 year=self._year,
                 campaign=self._campaign,
             )
