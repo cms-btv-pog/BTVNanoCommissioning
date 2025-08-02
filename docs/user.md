@@ -28,7 +28,7 @@ python scripts/fetch.py -c {campaign} --year {args.year}  --from_workflow {wf} -
 # campaign :  the campaign name like Summer23,Winter22
 # year : data taking years 2022/2023...
 # wf: workflow name like ttdilep_sf, ctag_Wc_sf
-# DAS_campaign: Input the campaign name for DAS to search appropriate campaigns, use in dataset construction , please do `data_camapgin,mc_campaign` split by `,`, e.g. `*Run2023D*Sep2023*,*Run3Summer23BPixNanoAODv12-130X*` 
+# DAS_campaign: Input the campaign name for DAS to search appropriate campaigns, use in dataset construction , please do `campaign1,campaign2,campaign3`. Also supports "auto" (hard-coded!) if campaign and year are specified.
 # overwrite (bool): recreate the exist json file 
 ```
 
