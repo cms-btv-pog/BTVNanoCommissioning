@@ -127,9 +127,14 @@ if args.DAS_campaign == "auto":
     key = f"{args.campaign}_{args.year}"
     if key in DAS_campaign_map:
         args.DAS_campaign = DAS_campaign_map[key]
-        print(f"Automatically selected DAS_campaign {args.DAS_campaign} based on {key}.")
+        print(
+            f"Automatically selected DAS_campaign {args.DAS_campaign} based on {key}."
+        )
     else:
-        raise(f"Cannot automatically assign DAS_campaign based on {key}. Valid keys:",list(DAS_campaign_map.keys()))
+        raise (
+            f"Cannot automatically assign DAS_campaign based on {key}. Valid keys:",
+            list(DAS_campaign_map.keys()),
+        )
 
 
 # Based on https://github.com/PocketCoffea/PocketCoffea/blob/main/pocket_coffea/utils/rucio.py
@@ -1723,11 +1728,11 @@ def main(args):
                         f"{l} is which campaign? [Enter integer corresponding to above list. Use ',' for multiple]: "
                     )
                     camp_idxs = []
-                    for camp_idx in campaign_input.split(','):
+                    for camp_idx in campaign_input.split(","):
                         try:
                             idx = int(camp_idx) - 1
                             campaigns[idx]
-                            camp_idxs.append(idx)                            
+                            camp_idxs.append(idx)
                         except:
                             print(f"{camp_idx} is not a valid input. Try again!\n")
                             continue
@@ -1748,7 +1753,7 @@ def main(args):
                     outf.write(dataset[0] + "\n")
                 else:
                     print(f"WARNING: Skipping invalid dataset result for {l}")
-            
+
             print()
         outf.close()
     ## If put the path
