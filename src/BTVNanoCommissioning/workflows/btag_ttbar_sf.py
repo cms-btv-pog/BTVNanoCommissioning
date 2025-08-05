@@ -1,14 +1,15 @@
 # https://git.rwth-aachen.de/3pia/cms_analyses/jet_tagging_sf/-/blob/master/recipes/selection3.py?ref_type=heads
 
+import warnings
+from collections.abc import Callable, Iterable
 from functools import reduce
 from operator import and_, or_
+from typing import Any
 
 # import collections
 import awkward as ak
+import hist
 import numpy as np
-
-# import os
-# import uproot
 from coffea import processor
 
 # user helper function
@@ -37,6 +38,343 @@ from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
 )
+
+warnings.filterwarnings(
+    "ignore", category=RuntimeWarning, message=".*Missing cross-reference.*"
+)
+
+
+BTV_WEIGHTS = [
+    "DeepCSVC",
+    "DeepCSVB",
+    "DeepJetB",
+    "DeepJetC",
+]  # exclude b-tag SFs for btag inputs
+
+
+class Histogram:
+    def __init__(
+        self,
+        histogram: hist.Hist,
+        fill_func: Callable[[ak.Array], dict[str, Any]],
+        obj: str = None,
+        field: str = None,
+        fill_kwargs: dict[str, Any] = {},
+    ):
+        self.histogram = histogram
+        self.fill_func = fill_func
+        self.obj = obj
+        self.field = field
+        self.fill_kwargs = fill_kwargs
+
+    def fill_histogram(self, events, weights, systematics, isSyst: bool):
+        systematics = systematics if isSyst else ["nominal"]
+        for syst in systematics:
+            self.histogram.fill(
+                **self.fill_func(
+                    events, self.obj, self.field, weights, syst, **self.fill_kwargs
+                ),
+                syst=syst,
+            )
+
+
+def get_flavor(events):
+    if "hadronFlavour" in events.SelJet.fields:
+        isRealData = False
+        genflavor = ak.values_astype(
+            events.SelJet.hadronFlavour
+            + 1
+            * ((events.SelJet.partonFlavour == 0) & (events.SelJet.hadronFlavour == 0)),
+            int,
+        )
+    else:
+        isRealData = True
+        genflavor = ak.zeros_like(events.SelJet.pt, dtype=int)
+
+    return genflavor, isRealData
+
+
+def fill_histograms(events, histograms, weights, systematics, isSyst: bool):
+    """Fill the histograms with the events and weights."""
+    for name, histogram in histograms.items():
+        if isinstance(histogram, Histogram):
+            histogram.fill_histogram(events, weights, systematics, isSyst)
+        elif isinstance(histogram, hist.Hist):
+            warnings.warn(
+                f"Histogram {name} is not an instance of Histogram class, skipping fill."
+            )
+            continue
+
+    return {
+        name: histogram.histogram if isinstance(histogram, Histogram) else histogram
+        for name, histogram in histograms.items()
+    }
+
+
+def fill_kinematics(events, obj, field, weights, syst, index=None):
+    # get kinematics of the object
+    if index is not None:
+        values = getattr(events[obj], field)[:, index]
+    else:
+        values = getattr(events[obj], field)
+
+    weight = (
+        weights.weight()
+        if syst == "nominal" or syst not in list(weights.variations)
+        else weights.weight(modifier=syst)
+    )
+
+    weight, values = ak.broadcast_arrays(weight, values)
+    return {
+        field: ak.flatten(values, axis=None),
+        "weight": ak.flatten(weight, axis=None),
+    }
+
+
+def fill_discriminants(events, obj, field, weights, syst):
+    flavor, isRealData = get_flavor(events)
+    values = events[obj][field]
+    eta = np.abs(events[obj].eta)
+    pt = events[obj].pt
+    # get region information
+    isHF = ak.Array(
+        [events[f"{field}_region_HF_jet0"], events[f"{field}_region_HF_jet1"]]
+    )
+    isLF = ak.Array(
+        [events[f"{field}_region_LF_jet0"], events[f"{field}_region_LF_jet1"]]
+    )
+    region = ak.where(isHF, "HF", ak.where(isLF, "LF", "None"))
+    jet_index = np.zeros((len(eta), 2), dtype=int)
+    jet_index[:, 1] = 1  # second jet index
+
+    weight = (
+        weights.partial_weight(exclude=BTV_WEIGHTS)
+        if syst == "nominal"
+        else weights.weight(modifier=syst)
+    )
+
+    return {
+        "flav": ak.flatten(flavor),
+        "eta": ak.flatten(eta),
+        "pt": ak.flatten(pt),
+        "region": ak.flatten(region),
+        "jet_index": ak.flatten(jet_index),
+        field: ak.flatten(values),
+        "weight": ak.concatenate([weight, weight]),
+    }
+
+
+def fill_discriminants_2(events, obj, field, weights, syst):
+    flavor, isRealData = get_flavor(events)
+    values = events[obj][field]
+    eta = np.abs(events[obj].eta)
+    pt = events[obj].pt
+    # get region information
+    isHF = ak.Array(
+        [events[f"{field}_region_HF_jet0"], events[f"{field}_region_HF_jet1"]]
+    )
+    isLF = ak.Array(
+        [events[f"{field}_region_LF_jet0"], events[f"{field}_region_LF_jet1"]]
+    )
+    region_HF = ak.flatten(ak.where(isHF, "HF", "None"))
+    region_LF = ak.flatten(ak.where(isLF, "LF", "None"))
+    assert not ak.any((region_HF == "HF") & (region_LF == "LF")), (
+        "Jet cannot be in both HF and LF regions"
+    )
+
+    jet_index = np.zeros((len(eta), 2), dtype=int)
+    jet_index[:, 1] = 1  # second jet index
+
+    weight = (
+        weights.partial_weight(exclude=BTV_WEIGHTS)
+        if syst == "nominal"
+        else weights.weight(modifier=syst)
+    )
+
+    def _prep_arrays(array):
+        if array.ndim > 1:
+            array = ak.flatten(array)
+        return ak.concatenate([array, array])
+
+    # region can be both HF and LF, since we swap jets
+
+    return {
+        "flav": _prep_arrays(flavor),
+        "eta": _prep_arrays(eta),
+        "pt": _prep_arrays(pt),
+        "region": ak.concatenate([region_HF, region_LF]),
+        "jet_index": _prep_arrays(jet_index),
+        field: _prep_arrays(values),
+        "weight": _prep_arrays(ak.Array([weight, weight])),
+    }
+
+
+# def fill_kinematics_with_regions(events, obj, field, weights, syst, discr):
+#     """Fill kinematics with regions."""
+#     flavor, isRealData = get_flavor(events)
+#     values = events[obj][field]
+#     #TODO: implement
+#     # get region information
+#     isHF = ak.Array(
+#         [events[f"{discr}_region_HF_jet0"], events[f"{discr}_region_HF_jet1"]]
+#     )
+#     isLF = ak.Array(
+#         [events[f"{discr}_region_LF_jet0"], events[f"{discr}_region_LF_jet1"]]
+#     )
+#     region = ak.where(isHF, "HF", ak.where(isLF, "LF", "None"))
+#     jet_index = np.zeros((len(values), 2), dtype=int)
+#     jet_index[:, 1] = 1  # second jet index
+
+#     weight = (
+#         weights.partial_weight(exclude=BTV_WEIGHTS)
+#         if syst == "nominal"
+#         else weights.weight(modifier=syst)
+#     )
+
+#     return {
+#         "flav": ak.flatten(flavor),
+#         "region": ak.flatten(region),
+#         field: ak.flatten(values),
+#         "weight": ak.concatenate([weight, weight]),
+#     }
+
+
+def fill_deltaR(events, obj, field, weights, syst):
+    """Fill the delta R between jets."""
+    # get the delta R values
+    flavor, _ = get_flavor(events)
+    dr = events[obj][:, 0].delta_r(events[obj][:, 1])
+    weight = (
+        weights.weight()
+        if syst == "nominal" or syst not in list(weights.variations)
+        else weights.weight(modifier=syst)
+    )
+
+    return {
+        field: dr,
+        "flav": flavor[:, 0],  # take the flavor of the first jet
+        "weight": weight,
+    }
+
+
+def fill_nobj(events, obj, field, weights, syst):
+    """Fill the number of objects."""
+    nobj = ak.count(events[obj].pt, axis=1)
+    weight = (
+        weights.weight()
+        if syst == "nominal" or syst not in list(weights.variations)
+        else weights.weight(modifier=syst)
+    )
+
+    return {
+        field: nobj,
+        "weight": weight,
+    }
+
+
+def define_histograms(channel: str, discriminants: Iterable[str]):
+    # define commom axis
+    flav_axis = hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour")
+    syst_axis = hist.axis.StrCategory([], name="syst", growth=True)
+    dr_axis = hist.axis.Regular(20, 0, 8, name="dr", label="$\Delta$R")
+    pt_axis = hist.axis.Regular(60, 0, 300, name="pt", label=" $p_{T}$ [GeV]")
+    mass_axis = hist.axis.Regular(50, 0, 300, name="mass", label=" $p_{T}$ [GeV]")
+    eta_axis = hist.axis.Regular(25, -2.5, 2.5, name="eta", label=" $\eta$")
+    phi_axis = hist.axis.Regular(30, -3, 3, name="phi", label="$\phi$")
+    n_axis = hist.axis.Integer(0, 10, name="n", label="N obj")
+    channel_axis = hist.axis.IntCategory(
+        [0, 1, 2], name="channel", label="Channel"
+    )  # 0: mumu, 1: ee, 2: emu
+    region_axis = hist.axis.StrCategory(
+        ["HF", "LF", "None"], name="region", label="Region"
+    )
+
+    histograms = {
+        "dr_jets": Histogram(
+            histogram=hist.Hist(syst_axis, flav_axis, dr_axis, hist.storage.Weight()),
+            obj="SelJet",
+            field="dr",
+            fill_func=fill_deltaR,
+        ),
+        "njet": Histogram(
+            histogram=hist.Hist(syst_axis, n_axis, hist.storage.Weight()),
+            fill_func=fill_nobj,
+            obj="SelJet",
+            field="n",
+        ),
+    }
+
+    # kinematics for different objects
+    PtEtaPhi = {"pt": pt_axis, "eta": eta_axis, "phi": phi_axis}
+    objects = {
+        "SelJet#0": PtEtaPhi | {"mass": mass_axis},
+        "SelJet#1": PtEtaPhi | {"mass": mass_axis},
+        "MET": {"pt": pt_axis, "phi": phi_axis},
+        "dilep": PtEtaPhi | {"mass": mass_axis},
+    }
+    if channel == "mumu":
+        objects["SelMuon"] = PtEtaPhi
+    elif channel == "ee":
+        objects["SelEle"] = PtEtaPhi
+    elif channel == "emu":
+        objects["SelMuon"] = PtEtaPhi
+        objects["SelEle"] = PtEtaPhi
+
+    for obj, axes in objects.items():
+        obj, index = obj.split("#") if "#" in obj else (obj, None)
+        if index is not None:
+            index = int(index)
+        for kinematic, axis in axes.items():
+            histograms[f"{obj}_{kinematic}"] = Histogram(
+                histogram=hist.Hist(syst_axis, axis, hist.storage.Weight()),
+                fill_func=fill_kinematics,
+                obj=obj,
+                field=kinematic,
+                fill_kwargs={"index": index},
+            )
+
+    # btag discriminant
+    eta_axis_discr = hist.axis.Variable([0, 0.8, 1.6, 2.5], name="eta", label="$\eta$")
+    pt_axis_discr = hist.axis.Variable(
+        [*range(0, 100, 10), 100, 120, 140, np.inf],
+        name="pt",
+        label="$p_T$ / GeV",
+    )
+    jet_index_axis = hist.axis.IntCategory([0, 1], name="jet_index", label="Jet index")
+    for disc in discriminants:
+        histograms[f"iterative_{disc}"] = Histogram(
+            histogram=hist.Hist(
+                syst_axis,
+                flav_axis,
+                eta_axis_discr,
+                pt_axis_discr,
+                region_axis,
+                jet_index_axis,
+                hist.axis.Regular(100, 0.0, 1, name=disc, label=disc),
+                hist.storage.Weight(),
+            ),
+            fill_func=fill_discriminants_2,
+            obj="SelJet",
+            field=disc,
+        )
+        # for obj, axes in objects.items():
+        #     obj, index = obj.split("#") if "#" in obj else (obj, None)
+        #     for kinematic, axis in axes.items():
+        #         histograms[f"iterative_{disc}_{obj}_{kinematic}"] = Histogram(
+        #             histogram=hist.Hist(
+        #                 syst_axis,
+        #                 flav_axis,
+        #                 region_axis,
+        #                 axis,
+        #                 hist.storage.Weight(),
+        #             ),
+        #             fill_func=fill_kinematics_with_regions,
+        #             obj=obj,
+        #             field=kinematic,
+        #             fill_kwargs={"discr": disc},
+        #         )
+
+    return histograms
 
 
 def make_p4(obj):
@@ -159,6 +497,7 @@ class NanoProcessor(processor.ProcessorABC):
                 campaign=self._campaign,
             )
         )
+        output = {}
         if shift_name is None:
             if isRealData:
                 output["sumw"] = len(events)
@@ -226,6 +565,8 @@ class NanoProcessor(processor.ProcessorABC):
         dilep = ak.firsts(lep_tpls.l0 + lep_tpls.l1)
         dilep_mass = ak.fill_none(dilep.mass, np.nan)
         zll_mass_min = dilep_mass >= 12.0
+        # fix this to > 50, no 4-50 samples available yet
+        # zll_mass_min = dilep_mass >= 100.0
         zll_mass_cut = abs(dilep_mass - 91.1876) <= 10.0
         zll_mass_veto = abs(dilep_mass - 91.1876) >= 10.0
         z_pt_cut = ak.fill_none(dilep.pt, np.nan) > 10.0
@@ -297,6 +638,7 @@ class NanoProcessor(processor.ProcessorABC):
         mht_x = ak.sum(clean_good_jets.x, axis=-1) + ak.sum(good_leptons.x, axis=-1)
         mht_y = ak.sum(clean_good_jets.y, axis=-1) + ak.sum(good_leptons.y, axis=-1)
         mht = np.sqrt(mht_x**2 + mht_y**2)
+        # TODO: check if needed
         z_diamond = (
             (dilep_mass < (65.5 + 3 * mht / 8))
             | (dilep_mass > (108.0 - mht / 4))
@@ -358,12 +700,6 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["SelMuon"] = good_muons[event_level][:, :2]
             pruned_ev["SelElectron"] = good_electrons[event_level][:, :2]
 
-        # pruned_ev["ch_mumu"] = ch_mumu[event_level]
-        # pruned_ev["ch_ee"] = ch_ee[event_level]
-        # pruned_ev["ch_emu"] = ch_emu[event_level]
-        # if "PFCands" in events.fields:
-        #     pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
-
         ####################
         #  Tag and Probe   #
         ####################
@@ -418,19 +754,33 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
-                pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
+            # output = histo_writter(
+            #     pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
+            # )
+            histograms = define_histograms(self.channel, self.b_tagger_config.keys())
+
+            histograms = fill_histograms(
+                pruned_ev,
+                histograms,
+                weights,
+                systematics,
+                self.isSyst,
             )
+            output.update(histograms)
 
         # Output arrays
         if self.isArray:
             array_writer(
-                self,
-                pruned_ev,
-                events,
-                systematics[0],
-                dataset,
-                isRealData,
+                processor_class=self,
+                pruned_event=pruned_ev,
+                nano_event=events,
+                weights=weights,
+                systname=systematics[0],
+                dataset=dataset,
+                isRealData=isRealData,
+                kinOnly=[],
+                kins=[],
+                othersData=["event"],
             )
 
         return {dataset: output}
