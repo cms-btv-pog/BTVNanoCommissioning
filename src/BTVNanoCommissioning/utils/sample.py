@@ -1,7 +1,7 @@
 predefined_sample = {
     ## Commissioning WF
     "QCD_sf": {
-        "data": ["JetMET0", "JetMET1"],
+        "data": ["JetHT", "JetMET", "JetMET0", "JetMET1"],
         "MC": [
             "QCD_PT-1000to1400_TuneCP5_13p6TeV_pythia8",
             "QCD_PT-120to170_TuneCP5_13p6TeV_pythia8",
