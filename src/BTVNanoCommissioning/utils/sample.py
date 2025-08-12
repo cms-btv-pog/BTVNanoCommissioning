@@ -306,6 +306,11 @@ predefined_sample = {
             "TTto2L2Nu_Hdamp-418_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5Down_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5Up_13p6TeV_powheg-pythia8",
+            # some 2024 MC samples have different names...
+            "TTto2L2Nu_Par-MT-171p5_TuneCP5_13p6TeV_powheg-pythia8",
+            "TTto2L2Nu_Par-MT-175p5_TuneCP5_13p6TeV_powheg-pythia8",
+            "TTto2L2Nu_Par-Hdamp-158_TuneCP5_13p6TeV_powheg-pythia8",
+            "TTto2L2Nu_Par-Hdamp-418_TuneCP5_13p6TeV_powheg-pythia8",
         ],
     },
 }
