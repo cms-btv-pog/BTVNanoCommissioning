@@ -22,6 +22,7 @@ import xgboost as xgb
 from coffea import processor
 from coffea.nanoevents import NanoAODSchema
 from os.path import join
+
 # functions to load SFs, corrections
 from BTVNanoCommissioning.utils.correction import (
     load_lumi,
@@ -101,19 +102,18 @@ def compute_mass(lepton, jet):
     """
 
     # Energy + momentum components
-    E_lepton = np.sqrt(lepton.pt**2 * np.cosh(lepton.eta)**2 + lepton.mass**2)
+    E_lepton = np.sqrt(lepton.pt**2 * np.cosh(lepton.eta) ** 2 + lepton.mass**2)
     px_lepton = lepton.pt * np.cos(lepton.phi)
     py_lepton = lepton.pt * np.sin(lepton.phi)
     pz_lepton = lepton.pt * np.sinh(lepton.eta)
 
-    E_jet    = np.sqrt(jet.pt**2 * np.cosh(jet.eta)**2 + jet.mass**2)
+    E_jet = np.sqrt(jet.pt**2 * np.cosh(jet.eta) ** 2 + jet.mass**2)
     px_jet = jet.pt * np.cos(jet.phi)
     py_jet = jet.pt * np.sin(jet.phi)
     pz_jet = jet.pt * np.sinh(jet.eta)
 
-
     # Invariant mass
-    E_sum  = E_lepton + E_jet
+    E_sum = E_lepton + E_jet
     px_sum = px_lepton + px_jet
     py_sum = py_lepton + py_jet
     pz_sum = pz_lepton + pz_jet
@@ -143,36 +143,45 @@ def run_bdt_inference(features, jetrank, bdt_event_hash, model_base):
     """
     Run XGBoost inference for each jet category (leading, subleading, others)
     and event split (even/odd from bdt_event_hash) and return a numpy array of predictions.
-    
+
     Parameters:
       features      : dict mapping feature name to padded numpy arrays (shape: [n_events, max_jets])
       jetrank       : padded numpy array of jet ranks (shape: [n_events, max_jets])
       bdt_event_hash: padded numpy array of event hash repeated per jet (shape: [n_events, max_jets])
       model_base    : base directory where the JSON models are stored (including year_campaign subdir)
-      
+
     Returns:
       kindisc       : numpy array (shape: [n_events, max_jets]) with the BDT predictions.
     """
     n_events, max_jets = jetrank.shape
     kindisc = np.full((n_events, max_jets), np.nan)
     feature_names = [
-        "close_mlj", "close_dphi", "close_deta", "close_lj2ll_dphi", "close_lj2ll_deta",
-        "far_mlj", "far_dphi", "far_deta", "far_lj2ll_dphi", "far_lj2ll_deta",
-        "j2ll_dphi", "j2ll_deta"
+        "close_mlj",
+        "close_dphi",
+        "close_deta",
+        "close_lj2ll_dphi",
+        "close_lj2ll_deta",
+        "far_mlj",
+        "far_dphi",
+        "far_deta",
+        "far_lj2ll_dphi",
+        "far_lj2ll_deta",
+        "j2ll_dphi",
+        "j2ll_deta",
     ]
-    
+
     for category in ["leading", "subleading", "others"]:
         if category == "leading":
-            cat_mask = (jetrank == 0)
+            cat_mask = jetrank == 0
         elif category == "subleading":
-            cat_mask = (jetrank == 1)
+            cat_mask = jetrank == 1
         elif category == "others":
-            cat_mask = (jetrank >= 2)
+            cat_mask = jetrank >= 2
         else:
             cat_mask = np.zeros_like(jetrank, dtype=bool)
-            
+
         for split in [0, 1]:
-            split_mask = (bdt_event_hash.astype(int) % 2 == split)
+            split_mask = bdt_event_hash.astype(int) % 2 == split
             mask = cat_mask & split_mask
             if np.sum(mask) == 0:
                 continue
@@ -188,6 +197,7 @@ def run_bdt_inference(features, jetrank, bdt_event_hash, model_base):
             kindisc[mask] = preds
 
     return kindisc
+
 
 # ----------------------------
 # Processor definition
@@ -217,8 +227,11 @@ class NanoProcessor(processor.ProcessorABC):
             self.model_base = model_base
         else:
             self.model_base = None
-        username = os.environ.get('USER')
-        self.out_dir_base = f"/eos/user/{username[0]}/{username}/btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else "") # noqa
+        username = os.environ.get("USER")
+        self.out_dir_base = (
+            f"/eos/user/{username[0]}/{username}/btv/phys_btag/sfb-ttkinfit/arrays"
+            + ("_bdt" if self.model_base else "")
+        )  # noqa
 
         ## Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
@@ -240,9 +253,7 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
 
-        output = (
-            {"": None} if self.noHist else histogrammer(events, "sf_ttdilep_kin")
-        )
+        output = {"": None} if self.noHist else histogrammer(events, "sf_ttdilep_kin")
 
         # TODO: implement proper sum of event weights for variations
         if shift_name is None:
@@ -281,8 +292,7 @@ class NanoProcessor(processor.ProcessorABC):
         muon_sel = (muons.pt > 25) & mu_idiso(events, self._campaign)
         muons = muons[muon_sel]
         # For simplicity, we take the first muon in each event
-        mu0 = ak.pad_none(muons, 1, clip=True)[:,0]
-
+        mu0 = ak.pad_none(muons, 1, clip=True)[:, 0]
 
         # Electrons: pt > 25, |(eta + deltaEtaSC)| < 2.4,  cutBased >= 3
         electrons = events.Electron
@@ -293,7 +303,7 @@ class NanoProcessor(processor.ProcessorABC):
         )
         electrons = electrons[ele_sel]
         # For simplicity, we take the first electron in each event
-        ele0 = ak.pad_none(electrons, 1, clip=True)[:,0]
+        ele0 = ak.pad_none(electrons, 1, clip=True)[:, 0]
 
         # For ttbar dilepton selection, require exactly 1 electron and 1 muon
         n_ele = ak.num(electrons)
@@ -305,7 +315,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Select events with either Z window removed or mll > 90 GeV to remove DY events
         # req_mll = np.abs(mll - 91.) > 15.
-        req_mll = mll > 90.
+        req_mll = mll > 90.0
 
         # ----------------------------
         # Jet selection
@@ -346,7 +356,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_opposite_charge = ak.fill_none(req_opposite_charge, False)
 
         # Missing transverse momentum > 40 GeV
-        req_met = events.MET.pt > 40. # GeV
+        req_met = events.MET.pt > 40.0  # GeV
 
         event_level = (
             req_trig
@@ -359,7 +369,6 @@ class NanoProcessor(processor.ProcessorABC):
             & req_met
         )
         event_level = ak.fill_none(event_level, False)
-
 
         if len(events[event_level]) == 0:
             if self.isArray:
@@ -431,10 +440,14 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Compute a kinematic discriminator
         max_jets = int(ak.max(ak.num(ev_jets)))
+
         def pad_jet_var(var, max_jets=max_jets):
             var_reg = ak.pad_none(var, target=max_jets, axis=1, clip=True)
             return ak.to_numpy(ak.fill_none(var_reg, np.nan))
-        bdt_event_hash = np.repeat(ak.to_numpy(pruned_ev.event), max_jets).reshape(-1, max_jets)
+
+        bdt_event_hash = np.repeat(ak.to_numpy(pruned_ev.event), max_jets).reshape(
+            -1, max_jets
+        )
         padded_jetrank = pad_jet_var(ak.argsort(ak.argsort(-ev_jets.pt)))
 
         if self.model_base:
@@ -450,10 +463,12 @@ class NanoProcessor(processor.ProcessorABC):
                 "far_lj2ll_dphi": pad_jet_var(far_lj2ll_dphi),
                 "far_lj2ll_deta": pad_jet_var(far_lj2ll_deta),
                 "j2ll_dphi": pad_jet_var(j2ll_dphi),
-                "j2ll_deta": pad_jet_var(j2ll_deta)
+                "j2ll_deta": pad_jet_var(j2ll_deta),
             }
             full_model_base = join(self.model_base, f"{self._campaign}_{self._year}")
-            kindisc = run_bdt_inference(features, padded_jetrank, bdt_event_hash, full_model_base)
+            kindisc = run_bdt_inference(
+                features, padded_jetrank, bdt_event_hash, full_model_base
+            )
             # convert back to awkward array
             kindisc_flat = ak.flatten(kindisc)
             kindisc_flat_no_nan = kindisc_flat[~np.isnan(kindisc_flat)]
@@ -464,11 +479,12 @@ class NanoProcessor(processor.ProcessorABC):
         # Compute per-jet tagger discriminants (fill with NaN if not available)
         def get_tagger(jets, tag):
             return jets[tag] if tag in jets.fields else ak.full_like(jets.pt, np.nan)
-        
+
         # list of available taggers
         taggers = {}
         for tag in disc_list:
-            if tag in ev_jets.fields: taggers[tag] = get_tagger(ev_jets, tag)
+            if tag in ev_jets.fields:
+                taggers[tag] = get_tagger(ev_jets, tag)
 
         if not isRealData:
             # old implementation from TTBarCalib code
@@ -503,14 +519,25 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isArray:
             pruned_ev_array = pruned_ev
             # --- Assign general event info ---
-            pruned_ev_array["EventInfo"] = np.repeat(np.column_stack([
-                ak.to_numpy(pruned_ev.run),
-                ak.to_numpy(pruned_ev.event),
-                ak.to_numpy(pruned_ev.luminosityBlock),
-            ]), max_jets).reshape(-1, max_jets, 3)
-            pruned_ev_array["ttbar_chan"] = np.repeat(ak.to_numpy(ttbar_chan), max_jets).reshape(-1, max_jets)
-            pruned_ev_array["npvn"] = np.repeat(ak.to_numpy(pruned_ev.PV.npvs), max_jets).reshape(-1, max_jets)
-            pruned_ev_array["jetmult"] = np.repeat(ak.to_numpy(ak.num(ev_jets)), max_jets).reshape(-1, max_jets)
+            pruned_ev_array["EventInfo"] = np.repeat(
+                np.column_stack(
+                    [
+                        ak.to_numpy(pruned_ev.run),
+                        ak.to_numpy(pruned_ev.event),
+                        ak.to_numpy(pruned_ev.luminosityBlock),
+                    ]
+                ),
+                max_jets,
+            ).reshape(-1, max_jets, 3)
+            pruned_ev_array["ttbar_chan"] = np.repeat(
+                ak.to_numpy(ttbar_chan), max_jets
+            ).reshape(-1, max_jets)
+            pruned_ev_array["npvn"] = np.repeat(
+                ak.to_numpy(pruned_ev.PV.npvs), max_jets
+            ).reshape(-1, max_jets)
+            pruned_ev_array["jetmult"] = np.repeat(
+                ak.to_numpy(ak.num(ev_jets)), max_jets
+            ).reshape(-1, max_jets)
             pruned_ev_array["bdt_event_hash"] = bdt_event_hash
             pruned_ev_array["jetrank"] = padded_jetrank
             pruned_ev_array["jetpt"] = ev_jets.pt
@@ -538,10 +565,16 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev_array["kindisc"] = pad_jet_var(kindisc)
 
             array_writer(
-                self, pruned_ev_array, events,
-                weights, systematics, dataset, isRealData,
+                self,
+                pruned_ev_array,
+                events,
+                weights,
+                systematics,
+                dataset,
+                isRealData,
                 self.out_dir_base + "/" if self.out_dir_base else "",
-                kinOnly=[], othersData=[]
+                kinOnly=[],
+                othersData=[],
             )
 
         # Configure histograms
@@ -569,8 +602,7 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev_hist["j2ll_dphi"] = j2ll_dphi
 
             output = histo_writter(
-                pruned_ev_hist, output,
-                weights, systematics, self.isSyst, self.SF_map
+                pruned_ev_hist, output, weights, systematics, self.isSyst, self.SF_map
             )
 
         return {dataset: output}

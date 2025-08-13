@@ -12,7 +12,7 @@ def array_writer(
     systname,  # name of systematic shift
     dataset,  # dataset name
     isRealData,  # boolean
-    out_dir_base="", # string
+    out_dir_base="",  # string
     remove=[
         "SoftMuon",
         "MuonJet",
