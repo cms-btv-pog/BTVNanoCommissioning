@@ -218,8 +218,7 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             self.model_base = None
         username = os.environ.get('USER')
-        self.out_dir_base = "/data/dust/user/pgadow/btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else "") # noqa
-        # self.out_dir_base = f"/eos/user/{username[0]}/{username}/btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else "") # noqa
+        self.out_dir_base = f"/eos/user/{username[0]}/{username}/btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else "") # noqa
 
         ## Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
