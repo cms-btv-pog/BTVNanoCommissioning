@@ -598,44 +598,45 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
 
     ### discriminators
     for disc in disc_list:
-        if disc not in events.Jet.fields:
-            if "2D" in workflow and "BvC" not in disc and "HFvLF" not in disc and "2D" not in disc:
+        if "2D" in workflow:
+            if disc not in events.Jet.fields and "BvC" not in disc and "HFvLF" not in disc and "2D" not in disc:
                 continue
-            else:
-                continue
+        elif disc not in events.Jet.fields:
+            continue
         njet = 1
         if "ttdilep_sf" in workflow:
             njet = 2
-        elif "ttsemilep_sf" in workflow and "c_" not in workflow[:2]:
+        elif "ttsemilep_sf" in workflow:
             njet = 4
-            if "btag" in disc or "ProbaN" == disc:
-                _hist_dict[f"c_{disc}"] = Hist.Hist(
-                    syst_axis,
-                    flav_axis,
-                    Hist.axis.Regular(50, 0.0, 1, name="discr", label=disc),
-                    Hist.storage.Weight(),
-                )
-            elif "Bprob" in disc:
-                _hist_dict[f"c_{disc}"] = Hist.Hist(
-                    syst_axis,
-                    flav_axis,
-                    Hist.axis.Regular(50, 0, 10, name="discr", label=disc),
-                    Hist.storage.Weight(),
-                )
-            elif "PNetRegPtRawRes" == disc:
-                _hist_dict[f"c_{disc}"] = Hist.Hist(
-                    syst_axis,
-                    flav_axis,
-                    Hist.axis.Regular(40, 0, 1, name="discr", label=disc),
-                    Hist.storage.Weight(),
-                )
-            elif "PNetRegPtRawCorr" in disc:
-                _hist_dict[f"c_{disc}"] = Hist.Hist(
-                    syst_axis,
-                    flav_axis,
-                    Hist.axis.Regular(40, 0, 2, name="discr", label=disc),
-                    Hist.storage.Weight(),
-                )
+            if "c_" in workflow[:2]:
+                if "btag" in disc or "ProbaN" == disc:
+                    _hist_dict[f"c_{disc}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(50, 0.0, 1, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "Bprob" in disc:
+                    _hist_dict[f"c_{disc}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(50, 0, 10, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "PNetRegPtRawRes" == disc:
+                    _hist_dict[f"c_{disc}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(40, 0, 1, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "PNetRegPtRawCorr" in disc:
+                    _hist_dict[f"c_{disc}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(40, 0, 2, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
         for i in range(njet):
             if "Wc_sf" in workflow:
                 if "btag" in disc or "ProbaN" == disc:

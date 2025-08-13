@@ -212,10 +212,10 @@ def get_wp_2D(ith_jet_HFvLF_val, ith_jet_BvC_val, year, campaign, tagger):
         HFvLF_high = WP[tagger]["2D"][wp][1]
         BvC_low = WP[tagger]["2D"][wp][2]
         BvC_high = WP[tagger]["2D"][wp][3]
-        if ith_jet_HFvLF_val is None or ith_jet_HFvLF_val == -1:
+        if ith_jet_HFvLF_val is None or ith_jet_BvC_val == None:
             return None
-        if ith_jet_BvC_val is None or ith_jet_BvC_val == -1:
-            return None
+        if ith_jet_HFvLF_val is -1 or ith_jet_BvC_val == -1:
+            return -1.0
         if HFvLF_low == 0:
             passWP = (ith_jet_HFvLF_val >= HFvLF_low)
         else:
@@ -489,7 +489,15 @@ btag_wp_dict = {
                     "B2": 8,
                     "B3": 9,
                     "B4": 10,
-                }
+                },
+                "jet_pt_bins": [
+                    (25, 35),
+                    (35, 50),
+                    (50, 70),
+                    (70, 90),
+                    (90, 120),
+                    (120, 10000),
+                ]
             },
         },
     },

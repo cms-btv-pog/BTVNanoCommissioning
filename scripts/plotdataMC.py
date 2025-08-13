@@ -214,6 +214,14 @@ for index, discr in enumerate(var_set):
         print(discr, "not in file or empty")
         continue
 
+    ## additional legend info
+    if "2D_pt" in discr:
+        tmp = discr.strip().split("_")[1][2:]
+        tmp = tmp.split("to")
+        low_edge = tmp[0]
+        up_edge = tmp[1]
+        if up_edge == "10000": up_edge = "inf."
+
     ## axis info
     allaxis = {}
     if "Wc" in args.phase:
@@ -602,7 +610,10 @@ for index, discr in enumerate(var_set):
     if args.xrange is not None:
         xmin, xmax = float(args.xrange.split(",")[0]), float(args.xrange.split(",")[1])
     rax.set_xlim(xmin, xmax)
-    at = AnchoredText(input_txt + "\n" + args.ext, loc=2, frameon=False)
+    input_txt_final = input_txt
+    if "2D_pt" in discr:
+        input_txt_final += "\n" + low_edge + " < jet $p_T$ < " + up_edge + " GeV"
+    at = AnchoredText(input_txt_final + "\n" + args.ext, loc=2, frameon=False)
     ax.add_artist(at)
     scale = ""
     if args.norm:

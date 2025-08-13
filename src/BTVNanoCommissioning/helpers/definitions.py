@@ -39,6 +39,12 @@ disc_list = [
     "btagUParTAK4HFvLF",
     "btagUParTAK4HFvLFt",
     "btagUParTAK42D",
+    "btagUParTAK42D_pt25to35",
+    "btagUParTAK42D_pt35to50",
+    "btagUParTAK42D_pt50to70",
+    "btagUParTAK42D_pt70to90",
+    "btagUParTAK42D_pt90to120",
+    "btagUParTAK42D_pt120to10000",
     "btagUParTAK4QvG",
     "btagUParTAK4TauVJet",
     ## Negative tagger
