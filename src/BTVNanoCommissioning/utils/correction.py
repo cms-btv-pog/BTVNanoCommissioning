@@ -16,7 +16,7 @@ from coffea.btag_tools import BTagScaleFactor
 from BTVNanoCommissioning.helpers.func import update, _compile_jec_, _load_jmefactory
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
-from BTVNanoCommissioning.utils.AK4_parameters import JES_SOURCES
+from BTVNanoCommissioning.utils.AK4_parameters import get_jes_keys
 
 
 def load_SF(year, campaign, syst=False):
@@ -614,15 +614,15 @@ def JME_shifts(
             met["orig_pt"], met["orig_phi"] = nocorrmet["pt"], nocorrmet["phi"]
 
             ## JEC variations
+            jes_sources = get_jes_keys(year)
             if not isRealData and systematic != False:
                 jes_sources_id = systematic.split("_")[1]
-                if jes_sources_id in JES_SOURCES.keys():
+                if jes_sources_id in jes_sources.keys():
                     jme_correct_map = correct_map["JME"]
                     unc_jets = {}
                     unc_met = {}
 
-                    jes_sources_set = JES_SOURCES[jes_sources_id]
-
+                    jes_sources_set = jes_sources[jes_sources_id]
                     for jes_source in jes_sources_set:
                         jes_source_key = f"{jecname}_{jes_source}_AK4PFPuppi"
                         jesunc = ak.unflatten(
@@ -683,7 +683,7 @@ def JME_shifts(
                 else:
                     raise ValueError(
                         f"Unknown JES source set: {jes_sources_id}. "
-                        f"Available: {list(JES_SOURCES.keys())}."
+                        f"Available: {list(jes_sources.keys())}."
                     )
 
                 # JER variations
@@ -766,8 +766,8 @@ def JME_shifts(
         
         if not isRealData:
             if systematic != False:
-                if (jes_sources_id := systematic.split("_")[1]) in JES_SOURCES.keys():
-                    for jes in JES_SOURCES[jes_sources_id]:
+                if (jes_sources_id := systematic.split("_")[1]) in jes_sources.keys():
+                    for jes in jes_sources[jes_sources_id]:
                         jes = f"JES_{jes}"
                         shifts += [
                             (

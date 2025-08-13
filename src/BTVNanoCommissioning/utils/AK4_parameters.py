@@ -185,7 +185,8 @@ correction_config = {
 
 # jes sources for the full set according to
 # https://cms-jerc.web.cern.ch/Recommendations/#case-i
-JES_SOURCES = {
+def get_jes_keys(year: int | str) -> dict[str, set]:
+    return {
     "full": {
         "AbsoluteMPFBias",
         "AbsoluteScale",
@@ -215,6 +216,18 @@ JES_SOURCES = {
         "SinglePionHCAL",
         "TimePtEta",
     },
-    "reduced": {"Total"},
+    "reduced": {
+        f"Regrouped_Absolute_{year}",
+        "Regrouped_Absolute",
+        f"Regrouped_BBEC1_{year}",
+        "Regrouped_BBEC1",
+        f"Regrouped_EC2_{year}",
+        "Regrouped_EC2",
+        "Regrouped_FlavorQCD",
+        f"Regrouped_HF_{year}",
+        "Regrouped_HF",
+        "Regrouped_RelativeBal",
+        f"Regrouped_RelativeSample_{year}",
+    },
     "total": {"Total"},
 }
