@@ -18,6 +18,7 @@ All operations are performed fully vectorised using Awkward Arrays.
 import os
 import awkward as ak
 import numpy as np
+
 try:
     xgboost_support = True
     import xgboost as xgb
