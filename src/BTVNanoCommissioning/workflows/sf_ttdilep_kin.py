@@ -18,7 +18,12 @@ All operations are performed fully vectorised using Awkward Arrays.
 import os
 import awkward as ak
 import numpy as np
-import xgboost as xgb
+try:
+    xgboost_support = True
+    import xgboost as xgb
+except ModuleNotFoundError:
+    print("XGBoost missing, deactivating BDT output")
+    xgboost_support = False
 from coffea import processor
 from coffea.nanoevents import NanoAODSchema
 from os.path import join
@@ -450,7 +455,7 @@ class NanoProcessor(processor.ProcessorABC):
         )
         padded_jetrank = pad_jet_var(ak.argsort(ak.argsort(-ev_jets.pt)))
 
-        if self.model_base:
+        if xgboost_support and self.model_base:
             features = {
                 "close_mlj": pad_jet_var(close_mlj),
                 "close_dphi": pad_jet_var(close_dphi),
