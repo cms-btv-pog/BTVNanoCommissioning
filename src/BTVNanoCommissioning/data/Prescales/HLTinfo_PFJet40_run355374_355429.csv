@@ -1,0 +1,13 @@
+,# run,cmsls,prescidx,totprescval,hltpath/prescval,logic,l1bit/prescval
+0,355374,1,7,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/8.00
+1,355374,68,6,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/8.00
+2,355374,80,5,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/8.00
+0,355381,1,7,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/8.00
+1,355381,3,9,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/14.00
+0,355418,1,11,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/233.00
+0,355419,1,7,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/9.00
+1,355419,2,15,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/7.00
+2,355419,3,11,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/233.00
+0,355429,1,7,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/9.00
+1,355429,7,11,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/233.00
+2,355429,80,7,0.0,HLT_PFJet40_v21/0,OR,L1_AlwaysTrue/0.00 L1_ZeroBias/9.00

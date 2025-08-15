@@ -139,9 +139,13 @@ def btag_mu_idiso(events, campaign):
     return mumask
 
 
-def jet_cut(events, campaign):
+def jet_cut(events, campaign, ptmin=None, ptmax=None):
+    if ptmin is None:
+        ptmin = 180
+    if ptmax is None:
+        ptmax = 1e5
     multijetmask = (
-        (abs(events.Jet.eta) < 2.4) & (events.Jet.pt > 180) & (events.Jet.jetId >= 5)
+        (abs(events.Jet.eta) < 2.5) & (events.Jet.pt > ptmin) & (events.Jet.pt < ptmax) & (events.Jet.jetId >= 5)
     )
     return multijetmask
 
