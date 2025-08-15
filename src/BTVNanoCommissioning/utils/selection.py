@@ -139,13 +139,10 @@ def btag_mu_idiso(events, campaign):
     return mumask
 
 
-def jet_cut(events, campaign, ptmin=None, ptmax=None):
-    if ptmin is None:
-        ptmin = 180
-    if ptmax is None:
-        ptmax = 1e5
+def jet_cut(events, campaign, ptmin=180, ptmax=1e5, absetamin=0, absetamax=2.5):
     multijetmask = (
-        (abs(events.Jet.eta) < 2.5)
+        (abs(events.Jet.eta) > absetamin)
+        & (abs(events.Jet.eta) < absetamax)
         & (events.Jet.pt > ptmin)
         & (events.Jet.pt < ptmax)
         & (events.Jet.jetId >= 5)
@@ -395,25 +392,6 @@ btag_wp_dict = {
                 "M": [0.149, 0.358],
                 "T": [0.436, 0.303],
                 "XT": [0.634, 0.5552],
-            },
-        },
-    },
-    "2024_Summer24": {
-        "UParTAK4": {
-            "b": {
-                "No": 0.0,
-                "L": 0.0246,
-                "M": 0.1272,
-                "T": 0.4648,
-                "XT": 0.6298,
-                "XXT": 0.9739,
-            },
-            "c": {
-                "No": [0.0, 0.0],
-                "L": [0.086, 0.233],  # CvL, then CvB
-                "M": [0.291, 0.457],
-                "T": [0.650, 0.421],
-                "XT": [0.810, 0.736],
             },
         },
     },

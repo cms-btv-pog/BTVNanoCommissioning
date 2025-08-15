@@ -27,7 +27,7 @@ def process_run(ir_run):
     os.system(
         f"singularity -s exec --env PYTHONPATH=/home/bril/.local/lib/python3.10/site-packages "
         f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cloud/brilws-docker:latest "
-        f"brilcalc trg --prescale --hltpath 'HLT_{HLT}_*' -r {run} --output-style csv &>{tmpfile}"
+        f"brilcalc trg --prescale --hltpath 'HLT_{HLT}_v*' -r {run} --output-style csv &>{tmpfile}"
     )
     return pandas.read_csv(tmpfile)
 
@@ -67,10 +67,9 @@ def get_prescale(HLT, lumimask, verbose=False, test=False, force=False):
 
 
 def get_ps(ps, verbose=False):
-    print(ps)
     if len(ps) != 1:
-        if verbose:
-            print("Length of ps after selection ", len(ps))
+        print(ps)
+        print("Length of ps after selection ", len(ps))
         raise ValueError(ps)
     if verbose:
         print("Final prescale weight: ", ps.iloc[0]["totprescval"])
