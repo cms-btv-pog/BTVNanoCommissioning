@@ -129,6 +129,12 @@ def mu_idiso(events, campaign):
     )
     return mumask
 
+def mu_iso(events, campaign):
+    mumask = (
+        (abs(events.Muon.eta) < 2.4)
+        & (events.Muon.pfRelIso04_all <= 0.15)
+    )
+    return mumask
 
 def btag_mu_idiso(events, campaign):
     mumask = (
@@ -622,6 +628,26 @@ met_filters = {
         ],
     },
     "Summer23BPix": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+    },
+    "Summer24": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",

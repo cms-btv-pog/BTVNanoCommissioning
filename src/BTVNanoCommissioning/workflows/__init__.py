@@ -12,6 +12,9 @@ from BTVNanoCommissioning.workflows.ttsemilep_valid_sf import (
 from BTVNanoCommissioning.workflows.ttdilep_valid_sf import (
     NanoProcessor as TTdilepValidSFProcessor,
 )
+from BTVNanoCommissioning.workflows.sf_ttsemilep_tnp import (
+    NanoProcessor as TTsemilepTnPSFProcessor
+)
 
 # C-tag
 from BTVNanoCommissioning.workflows.ctag_emdileptt_valid_sf import (
@@ -77,6 +80,8 @@ workflows["ctag_ttsemilep_noMuVeto_sf"] = partial(
 workflows["ectag_ttsemilep_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="semittE"
 )
+
+workflows["sf_ttsemilep_tnp"] = TTsemilepTnPSFProcessor
 
 ##QCD
 workflows["QCD_sf"] = QCDValidProcessor
