@@ -69,14 +69,14 @@ class NanoProcessor(processor.ProcessorABC):
         ## HLT
         # triggers = {trigger1 : [ptmin, ptmax], ...}
         triggers = {
-            "PFJet40": [45,70],
-            "PFJet60": [70,90],
-            "PFJet80": [90,180],
-            "PFJet140": [180,240],
-            "PFJet200": [240,300],
-            "PFJet260": [300,1e6]
+            "PFJet40": [45, 70],
+            "PFJet60": [70, 90],
+            "PFJet80": [90, 180],
+            "PFJet140": [180, 240],
+            "PFJet200": [240, 300],
+            "PFJet260": [300, 1e6],
         }
-        # This has to be in ascending order, so that the prescale weight of the last passed trigger is kept 
+        # This has to be in ascending order, so that the prescale weight of the last passed trigger is kept
 
         jet_mask = jet_cut(events, self._campaign, ptmin=20)
         event_jet = events.Jet[jet_mask]
@@ -88,7 +88,11 @@ class NanoProcessor(processor.ProcessorABC):
             ptmin = ptrange[0]
             ptmax = ptrange[1]
             # Require *leading jet* to be in the pT range of the trigger
-            thistrigreq = (HLT_helper(events, [trigger])) & (ak.fill_none(ak.firsts(event_jet.pt) >= ptmin, False)) & (ak.fill_none(ak.firsts(event_jet.pt) < ptmax, False))
+            thistrigreq = (
+                (HLT_helper(events, [trigger]))
+                & (ak.fill_none(ak.firsts(event_jet.pt) >= ptmin, False))
+                & (ak.fill_none(ak.firsts(event_jet.pt) < ptmax, False))
+            )
             trigbools[trigger] = thistrigreq
             req_trig = (req_trig) | (thistrigreq)
 
@@ -96,7 +100,7 @@ class NanoProcessor(processor.ProcessorABC):
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
         if shift_name is None:
-            output = dump_lumi(events[req_lumi], output)               
+            output = dump_lumi(events[req_lumi], output)
 
         event_level = ak.fill_none(req_lumi & req_trig & req_jets, False)
         if len(events[event_level]) == 0:
@@ -194,22 +198,22 @@ class NanoProcessor(processor.ProcessorABC):
                 run_num = "355374_362760"
             elif self._year == "2023":
                 run_num = "366727_370790"
-            
+
             # if 369869 in pruned_ev.run: continue
             psweight = np.zeros_like(len(pruned_ev))
             for trigger, trigbool in trigbools.items():
                 psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
                 if not os.path.isfile(psfile):
-                    raise NotImplementedError(f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py`.")
-                pseval = correctionlib.CorrectionSet.from_file(
-                    psfile
-                )
+                    raise NotImplementedError(
+                        f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py`."
+                    )
+                pseval = correctionlib.CorrectionSet.from_file(psfile)
                 thispsweight = pseval["prescaleWeight"].evaluate(
                     pruned_ev.run,
                     f"HLT_{trigger}",
                     ak.values_astype(pruned_ev.luminosityBlock, np.float32),
                 )
-                psweight = ak.where(trigbool[event_level],thispsweight,psweight)
+                psweight = ak.where(trigbool[event_level], thispsweight, psweight)
             weights.add("psweight", psweight)
 
         if "JetSVs" in events.fields:
@@ -237,7 +241,14 @@ class NanoProcessor(processor.ProcessorABC):
         # Output arrays
         if self.isArray:
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData, kinOnly=[]
+                self,
+                pruned_ev,
+                events,
+                weights,
+                systematics,
+                dataset,
+                isRealData,
+                kinOnly=[],
             )
 
         return {dataset: output}

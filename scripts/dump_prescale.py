@@ -20,6 +20,7 @@ parser.add_argument("-f", "--force", action="store_true", help="recreate .csv")
 
 ### NOTICE The scripts only works on lxplus...
 
+
 def process_run(ir_run):
     ir, run = ir_run
     tmpfile = f".tmp_{ir}.csv"
@@ -30,34 +31,34 @@ def process_run(ir_run):
     )
     return pandas.read_csv(tmpfile)
 
+
 def get_prescale(HLT, lumimask, verbose=False, test=False, force=False):
     # os.system("source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env")
     prescales = pandas.DataFrame()
     runs = json.load(open(lumimask))
     runs = list(runs.keys())
-    if test: runs = runs[:min(len(runs),5)]
-    os.system("source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; which brilcalc")
+    if test:
+        runs = runs[: min(len(runs), 5)]
+    os.system(
+        "source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; which brilcalc"
+    )
 
     outcsv = f"src/BTVNanoCommissioning/data/Prescales/HLTinfo_{HLT}_run{runs[0]}_{runs[-1]}.csv"
-    if force or not os.path.exists(
-        outcsv
-    ):
+    if force or not os.path.exists(outcsv):
         with ThreadPoolExecutor() as executor:
-            dfs = list(tqdm(executor.map(process_run, enumerate(runs)), total=len(runs)))
+            dfs = list(
+                tqdm(executor.map(process_run, enumerate(runs)), total=len(runs))
+            )
 
         prescales = pandas.concat(dfs, ignore_index=True)
         # prescales= prescales[prescales['totprescval']!=0]
-        prescales.to_csv(
-            outcsv
-        )
+        prescales.to_csv(outcsv)
         os.system(f"rm -rf .tmp_*.csv")
 
         if verbose:
             print("prescales :", prescales)
     else:
-        prescales = pandas.read_csv(
-            outcsv
-        )
+        prescales = pandas.read_csv(outcsv)
     return prescales
 
 
@@ -89,7 +90,10 @@ def build_lumibins(ps, verbose=False):
             print("Lumi bin edges: ", list(zip(edges[:-1], edges[1:])))
         content = [
             get_ps(
-                ps[(ps["cmsls"].astype(float) >= lo) & (ps["cmsls"].astype(float) < float(hi))]
+                ps[
+                    (ps["cmsls"].astype(float) >= lo)
+                    & (ps["cmsls"].astype(float) < float(hi))
+                ]
             )
             for lo, hi in zip(edges[:-1], edges[1:])
         ]
@@ -137,7 +141,8 @@ def build_paths(ps, HLT_paths, verbose=False):
             "nodetype": "category",
             "input": "path",
             "content": [
-                {"key": str(path), "value": build_lumibins(ps, verbose)} for path in paths
+                {"key": str(path), "value": build_lumibins(ps, verbose)}
+                for path in paths
             ],
         }
     )
@@ -155,7 +160,9 @@ if __name__ == "__main__":
 
     for HLT in args.HLT:
         print("HLT : ", HLT)
-        ps_csvData = get_prescale(HLT, args.lumimask, args.verbose, args.test, args.force)
+        ps_csvData = get_prescale(
+            HLT, args.lumimask, args.verbose, args.test, args.force
+        )
         psCorr = cs.Correction.parse_obj(
             {
                 "version": 2,

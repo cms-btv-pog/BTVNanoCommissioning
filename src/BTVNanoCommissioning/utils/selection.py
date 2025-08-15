@@ -145,7 +145,10 @@ def jet_cut(events, campaign, ptmin=None, ptmax=None):
     if ptmax is None:
         ptmax = 1e5
     multijetmask = (
-        (abs(events.Jet.eta) < 2.5) & (events.Jet.pt > ptmin) & (events.Jet.pt < ptmax) & (events.Jet.jetId >= 5)
+        (abs(events.Jet.eta) < 2.5)
+        & (events.Jet.pt > ptmin)
+        & (events.Jet.pt < ptmax)
+        & (events.Jet.jetId >= 5)
     )
     return multijetmask
 
