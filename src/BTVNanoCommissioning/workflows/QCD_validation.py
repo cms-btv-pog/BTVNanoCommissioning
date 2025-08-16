@@ -204,7 +204,7 @@ class NanoProcessor(processor.ProcessorABC):
                 run_num = "366727_370790"
 
             # if 369869 in pruned_ev.run: continue
-            psweight = np.zeros_like(len(pruned_ev))
+            psweight = np.zeros(len(pruned_ev))
             for trigger, trigbool in trigbools.items():
                 psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
                 if not os.path.isfile(psfile):
