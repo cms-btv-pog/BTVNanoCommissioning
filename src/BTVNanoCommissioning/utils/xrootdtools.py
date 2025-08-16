@@ -1,3 +1,8 @@
+import os
+from collections import defaultdict
+import time, json
+
+
 # Based on https://github.com/PocketCoffea/PocketCoffea/blob/main/pocket_coffea/utils/rucio.py
 def get_xrootd_sites_map():
 
