@@ -38,7 +38,8 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
     pt_axis = Hist.axis.Regular(60, 0, 300, name="pt", label=" $p_{T}$ [GeV]")
     jpt_axis = Hist.axis.Regular(300, 0, 3000, name="pt", label=" $p_{T}$ [GeV]")
     softlpt_axis = Hist.axis.Regular(25, 0, 25, name="pt", label=" $p_{T}$ [GeV]")
-    mass_axis = Hist.axis.Regular(50, 0, 300, name="mass", label=" $p_{T}$ [GeV]")
+    mass_axis = Hist.axis.Regular(50, 0, 300, name="mass", label=" mass [GeV]")
+    bdt_axis = Hist.axis.Regular(50, 0, 1, name="bdt", label=" BDT discriminant")
     eta_axis = Hist.axis.Regular(25, -2.5, 2.5, name="eta", label=" $\eta$")
     phi_axis = Hist.axis.Regular(30, -3, 3, name="phi", label="$\phi$")
     mt_axis = Hist.axis.Regular(30, 0, 300, name="mt", label=" $m_{T}$ [GeV]")
@@ -425,6 +426,57 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             _hist_dict[f"dr_{i}jet"] = Hist.Hist(
                 syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
+    elif "sf_ttdilep_kin" in workflow:
+        obj_list = ["dilep"]
+
+        _hist_dict["kindisc"] = Hist.Hist(
+            syst_axis, flav_axis, bdt_axis, Hist.storage.Weight()
+        )
+
+        _hist_dict["close_mlj"] = Hist.Hist(
+            syst_axis, flav_axis, mass_axis, Hist.storage.Weight()
+        )
+        _hist_dict["close_deta"] = Hist.Hist(
+            syst_axis, flav_axis, eta_axis, Hist.storage.Weight()
+        )
+        _hist_dict["close_dphi"] = Hist.Hist(
+            syst_axis, flav_axis, phi_axis, Hist.storage.Weight()
+        )
+        _hist_dict["close_ptrel"] = Hist.Hist(
+            syst_axis, flav_axis, pt_axis, Hist.storage.Weight()
+        )
+        _hist_dict["close_lj2ll_deta"] = Hist.Hist(
+            syst_axis, flav_axis, eta_axis, Hist.storage.Weight()
+        )
+        _hist_dict["close_lj2ll_dphi"] = Hist.Hist(
+            syst_axis, flav_axis, phi_axis, Hist.storage.Weight()
+        )
+
+        _hist_dict["far_mlj"] = Hist.Hist(
+            syst_axis, flav_axis, mass_axis, Hist.storage.Weight()
+        )
+        _hist_dict["far_deta"] = Hist.Hist(
+            syst_axis, flav_axis, eta_axis, Hist.storage.Weight()
+        )
+        _hist_dict["far_dphi"] = Hist.Hist(
+            syst_axis, flav_axis, phi_axis, Hist.storage.Weight()
+        )
+        _hist_dict["far_ptrel"] = Hist.Hist(
+            syst_axis, flav_axis, pt_axis, Hist.storage.Weight()
+        )
+        _hist_dict["far_lj2ll_deta"] = Hist.Hist(
+            syst_axis, flav_axis, eta_axis, Hist.storage.Weight()
+        )
+        _hist_dict["far_lj2ll_dphi"] = Hist.Hist(
+            syst_axis, flav_axis, phi_axis, Hist.storage.Weight()
+        )
+
+        _hist_dict["j2ll_deta"] = Hist.Hist(
+            syst_axis, flav_axis, eta_axis, Hist.storage.Weight()
+        )
+        _hist_dict["j2ll_dphi"] = Hist.Hist(
+            syst_axis, flav_axis, phi_axis, Hist.storage.Weight()
+        )
 
     ### Common kinematic variables histogram creation
     if "Wc_sf" not in workflow:
@@ -1038,5 +1090,110 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
         if "MET" in output.keys():
             output["MET_pt"].fill(syst, flatten(pruned_ev.MET.pt), weight=weight)
             output["MET_phi"].fill(syst, flatten(pruned_ev.MET.phi), weight=weight)
+
+        # ttbar dilepton kin workflow
+        if "kindisc" in output.keys():
+            output["kindisc"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.kindisc),
+                weight=flatten(
+                    ak.broadcast_arrays(
+                        weights.partial_weight(exclude=exclude_btv), pruned_ev.kindisc
+                    )[0]
+                ),
+            )
+            output["close_mlj"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.close_mlj),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.close_mlj)[0]),
+            )
+            output["close_deta"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.close_deta),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.close_deta)[0]),
+            )
+            output["close_dphi"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.close_dphi),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.close_dphi)[0]),
+            )
+            output["close_ptrel"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.close_ptrel),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.close_ptrel)[0]),
+            )
+            output["close_lj2ll_deta"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.close_lj2ll_deta),
+                weight=flatten(
+                    ak.broadcast_arrays(weight, pruned_ev.close_lj2ll_deta)[0]
+                ),
+            )
+            output["close_lj2ll_dphi"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.close_lj2ll_dphi),
+                weight=flatten(
+                    ak.broadcast_arrays(weight, pruned_ev.close_lj2ll_dphi)[0]
+                ),
+            )
+            output["far_mlj"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.far_mlj),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.far_mlj)[0]),
+            )
+            output["far_deta"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.far_deta),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.far_deta)[0]),
+            )
+            output["far_dphi"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.far_dphi),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.far_dphi)[0]),
+            )
+            output["far_ptrel"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.far_ptrel),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.far_ptrel)[0]),
+            )
+            output["far_lj2ll_deta"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.far_lj2ll_deta),
+                weight=flatten(
+                    ak.broadcast_arrays(weight, pruned_ev.far_lj2ll_deta)[0]
+                ),
+            )
+            output["far_lj2ll_dphi"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.far_lj2ll_dphi),
+                weight=flatten(
+                    ak.broadcast_arrays(weight, pruned_ev.far_lj2ll_dphi)[0]
+                ),
+            )
+            output["j2ll_deta"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.j2ll_deta),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.j2ll_deta)[0]),
+            )
+            output["j2ll_dphi"].fill(
+                syst,
+                flatten(pruned_ev.flavour),
+                flatten(pruned_ev.j2ll_dphi),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.j2ll_dphi)[0]),
+            )
 
     return output
