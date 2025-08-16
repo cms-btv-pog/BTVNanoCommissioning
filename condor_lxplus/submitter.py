@@ -270,7 +270,7 @@ Arguments = $(JOBNUM) {base_dir} {outputDir} {envpath}
 request_cpus = 1
 request_memory = 2000
 
-+JobFlavour = "tomorrow"
++JobFlavour = "longlunch"
 
 Log        = {log_dir}/job.log_$(Cluster)
 Output     = {log_dir}/job.out_$(Cluster)-$(Process)

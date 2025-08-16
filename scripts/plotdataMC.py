@@ -101,7 +101,13 @@ parser.add_argument(
 args = parser.parse_args()
 
 if len(args.input.split(",")) > 1:
-    output = {i: load(i) for i in args.input.split(",")}
+    allinps = []
+    for inp in args.input.split(","):
+        if "*" in inp:
+            allinps.extend(glob.glob(inp))
+        else:
+            allinps.append(inp)
+    output = {i: load(i) for i in allinps}
 elif "*" in args.input:
     files = glob.glob(args.input)
     output = {i: load(i) for i in files}
