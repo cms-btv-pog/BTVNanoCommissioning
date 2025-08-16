@@ -69,12 +69,16 @@ class NanoProcessor(processor.ProcessorABC):
         ## HLT
         # triggers = {trigger1 : [ptmin, ptmax], ...}
         triggers = {
-            "PFJet40": [45, 70],
-            "PFJet60": [70, 90],
-            "PFJet80": [90, 180],
-            "PFJet140": [180, 240],
-            "PFJet200": [240, 300],
-            "PFJet260": [300, 1e6],
+            "PFJet40": [45, 80],
+            "PFJet60": [80, 110],
+            "PFJet80": [110, 180],
+            "PFJet140": [180, 250],
+            "PFJet200": [250, 310],
+            "PFJet260": [310, 380],
+            "PFJet320": [380, 460],
+            "PFJet400": [460, 520],
+            "PFJet450": [520, 580],
+            "PFJet500": [580, 1e7],
         }
         # This has to be in ascending order, so that the prescale weight of the last passed trigger is kept
 

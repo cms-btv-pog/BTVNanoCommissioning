@@ -9,6 +9,7 @@ from tqdm import tqdm
 parser = argparse.ArgumentParser(description="Create prescale weights(lxplus)")
 
 parser.add_argument(
+    "-l",
     "--lumimask",
     default="src/BTVNanoCommissioning/data/lumiMasks/Cert_Collisions2022_355100_362760_Golden.json",
     help="lumimask to generate prescale weights",
@@ -39,9 +40,6 @@ def get_prescale(HLT, lumimask, verbose=False, test=False, force=False):
     runs = list(runs.keys())
     if test:
         runs = runs[: min(len(runs), 5)]
-    os.system(
-        "source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; which brilcalc"
-    )
 
     outcsv = f"src/BTVNanoCommissioning/data/Prescales/HLTinfo_{HLT}_run{runs[0]}_{runs[-1]}.csv"
     if force or not os.path.exists(outcsv):
@@ -156,6 +154,10 @@ if __name__ == "__main__":
             args.HLT = args.HLT.split(",")
         else:
             args.HLT = [args.HLT]
+
+    os.system(
+        "source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; which brilcalc"
+    )
 
     for HLT in args.HLT:
         print("HLT : ", HLT)
