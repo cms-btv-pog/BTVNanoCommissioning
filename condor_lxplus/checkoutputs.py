@@ -33,7 +33,9 @@ for n in numlist:
         toresubmit.append(n)
 
 if len(toresubmit) == 0:
-    print("[green][b]All jobs complete. Nothing to resubmit![/][/]")
+    print("[green][b]All jobs complete. Nothing to resubmit![/][/]\n")
+    print("[b]To hadd, run:[/]")
+    print(f"[yellow]python condor_lxplus/haddoutputs.py {outdir}[/]")
     exit()
 
 if updatexrootd:
@@ -66,11 +68,10 @@ numlist2.close()
 jdl = open(f"{jobdir}/submit.jdl", "r").readlines()
 jdlnew = open(f"{jobdir}/resubmit.jdl", "w")
 for line in jdl:
-    jdlnew.write(
-        line.replace("jobnum_list.txt", "jobnum_list_resubmit.txt").replace(
-            "split_samples.json", "split_samples_resubmit.json"
-        )
-    )
+    towrite = line.replace("jobnum_list.txt", "jobnum_list_resubmit.txt")
+    if updatexrootd:
+        towrite = towrite.replace("split_samples.json", "split_samples_resubmit.json")
+    jdlnew.write(towrite)
 
 print(f"[yellow]Found {len(toresubmit)} missing outputs: {toresubmit}[/]")
 print("[b]Resubmit with:[/]")
