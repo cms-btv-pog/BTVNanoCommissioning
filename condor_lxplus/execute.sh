@@ -18,7 +18,7 @@ voms-proxy-info
 export PATH="$4:$PATH" 
 
 # Build the sample json given the job id
-python -c "import json; json.dump(json.load(open('$WORKDIR/split_samples.json'))['$JOBID'], open('$WORKDIR/sample.json', 'w'), indent=4)"
+python -c "import json, os; flname = 'split_samples.json' if os.path.isfile(f'$WORKDIR/split_samples.json') else 'split_samples_resubmit.json';  json.dump(json.load(open(f'$WORKDIR/{flname}'))['$JOBID'], open('$WORKDIR/sample.json', 'w'), indent=4)"
 
 declare -A ARGS
 for key in workflow output samplejson year campaign isSyst isArray noHist overwrite voms chunk skipbadfiles outputDir remoteRepo; do

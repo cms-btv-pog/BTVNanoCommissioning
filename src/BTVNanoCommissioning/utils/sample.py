@@ -38,12 +38,12 @@ predefined_sample = {
         ],
     },
     "ctag_DY_sf": {
-        "data": ["Muon0", "Muon1"],
+        "data": ["DoubleMuon", "Muon", "Muon0", "Muon1"],
         "MC": ["DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8"],
         "minor_MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
     },
     "ectag_DY_sf": {
-        "data": ["EGamma0", "EGamma1"],
+        "data": ["EGamma", "EGamma0", "EGamma1"],
         "MC": ["DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8"],
         "minor_MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
     },
@@ -152,7 +152,7 @@ predefined_sample = {
         ], 
     },
     "ctag_ttdilep_sf": {
-        "data": ["Muon0", "Muon1"],
+        "data": ["DoubleMuon", "Muon", "Muon0", "Muon1"],
         "MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
         "minor_MC": [
             "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
@@ -163,7 +163,7 @@ predefined_sample = {
         ],
     },
     "ectag_ttdilep_sf": {
-        "data": ["EGamma0", "EGamma1"],
+        "data": ["EGamma", "EGamma0", "EGamma1"],
         "MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
         "minor_MC": [
             "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
@@ -174,7 +174,7 @@ predefined_sample = {
         ],
     },
     "ttsemilep_sf": {
-        "data": ["Muon0", "Muon1"],
+        "data": ["Muon", "Muon0", "Muon1"],
         "MC": [
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
@@ -198,7 +198,7 @@ predefined_sample = {
         ],
     },
     "ctag_ttsemilep_sf": {
-        "data": ["Muon0", "Muon1"],
+        "data": ["Muon", "Muon0", "Muon1"],
         "MC": [
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
@@ -222,7 +222,7 @@ predefined_sample = {
         ],
     },
     "ectag_ttsemilep_sf": {
-        "data": ["EGamma0", "EGamma1"],
+        "data": ["EGamma", "EGamma0", "EGamma1"],
         "MC": [
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
@@ -246,7 +246,7 @@ predefined_sample = {
         ],
     },
     "ctag_Wc_sf": {
-        "data": ["Muon0", "Muon1"],
+        "data": ["Muon", "Muon0", "Muon1"],
         "MC": [
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
@@ -271,7 +271,7 @@ predefined_sample = {
         ],
     },
     "ectag_Wc_sf": {
-        "data": ["EGamma0", "EGamma1"],
+        "data": ["EGamma", "EGamma0", "EGamma1"],
         "MC": [
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
@@ -436,18 +436,18 @@ predefined_sample = {
         ],
     },
     "BTA": {
-        "data": ["JetMET0", "JetMET1"],
+        "data": ["JetHT", "JetMET", "JetMET0", "JetMET1"],
         "MC": [
             "QCD_PT-80to120_TuneCP5_13p6TeV_pythia8",
             "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
         ],
     },
     "BTA_addAllTracks": {
-        "data": ["JetMET0", "JetMET1"],
+        "data": ["JetHT", "JetMET", "JetMET0", "JetMET1"],
         "MC": ["QCD_PT-80to120_TuneCP5_13p6TeV_pythia8"],
     },
     "BTA_addPFMuons": {
-        "data": ["JetMET0", "JetMET1", "BTagMu"],
+        "data": ["JetHT", "JetMET", "JetMET0", "JetMET1", "BTagMu"],
         "MC": [
             "QCD_PT-1000to1400_TuneCP5_13p6TeV_pythia8",
             "QCD_PT-120to170_TuneCP5_13p6TeV_pythia8",

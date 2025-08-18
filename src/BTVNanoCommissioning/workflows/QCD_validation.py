@@ -1,4 +1,4 @@
-import collections, numpy as np, awkward as ak
+import collections, numpy as np, awkward as ak, os
 from coffea import processor
 from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi
@@ -67,29 +67,68 @@ class NanoProcessor(processor.ProcessorABC):
         #    Selections    #
         ####################
         ## HLT
-        triggers = [
-            "PFJet140",
-        ]
-        req_trig = HLT_helper(events, triggers)
+        # triggers = {trigger1 : [ptmin, ptmax], ...}
+        triggers = {
+            "PFJet40": [45, 80],
+            "PFJet60": [80, 110],
+            "PFJet80": [110, 180],
+            "PFJet140": [180, 250],
+            "PFJet200": [250, 310],
+            "PFJet260": [310, 380],
+            "PFJet320": [380, 460],
+            "PFJet400": [460, 520],
+            "PFJet450": [520, 580],
+            "PFJet500": [580, 1e7],
+        }
+        # This has to be in ascending order, so that the prescale weight of the last passed trigger is kept
+
+        jet_mask = jet_cut(events, self._campaign, ptmin=20)
+        event_jet = events.Jet[jet_mask]
+        req_jets = ak.count(event_jet.pt, axis=1) >= 1
+
+        req_trig = np.zeros(len(events), dtype="bool")
+        trigbools = {}
+        for trigger, ptrange in triggers.items():
+            ptmin = ptrange[0]
+            ptmax = ptrange[1]
+            # Require *leading jet* to be in the pT range of the trigger
+            thistrigreq = (
+                (HLT_helper(events, [trigger]))
+                & (ak.fill_none(ak.firsts(event_jet.pt) >= ptmin, False))
+                & (ak.fill_none(ak.firsts(event_jet.pt) < ptmax, False))
+            )
+            trigbools[trigger] = thistrigreq
+            req_trig = (req_trig) | (thistrigreq)
+
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
         if shift_name is None:
             output = dump_lumi(events[req_lumi], output)
-        ## Jet cuts
-        event_jet = events.Jet[jet_cut(events, self._campaign)]
-        req_jets = ak.count(event_jet.pt, axis=1) >= 1
 
         event_level = ak.fill_none(req_lumi & req_trig & req_jets, False)
         if len(events[event_level]) == 0:
+            if self.isArray:
+                array_writer(
+                    self,
+                    events[event_level],
+                    events,
+                    None,
+                    ["nominal"],
+                    dataset,
+                    isRealData,
+                    empty=True,
+                )
             return {dataset: output}
 
         ####################
         # Selected objects #
         ####################
         pruned_ev = events[event_level]
-        pruned_ev["SelJet"] = event_jet[event_level][:, 0]
+        pruned_ev["SelJet"] = event_jet[event_level]
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
+        for trigger in triggers:
+            pruned_ev[trigger] = trigbools[trigger][event_level]
 
         ###FIXME: https://gitlab.cern.ch/cms-btv-coordination/tasks/-/issues/188
         if "JetSVs" in events.fields:
@@ -163,16 +202,24 @@ class NanoProcessor(processor.ProcessorABC):
                 run_num = "355374_362760"
             elif self._year == "2023":
                 run_num = "366727_370790"
-            pseval = correctionlib.CorrectionSet.from_file(
-                f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{triggers[0]}_run{run_num}.json"
-            )
+
             # if 369869 in pruned_ev.run: continue
-            psweight = pseval["prescaleWeight"].evaluate(
-                pruned_ev.run,
-                f"HLT_{triggers[0]}",
-                ak.values_astype(pruned_ev.luminosityBlock, np.float32),
-            )
+            psweight = np.zeros(len(pruned_ev))
+            for trigger, trigbool in trigbools.items():
+                psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
+                if not os.path.isfile(psfile):
+                    raise NotImplementedError(
+                        f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py`."
+                    )
+                pseval = correctionlib.CorrectionSet.from_file(psfile)
+                thispsweight = pseval["prescaleWeight"].evaluate(
+                    pruned_ev.run,
+                    f"HLT_{trigger}",
+                    ak.values_astype(pruned_ev.luminosityBlock, np.float32),
+                )
+                psweight = ak.where(trigbool[event_level], thispsweight, psweight)
             weights.add("psweight", psweight)
+
         if "JetSVs" in events.fields:
             if len(lj_matched_JetSVs) > 0:
                 lj_matched_JetSVs_genflav = ak.zeros_like(
@@ -198,7 +245,14 @@ class NanoProcessor(processor.ProcessorABC):
         # Output arrays
         if self.isArray:
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData
+                self,
+                pruned_ev,
+                events,
+                weights,
+                systematics,
+                dataset,
+                isRealData,
+                kinOnly=[],
             )
 
         return {dataset: output}
