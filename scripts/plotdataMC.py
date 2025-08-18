@@ -164,7 +164,7 @@ elif "ectag" in args.phase or "2D_e_" in args.phase:
     input_txt = input_txt + " (e)"
 elif "QCD" == args.phase:
     input_txt = input_txt + ""
-elif "ttdilep_sf" == args.phase:
+elif "ttdilep_sf" in args.phase:
     input_txt = input_txt + " (e$\mu$)"
 else:
     input_txt = input_txt + " ($\mu$)"
@@ -250,7 +250,7 @@ for index, discr in enumerate(var_set):
             for i in range(collated["mc"][discr].axes[0].size)
         ]
         if "noSF" in systlist:
-            noSF_axis["syst"] = "nominal"
+            noSF_axis["syst"] = "noSF"
 
     ## rebin config, add xerr
     do_xerr = False

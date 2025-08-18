@@ -177,8 +177,10 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             Hist.storage.Weight(),
         )
 
-    elif "ttdilep_sf" == workflow:
+    elif workflow in ("ttdilep_sf", "ttdilep_sf_2D"):
         obj_list = ["mu", "ele"]
+        if "2D" in workflow:
+            obj_list.append("MET")
         for i in range(2):
             obj_list.append(f"jet{i}")
             _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
@@ -433,6 +435,10 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\ell}$ [GeV]"),
             Hist.storage.Weight(),
         )
+        if "2D" in workflow:
+            _hist_dict["dilep_ptratio"] = Hist.Hist(
+                syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
+            )
         _hist_dict["dr_poslnegl"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         _hist_dict["dr_posljet"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         _hist_dict["dr_negljet"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
@@ -639,12 +645,20 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                     )
         for i in range(njet):
             if "Wc_sf" in workflow:
-                if "btag" in disc or "ProbaN" == disc:
+                if ("btag" in disc and "2D" not in disc) or "ProbaN" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,
                         osss_axis,
                         Hist.axis.Regular(50, 0.0, 1, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "2D" in disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        osss_axis,
+                        Hist.axis.Regular(11, 0.0, 11.0, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
                 elif "Bprob" in disc:
@@ -973,7 +987,14 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     flavs, seljets = genflavor, pruned_ev.SelJet
                 for i in range(nj):
                     if not histname.endswith(str(i)):
-                        continue
+                            continue
+                    if (
+                        "BvC" not in histname
+                        and "HFvLF" not in histname
+                        and "2D" not in histname
+                        and histname.replace(f"_{i}", "") not in seljets.fields
+                        ):
+                            continue
                     if nj > 1:
                         flav, seljet = flavs[:, i], seljets[:, i]
                     else:
@@ -1090,6 +1111,8 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             output["dilep_mass"].fill(
                 syst, flatten(pruned_ev.dilep.mass), weight=weight
             )
+            if "dilep_ptratio" in histname:
+                output["dilep_ptratio"].fill(syst,flatten(pruned_ev.dilep.pt / pruned_ev.SelJet[:, 0].pt), weight=weight)
 
         if "MET_pt" in output.keys():
             output["MET_pt"].fill(syst, flatten(pruned_ev.MET.pt), weight=weight)
