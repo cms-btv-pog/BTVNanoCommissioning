@@ -1551,7 +1551,7 @@ def validate(file):
             return fin["Events"].num_entries
         except:
             print("retries", n_tries, file)
-            n_tries += n_tries
+            n_tries += 1
     if not_able_open:
         return f"FailedRetries: {file}"
 
