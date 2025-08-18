@@ -179,8 +179,17 @@ correction_config = {
         #     "Run2023D jetvetomap_all": "Summer23BPixPrompt23_RunD_v1.histo.root"
         # },  # this is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
     },
-    "Summer24": { # FIXME: need to add stuff later
+    "Summer24": {
         "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
+        # "LSF": {
+        #     "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+        #     "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        #     "ele_ID 2024 Electron-ID-SF": "wp80iso",
+        #     # TODO: temporary until RecoBelow20 is released for 2024
+        #     "ele_Reco_low 2024 Electron-ID-SF": "RecoBelow20",
+        #     "ele_Reco_med 2024 Electron-ID-SF": "Reco20to75",
+        #     "ele_Reco_high 2024 Electron-ID-SF": "RecoAbove75",
+        # },
     },
     "prompt_dataMC": {"lumiMask": "$PROMPT_DATAMC"},
 }
