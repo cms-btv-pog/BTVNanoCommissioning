@@ -1,4 +1,4 @@
-name: ctag DY+jets Workflow
+name: fetch workflow
 
 on:
   push:
