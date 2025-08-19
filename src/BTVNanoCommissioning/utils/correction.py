@@ -166,12 +166,21 @@ def load_SF(year, campaign, syst=False):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/MUO/{year}_{campaign}/muon_Z.json.gz"
                 )
+            else:
+                # Only for 2024
+                _mu_path = f"src/BTVNanoCommissioning/data/LSF/{year}_{campaign}/ScaleFactors_Muon_ID_ISO_2024_schemaV2.json"
+                if os.path.exists(_mu_path):
+                    correct_map["MUO"] = correctionlib.CorrectionSet.from_file(_mu_path)
             if os.path.exists(
-                f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/EGM/{year}_{campaign}"
+                f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/EGM/{year}_{campaign}/electron.json.gz"
             ):
                 correct_map["EGM"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/EGM/{year}_{campaign}/electron.json.gz"
                 )
+            else:
+                _ele_path = f"src/BTVNanoCommissioning/data/LSF/{year}_{campaign}/electron.json.gz"
+                if os.path.exists(_ele_path):
+                    correct_map["EGM"] = correctionlib.CorrectionSet.from_file(_ele_path)
             if any(
                 np.char.find(np.array(list(config[campaign]["LSF"].keys())), "mu_json")
                 != -1
@@ -824,8 +833,7 @@ def JME_shifts(
     if "jetveto" in correct_map.keys():
         jets = update(jets, {"veto": jetveto(jets, correct_map)})
 
-        if "Summer22" in campaign:
-            jets = jets[jets.veto != 1]
+        jets = jets[jetveto(jets, correct_map) == 0]
     shifts.insert(0, ({"Jet": jets, "MET": met}, None))
     return shifts
 
@@ -1251,7 +1259,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 ele_eta,
                                 ele_pt_low,
                                 ele.phi,
-                            ),
+                            ) if "Summer24" not in correct_map["campaign"] else 1.0, # TODO: temporary until RecoBelow20 is released for 2024
                             1.0,
                         )
                         sfs_high = np.where(
@@ -1290,7 +1298,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     ele_eta,
                                     ele_pt_low,
                                     ele.phi,
-                                ),
+                                ) if "Summer24" not in correct_map["campaign"] else 0.0, # TODO: temporary until RecoBelow20 is released for 2024
                                 0.0,
                             )
                             sfs_down_low = np.where(
@@ -1302,7 +1310,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     ele_eta,
                                     ele_pt_low,
                                     ele.phi,
-                                ),
+                                ) if "Summer24" not in correct_map["campaign"] else 0.0, # TODO: temporary until RecoBelow20 is released for 2024
                                 0.0,
                             )
                             sfs_up_high = np.where(
@@ -1365,9 +1373,9 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoBelow20",
-                                ele_eta,
+                                ele_eta if "Summer24" in correct_map["campaign"] else 1.0,
                                 ele_pt_low,
-                            ),
+                            ) if "Summer24" not in correct_map["campaign"] else 1.0, # TODO: temporary until RecoBelow20 is released for 2024
                             1.0,
                         )
                         sfs_high = np.where(
@@ -1400,7 +1408,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoBelow20",
                                     ele_eta,
                                     ele_pt_low,
-                                ),
+                                ) if "Summer24" not in correct_map["campaign"] else 0.0, # TODO: temporary until RecoBelow20 is released for 2024
                                 0.0,
                             )
                             sfs_down_low = np.where(
@@ -1411,7 +1419,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoBelow20",
                                     ele_eta,
                                     ele_pt_low,
-                                ),
+                                ) if "Summer24" not in correct_map["campaign"] else 0.0, # TODO: temporary until RecoBelow20 is released for 2024
                                 0.0,
                             )
                             sfs_up_high = np.where(
