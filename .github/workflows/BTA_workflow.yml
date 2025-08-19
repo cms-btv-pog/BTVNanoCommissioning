@@ -2,7 +2,7 @@ name: BTA output Workflows
 
 on:
   push:
-    branches: [ master, add_LSF ]
+    branches: [ master ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/*BTA*'
     - 'src/BTVNanoCommissioning/helpers/update_branch.py'

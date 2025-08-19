@@ -2,7 +2,7 @@ name: Linting
 
 on:
   push:
-    branches: [ master, add_LSF ]
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 

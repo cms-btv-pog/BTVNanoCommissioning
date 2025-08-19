@@ -2,7 +2,7 @@ name: QCD Workflow
 
 on:
   push:
-    branches: [ master, add_LSF ]
+    branches: [ master ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/*QCD*'
     - 'src/BTVNanoCommissioning/helpers/update_branch.py'
