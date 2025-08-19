@@ -152,7 +152,7 @@ elif "DY" in args.phase:
     input_txt = "DY+jets"
 elif "QCD" in args.phase:
     input_txt = "QCD"
-elif "semilep" in args.phase or "TT1L" in args.phase:
+elif "semilep" in args.phase:
     input_txt = r"t$\bar{t}$ semileptonic"
     nj = 4
 elif "dilep" in args.phase:
