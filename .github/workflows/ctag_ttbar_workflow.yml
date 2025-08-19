@@ -2,7 +2,7 @@ name: ctag ttbar workflows
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, add_LSF ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/ctag*tt*'
     - 'src/BTVNanoCommissioning/helpers/update_branch.py'

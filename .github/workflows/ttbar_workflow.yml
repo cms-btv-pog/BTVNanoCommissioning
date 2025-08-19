@@ -2,7 +2,7 @@ name: ttbar bSF semileptonic/dileptonic Workflows
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, add_LSF ]
     paths:
     - 'src/BTVNanoCommissioning/workflows/tt*'
     - 'src/BTVNanoCommissioning/helpers/update_branch.py'
