@@ -161,8 +161,9 @@ correction_config = {
     },
     "Summer24": {
         "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
+        "PU": "PU_weights_Summer24.histo.root",
         "JME": {
-            "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1",  # JER are a placeholder for now (July 2025)
+            "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1", # TODO: JER are a placeholder for now (July 2025)
             "Run2024C": "Summer24Prompt24_V1",
             "Run2024D": "Summer24Prompt24_V1",
             "Run2024E": "Summer24Prompt24_V1",
@@ -171,28 +172,16 @@ correction_config = {
             "Run2024H": "Summer24Prompt24_V1",
             "Run2024I": "Summer24Prompt24_V1",
         },
-        "PU": "PU_weights_Summer24.histo.root",
-        # "LSF": {
-        #     "mu_ID": "NUM_TightID_DEN_TrackerMuons",
-        #     "mu_Iso": "NUM_TightPFIso_DEN_TightID",
-        #     "ele_ID 2023PromptD Electron-ID-SF": "Tight",
-        #     "ele_Reco_low 2023PromptD Electron-ID-SF": "RecoBelow20",
-        #     "ele_Reco_med 2023PromptD Electron-ID-SF": "Reco20to75",
-        #     "ele_Reco_high 2023PromptD Electron-ID-SF": "RecoAbove75",
-        # },
         "jetveto": {"Run2024 jetvetomap_all": "Summer24Prompt24_RunBCDEFGHI.root"},
-    },
-    "Summer24": {
-        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
-        # "LSF": {
-        #     "mu_ID": "NUM_TightID_DEN_TrackerMuons",
-        #     "mu_Iso": "NUM_TightPFIso_DEN_TightID",
-        #     "ele_ID 2024 Electron-ID-SF": "wp80iso",
-        #     # TODO: temporary until RecoBelow20 is released for 2024
-        #     "ele_Reco_low 2024 Electron-ID-SF": "RecoBelow20",
-        #     "ele_Reco_med 2024 Electron-ID-SF": "Reco20to75",
-        #     "ele_Reco_high 2024 Electron-ID-SF": "RecoAbove75",
-        # },
+        "LSF": {
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+            "ele_ID 2024 Electron-ID-SF": "wp80iso",
+            # TODO: temporary until RecoBelow20 is released for 2024
+            # "ele_Reco_low 2024 Electron-ID-SF": "RecoBelow20",
+            "ele_Reco_med 2024 Electron-ID-SF": "Reco20to75",
+            "ele_Reco_high 2024 Electron-ID-SF": "RecoAbove75",
+        },
     },
     "prompt_dataMC": {"lumiMask": "$PROMPT_DATAMC"},
 }
