@@ -127,4 +127,3 @@ jobs:
     - name: BTA_ttbar workflow test
       run: |
          python runner.py --wf BTA_ttbar --json metadata/test_bta_run3.json  --executor iterative --overwrite --campaign Summer23 --year 2023
-
