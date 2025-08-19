@@ -42,7 +42,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
             ),
         )
     elif campaign in ["Winter24", "Summer24"]:
-        # NanoV13 & NanoV14
+        # NanoV13 & NanoV14 & NanoV15
         barrel = (
             (events.Jet.neHEF < 0.99)
             & (events.Jet.neEmEF < 0.9)

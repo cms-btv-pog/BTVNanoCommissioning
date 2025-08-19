@@ -833,8 +833,7 @@ def JME_shifts(
     if "jetveto" in correct_map.keys():
         jets = update(jets, {"veto": jetveto(jets, correct_map)})
 
-        if "Summer22" in campaign:
-            jets = jets[jets.veto != 1]
+        jets = jets[jetveto(jets, correct_map) == 0]
     shifts.insert(0, ({"Jet": jets, "MET": met}, None))
     return shifts
 
