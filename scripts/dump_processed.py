@@ -3,7 +3,6 @@ import awkward as ak
 import numpy as np
 import sys, json, glob
 import os
-import subprocess
 
 
 def dump_lumi(output, fname):
