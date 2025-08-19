@@ -166,11 +166,11 @@ if (
     nj = 1
 if "emctag" in args.phase:
     input_txt = input_txt + " (e$\mu$)"
-elif "ectag" in args.phase or "2D_e_" in args.phase:
+elif "ectag" in args.phase:
     input_txt = input_txt + " (e)"
 elif "QCD" == args.phase:
     input_txt = input_txt + ""
-elif "ttdilep_sf" in args.phase:
+elif "ttdilep_sf" == args.phase:
     input_txt = input_txt + " (e$\mu$)"
 else:
     input_txt = input_txt + " ($\mu$)"
@@ -201,6 +201,7 @@ elif "*" in args.variable:
             )
             != None
         ]
+
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
@@ -219,14 +220,6 @@ for index, discr in enumerate(var_set):
     ):
         print(discr, "not in file or empty")
         continue
-
-    ## additional legend info
-    if "2D_pt" in discr:
-        tmp = discr.strip().split("_")[1][2:]
-        tmp = tmp.split("to")
-        low_edge = tmp[0]
-        up_edge = tmp[1]
-        if up_edge == "10000": up_edge = "inf."
 
     ## axis info
     allaxis = {}
@@ -256,7 +249,7 @@ for index, discr in enumerate(var_set):
             for i in range(collated["mc"][discr].axes[0].size)
         ]
         if "noSF" in systlist:
-            noSF_axis["syst"] = "noSF"
+            noSF_axis["syst"] = "nominal"
 
     ## rebin config, add xerr
     do_xerr = False
@@ -597,10 +590,6 @@ for index, discr in enumerate(var_set):
     else:
         xlabel = axes_name(discr)
     rax.set_xlabel(xlabel)
-    if "2D" in discr:
-        xtickpos = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]
-        xticklabels = ["L0", "C0", "C1", "C2", "C3", "C4", "B0", "B1", "B2", "B3", "B4"]
-        rax.set_xticks(xtickpos, xticklabels)
     if "sample" in args.split:
         ax.legend(ncols=2, prop={"size": 16})
     else:
@@ -616,10 +605,7 @@ for index, discr in enumerate(var_set):
     if args.xrange is not None:
         xmin, xmax = float(args.xrange.split(",")[0]), float(args.xrange.split(",")[1])
     rax.set_xlim(xmin, xmax)
-    input_txt_final = input_txt
-    if "2D_pt" in discr:
-        input_txt_final += "\n" + low_edge + " < jet $p_T$ < " + up_edge + " GeV"
-    at = AnchoredText(input_txt_final + "\n" + args.ext, loc=2, frameon=False)
+    at = AnchoredText(input_txt + "\n" + args.ext, loc=2, frameon=False)
     ax.add_artist(at)
     scale = ""
     if args.norm:
