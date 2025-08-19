@@ -3,7 +3,6 @@ import awkward as ak
 import numpy as np
 import sys, json, glob
 import os
-import subprocess
 
 
 def dump_lumi(output, fname):
@@ -32,14 +31,12 @@ def dump_lumi(output, fname):
         json.dump(dicts, outfile, indent=2)
 
     lumi_in_pb = os.popen(
-        # Using recommended temporary Run 3 normtag
-        # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart
-        f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json -c web -i {fname}_lumi.json -u /pb \'"
+        f"export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda3/bin:$PATH; brilcalc lumi -c web -i {fname}_lumi.json -u /pb "
     ).read()
     lumi_in_pb = lumi_in_pb[
         lumi_in_pb.find("#Summary:") : lumi_in_pb.find("#Check JSON:")
     ]
-    lumi_in_pb = float(lumi_in_pb.split("\n")[4].split("|")[-2])
+    lumi_in_pb = float(lumi_in_pb.split("\n")[-3].split("|")[-2])
 
     print(f"Luminosity in pb: {lumi_in_pb}")
 

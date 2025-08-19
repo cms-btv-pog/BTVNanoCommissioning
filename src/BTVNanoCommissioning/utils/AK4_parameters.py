@@ -182,8 +182,5 @@ correction_config = {
         # },
         "jetveto": {"Run2024 jetvetomap_all": "Summer24Prompt24_RunBCDEFGHI.root"},
     },
-    "Summer24": { # FIXME: need to add stuff later
-        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
-    },
     "prompt_dataMC": {"lumiMask": "$PROMPT_DATAMC"},
 }
