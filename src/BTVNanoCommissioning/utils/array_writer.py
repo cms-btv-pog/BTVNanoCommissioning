@@ -51,7 +51,7 @@ def array_writer(
     othersMC=["Pileup_nTrueInt", "Pileup_nPU"],  # other fields, for MC only
     empty=False,
 ):
-    if not isRealData and systname != ["nominal"]:
+    if weights is not None:
         pruned_event["weight"] = weights.weight()
         for ind_wei in weights.weightStatistics.keys():
             pruned_event[f"{ind_wei}_weight"] = weights.partial_weight(
