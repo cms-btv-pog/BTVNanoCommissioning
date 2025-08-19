@@ -163,7 +163,8 @@ correction_config = {
         "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
         "PU": "PU_weights_Summer24.histo.root",
         "JME": {
-            "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1", # TODO: JER are a placeholder for now (July 2025)
+            # TODO: JER are a placeholder for now (July 2025)
+            "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1",
             "Run2024C": "Summer24Prompt24_V1",
             "Run2024D": "Summer24Prompt24_V1",
             "Run2024E": "Summer24Prompt24_V1",
@@ -177,7 +178,7 @@ correction_config = {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
             "ele_ID 2024 Electron-ID-SF": "wp80iso",
-            # TODO: temporary until RecoBelow20 is released for 2024
+            # TODO: temporary until RecoBelow20 is released (August 2025)
             # "ele_Reco_low 2024 Electron-ID-SF": "RecoBelow20",
             "ele_Reco_med 2024 Electron-ID-SF": "Reco20to75",
             "ele_Reco_high 2024 Electron-ID-SF": "RecoAbove75",
