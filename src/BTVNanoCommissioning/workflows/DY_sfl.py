@@ -210,11 +210,12 @@ class NanoProcessor(processor.ProcessorABC):
             }
         )
         # Jets passed tagger working point
-        flav = ak.where(
-            (event_jet.hadronFlavour == 0) & (event_jet.partonFlavour == 0),
-            event_jet.hadronFlavour + 1,
-            event_jet.hadronFlavour,
-        )
+        if not isRealData:
+            flav = ak.where(
+                (event_jet.hadronFlavour == 0) & (event_jet.partonFlavour == 0),
+                event_jet.hadronFlavour + 1,
+                event_jet.hadronFlavour,
+            )
 
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
