@@ -106,20 +106,6 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         _hist_dict["dr_lmusmujetsmu"] = Hist.Hist(
             syst_axis, flav_axis, dr_s_axis, Hist.storage.Weight()
         )
-    elif "sfl_negtag_DY" == workflow:
-        obj_list = ["dilep"]
-        # TODO: add objects to list and do things with them
-        _hist_dict["dilep_pt"] = Hist.Hist(syst_axis, pt_axis, Hist.storage.Weight())
-        _hist_dict["dilep_mass"] = Hist.Hist(
-            syst_axis,
-            Hist.axis.Regular(60, 75, 105, name="pt", label=" $p_{T}$ [GeV]"),
-            Hist.storage.Weight(),
-        )
-        # FIXME: commented SVJet related histogram until fixing linkinf of BTVNano
-        # _hist_dict["dr_SVjet0"] = Hist.Hist(
-        #     syst_axis, flav_axis, dr_SV_axis, Hist.storage.Weight()
-        # )x
-        # _hist_dict["nJetSVs"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
 
     elif "validation" == workflow:
         obj_list = ["jet0", "jet1"]
@@ -439,6 +425,22 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             _hist_dict[f"dr_{i}jet"] = Hist.Hist(
                 syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
+        if "DY_sfl" in workflow:
+            for tagger in btag_wp_dict[year + "_" + campaign].keys():
+                for stringency, wp in btag_wp_dict[year + "_" + campaign][tagger][
+                    "b"
+                ].items():
+                    if "No" in stringency:
+                        continue
+                    _hist_dict[f"{tagger}{stringency}_postag_jet_pt"] = Hist.Hist(
+                        syst_axis, flav_axis, pt_axis, Hist.storage.Weight()
+                    )
+                    _hist_dict[f"{tagger}{stringency}_negtag_jet_pt"] = Hist.Hist(
+                        syst_axis, flav_axis, pt_axis, Hist.storage.Weight()
+                    )
+            _hist_dict["jet_pt"] = Hist.Hist(
+                syst_axis, flav_axis, pt_axis, Hist.storage.Weight()
+            )
     elif "sf_ttdilep_kin" in workflow:
         obj_list = ["dilep"]
 
@@ -490,7 +492,6 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         _hist_dict["j2ll_dphi"] = Hist.Hist(
             syst_axis, flav_axis, phi_axis, Hist.storage.Weight()
         )
-
     ### Common kinematic variables histogram creation
     if "Wc_sf" not in workflow:
         _hist_dict["njet"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
@@ -541,16 +542,19 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         for obj in obj_list:
             # mujet pt passing tagger WPs
             if "mujet" in obj:
-                for tagger in btag_wp_dict[year + "_" + campaign].keys():
-                    for wp in btag_wp_dict[year + "_" + campaign][tagger]["c"].keys():
-                        if "No" not in wp:
-                            _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
-                                syst_axis,
-                                flav_axis,
-                                osss_axis,
-                                pt_axis,
-                                Hist.storage.Weight(),
-                            )
+                if "cutbased" in workflow:
+                    for tagger in btag_wp_dict[year + "_" + campaign].keys():
+                        for wp in btag_wp_dict[year + "_" + campaign][tagger][
+                            "c"
+                        ].keys():
+                            if "No" not in wp:
+                                _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
+                                    syst_axis,
+                                    flav_axis,
+                                    osss_axis,
+                                    pt_axis,
+                                    Hist.storage.Weight(),
+                                )
 
             if "jet" in obj or "soft_l" in obj:
                 if obj == "soft_l":
@@ -968,6 +972,34 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                                 flatten(sel_jet[histname.replace(f"jet{i}_", "")]),
                                 weight=weight,
                             )
+                # fill positively and negatively tagged jets and all jets, binned in pt
+                if histname.endswith("_postag_jet_pt") or histname.endswith(
+                    "_negtag_jet_pt"
+                ):
+                    h.fill(
+                        syst,
+                        flatten(pruned_ev[histname.replace("_pt", "")].flavor),
+                        flatten(pruned_ev[histname.replace("_pt", "")].pt),
+                        weight=flatten(
+                            ak.broadcast_arrays(
+                                weight, pruned_ev[histname.replace("_pt", "")].pt
+                            )[0]
+                        ),
+                    )
+                elif histname.endswith("jet_pt"):
+                    # print("-------------debug------------------")
+                    # print(genflavor)
+                    # print(pruned_ev["SelJet"].pt)
+                    # print(weight)
+                    # print("--------------debug------------------")
+                    h.fill(
+                        syst,
+                        flatten(pruned_ev["AllSelJet"].flavor),
+                        flatten(pruned_ev["AllSelJet"].pt),
+                        weight=flatten(
+                            ak.broadcast_arrays(weight, pruned_ev["AllSelJet"].pt)[0]
+                        ),
+                    )
             # mu-Jets distribution
             elif "lmujet_" in histname:
                 h.fill(
