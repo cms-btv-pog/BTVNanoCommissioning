@@ -1,9 +1,0 @@
-{
-    "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8": [
-        "root://dcache-cms-xrootd.desy.de:1094//pnfs/desy.de/cms/tier2/store/mc/Run3Summer22NanoAODv12/DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/NANOAODSIM/130X_mcRun3_2022_realistic_v5-v2/2520000/181836d0-879c-4c05-93c1-69956def2efb.root"
-     ],
-    "MuonEGRun2022C-22Sep2023-v1": [
-        "root://dcache-cms-xrootd.desy.de:1094//pnfs/desy.de/cms/tier2/store/data/Run2022C/Muon/NANOAOD/22Sep2023-v1/2520000/393889f7-173f-48ba-ad46-94828a4ee4b2.root",
-        "root://dcache-cms-xrootd.desy.de:1094//pnfs/desy.de/cms/tier2/store/data/Run2022C/EGamma/NANOAOD/22Sep2023-v1/2530000/009621ee-c6b2-4043-99c3-7cb4ab2c7264.root"
-    ]
-}
