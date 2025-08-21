@@ -8,7 +8,7 @@ from BTVNanoCommissioning.utils.correction import (
     weight_manager,
     common_shifts,
 )
-
+from BTVNanoCommissioning.utils.selection import btag_wp_dict  # noqa
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
@@ -74,8 +74,14 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
-        histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
-        output = {} if self.noHist else histogrammer(events, histname[self.selMod])
+        histname = {"DYM": "DY_sfl", "DYE": "eDY_sfl"}
+        output = (
+            {}
+            if self.noHist
+            else histogrammer(
+                events, histname[self.selMod], year=self._year, campaign=self._campaign
+            )
+        )
 
         if isRealData:
             output["sumw"] = len(events)
@@ -203,9 +209,50 @@ class NanoProcessor(processor.ProcessorABC):
                 for b in sposmu.fields
             }
         )
+        # Jets passed tagger working point
+        if not isRealData:
+            flav = ak.where(
+                (event_jet.hadronFlavour == 0) & (event_jet.partonFlavour == 0),
+                event_jet.hadronFlavour + 1,
+                event_jet.hadronFlavour,
+            )
+
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
         pruned_ev["SelJet"] = event_jet[event_level]
+        pruned_ev["AllSelJet"] = event_jet[event_level]  # untouched by histo_writter
+
+        for tagger, tag_obj in btag_wp_dict[f"{self._year}_{self._campaign}"].items():
+            for stringency, wp in tag_obj["b"].items():
+                if stringency == "No":
+                    continue
+
+                key = f"{tagger}{stringency}"
+                mask_postag = event_jet[f"btag{tagger}B"] > wp
+                mask_negtag = event_jet[f"btagNeg{tagger}B"] > wp
+                postag_jet = event_jet[mask_postag][event_level]
+                negtag_jet = event_jet[mask_negtag][event_level]
+
+                pruned_ev[f"{key}_postag_jet"] = postag_jet
+                pruned_ev[f"{key}_negtag_jet"] = negtag_jet
+
+                if isRealData:
+                    pruned_ev[f"{key}_postag_jet", "flavor"] = ak.zeros_like(
+                        postag_jet.pt,
+                        dtype=int,
+                    )
+                    pruned_ev[f"{key}_negtag_jet", "flavor"] = ak.zeros_like(
+                        negtag_jet.pt,
+                        dtype=int,
+                    )
+                else:
+                    pruned_ev[f"{key}_postag_jet", "flavor"] = flav[mask_postag][
+                        event_level
+                    ]
+                    pruned_ev[f"{key}_negtag_jet", "flavor"] = flav[mask_negtag][
+                        event_level
+                    ]
+
         if isMu:
             pruned_ev["MuonPlus"] = sposmu
             pruned_ev["MuonMinus"] = snegmu
@@ -229,6 +276,13 @@ class NanoProcessor(processor.ProcessorABC):
 
         pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
         pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)
+        if isRealData:
+            pruned_ev["AllSelJet", "flavor"] = ak.zeros_like(
+                event_jet[event_level].pt, dtype=int
+            )
+        else:
+            pruned_ev["AllSelJet", "flavor"] = flav[event_level]
+
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
             pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
@@ -243,7 +297,6 @@ class NanoProcessor(processor.ProcessorABC):
             systematics = ["nominal"] + list(weights.variations)
         else:
             systematics = [shift_name]
-
         # Configure histograms
         if not self.noHist:
             output = histo_writter(

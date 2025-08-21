@@ -6317,7 +6317,6 @@ def SV_definitions():
 
 
 def axes_name(var):
-
     output = {}
 
     unit = ""
@@ -6353,7 +6352,24 @@ def axes_name(var):
     elif "mujet" in var:
         obj = "$\\mu$-Jet"
     elif "jet" in var:
-        obj = "Jet"
+        if "postag" in var:
+            if "DeepFlav" in var:
+                obj = "DeepFlav"
+            elif "PNet" in var:
+                obj = "PNet"
+            elif "RobustParTAK4" in var:
+                obj = "RobustParTAK4"
+            obj += "_postag_jet"
+        elif "negtag" in var:
+            if "DeepFlav" in var:
+                obj = "DeepFlav"
+            elif "PNet" in var:
+                obj = "PNet"
+            elif "RobustParTAK4" in var:
+                obj = "RobustParTAK4"
+            obj += "_negtag_jet"
+        else:
+            obj = "Jet"
     elif "w_" in var:
         obj = "W"
     elif "z_" in var:

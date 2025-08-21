@@ -46,6 +46,11 @@ from BTVNanoCommissioning.workflows.BTA_ttbar_producer import (
     NanoProcessor as BTA_ttbar_processor,
 )  # ttbar -kinFit
 
+## SFl DY+Jets
+from BTVNanoCommissioning.workflows.DY_sfl import (
+    NanoProcessor as NegTagDYValidSFProcessor,
+)
+
 # from BTVNanoCommissioning.workflows.example import (
 #     NanoProcessor as ExampleProcessor,
 # )
@@ -103,6 +108,10 @@ workflows["ectag_Wc_WP_sf"] = partial(
 # DY
 workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
 workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
+
+# DY light jet SF with negative tag method
+workflows["DY_sfl_M"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYM")
+workflows["DY_sfl_E"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYE")
 
 # Tutorial
 # workflows["example"] = ExampleProcessor
