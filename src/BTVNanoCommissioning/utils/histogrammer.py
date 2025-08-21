@@ -986,7 +986,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                             )[0]
                         ),
                     )
-                elif histname.endswith("jet_pt"):
+                elif histname.endswith("jet_pt") and "AllSelJet" in pruned_ev.fields:
                     # print("-------------debug------------------")
                     # print(genflavor)
                     # print(pruned_ev["SelJet"].pt)
