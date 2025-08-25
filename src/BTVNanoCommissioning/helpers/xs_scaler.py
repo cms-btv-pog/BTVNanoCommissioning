@@ -34,7 +34,7 @@ def scaleSumW(output, lumi):
             xs_dict[obj["process_name"]] = xs_dict[obj["process_name"]] * float(
                 obj["kFactor"]
             )
-    merged_output = merge_output(output)
+    merged_output = merge_output(output)["out"]
 
     for sample, accu in merged_output.items():
         scaled[sample] = {}

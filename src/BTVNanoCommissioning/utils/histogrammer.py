@@ -817,7 +817,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
         if "jet1" in key: # Because 0-indexing
             found2jets = True
     nj = 4 if found4jets else 2 if found2jets else 1
-    pruned_ev.SelJet = pruned_ev.SelJet if nj == 1 else pruned_ev.SelJet[:, :nj]
+    if nj != 1: pruned_ev["SelJet"] = pruned_ev.SelJet[:, :nj]
     if "var" in str(ak.type(pruned_ev.SelJet.pt)) and nj == 1:
         pruned_ev.SelJet = pruned_ev.SelJet[:, 0]
     if "hadronFlavour" in pruned_ev.SelJet.fields:
