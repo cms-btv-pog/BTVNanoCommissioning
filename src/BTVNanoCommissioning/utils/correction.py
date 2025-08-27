@@ -363,10 +363,7 @@ def load_SF(year, campaign, syst=False):
                 correct_map["jetveto_cfg"] = {
                     j: m for j, m in config[campaign]["jetveto"].items()
                 }
-                print(f"jet veto map file is /cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jetvetomaps.json.gz")
-                print(os.popen(f"ls /cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jetvetomaps.json.gz").read())
             else:
-                print("jet veto map file is something else!!!")
                 ext = extractor()
                 with contextlib.ExitStack() as stack:
                     ext.add_weight_sets(
