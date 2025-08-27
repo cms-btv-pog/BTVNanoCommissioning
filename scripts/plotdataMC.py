@@ -201,7 +201,6 @@ elif "*" in args.variable:
             )
             != None
         ]
-
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
