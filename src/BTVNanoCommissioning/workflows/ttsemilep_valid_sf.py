@@ -66,7 +66,8 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        output = {} if self.noHist else histogrammer(events, "ttsemilep_sf")
+        histname = "ttsemilep_sf" if self.ttaddsel != "c_tt_semilep" else "c_ttsemilep_sf"
+        output = {} if self.noHist else histogrammer(events, histname)
 
         if shift_name is None:
             if isRealData:
@@ -234,7 +235,7 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["SelMuon"] = event_muon[event_level][:, 0]
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
         if "PFCands" in events.fields:
-            pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
+            pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
         if self.ttaddsel != "c_tt_semilep":
             for i in range(4):
                 pruned_ev[f"dr_mujet{i}"] = pruned_ev.SelMuon.delta_r(

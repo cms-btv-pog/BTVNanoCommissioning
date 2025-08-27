@@ -207,6 +207,13 @@ def PFCand_link(events, event_level, jetindx):
             .JetPFCands[events[event_level].JetPFCands.jetIdx == jetindx[event_level]]
             .pFCandsIdx
         ]
+
+    keys_int = list(spfcands.keys()).copy()
+    for key in keys_int:
+        spfcands[str(key)] = spfcands[key]
+    for key in keys_int:
+        spfcands.pop(key)
+
     return spfcands
 
 
