@@ -650,3 +650,4 @@ for index, discr in enumerate(var_set):
         fig.savefig(
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
         )
+    plt.close(fig)

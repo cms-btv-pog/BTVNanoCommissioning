@@ -8,9 +8,9 @@ import os
 def dump_lumi(output, fname):
     lumi, run = [], []
     for m in output.keys():
-        for f in output[m].keys():
-            lumi.extend(output[m][f]["lumi"].value)
-            run.extend(output[m][f]["run"].value)
+        for f in output[m]["out"].keys():
+            lumi.extend(output[m]["out"][f]["lumi"].value)
+            run.extend(output[m]["out"][f]["run"].value)
 
     # Sort runs and keep lumisections matched
     run, lumi = np.array(run), np.array(lumi)
@@ -33,7 +33,8 @@ def dump_lumi(output, fname):
     lumi_in_pb = os.popen(
         # Using recommended temporary Run 3 normtag
         # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart
-        f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json -c web -i {fname}_lumi.json -u /pb \'"
+        # https://twiki.cern.ch/twiki/bin/viewauth/CMS/LumiRecommendationsRun3
+        f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json -c web -i {fname}_lumi.json -u /pb --datatag online \'"
     ).read()
     lumi_in_pb = lumi_in_pb[
         lumi_in_pb.find("#Summary:") : lumi_in_pb.find("#Check JSON:")
@@ -46,6 +47,7 @@ def dump_lumi(output, fname):
 def dump_dataset(output, fname, alljson):
     jsonlist = glob.glob(alljson) if "*" in alljson else alljson.split(",")
     print("Original jsons:", jsonlist)
+
     original_list, list_from_coffea = {}, {}
     for j in jsonlist:
         old = json.load(open(j))
@@ -53,13 +55,13 @@ def dump_dataset(output, fname, alljson):
             if o not in original_list.keys():
                 original_list[o] = []
             original_list[o].extend(old[o])
-
     for m in output.keys():
-        for f in output[m].keys():
+        for f in output[m]["out"].keys():
             if f not in list_from_coffea.keys():
-                list_from_coffea[f] = list(output[m][f]["fname"])
+                list_from_coffea[f] = list(output[m]["out"][f]["fname"])
             else:
-                list_from_coffea[f] += list(set(output[m][f]["fname"]))
+                list_from_coffea[f] += list(set(output[m]["out"][f]["fname"]))
+
     failed = {}
     for t in original_list.keys():
         failed[t] = []
