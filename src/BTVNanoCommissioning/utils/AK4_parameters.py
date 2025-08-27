@@ -113,7 +113,7 @@ correction_config = {
                 "Summer23Prompt23_RunCv4_V1_DATA_L2L3Residual_AK4PFPuppi",
             ],
         },
-        "jetveto": {"Summer23Prompt23_RunC_v1": "jetvetomap"},
+        "jetveto": {"Summer23Prompt23_RunC_V1": "jetvetomap"},
         "JPCalib": {
             "Run2023C-22Sep2023_v1": "calibeHistoWrite_Data2023C-22Sep2023_v1.root",
             "Run2023C-22Sep2023_v2": "calibeHistoWrite_Data2023C-22Sep2023_v2.root",
@@ -143,7 +143,7 @@ correction_config = {
             "ele_Reco 2023PromptD Electron-ID-SF": "",
         },
         # This is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
-        "jetveto": {"Summer23BPixPrompt23_RunD_v1": "jetvetomap"},
+        "jetveto": {"Summer23BPixPrompt23_RunD_V1": "jetvetomap"},
         "JPCalib": {
             "Run2023D-22Sep2023_v1": "calibeHistoWrite_Data2023D-22Sep2023_v1.root",
             "Run2023D-22Sep2023_v2": "calibeHistoWrite_Data2023D-22Sep2023_v2.root",
