@@ -22,6 +22,8 @@ on:
   workflow_dispatch:
 
 jobs:
+  tags:
+  - cvmfs
   build:
     runs-on: ubuntu-latest
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
@@ -29,14 +31,14 @@ jobs:
       max-parallel: 4
       matrix:
         python-version: ["3.10"]
-    
+
     defaults:
       run:
         shell: "bash -l {0}"
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Merge PR locally
       if: github.event_name == 'pull_request_target'
       id: merge
@@ -46,10 +48,9 @@ jobs:
         git fetch origin pull/${{ github.event.pull_request.number }}/head:MR
         git checkout -b ATTEMPT_MERGE
         git merge MR
-        git branch -vv 
-        git remote -v 
+        git branch -vv
+        git remote -v
         git diff master
-
 
     - uses: cvmfs-contrib/github-action-cvmfs@v4
       with:
@@ -70,7 +71,7 @@ jobs:
         conda info
         conda env list
         conda list
-        
+
     - name: Set up proxy
       # https://awesome-workshop.github.io/gitlab-cms/03-vomsproxy/index.html
       env:
@@ -89,19 +90,19 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install fetch-crl ca-certificates
-        
+
         # Set up user certificates
         mkdir -p $HOME/.globus
         printf "$GRID_USERKEY" | base64 -d > $HOME/.globus/userkey.pem
         printf "$GRID_USERCERT" | base64 -d > $HOME/.globus/usercert.pem
-        
+
         # Set proper permissions
         chmod 400 $HOME/.globus/userkey.pem
         chmod 644 $HOME/.globus/usercert.pem
-        
+
         # Generate random seed
         openssl rand -out $HOME/.rnd -hex 256
-        
+
         # Create VOMS proxy with --ignorewarn to handle CRL issues
         printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init \
           --voms cms \
@@ -110,10 +111,10 @@ jobs:
           -vomses $X509_VOMSES \
           --valid 12:00 \
           --ignorewarn
-        
+
         # Verify proxy was created
         voms-proxy-info -all
-    
+
     - name: Install Repo
       run: |
         pip install -e .
@@ -123,7 +124,7 @@ jobs:
     - name: BTA addPFMuons workflow test(BTA for SF)
       run: |
          python runner.py --wf BTA_addPFMuons --json metadata/test_bta_run3.json --executor iterative --overwrite --campaign Summer23 --year 2023 
-    
+
     - name: BTA_ttbar workflow test
       run: |
          python runner.py --wf BTA_ttbar --json metadata/test_bta_run3.json  --executor iterative --overwrite --campaign Summer23 --year 2023
