@@ -37,6 +37,12 @@ def update(events, collections):
     return out
 
 
+def update_original(events, array_name, collections):
+    """Assigns fields as attributes to the original events using ak.Array.__setitem__"""
+    for field_name, value in collections.items():
+        events[array_name, field_name] = value
+
+
 # return run & lumiblock in pairs
 def dump_lumi(events, output):
     pairs = np.vstack((events.run.to_numpy(), events.luminosityBlock.to_numpy()))
@@ -91,9 +97,8 @@ def _load_jmefactory(year, campaign, jme_compiles):
     _jet_path = f"BTVNanoCommissioning.data.JME.{year}_{campaign}"
     with importlib.resources.path(_jet_path, jme_compiles) as filename:
         with gzip.open(filename) as fin:
-            jme_facrory = cloudpickle.load(fin)
-
-    return jme_facrory
+            jme_factory = cloudpickle.load(fin)
+    return jme_factory
 
 
 def __jet_factory_factory__(files):
