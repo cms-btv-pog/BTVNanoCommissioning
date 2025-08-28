@@ -65,10 +65,10 @@ class NanoProcessor(processor.ProcessorABC):
         if self.isSyst:
             fname = "systematic/" + fname
         checkf = os.popen(
-            f"gfal-ls root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
+            f"eos root://eoscms.cern.ch ls /eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
         ).read()
         if len(checkf) > 0:
-            print("skip ", checkf)
+            print("skip", checkf)
             return {dataset: len(events)}
 
         if "JME" in self.SF_map.keys() or "jetveto" in self.SF_map.keys():
