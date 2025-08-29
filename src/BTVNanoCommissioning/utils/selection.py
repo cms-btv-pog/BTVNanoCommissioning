@@ -3,7 +3,6 @@ import numpy as np
 
 
 def HLT_helper(events, triggers):
-
     checkHLT = ak.Array([hasattr(events.HLT, _trig) for _trig in triggers])
     if ak.all(checkHLT == False):
         raise ValueError(
@@ -43,7 +42,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
             ),
         )
     elif campaign in ["Winter24", "Summer24"]:
-        # NanoV13 & NanoV14
+        # NanoV13 & NanoV14 & NanoV15
         barrel = (
             (events.Jet.neHEF < 0.99)
             & (events.Jet.neEmEF < 0.9)
@@ -104,7 +103,6 @@ def ele_mvatightid(events, campaign):
         (abs(events.Electron.eta) < 1.4442)
         | ((abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566))
     ) & (events.Electron.mvaIso_WP80 > 0.5)
-
     return elemask
 
 
@@ -117,7 +115,6 @@ def softmu_mask(events, campaign, dxySigCut=0):
         & (abs(events.Muon.dxy / events.Muon.dxyErr) > dxySigCut)
         & (events.Muon.jetIdx != -1)
     )
-
     return softmumask
 
 
@@ -171,7 +168,6 @@ def MET_filters(events, campaign):
         & (events.run >= 362433)
         & (events.run <= 367144)
     )
-
     metfilter = metfilter & ~ecalBadCalibFilter
     return metfilter
 
@@ -179,12 +175,9 @@ def MET_filters(events, campaign):
 def btag_wp(jets, year, campaign, tagger, borc, wp):
     WP = wp_dict(year, campaign)
     if borc == "b":
-
         jet_mask = jets[f"btag{tagger}B"] > WP[tagger]["b"][wp]
-    else:
-        jet_mask = (jets[f"btag{tagger}CvB"] > WP[tagger]["c"][wp][1]) & (
-            jets[f"btag{tagger}CvL"] > WP[tagger]["c"][wp][0]
-        )
+    elif borc == "c":
+        jet_mask = (jets[f"btag{tagger}CvB"] > WP[tagger]["c"][wp][1]) & (jets[f"btag{tagger}CvL"] > WP[tagger]["c"][wp][0])
     return jet_mask
 
 
@@ -201,7 +194,7 @@ btag_wp_dict = {
             },
             "c": {
                 "No": [0.0, 0.0],
-                "L": [0.042, 0.208],  # CvL, then CvB
+                "L": [0.042, 0.208], # CvL, then CvB
                 "M": [0.108, 0.299],
                 "T": [0.303, 0.243],
             },
@@ -251,7 +244,7 @@ btag_wp_dict = {
             },
             "c": {
                 "No": [0.0, 0.0],
-                "L": [0.042, 0.206],
+                "L": [0.042, 0.206], # CvL, then CvB
                 "M": [0.108, 0.298],
                 "T": [0.305, 0.241],
             },
@@ -301,7 +294,7 @@ btag_wp_dict = {
             },
             "c": {
                 "No": [0.0, 0.0],
-                "L": [0.042, 0.234],  # CvL, then CvB
+                "L": [0.042, 0.234], # CvL, then CvB
                 "M": [0.102, 0.322],
                 "T": [0.250, 0.262],
                 "XT": [0.371, 0.440],
@@ -354,7 +347,7 @@ btag_wp_dict = {
             },
             "c": {
                 "No": [0.0, 0.0],
-                "L": [0.042, 0.242],  # CvL, then CvB
+                "L": [0.042, 0.242], # CvL, then CvB
                 "M": [0.102, 0.328],
                 "T": [0.250, 0.267],
                 "XT": [0.371, 0.444],
@@ -395,7 +388,7 @@ btag_wp_dict = {
             },
         },
     },
-    "2024_Summer24": {
+    "2024_Summer24" : {
         "UParTAK4": {
             "b": {
                 "No": 0.0,
@@ -407,7 +400,7 @@ btag_wp_dict = {
             },
             "c": {
                 "No": [0.0, 0.0],
-                "L": [0.086, 0.233],  # CvL, then CvB
+                "L": [0.086, 0.233], # CvL, then CvB
                 "M": [0.291, 0.457],
                 "T": [0.650, 0.421],
                 "XT": [0.810, 0.736],
@@ -416,8 +409,8 @@ btag_wp_dict = {
     },
 }
 
-import os, correctionlib
 
+import os, correctionlib
 
 def wp_dict(year, campaign):
     """
@@ -428,10 +421,12 @@ def wp_dict(year, campaign):
 
     if cache_key in btag_wp_dict:
         return btag_wp_dict[cache_key]
+
     name_map = {
         "deepJet": "DeepFlav",
         "robustParticleTransformer": "RobustParTAK4",
         "particleNet": "PNet",
+        "unifiedParticleTransformer": "UParTAK4",
     }
 
     wps_dict = {}
@@ -452,16 +447,17 @@ def wp_dict(year, campaign):
 
         for tagger in tagger_list:
             wps_dict[name_map[tagger.replace("_wp_values", "")]] = {"b": {}, "c": {}}
-            bwp = btag[tagger].inputs[0].description.split("/")
             # Get b WPs
+            bwp = btag[tagger].inputs[0].description.split("/")
             wps_dict[name_map[tagger.replace("_wp_values", "")]]["b"] = {
                 wp: btag[tagger].evaluate(wp) for wp in bwp
             }
+            # Get c WPs in [CvL, CvB]
             cwp = ctag[tagger].inputs[0].description.split("/")
             wps_dict[name_map[tagger.replace("_wp_values", "")]]["c"] = {
                 wp: [ctag[tagger].evaluate(wp, "CvL"), ctag[tagger].evaluate(wp, "CvB")]
                 for wp in cwp
-            }  # [CvL, CvB]
+            }
         btag_wp_dict[cache_key] = wps_dict
         return wps_dict
 
@@ -626,6 +622,26 @@ met_filters = {
         ],
     },
     "Summer23BPix": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+    },
+    "Summer24": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",
