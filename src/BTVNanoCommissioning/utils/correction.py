@@ -434,7 +434,7 @@ def jetveto(jets, correct_map):
     correct_map (dict): A dictionary containing correction factors or additional selection criteria for the jets.
 
     Returns:
-    jets: A jets of jets that pass the predefined pt and eta criteria and any additional criteria from the correction map.
+    jets: A collection of jets that pass the predefined pt and eta criteria and any additional criteria from the correction map.
 
     Raises:
     TypeError: If the jets parameter is not an iterable.
@@ -444,15 +444,52 @@ def jetveto(jets, correct_map):
     if "correctionlib" in str(
         type(correct_map["jetveto"][list(correct_map["jetveto"].keys())[0]])
     ):
+        from dask.array import array, clip, broadcast_arrays
+        import dask_awkward as dak
         j, nj = ak.flatten(jets), ak.num(jets)
-        return ak.unflatten(
+        # print(j.eta.compute())
+        # print(np.array(j.eta))
+        print(type(jets.eta))
+        print(type(j))
+        # print(array(j.eta, dtype=float))
+        # print(clip(j.eta, dtype=float), -5.191, 5.191)
+        # print(clip(array(j.eta, dtype=float), -5.191, 5.191))
+        # print(ak.zip(clip(array(j.eta, dtype=float), -5.191, 5.191)).compute())
+        # print((j.eta).to_dask_array().compute())
+        # print(j.eta.form)
+        # print(j.eta.type)
+        # print(j.eta.attrs)
+        # print(j.eta.behavior)
+        # print(j.eta.dask)
+        # print(j.eta.divisions)
+        # print(j.eta.layout)
+        # print(j.eta.head())
+        temp_j_eta = clip(array(j.eta, dtype=float), -5.191, 5.191)
+        temp_j_phi = clip(array(j.phi, dtype=float), -3.141592653589793, 3.141592653589793)
+        # print(dak.from_dask_array(temp_jeta, temp_jeta.behavior, temp_jeta.attrs))
+        print(dak.from_dask_array(temp_j_eta))
+        temp_j_eta = dak.from_dask_array(temp_j_eta)
+        temp_j_phi = dak.from_dask_array(temp_j_phi)
+        ret = ak.unflatten(
             correct_map["jetveto"][list(correct_map["jetveto"].keys())[0]].evaluate(
                 correct_map["jetveto_cfg"][list(correct_map["jetveto"].keys())[0]],
-                np.clip(j.eta, -5.191, 5.191),
-                np.clip(j.phi, -3.141592653589793, 3.141592653589793),
+                # np.clip(j.eta, -5.191, 5.191),
+                # np.clip(j.phi, -3.141592653589793, 3.141592653589793),
+                # clip(array(j.eta, dtype=float), -5.191, 5.191),
+                # clip(array(j.phi, dtype=float), -3.141592653589793, 3.141592653589793),
+                temp_j_eta, temp_j_phi
             ),
             nj,
         )
+        # print("return type", type(ret))
+        # print(ak.broadcast_arrays(ret, depth_limit=1))
+        print(ret.compute())
+        ret = ak.broadcast_arrays(ret, depth_limit=1)
+        print("ret", ret)
+        print("list", list(ret))
+        # print("type", type(ret))
+        # print(ret[0].compute())
+        return ret
 
     else:
         return ak.where(
@@ -592,13 +629,12 @@ def JME_shifts(
             JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
             JEC_input = get_corr_inputs(j, JECcorr)
             JECflatCorrFactor = JECcorr.evaluate(*JEC_input)
+
             ## JER
             if isRealData:
                 # In data only the JEC is applied
                 corrFactor = JECflatCorrFactor
-
             else:
-
                 JERSF = correct_map["JME"][f"{jrname}_ScaleFactor_AK4PFPuppi"]
                 JERptres = correct_map["JME"][f"{jrname}_PtResolution_AK4PFPuppi"]
                 ## For MC, correct the jet pT with JEC first
@@ -752,10 +788,9 @@ def JME_shifts(
                 jecname = "MC"
 
             jets = correct_map["JME"]["jet_factory"][jecname].build(
-                add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
-                lazy_cache=events.caches[0],
+                add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll)
             )
-            met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
+            met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets)
 
         ## systematics
         if not isRealData:
@@ -841,7 +876,8 @@ def JME_shifts(
     # perform jet veto
     if "jetveto" in correct_map.keys():
         jets = update(jets, {"veto": jetveto(jets, correct_map)})
-        jets = jets[jetveto(jets, correct_map) == 0]
+        # jets = jets[jetveto(jets, correct_map) == 0]
+        jets = jets[jets.veto != 1]
 
     shifts.insert(0, ({"Jet": jets, "MET": met}, None))
     return shifts
