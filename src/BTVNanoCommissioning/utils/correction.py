@@ -354,7 +354,16 @@ def load_SF(year, campaign, syst=False):
                     f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jmar.json.gz"
                 )
         elif SF == "jetveto":
-            if os.path.exists(
+            correct_map["jetveto_cfg"] = {
+                j: f for j, f in config[campaign]["jetveto"].items()
+            }
+
+            isRootFile = False
+            for val in correct_map["jetveto_cfg"].values():
+                if ".root" in val:
+                    isRootFile = True
+
+            if not isRootFile and os.path.exists(
                 f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jetvetomaps.json.gz"
             ):
                 correct_map["jetveto"] = correctionlib.CorrectionSet.from_file(
@@ -371,10 +380,6 @@ def load_SF(year, campaign, syst=False):
                     )
                     ext.finalize()
                     correct_map["jetveto"] = ext.make_evaluator()
-
-            correct_map["jetveto_cfg"] = {
-                j: f for j, f in config[campaign]["jetveto"].items()
-            }
 
     return correct_map
 
