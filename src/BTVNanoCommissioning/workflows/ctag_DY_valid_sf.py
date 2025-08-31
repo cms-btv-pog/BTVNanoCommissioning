@@ -257,7 +257,7 @@ class NanoProcessor(processor.ProcessorABC):
                 pruned_ev[f"btagUParTAK42D_{i}"] = wp2D
                 jet_pt_bins = btag_wp_dict[self._year + "_" + self._campaign]["UParTAK4"]["2D"]["jet_pt_bins"]
                 for jet_pt_bin in jet_pt_bins:
-                    pruned_ev[f"btagUParTAK42D_pt{jet_pt_bin[0]}to{jet_pt_bin[1]}_{i}"] = [wp2D[ijet] if pt is not None and jet_pt_bin[0] < pt and pt < jet_pt_bin[1] else one for ijet, pt in enumerate(pruned_ev.SelJet[:, i].pt)]
+                    pruned_ev[f"btagUParTAK42D_pt{jet_pt_bin[0]}to{jet_pt_bin[1]}_{i}"] = [wp2D[ijet] if pt is not None and jet_pt_bin[0] < pt and pt < jet_pt_bin[1] else None for ijet, pt in enumerate(pruned_ev.SelJet[:, i].pt)]
 
         ####################
         #     Output       #
