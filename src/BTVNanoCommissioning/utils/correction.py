@@ -353,6 +353,7 @@ def load_SF(year, campaign, syst=False):
                 correct_map["JMAR"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jmar.json.gz"
                 )
+
         elif SF == "jetveto":
             correct_map["jetveto_cfg"] = {
                 j: f for j, f in config[campaign]["jetveto"].items()
@@ -461,7 +462,7 @@ def jetveto(jets, correct_map):
                 jets.phi, jets.eta
             )
             > 0,
-            ak.ones_like(jets.eta),
+            ak.broadcast_arrays(jets.eta, 100),
             ak.zeros_like(jets.eta),
         )
 
@@ -515,7 +516,6 @@ def JME_shifts(
     campaign,
     isRealData,
     systematic=False,
-    exclude_jetveto=False,
 ):
     """
     Apply Jet Energy Corrections (JEC) and Jet Energy Resolutions (JER) shifts to events.
@@ -531,7 +531,6 @@ def JME_shifts(
     campaign (str): The name of the campaign for which to apply the corrections.
     isRealData (bool): A flag indicating whether the data is real or simulated.
     systematic (bool, optional): A flag to indicate whether to apply systematic variations. Default is False.
-    exclude_jetveto (bool, optional): A flag to indicate whether to exclude jet vetoes. Default is False.
 
     Returns:
     awkward.Array: The events array with applied JEC and JER shifts.
@@ -836,11 +835,6 @@ def JME_shifts(
     else:
         met = events.PuppiMET
         jets = events.Jet
-
-    # perform jet veto
-    if "jetveto" in correct_map.keys():
-        jets = update(jets, {"veto": jetveto(jets, correct_map)})
-        jets = jets[jets.veto != 1]
 
     shifts.insert(0, ({"Jet": jets, "MET": met}, None))
     return shifts
@@ -2346,6 +2340,7 @@ def common_shifts(self, events):
 
     isRealData = not hasattr(events, "genWeight")
     dataset = events.metadata["dataset"]
+
     shifts = []
 
     if "JME" in self.SF_map.keys():
@@ -2399,7 +2394,18 @@ def common_shifts(self, events):
         for shift in shifts:
             shift[0]["Electron"] = events.Electron
 
-    return shifts
+    # Apply jet veto
+    if "jetveto" in self.SF_map.keys():
+        jet_veto = jetveto(events.Jet, self.SF_map)
+        event_veto = ak.any(jet_veto > 0, axis=1)
+        vetoed_events = events[~event_veto]
+        for collections, _ in shifts:
+            for key in collections:
+                collections[key] = collections[key][~event_veto]
+    else:
+        vetoed_events = events
+
+    return vetoed_events, shifts
 
 
 # common weights
@@ -2446,7 +2452,6 @@ def weight_manager(pruned_ev, SF_map, isSyst):
             )
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
-
         syst_wei = True if isSyst != False else False
         if "PU" in SF_map.keys():
             puwei(
