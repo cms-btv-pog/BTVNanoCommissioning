@@ -2376,7 +2376,7 @@ def common_shifts(self, events):
                         "Jet": events.Jet,
                         "MET": events.PuppiMET,
                     },
-                    None
+                    None,
                 )
             ]
 
