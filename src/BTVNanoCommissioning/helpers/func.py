@@ -37,12 +37,6 @@ def update(events, collections):
     return out
 
 
-def update_original(events, array_name, collections):
-    """Assigns fields as attributes to the original events using ak.Array.__setitem__"""
-    for field_name, value in collections.items():
-        events[array_name, field_name] = value
-
-
 # return run & lumiblock in pairs
 def dump_lumi(events, output):
     pairs = np.vstack((events.run.to_numpy(), events.luminosityBlock.to_numpy()))

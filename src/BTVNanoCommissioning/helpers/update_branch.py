@@ -1,4 +1,4 @@
-from BTVNanoCommissioning.helpers.func import update_original
+from BTVNanoCommissioning.helpers.func import update
 from BTVNanoCommissioning.utils.correction import add_jec_variables
 import numpy as np
 
@@ -47,8 +47,8 @@ def missing_branch(events):
             + events.Jet.btagDeepFlavB_bb
             + events.Jet.btagDeepFlavB_lepb
         )
-        update_original(
-            events, "Jet",
+        events.Jet = update(
+            events.Jet,
             {"btagDeepFlavB": jets.btagDeepFlavB},
         )
     if (
@@ -60,8 +60,8 @@ def missing_branch(events):
         jets["btagDeepFlavC"] = (
             events.Jet.btagDeepFlavCvL / (1.0 - events.Jet.btagDeepFlavCvL)
         ) * (events.Jet.btagDeepFlavG + events.Jet.btagDeepFlavUDS)
-        update_original(
-            events, "Jet",
+        events.Jet = update(
+            events.Jet,
             {"btagDeepFlavC": jets.btagDeepFlavC},
         )
     if hasattr(events.Jet, "btagDeepFlavCvB") and not hasattr(
@@ -71,11 +71,13 @@ def missing_branch(events):
         jets["btagDeepFlavC"] = (
             events.Jet.btagDeepFlavCvB / (1.0 - events.Jet.btagDeepFlavCvB)
         ) * (events.Jet.btagDeepFlavB)
-        update_original(
-            events, "Jet",
+        events.Jet = update(
+            events.Jet,
             {"btagDeepFlavC": jets.btagDeepFlavC},
         )
-    if hasattr(events.Jet, "btagDeepFlavC") and not hasattr(events.Jet, "btagDeepFlavCvL"):
+    if hasattr(events.Jet, "btagDeepFlavC") and not hasattr(
+        events.Jet, "btagDeepFlavCvL"
+    ):
         jets = events.Jet
         jets["btagDeepFlavCvL"] = np.maximum(
             np.minimum(
@@ -110,8 +112,8 @@ def missing_branch(events):
             ),
             -1,
         )
-        update_original(
-            events, "Jet",
+        events.Jet = update(
+            events.Jet,
             {
                 "btagDeepFlavCvL": jets.btagDeepFlavCvL,
                 "btagDeepFlavCvB": jets.btagDeepFlavCvB,
@@ -122,8 +124,8 @@ def missing_branch(events):
         jets["btagPNetCvNotB"] = (
             jets.btagPNetCvB * jets.btagPNetB / (1.0 - jets.btagPNetB) ** 2
         )
-        update_original(
-            events, "Jet",
+        events.Jet = update(
+            events.Jet,
             {"btagPNetCvNotB": jets.btagPNetCvNotB},
         )
     if not hasattr(events.Jet, "btagRobustParTAK4CvNotB") and hasattr(
@@ -135,8 +137,8 @@ def missing_branch(events):
             * jets.btagRobustParTAK4B
             / (1.0 - jets.btagRobustParTAK4B) ** 2
         )
-        update_original(
-            events, "Jet",
+        events.Jet = update(
+            events.Jet,
             {"btagRobustParTAK4CvNotB": jets.btagRobustParTAK4CvNotB},
         )
     if hasattr(events, "METFixEE2017"):
@@ -151,8 +153,8 @@ def missing_branch(events):
         met["MetUnclustEnUpDeltaY"] = (met.ptUnclusteredUp - met.pt) * np.sin(
             met.phiUnclusteredUp
         )
-        update_original(
-            events, "PuppiMET",
+        events.PuppiMET = update(
+            events.PuppiMET,
             {
                 "MetUnclustEnUpDeltaX": met.MetUnclustEnUpDeltaX,
                 "MetUnclustEnUpDeltaY": met.MetUnclustEnUpDeltaY,
