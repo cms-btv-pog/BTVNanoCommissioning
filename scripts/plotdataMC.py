@@ -201,7 +201,6 @@ elif "*" in args.variable:
             )
             != None
         ]
-
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
@@ -249,7 +248,7 @@ for index, discr in enumerate(var_set):
             for i in range(collated["mc"][discr].axes[0].size)
         ]
         if "noSF" in systlist:
-            noSF_axis["syst"] = "nominal"
+            noSF_axis["syst"] = "noSF"
 
     ## rebin config, add xerr
     do_xerr = False
@@ -650,3 +649,4 @@ for index, discr in enumerate(var_set):
         fig.savefig(
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
         )
+    plt.close(fig)
