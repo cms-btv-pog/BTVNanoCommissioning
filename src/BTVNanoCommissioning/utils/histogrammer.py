@@ -6,6 +6,7 @@ from BTVNanoCommissioning.helpers.definitions import (
 )
 import hist as Hist
 import awkward as ak
+import numpy as np
 from BTVNanoCommissioning.helpers.func import flatten
 
 
@@ -178,8 +179,10 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             Hist.storage.Weight(),
         )
 
-    elif "ttdilep_sf" == workflow:
+    elif workflow in ("ttdilep_sf", "ttdilep_sf_2D"):
         obj_list = ["mu", "ele"]
+        if "2D" in workflow:
+            obj_list.append("MET")
         for i in range(2):
             obj_list.append(f"jet{i}")
             _hist_dict[f"dr_mujet{i}"] = Hist.Hist(
@@ -402,6 +405,29 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                 syst_axis, flav_axis, osss_axis, ptratio_axis, Hist.storage.Weight()
             )
 
+    elif "2D_" in workflow and "_ttsemilep_sf" in workflow:
+        obj_list = ["MET"]
+        for i in range(4):
+            obj_list.append(f"jet{i}")
+
+        _hist_dict[f"w_mt"] = Hist.Hist(
+            syst_axis,
+            mt_axis,
+            Hist.storage.Weight(),
+        )
+
+        if "_e_" in workflow:
+            obj_list.append("ele")
+            _hist_dict[f"ele_pfRelIso04_all"] = Hist.Hist(syst_axis, iso_axis, Hist.storage.Weight())
+            _hist_dict[f"ele_dxy"] = Hist.Hist(syst_axis, dxy_axis, Hist.storage.Weight())
+            _hist_dict[f"ele_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
+
+        elif "_mu_" in workflow:
+            obj_list.append("mu")
+            _hist_dict[f"mu_pfRelIso04_all"] = Hist.Hist(syst_axis, iso_axis, Hist.storage.Weight())
+            _hist_dict[f"mu_dxy"] = Hist.Hist(syst_axis, dxy_axis, Hist.storage.Weight())
+            _hist_dict[f"mu_dz"] = Hist.Hist(syst_axis, dz_axis, Hist.storage.Weight())
+
     elif "DY_sf" in workflow:
         obj_list = ["posl", "negl", "dilep", "jet0"]
         _hist_dict["dilep_mass"] = Hist.Hist(
@@ -409,6 +435,10 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             Hist.axis.Regular(50, 50, 100, name="mass", label="$m_{\\ell\\ell}$ [GeV]"),
             Hist.storage.Weight(),
         )
+        if "2D" in workflow:
+            _hist_dict["dilep_ptratio"] = Hist.Hist(
+                syst_axis, flav_axis, ptratio_axis, Hist.storage.Weight()
+            )
         _hist_dict["dr_poslnegl"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         _hist_dict["dr_posljet"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
         _hist_dict["dr_negljet"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
@@ -627,7 +657,10 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
  
     ## Discriminators
     for disc in disc_list:
-        if disc not in events.Jet.fields:
+        if "2D" in workflow:
+            if disc not in events.Jet.fields and "BvC" not in disc and "HFvLF" not in disc and "2D" not in disc:
+                continue
+        elif disc not in events.Jet.fields:
             continue
         njet = 1
         if "ttdilep_sf" in workflow:
@@ -665,12 +698,20 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                     )
         for i in range(njet):
             if "Wc_sf" in workflow:
-                if "btag" in disc or "ProbaN" == disc:
+                if ("btag" in disc and "2D" not in disc) or "ProbaN" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,
                         osss_axis,
                         Hist.axis.Regular(50, 0.0, 1, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "2D" in disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        osss_axis,
+                        Hist.axis.Regular(11, 0.0, 11.0, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
                 elif "Bprob" in disc:
@@ -699,11 +740,18 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                     )
 
             else:
-                if "btag" in disc or "ProbaN" == disc:
+                if ("btag" in disc and "2D" not in disc) or "ProbaN" == disc:
                     _hist_dict[f"{disc}_{i}"] = Hist.Hist(
                         syst_axis,
                         flav_axis,
                         Hist.axis.Regular(50, 0.0, 1, name="discr", label=disc),
+                        Hist.storage.Weight(),
+                    )
+                elif "2D" in disc:
+                    _hist_dict[f"{disc}_{i}"] = Hist.Hist(
+                        syst_axis,
+                        flav_axis,
+                        Hist.axis.Regular(11, 0.0, 11.0, name="discr", label=disc),
                         Hist.storage.Weight(),
                     )
                 elif "Bprob" in disc:
@@ -961,11 +1009,20 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                                 weight=weight,
                             )
                         else:
+                            flav_to_plot = flav
+                            hist_to_plot = sel_jet[histname.replace(f"jet{i}_", "")]
+                            weight_to_plot = weight
+                            # Needed for 2D_ttsemilep workflows
+                            hist_mask = [False if x is None else True for x in hist_to_plot]
+                            if ak.any(np.invert(hist_mask)):
+                                flav_to_plot = flav_to_plot[hist_mask]
+                                weight_to_plot = weight_to_plot[hist_mask]
+                                hist_to_plot = hist_to_plot[hist_mask]
                             h.fill(
                                 syst,
-                                flatten(flav),
-                                flatten(sel_jet[histname.replace(f"jet{i}_", "")]),
-                                weight=weight,
+                                flatten(flav_to_plot),
+                                flatten(hist_to_plot),
+                                weight=weight_to_plot,
                             )
             # Mu-jets distribution
             elif "lmujet_" in histname:
@@ -986,15 +1043,34 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 for i in range(nj):
                     if not histname.endswith(str(i)):
                         continue
+                    if (
+                        "BvC" not in histname
+                        and "HFvLF" not in histname
+                        and "2D" not in histname
+                        and histname.replace(f"_{i}", "") not in seljets.fields
+                    ):
+                        continue
                     if nj > 1:
                         flav, seljet = flavs[:, i], seljets[:, i]
                     else:
                         flav, seljet = flavs, seljets
+                    flav_to_plot = flav
+                    if "BvC" in histname or "HFvLF" in histname or "2D" in histname:
+                        discr_to_plot = pruned_ev[histname]
+                    else:
+                        discr_to_plot = seljet[histname.replace(f"_{i}", "")]
+                    weights_to_plot = weights.partial_weight(exclude=exclude_btv)
+                    # Needed for 2D_ttsemilep workflows
+                    discr_mask = [False if x is None else True for x in discr_to_plot]
+                    if ak.any(np.invert(discr_mask)):
+                        flav_to_plot = flav_to_plot[discr_mask]
+                        discr_to_plot = discr_to_plot[discr_mask]
+                        weights_to_plot = weights_to_plot[discr_mask]
                     h.fill(
                         syst=syst,
-                        flav=flav,
-                        discr=seljet[histname.replace(f"_{i}", "")],
-                        weight=weights.partial_weight(exclude=exclude_btv),
+                        flav=flav_to_plot,
+                        discr=discr_to_plot,
+                        weight=weights_to_plot,
                     )
 
         if "dr_poslnegl" in output.keys():
@@ -1092,6 +1168,8 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             output["dilep_mass"].fill(
                 syst, flatten(pruned_ev.dilep.mass), weight=weight
             )
+            if "dilep_ptratio" in histname:
+                output["dilep_ptratio"].fill(syst,flatten(pruned_ev.dilep.pt / pruned_ev.SelJet[:, 0].pt), weight=weight)
 
         if "MET_pt" in output.keys():
             output["MET_pt"].fill(syst, flatten(pruned_ev.MET.pt), weight=weight)
