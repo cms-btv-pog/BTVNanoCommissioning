@@ -487,22 +487,23 @@ if __name__ == "__main__":
     # Execute
     if args.executor in ["futures", "iterative", "standalone_condor"]:
         if args.executor == "iterative":
-            _exec = processor.IterativeExecutor(workers=args.workers)
+            _exec = processor.iterative_executor
         else:
-            _exec = processor.FuturesExecutor(workers=args.workers)
+            _exec = processor.futures_executor
         if args.executor != "standalone_condor":
-            _runner = processor.Runner(
+            output = processor.run_uproot_job(
+                sample_dict,
+                treename="Events",
+                processor_instance=processor_instance,
                 executor=_exec,
-                skipbadfiles=args.skipbadfiles,
-                schema=PFNanoAODSchema,
-                xrootdtimeout=900,
+                executor_args={
+                    "skipbadfiles": args.skipbadfiles,
+                    "schema": PFNanoAODSchema,
+                    "workers": args.workers,
+                    "xrootdtimeout": 900,
+                },
                 chunksize=args.chunk,
                 maxchunks=args.max,
-            )
-            output = _runner.run(
-                sample_dict,
-                processor_instance=processor_instance,
-                treename="Events",
             )
 
         ## standalone condor from https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/9edb9ed6bb0b28730b8de9e5aa1142ec4fdf74b7/condor/submitter.py
@@ -888,9 +889,9 @@ if __name__ == "__main__":
         elif "lxplus" in args.executor:
             # details: https://batchdocs.web.cern.ch/specialpayload/dask.html
             n_port = 8786
-            if not check_port(n_port):
+            if not check_port(8786):
                 raise RuntimeError(
-                    f"Port '{n_port}' is not occupied on this node. Try another one."
+                    "Port '8786' is not occupied on this node. Try another one."
                 )
             import socket
 
@@ -993,7 +994,7 @@ if __name__ == "__main__":
                             and sindex > int(args.index.split(",")[2])
                         ):
                             break
-                        output = processor.run(
+                        output = processor.run_uproot_job(
                             splitted,
                             treename="Events",
                             processor_instance=processor_instance,
