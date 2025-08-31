@@ -22,9 +22,6 @@ from BTVNanoCommissioning.utils.selection import (
     softmu_mask,
     btag_wp,
     btag_wp_dict,
-    btag_wp,
-    calculate_new_discriminators,
-    get_wp_2D,
 )
 
 
@@ -58,10 +55,10 @@ class NanoProcessor(processor.ProcessorABC):
 
     def process(self, events):
         events = missing_branch(events)
-        shifts = common_shifts(self, events)
+        vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
-            self.process_shift(update(events, collections), name)
+            self.process_shift(update(vetoed_events, collections), name)
             for collections, name in shifts
         )
 
@@ -101,8 +98,6 @@ class NanoProcessor(processor.ProcessorABC):
             "WcE": "ectag_Wc_sf",
             "cutbased_WcM": "ctag_cutbased_Wc_sf",
             "cutbased_WcE": "ectag_cutbased_Wc_sf",
-            "WcM_2D" : "ctag_Wc_sf_2D",
-            "WcE_2D" : "ectag_Wc_sf_2D",
             "semittM": "ctag_Wc_sf",  # same histogram representation as W+c, since only nJet is different
             "semittE": "ectag_Wc_sf",  # same histogram representation as W+c, since only nJet is different
             "WcM_noMuVeto": "ctag_Wc_sf",
@@ -354,7 +349,7 @@ class NanoProcessor(processor.ProcessorABC):
         sz = shmu + ssmu
         sw = shmu + smet
 
-        osss = shmu.charge * ssmu.charge * -1
+        osss = 1
         ossswrite = shmu.charge * ssmu.charge * -1
         smuon_jet_passc = {}
         c_algos = []
@@ -380,7 +375,7 @@ class NanoProcessor(processor.ProcessorABC):
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
         pruned_ev["SelJet"] = sjets
-        if self.selMod.endswith("M") or self.selMod == "WcM_2D":
+        if self.selMod.endswith("M"):
             pruned_ev["SelMuon"] = shmu
         else:
             pruned_ev["SelElectron"] = shmu
@@ -433,21 +428,6 @@ class NanoProcessor(processor.ProcessorABC):
             genflavor = ak.ones_like(pruned_ev.SelJet.pt, dtype=int)
             if "MuonJet" in pruned_ev.fields:
                 smflav = ak.ones_like(pruned_ev.MuonJet.pt, dtype=int)
-
-        if "2D" in self.selMod:
-            nj=1
-            for i in range(nj):
-                btagUParTAK4HFvLF, btagUParTAK4BvC = calculate_new_discriminators(pruned_ev.MuonJet)
-                wp2D = ak.Array([get_wp_2D(btagUParTAK4HFvLF[i], btagUParTAK4BvC[i], self._year, self._campaign, "UParTAK4") for i in range(len(btagUParTAK4HFvLF))])
-                pruned_ev[f"btagUParTAK4HFvLF_{i}"] = btagUParTAK4HFvLF
-                pruned_ev[f"btagUParTAK4BvC_{i}"] = btagUParTAK4BvC
-                pruned_ev[f"btagUParTAK4HFvLFt_{i}"] = ak.Array(np.where(btagUParTAK4HFvLF > 0.0, 1.0 - (1.0 - btagUParTAK4HFvLF)**0.5, -1.0))
-                pruned_ev[f"btagUParTAK4BvCt_{i}"] = ak.Array(np.where(btagUParTAK4BvC > 0.0, 1.0 - (1.0 - btagUParTAK4BvC)**0.5, -1.0))
-                pruned_ev[f"btagUParTAK42D_{i}"] = wp2D     
-                jet_pt_bins = btag_wp_dict[self._year + "_" + self._campaign]["UParTAK4"]["2D"]["jet_pt_bins"]
-                for jet_pt_bin in jet_pt_bins:
-                    pruned_ev[f"btagUParTAK42D_pt{jet_pt_bin[0]}to{jet_pt_bin[1]}_{i}"] = [wp2D[ijet] if pt is not None and jet_pt_bin[0] < pt and pt < jet_pt_bin[1] else None for ijet, pt in enumerate(pruned_ev.MuonJet.pt)]
-            
         ####################
         # Weight & Geninfo #
         ####################
@@ -549,16 +529,26 @@ class NanoProcessor(processor.ProcessorABC):
                         weight=weight,
                     )
                 elif "btag" in histname and "Trans" not in histname:
-                    if (
-                        "BvC" not in histname
-                        and "HFvLF" not in histname
-                        and "2D" not in histname
+                    for i in range(2):
+                        if (
+                            str(i) not in histname
+                            or histname.replace(f"_{i}", "") not in events.Jet.fields
                         ):
-                        for i in range(2):
-                            if not histname.endswith(str(i)) or histname.replace(f"_{i}", "") not in smuon_jet.fields:
-                                    continue
+                            continue
+                        h.fill(
+                            syst="noSF",
+                            flav=smflav,
+                            osss=osss,
+                            discr=np.where(
+                                smuon_jet[histname.replace(f"_{i}", "")] < 0,
+                                -0.2,
+                                smuon_jet[histname.replace(f"_{i}", "")],
+                            ),
+                            weight=weights.partial_weight(exclude=exclude_btv),
+                        )
+                        if not isRealData and "btag" in self.SF_map.keys():
                             h.fill(
-                                syst="noSF",
+                                syst=syst,
                                 flav=smflav,
                                 osss=osss,
                                 discr=np.where(
@@ -566,38 +556,8 @@ class NanoProcessor(processor.ProcessorABC):
                                     -0.2,
                                     smuon_jet[histname.replace(f"_{i}", "")],
                                 ),
-                                weight=weights.partial_weight(exclude=exclude_btv),
+                                weight=weight,
                             )
-                            if not isRealData and "btag" in self.SF_map.keys():
-                                h.fill(
-                                    syst=syst,
-                                    flav=smflav,
-                                    osss=osss,
-                                    discr=np.where(
-                                        smuon_jet[histname.replace(f"_{i}", "")] < 0,
-                                        -0.2,
-                                        smuon_jet[histname.replace(f"_{i}", "")],
-                                    ),
-                                    weight=weight,
-                                )
-                    else:
-                        discr_to_plot = pruned_ev[histname]
-                        flav_to_plot = smflav
-                        osss_to_plot = osss
-                        weight_to_plot = weights.partial_weight(exclude=exclude_btv),
-                        discr_mask = [False if x is None else True for x in discr_to_plot]
-                        if ak.any(np.invert(discr_mask)):
-                            flav_to_plot = flav_to_plot[discr_mask]
-                            osss_to_plot = osss_to_plot[discr_mask]
-                            discr_to_plot = discr_to_plot[discr_mask]
-                            weight_to_plot = weight[discr_mask]
-                        h.fill(
-                            syst=syst,
-                            flav=flav_to_plot,
-                            osss=osss_to_plot,
-                            discr=discr_to_plot,
-                            weight=weight_to_plot
-                        )
                 elif "btag" in histname and "Trans" in histname:
                     if histname not in smuon_jet:
                         continue

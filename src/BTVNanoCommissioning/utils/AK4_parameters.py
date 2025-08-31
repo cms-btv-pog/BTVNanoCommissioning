@@ -42,12 +42,12 @@ correction_config = {
     },
     "Summer22": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puwei_2022_preEE.histo.root",  # new PU files, based on preEE
+        "PU": "puwei_2022_preEE.histo.root", # new PU files, based on preEE
         "JME": {
             "MC": "Summer22_22Sep2023_V2 Summer22_22Sep2023_JRV1",
             "Run2022C": "Summer22_22Sep2023_RunCD_V2",
             "Run2022D": "Summer22_22Sep2023_RunCD_V2",
-        },  # update to latest JEC
+        }, # update to latest JEC
         "LSF": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
@@ -60,6 +60,8 @@ correction_config = {
             "MC": "calibeHistoWrite_MC2022_NANO130X_v2.root",
         },
         "jetveto": {"Summer22_23Sep2023_RunCD_V1": "jetvetomap"},
+        "muonSS": "",
+        "electronSS": ["EGMScale_Compound_Ele_2022preEE", "EGMSmearAndSyst_ElePTsplit_2022preEE"],
     },
     "Summer22EE": {
         "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
@@ -84,6 +86,8 @@ correction_config = {
             "Run2022G": "calibeHistoWrite_Data2022G_NANO130X_v1.root",
             "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",
         },
+        "muonSS": "",
+        "electronSS": ["EGMScale_Compound_Ele_2022postEE", "EGMSmearAndSyst_ElePTsplit_2022postEE"],
     },
     "Summer23": {
         "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
@@ -113,7 +117,7 @@ correction_config = {
                 "Summer23Prompt23_RunCv4_V1_DATA_L2L3Residual_AK4PFPuppi",
             ],
         },
-        "jetveto": {"Summer23Prompt23_RunC_v1": "jetvetomap"},
+        "jetveto": {"Summer23Prompt23_RunC_V1": "jetvetomap"},
         "JPCalib": {
             "Run2023C-22Sep2023_v1": "calibeHistoWrite_Data2023C-22Sep2023_v1.root",
             "Run2023C-22Sep2023_v2": "calibeHistoWrite_Data2023C-22Sep2023_v2.root",
@@ -127,6 +131,8 @@ correction_config = {
             "ele_ID 2023PromptC Electron-ID-SF": "Tight",
             "ele_Reco 2023PromptC Electron-ID-SF": "",
         },
+        "muonSS": "",
+        "electronSS": ["EGMScale_Compound_Ele_2023preBPIX", "EGMSmearAndSyst_ElePTsplit_2023preBPIX"],
     },
     "Summer23BPix": {
         "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
@@ -143,12 +149,14 @@ correction_config = {
             "ele_Reco 2023PromptD Electron-ID-SF": "",
         },
         # This is from Mikko https://indico.cern.ch/event/1315421/contributions/5532963/attachments/2697975/4683826/2023_08_16_jetvetomaps_v3.pdf
-        "jetveto": {"Summer23BPixPrompt23_RunD_v1": "jetvetomap"},
+        "jetveto": {"Summer23BPixPrompt23_RunD_V1": "jetvetomap"},
         "JPCalib": {
             "Run2023D-22Sep2023_v1": "calibeHistoWrite_Data2023D-22Sep2023_v1.root",
             "Run2023D-22Sep2023_v2": "calibeHistoWrite_Data2023D-22Sep2023_v2.root",
             "MC": "calibeHistoWrite_MC2023_Summer23BPix.root",
         },
+        "muonSS": "",
+        "electronSS": ["EGMScale_Compound_Ele_2023postBPIX", "EGMSmearAndSyst_ElePTsplit_2023postBPIX"],
     },
     "Summer24": {
         "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
@@ -168,12 +176,8 @@ correction_config = {
         "LSF": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
-            # TODO: not yet available for 2024 (August 2025)
-            # "mu_Trig": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
             "ele_Reco 2024 Electron-ID-SF": "",
             "ele_ID 2024 Electron-ID-SF": "wp80iso",
-            # TODO: HLT SFs are a placeholder for now (August 2025)
-            "ele_Trig 2023PromptD Electron-HLT-SF": "HLT_SF_Ele30_MVAiso80ID",
         },
         "muonSS": "",
         "electronSS": ["EGMScale_Compound_Ele_2024", "EGMSmearAndSyst_ElePTsplit_2024"],

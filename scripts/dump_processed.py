@@ -8,9 +8,9 @@ import os
 def dump_lumi(output, fname):
     lumi, run = [], []
     for m in output.keys():
-        for f in output[m]["out"].keys():
-            lumi.extend(output[m]["out"][f]["lumi"].value)
-            run.extend(output[m]["out"][f]["run"].value)
+        for f in output[m].keys():
+            lumi.extend(output[m][f]["lumi"].value)
+            run.extend(output[m][f]["run"].value)
 
     # Sort runs and keep lumisections matched
     run, lumi = np.array(run), np.array(lumi)
@@ -56,11 +56,11 @@ def dump_dataset(output, fname, alljson):
                 original_list[o] = []
             original_list[o].extend(old[o])
     for m in output.keys():
-        for f in output[m]["out"].keys():
+        for f in output[m].keys():
             if f not in list_from_coffea.keys():
-                list_from_coffea[f] = list(output[m]["out"][f]["fname"])
+                list_from_coffea[f] = list(output[m][f]["fname"])
             else:
-                list_from_coffea[f] += list(set(output[m]["out"][f]["fname"]))
+                list_from_coffea[f] += list(set(output[m][f]["fname"]))
 
     failed = {}
     for t in original_list.keys():

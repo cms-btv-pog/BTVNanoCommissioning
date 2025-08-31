@@ -49,17 +49,12 @@ sample_mergemap = {
         "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
         "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
         "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
-        "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
-        "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
     ],
     # diboson
     "VV": [
         "WW_TuneCP5_13p6TeV-pythia8",
         "WZ_TuneCP5_13p6TeV-pythia8",
-        "ZZ_TuneCP5_13p6TeV-pythia8",
-        "WW_TuneCP5_13p6TeV_pythia8",
-        "WZ_TuneCP5_13p6TeV_pythia8",
-        "ZZ_TuneCP5_13p6TeV_pythia8"
+        "ZZ_TuneCP5_13p6TeV-pythia8"
         # decay
         "ZZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
         "ZZto2Nu2Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -77,25 +72,14 @@ sample_mergemap = {
         "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         "DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
         "DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
-        "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-        "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-        "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
     ],
     "W+jets": [
         "WJetsToLNu_TuneCP5_13p6TeV-madgraphMLM-pythia8",
         "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-        # jet binned samples
+        # jet binned sample
         "WtoLNu-4Jets_1J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "WtoLNu-4Jets_2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "WtoLNu-4Jets_3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-        "WtoLNu-4Jets_Bin-1J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-        "WtoLNu-4Jets_Bin-2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-        "WtoLNu-4Jets_Bin-3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-        "WtoLNu-4Jets_Bin-4J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-        # lepton binned samples
-        "WtoENu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-        "WtoMuNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-        "WtoTauNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
     ],
     # QCD
     "QCD": [

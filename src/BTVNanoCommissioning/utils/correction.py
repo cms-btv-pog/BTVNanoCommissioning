@@ -160,20 +160,20 @@ def load_SF(year, campaign, syst=False):
                 for e, f in config[campaign]["LSF"].items()
                 if "ele" in e and "_json" not in e
             }
-            ## Muon
+            ## muon
             _mu_path = f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/MUO/{year}_{campaign}/muon_Z.json.gz"
             if not os.path.exists(_mu_path):
                 _mu_path = f"src/BTVNanoCommissioning/data/LSF/{year}_{campaign}/muon_Z.json.gz"
             if os.path.exists(_mu_path):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(_mu_path)
-            ## Electron
+            ## electron
             for _ele_file, _ele_map in {"electron": "EGM", "electronHlt": "EGM_HLT"}.items():
                 _ele_path = f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/EGM/{year}_{campaign}/{_ele_file}.json.gz"
                 if not os.path.exists(_ele_path):
                     _ele_path = f"src/BTVNanoCommissioning/data/LSF/{year}_{campaign}/{_ele_file}.json.gz"
                 if os.path.exists(_ele_path):
                     correct_map[_ele_map] = correctionlib.CorrectionSet.from_file(_ele_path)
-            ## Json
+            ## json
             if any(
                 np.char.find(np.array(list(config[campaign]["LSF"].keys())), "mu_json")
                 != -1
@@ -189,7 +189,7 @@ def load_SF(year, campaign, syst=False):
                     f"src/BTVNanoCommissioning/data/LSF/{year}_{campaign}/{config[campaign]['LSF']['ele_json']}"
                 )
 
-            ## Check if any custom corrections needed
+            ## check if any custom corrections needed
             # FIXME: (some low pT muons not supported in jsonpog-integration at the moment)
             if (
                 "histo.json" in "\t".join(list(config[campaign]["LSF"].values()))
@@ -353,30 +353,33 @@ def load_SF(year, campaign, syst=False):
                 correct_map["JMAR"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jmar.json.gz"
                 )
+
         elif SF == "jetveto":
-            if os.path.exists(
+            correct_map["jetveto_cfg"] = {
+                j: f for j, f in config[campaign]["jetveto"].items()
+            }
+
+            isRootFile = False
+            for val in correct_map["jetveto_cfg"].values():
+                if ".root" in val:
+                    isRootFile = True
+
+            if not isRootFile and os.path.exists(
                 f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jetvetomaps.json.gz"
             ):
                 correct_map["jetveto"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/{year}_{campaign}/jetvetomaps.json.gz"
                 )
-                correct_map["jetveto_cfg"] = {
-                    j: m for j, m in config[campaign]["jetveto"].items()
-                }
             else:
                 ext = extractor()
                 with contextlib.ExitStack() as stack:
                     ext.add_weight_sets(
                         [
-                            f"{run} {stack.enter_context(importlib.resources.path(f'BTVNanoCommissioning.data.JME.{year}_{campaign}',file))}"
+                            f"{run} {stack.enter_context(importlib.resources.path(f'BTVNanoCommissioning.data.JME.{year}_{campaign}', file))}"
                             for run, file in config[campaign]["jetveto"].items()
                         ]
                     )
-
                     ext.finalize()
-                    correct_map["jetveto_cfg"] = {
-                        j: f for j, f in config[campaign]["jetveto"].items()
-                    }
                     correct_map["jetveto"] = ext.make_evaluator()
 
     return correct_map
@@ -434,7 +437,7 @@ def jetveto(jets, correct_map):
     correct_map (dict): A dictionary containing correction factors or additional selection criteria for the jets.
 
     Returns:
-    jets: A jets of jets that pass the predefined pt and eta criteria and any additional criteria from the correction map.
+    jets: A collection of jets that pass the predefined pt and eta criteria and any additional criteria from the correction map.
 
     Raises:
     TypeError: If the jets parameter is not an iterable.
@@ -453,14 +456,13 @@ def jetveto(jets, correct_map):
             ),
             nj,
         )
-
     else:
         return ak.where(
             correct_map["jetveto"][list(correct_map["jetveto"].keys())[0]](
                 jets.phi, jets.eta
             )
             > 0,
-            ak.ones_like(jets.eta),
+            ak.broadcast_arrays(jets.eta, 100),
             ak.zeros_like(jets.eta),
         )
 
@@ -514,7 +516,6 @@ def JME_shifts(
     campaign,
     isRealData,
     systematic=False,
-    exclude_jetveto=False,
 ):
     """
     Apply Jet Energy Corrections (JEC) and Jet Energy Resolutions (JER) shifts to events.
@@ -530,7 +531,6 @@ def JME_shifts(
     campaign (str): The name of the campaign for which to apply the corrections.
     isRealData (bool): A flag indicating whether the data is real or simulated.
     systematic (bool, optional): A flag to indicate whether to apply systematic variations. Default is False.
-    exclude_jetveto (bool, optional): A flag to indicate whether to exclude jet vetoes. Default is False.
 
     Returns:
     awkward.Array: The events array with applied JEC and JER shifts.
@@ -541,7 +541,7 @@ def JME_shifts(
     """
     dataset = events.metadata["dataset"]
     jecname = ""
-    # https://cms-jerc.web.cern.ch/JECUncertaintySources/, currently no recommendation of reduced/ full split sources
+    # https://cms-jerc.web.cern.ch/JECUncertaintySources/, currently no recommendation of reduced/full split sources
     syst_list = [
         i.split("_")[3]
         for i in correct_map["JME"].keys()
@@ -592,16 +592,15 @@ def JME_shifts(
             JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
             JEC_input = get_corr_inputs(j, JECcorr)
             JECflatCorrFactor = JECcorr.evaluate(*JEC_input)
+
             ## JER
             if isRealData:
-                # In data only the JEC is applied
+                # in data only the JEC is applied
                 corrFactor = JECflatCorrFactor
-
             else:
-
                 JERSF = correct_map["JME"][f"{jrname}_ScaleFactor_AK4PFPuppi"]
                 JERptres = correct_map["JME"][f"{jrname}_PtResolution_AK4PFPuppi"]
-                ## For MC, correct the jet pT with JEC first
+                # for MC, correct the jet pT with JEC first
                 j["pt"] = j["pt_raw"] * JECflatCorrFactor
                 j["mass"] = j["mass_raw"] * JECflatCorrFactor
                 JERSF_input = get_corr_inputs(j, JERSF)
@@ -610,7 +609,6 @@ def JME_shifts(
                 j["JERSF"] = JERSF.evaluate(*JERSF_input)
                 JERsmear_input = get_corr_inputs(j, sf_jersmear)
                 corrFactor = JECflatCorrFactor * sf_jersmear.evaluate(*JERsmear_input)
-
             corrFactor = ak.unflatten(corrFactor, nj)
 
             jets["pt"] = ak.values_astype(nocorrjet["pt_raw"] * corrFactor, np.float32)
@@ -757,7 +755,7 @@ def JME_shifts(
             )
             met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
 
-        ## systematics
+        # systematics
         if not isRealData:
             if systematic != False:
                 if systematic == "split":
@@ -837,11 +835,6 @@ def JME_shifts(
     else:
         met = events.PuppiMET
         jets = events.Jet
-
-    # perform jet veto
-    if "jetveto" in correct_map.keys():
-        jets = update(jets, {"veto": jetveto(jets, correct_map)})
-        jets = jets[jetveto(jets, correct_map) == 0]
 
     shifts.insert(0, ({"Jet": jets, "MET": met}, None))
     return shifts
@@ -958,7 +951,6 @@ def Roccor_shifts(shifts, correct_map, events, isRealData, systematic=False):
     return shifts
 
 
-## MUO
 def MUO_shifts(shifts, correct_map, events, isRealData, systematic=False):
     """
     Applies the Run 3 recommended muon scale and smearing corrections.
@@ -1097,7 +1089,6 @@ def MUO_shifts(shifts, correct_map, events, isRealData, systematic=False):
     return shifts
 
 
-## EGM
 def EGM_shifts(shifts, correct_map, events, isRealData, systematic=False):
     """
     Applies the Run 3 recommended electron scale and smearing corrections.
@@ -1107,26 +1098,45 @@ def EGM_shifts(shifts, correct_map, events, isRealData, systematic=False):
     """
 
     ele = events.Electron
+    n_ele = ak.num(ele)
+    events_run = ak.flatten(ak.broadcast_arrays(events.run, ele.eta)[0])
+    ele_etaSC = ak.flatten(ele.superclusterEta) if "Summer24" in correct_map["campaign"] else ak.flatten(ele.eta + ele.deltaEtaSC)
+    ele_r9 = ak.flatten(ele.r9)
+    ele_pt = ak.flatten(ele.pt)
+    ele_seedGain = ak.flatten(ele.seedGain)
 
     if isRealData: # scale correction is only applied to data
         scale_evaluator = correct_map["electronSS"].compound[correct_map["electronSS_cfg"][0]]
-        scale = scale_evaluator.evaluate(
-            "scale",
-            events.run,
-            ele.superclusterEta,
-            ele.r9,
-            ele.pt,
-            ele.seedGain
-        )
+        if "Summer24" in correct_map["campaign"]:
+            scale = scale_evaluator.evaluate(
+                "scale",
+                events_run,
+                ele_etaSC,
+                ele_r9,
+                ele_pt,
+                ele_seedGain
+            )
+        else:
+            scale = scale_evaluator.evaluate(
+                "scale",
+                events_run,
+                ele_etaSC,
+                ele_r9,
+                np.abs(ele_etaSC),
+                ele_pt,
+                ele_seedGain
+            )
+        scale = ak.unflatten(scale, n_ele)
         ele_pt_corr = scale * ele.pt
     else: # smear correction is only applied to MC
         smear_and_syst_evaluator = correct_map["electronSS"][correct_map["electronSS_cfg"][1]]
         smear = smear_and_syst_evaluator.evaluate(
             "smear",
-            ele.pt,
-            ele.r9,
-            np.abs(ele.superclusterEta)
+            ele_pt,
+            ele_r9,
+            np.abs(ele_etaSC)
         )
+        smear = ak.unflatten(smear, n_ele)
         # since the smearing is stochastic, a random number is needed for each event
         rng = np.random.default_rng(seed=125)
         random_numbers = rng.normal(loc=0.0, scale=1.0, size=len(ele.pt))
@@ -1136,19 +1146,21 @@ def EGM_shifts(shifts, correct_map, events, isRealData, systematic=False):
     if systematic and not isRealData:
         unc_scale = smear_and_syst_evaluator.evaluate(
             "escale",
-            ele.pt,
-            ele.r9,
-            np.abs(ele.superclusterEta)
+            ele_pt,
+            ele_r9,
+            np.abs(ele_etaSC)
         )
+        unc_scale = ak.unflatten(unc_scale, n_ele)
         unc_smear = smear_and_syst_evaluator.evaluate(
             "esmear",
-            ele.pt,
-            ele.r9,
-            np.abs(ele.superclusterEta)
+            ele_pt,
+            ele_r9,
+            np.abs(ele_etaSC)
         )
+        unc_smear = ak.unflatten(unc_smear, n_ele)
 
     ele["pt"] = ele_pt_corr
-    # add nominalscale & smearing correction to shifts
+    # add nominal scale & smearing correction to shifts
     for i in range(len(shifts)):
         shifts[i][0]["Electron"] = ele
 
@@ -1498,7 +1510,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
         sf_type = sf[: sf.find(" ")]
         for nele in range(ak.num(allele.pt)[0]):
             ele = allele[:, nele]
-            ele_eta = ak.fill_none(ele.eta, -2.5)
+            ele_etaSC = ak.fill_none(ele.eta + ele.deltaEtaSC, -2.5) if "Summer24" not in correct_map["campaign"] else ak.fill_none(ele.superclusterEta, -2.5)
             ele_pt = ak.fill_none(ele.pt, 20)
             mask = ele.pt > 20.0
             masknone = ak.is_none(ele.pt)
@@ -1508,11 +1520,8 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                 np.ones_like(allele[:, 0].pt),
             )
 
-            if (
-                "correctionlib" in str(type(correct_map["EGM"])) and
-                "correctionlib" in str(type(correct_map["EGM_HLT"]))
-            ):
-                ## reco SF, split by pT
+            if "correctionlib" in str(type(correct_map["EGM"])):
+                ## reco SFs, split by pT
                 if "Reco" in sf:
                     ## phi is used in Summer23
                     ele_pt = np.clip(ele.pt, 20.1, 74.9)
@@ -1525,7 +1534,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoBelow20",
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt_low,
                                 ele.phi,
                             ) if "Summer24" not in correct_map["campaign"] else 1.0, # TODO: temporary until RecoBelow20 is released for 2024
@@ -1537,7 +1546,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoAbove75",
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt_high,
                                 ele.phi,
                             ),
@@ -1549,14 +1558,14 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "Reco20to75",
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt,
                                 ele.phi,
                             ),
                             sfs_high,
                         )
-
                         sfs = np.where(masknone, 1.0, sfs)
+
                         if syst != False:
                             sfs_up_low = np.where(
                                 (ele.pt <= 20.0) & ~masknone,
@@ -1564,7 +1573,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "RecoBelow20",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_low,
                                     ele.phi,
                                 ) if "Summer24" not in correct_map["campaign"] else 0.0, # TODO: temporary until RecoBelow20 is released for 2024
@@ -1576,7 +1585,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "RecoBelow20",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_low,
                                     ele.phi,
                                 ) if "Summer24" not in correct_map["campaign"] else 0.0, # TODO: temporary until RecoBelow20 is released for 2024
@@ -1588,7 +1597,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "RecoAbove75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_high,
                                     ele.phi,
                                 ),
@@ -1600,7 +1609,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "RecoAbove75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_high,
                                     ele.phi,
                                 ),
@@ -1612,7 +1621,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "Reco20to75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                     ele.phi,
                                 ),
@@ -1624,7 +1633,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "Reco20to75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                     ele.phi,
                                 ),
@@ -1634,14 +1643,13 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             sfs_down = np.where(masknone, 1.0, sfs_down)
 
                     else:
-
                         sfs_low = np.where(
                             (ele.pt <= 20.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoBelow20",
-                                ele_eta if "Summer24" in correct_map["campaign"] else 1.0,
+                                ele_etaSC,
                                 ele_pt_low,
                             ) if "Summer24" not in correct_map["campaign"] else 1.0, # TODO: temporary until RecoBelow20 is released for 2024
                             1.0,
@@ -1652,7 +1660,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoAbove75",
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt_high,
                             ),
                             sfs_low,
@@ -1660,11 +1668,14 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         sfs = np.where(
                             (ele.pt > 20.0) & (ele.pt <= 75.0) & (~masknone),
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                sf.split(" ")[1], "sf", "Reco20to75", ele_eta, ele_pt
+                                sf.split(" ")[1],
+                                "sf",
+                                "Reco20to75",
+                                ele_etaSC,
+                                ele_pt
                             ),
                             sfs_high,
                         )
-
                         sfs = np.where(masknone, 1.0, sfs)
 
                         if syst:
@@ -1674,7 +1685,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "RecoBelow20",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_low,
                                 ) if "Summer24" not in correct_map["campaign"] else 0.0, # TODO: temporary until RecoBelow20 is released for 2024
                                 0.0,
@@ -1685,7 +1696,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "RecoBelow20",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_low,
                                 ) if "Summer24" not in correct_map["campaign"] else 0.0, # TODO: temporary until RecoBelow20 is released for 2024
                                 0.0,
@@ -1696,7 +1707,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "RecoAbove75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_high,
                                 ),
                                 sfs_up_low,
@@ -1707,7 +1718,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "RecoAbove75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_high,
                                 ),
                                 sfs_down_low,
@@ -1718,7 +1729,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "Reco20to75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                 ),
                                 sfs_up_high,
@@ -1729,7 +1740,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "Reco20to75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                 ),
                                 sfs_down_high,
@@ -1737,8 +1748,15 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             sfs_up = np.where(masknone, 1.0, sfs_up)
                             sfs_down = np.where(masknone, 1.0, sfs_down)
 
-                else: # trigger and ID SFs
-                    _ele_map = "EGM_HLT" if "Trig" in sf else "EGM"
+                else:
+                    # trigger SFs
+                    if "Trig" in sf and "correctionlib" in str(type(correct_map["EGM_HLT"])):
+                        _ele_map = "EGM_HLT"
+                        ele_eta = ak.fill_none(ele.eta, -2.5)
+                    # ID SFs
+                    else:
+                        _ele_map = "EGM"
+                        ele_eta = ele_etaSC
 
                     if "Summer23" in correct_map["campaign"]:
                         sfs = np.where(
@@ -1838,34 +1856,37 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                     sfs = np.where(
                         masknone,
                         1.0,
-                        correct_map["EGM_custom"][sf_type](ele_eta, ele_pt),
+                        correct_map["EGM_custom"][sf_type](ele_etaSC, ele_pt),
                     )
                     if syst:
                         sfs_up = np.where(
                             masknone,
                             1.0,
-                            correct_map["EGM_custom"][sf_type](ele_eta, ele_pt)
+                            correct_map["EGM_custom"][sf_type](ele_etaSC, ele_pt)
                             + correct_map["EGM_custom"][f"{sf_type}_error"](
-                                ele_eta, ele_pt
+                                ele_etaSC, ele_pt
                             ),
                         )
                         sfs_down = np.where(
                             masknone,
                             1.0,
-                            correct_map["EGM_custom"][sf_type](ele_eta, ele_pt)
+                            correct_map["EGM_custom"][sf_type](ele_etaSC, ele_pt)
                             - correct_map["EGM_custom"][f"{sf_type}_error"](
-                                ele_eta, ele_pt
+                                ele_etaSC, ele_pt
                             ),
                         )
+
             sfs_alle = sfs_alle * sfs
             if syst:
                 sfs_alle_down = sfs_alle_down * sfs_down
                 sfs_alle_up = sfs_alle_up * sfs_up
+
         sfname = sf.split(" ")[0]
         if syst:
             weights.add(sfname, sfs_alle, sfs_alle_up, sfs_alle_down)
         else:
             weights.add(sfname, sfs_alle)
+
     return weights
 
 
@@ -1936,10 +1957,12 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
             if syst:
                 sfs_allmu_down = sfs_allmu_down * sfs_down
                 sfs_allmu_up = sfs_allmu_up * sfs_up
+
         if syst:
             weights.add(sf.split(" ")[0], sfs_allmu, sfs_allmu_up, sfs_allmu_down)
         else:
             weights.add(sf.split(" ")[0], sfs_allmu)
+
     return weights
 
 
@@ -2303,6 +2326,7 @@ def common_shifts(self, events):
                         "JESDown",
                     )]
     ```
+
     Different treatment for weights and scale/resolution shifts is necessary
     to ensure accurate corrections and uncertainties are applied to the data.
 
@@ -2316,6 +2340,7 @@ def common_shifts(self, events):
 
     isRealData = not hasattr(events, "genWeight")
     dataset = events.metadata["dataset"]
+
     shifts = []
 
     if "JME" in self.SF_map.keys():
@@ -2343,8 +2368,8 @@ def common_shifts(self, events):
                     None
                 )
             ]
+        ## Using PuppiMET
         else:
-            ## Using PuppiMET
             shifts = [
                 (
                     {
@@ -2369,7 +2394,18 @@ def common_shifts(self, events):
         for shift in shifts:
             shift[0]["Electron"] = events.Electron
 
-    return shifts
+    # Apply jet veto
+    if "jetveto" in self.SF_map.keys():
+        jet_veto = jetveto(events.Jet, self.SF_map)
+        event_veto = ak.any(jet_veto > 0, axis=1)
+        vetoed_events = events[~event_veto]
+        for collections, _ in shifts:
+            for key in collections:
+                collections[key] = collections[key][~event_veto]
+    else:
+        vetoed_events = events
+
+    return vetoed_events, shifts
 
 
 # common weights
@@ -2416,7 +2452,6 @@ def weight_manager(pruned_ev, SF_map, isSyst):
             )
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
-
         syst_wei = True if isSyst != False else False
         if "PU" in SF_map.keys():
             puwei(

@@ -9,7 +9,7 @@ dependencies:
   - ca-certificates
   - xrootd
   - openssl
-  - coffea==2025.7.0
+  - coffea==0.7.22
   - vector
   - fsspec[version='>=0.3.3']
   - psutil
@@ -18,4 +18,3 @@ dependencies:
   - parsl==2024.01.29
   - arrow
   - dask-jobqueue
-  - awkward[version='>=2.0']

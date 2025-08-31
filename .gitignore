@@ -8,9 +8,7 @@
 docs/_build/
 runinfo/
 plot/
-plotting/plot/
 src/BTVNanoCommissioning/version.py
-src/BTVNanoCommissioning/jsonpog-integration/examples/
 src/BTVNanoCommissioning.egg-info/
 __pycache__
 workflows/__pycache__/
@@ -19,4 +17,4 @@ dask-report.html
 dask-worker-space/
 .job_wrapper_failure
 jobs_*
-.sites_map.json
+.success
