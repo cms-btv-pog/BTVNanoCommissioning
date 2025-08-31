@@ -436,7 +436,7 @@ def jetveto(jets, correct_map):
     correct_map (dict): A dictionary containing correction factors or additional selection criteria for the jets.
 
     Returns:
-    jets: A jets of jets that pass the predefined pt and eta criteria and any additional criteria from the correction map.
+    jets: A collection of jets that pass the predefined pt and eta criteria and any additional criteria from the correction map.
 
     Raises:
     TypeError: If the jets parameter is not an iterable.
@@ -1095,7 +1095,6 @@ def MUO_shifts(shifts, correct_map, events, isRealData, systematic=False):
     return shifts
 
 
-## EGM
 def EGM_shifts(shifts, correct_map, events, isRealData, systematic=False):
     """
     Applies the Run 3 recommended electron scale and smearing corrections.
@@ -1517,7 +1516,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
         sf_type = sf[: sf.find(" ")]
         for nele in range(ak.num(allele.pt)[0]):
             ele = allele[:, nele]
-            ele_eta = ak.fill_none(ele.eta, -2.5)
+            ele_etaSC = ak.fill_none(ele.eta + ele.deltaEtaSC, -2.5) if "Summer24" not in correct_map["campaign"] else ak.fill_none(ele.superclusterEta, -2.5)
             ele_pt = ak.fill_none(ele.pt, 20)
             mask = ele.pt > 20.0
             masknone = ak.is_none(ele.pt)
@@ -1541,7 +1540,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoBelow20",
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt_low,
                                 ele.phi,
                             ),
@@ -1553,7 +1552,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoAbove75",
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt_high,
                                 ele.phi,
                             ),
@@ -1565,7 +1564,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "Reco20to75",
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt,
                                 ele.phi,
                             ),
@@ -1580,7 +1579,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "RecoBelow20",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_low,
                                     ele.phi,
                                 ),
@@ -1592,7 +1591,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "RecoBelow20",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_low,
                                     ele.phi,
                                 ),
@@ -1604,7 +1603,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "RecoAbove75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_high,
                                     ele.phi,
                                 ),
@@ -1616,7 +1615,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "RecoAbove75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_high,
                                     ele.phi,
                                 ),
@@ -1628,7 +1627,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "Reco20to75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                     ele.phi,
                                 ),
@@ -1640,7 +1639,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "Reco20to75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                     ele.phi,
                                 ),
@@ -1656,7 +1655,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoBelow20",
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt_low,
                             ) if "Summer24" not in correct_map["campaign"] else 1.0, # TODO: temporary until RecoBelow20 is released for 2024
                             1.0,
@@ -1667,7 +1666,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "RecoAbove75",
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt_high,
                             ),
                             sfs_low,
@@ -1678,7 +1677,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 "Reco20to75",
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt
                             ),
                             sfs_high,
@@ -1692,7 +1691,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "RecoBelow20",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_low,
                                 ) if "Summer24" not in correct_map["campaign"] else 0.0, # TODO: temporary until RecoBelow20 is released for 2024
                                 0.0,
@@ -1703,7 +1702,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "RecoBelow20",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_low,
                                 ) if "Summer24" not in correct_map["campaign"] else 0.0, # TODO: temporary until RecoBelow20 is released for 2024
                                 0.0,
@@ -1714,7 +1713,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "RecoAbove75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_high,
                                 ),
                                 sfs_up_low,
@@ -1725,7 +1724,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "RecoAbove75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt_high,
                                 ),
                                 sfs_down_low,
@@ -1736,7 +1735,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     "Reco20to75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                 ),
                                 sfs_up_high,
@@ -1747,7 +1746,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     "Reco20to75",
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                 ),
                                 sfs_down_high,
@@ -1759,9 +1758,11 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                     # trigger SFs
                     if "Trig" in sf and "correctionlib" in str(type(correct_map["EGM_HLT"])):
                         _ele_map = "EGM_HLT"
+                        ele_eta = ak.fill_none(ele.eta, -2.5)
                     # ID SFs
                     else:
                         _ele_map = "EGM"
+                        ele_eta = ele_etaSC
 
                     if "Summer23" in correct_map["campaign"]:
                         sfs = np.where(
@@ -1861,23 +1862,23 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                     sfs = np.where(
                         masknone,
                         1.0,
-                        correct_map["EGM_custom"][sf_type](ele_eta, ele_pt),
+                        correct_map["EGM_custom"][sf_type](ele_etaSC, ele_pt),
                     )
                     if syst:
                         sfs_up = np.where(
                             masknone,
                             1.0,
-                            correct_map["EGM_custom"][sf_type](ele_eta, ele_pt)
+                            correct_map["EGM_custom"][sf_type](ele_etaSC, ele_pt)
                             + correct_map["EGM_custom"][f"{sf_type}_error"](
-                                ele_eta, ele_pt
+                                ele_etaSC, ele_pt
                             ),
                         )
                         sfs_down = np.where(
                             masknone,
                             1.0,
-                            correct_map["EGM_custom"][sf_type](ele_eta, ele_pt)
+                            correct_map["EGM_custom"][sf_type](ele_etaSC, ele_pt)
                             - correct_map["EGM_custom"][f"{sf_type}_error"](
-                                ele_eta, ele_pt
+                                ele_etaSC, ele_pt
                             ),
                         )
 
