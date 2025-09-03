@@ -57,7 +57,6 @@ class NanoProcessor(processor.ProcessorABC):
                 self._campaign,
                 isRealData,
                 self.syst,
-                True,
             )
         else:
             shifts = [

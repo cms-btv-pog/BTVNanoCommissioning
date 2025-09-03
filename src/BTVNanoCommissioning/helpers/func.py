@@ -91,9 +91,8 @@ def _load_jmefactory(year, campaign, jme_compiles):
     _jet_path = f"BTVNanoCommissioning.data.JME.{year}_{campaign}"
     with importlib.resources.path(_jet_path, jme_compiles) as filename:
         with gzip.open(filename) as fin:
-            jme_facrory = cloudpickle.load(fin)
-
-    return jme_facrory
+            jme_factory = cloudpickle.load(fin)
+    return jme_factory
 
 
 def __jet_factory_factory__(files):
