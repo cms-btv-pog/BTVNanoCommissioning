@@ -1752,11 +1752,9 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                     # trigger SFs
                     if "Trig" in sf and "correctionlib" in str(type(correct_map["EGM_HLT"])):
                         _ele_map = "EGM_HLT"
-                        ele_eta = ak.fill_none(ele.eta, -2.5)
                     # ID SFs
                     else:
                         _ele_map = "EGM"
-                        ele_eta = ele_etaSC
 
                     if "Summer23" in correct_map["campaign"]:
                         sfs = np.where(
@@ -1766,7 +1764,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 correct_map["EGM_cfg"][sf],
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt,
                                 ele.phi,
                             ),
@@ -1780,7 +1778,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     correct_map["EGM_cfg"][sf],
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                     ele.phi,
                                 ),
@@ -1792,7 +1790,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     correct_map["EGM_cfg"][sf],
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                     ele.phi,
                                 ),
@@ -1805,7 +1803,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sf.split(" ")[1],
                                 "sf",
                                 correct_map["EGM_cfg"][sf],
-                                ele_eta,
+                                ele_etaSC,
                                 ele_pt,
                             ),
                         )
@@ -1818,7 +1816,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfup",
                                     correct_map["EGM_cfg"][sf],
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                 ),
                             )
@@ -1829,7 +1827,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     sf.split(" ")[1],
                                     "sfdown",
                                     correct_map["EGM_cfg"][sf],
-                                    ele_eta,
+                                    ele_etaSC,
                                     ele_pt,
                                 ),
                             )
