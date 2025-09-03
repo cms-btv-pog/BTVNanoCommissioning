@@ -2463,7 +2463,7 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         if "MUO" in SF_map.keys() and "SelMuon" in pruned_ev.fields:
             muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, False)
         if "EGM" in SF_map.keys() and "SelElectron" in pruned_ev.fields:
-            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, False)
+            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, True)
         if "BTV" in SF_map.keys() and "SelJet" in pruned_ev.fields:
             btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepJetC", syst_wei)
             btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepJetB", syst_wei)
