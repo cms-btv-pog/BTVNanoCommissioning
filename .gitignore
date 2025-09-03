@@ -8,9 +8,7 @@
 docs/_build/
 runinfo/
 plot/
-plotting/plot/
 src/BTVNanoCommissioning/version.py
-src/BTVNanoCommissioning/jsonpog-integration/examples/
 src/BTVNanoCommissioning.egg-info/
 __pycache__
 workflows/__pycache__/
