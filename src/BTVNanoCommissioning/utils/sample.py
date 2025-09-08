@@ -69,7 +69,7 @@ predefined_sample = {
             "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             # VV
             "WZto3LNu_TuneCP5_13p6TeV_powheg-pythia8",
-			"WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
+            "WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto4L_TuneCP5_13p6TeV_powheg-pythia8",
@@ -97,7 +97,7 @@ predefined_sample = {
             "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             # VV
             "WZto3LNu_TuneCP5_13p6TeV_powheg-pythia8",
-			"WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
+            "WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto4L_TuneCP5_13p6TeV_powheg-pythia8",
