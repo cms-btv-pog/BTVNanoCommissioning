@@ -1512,6 +1512,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             ele = allele[:, nele]
             ele_etaSC = ak.fill_none(ele.eta + ele.deltaEtaSC, -2.5) if "Summer24" not in correct_map["campaign"] else ak.fill_none(ele.superclusterEta, -2.5)
             ele_pt = ak.fill_none(ele.pt, 20)
+            ele_pt = np.clip(ele_pt, 20, 999)
             masknone = ak.is_none(ele.pt)
             sfs_alle, sfs_alle_up, sfs_alle_down = (
                 np.ones_like(allele[:, 0].pt),
@@ -1757,7 +1758,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
                     if "Summer23" in correct_map["campaign"]:
                         sfs = np.where(
-                            masknone,
+                            masknone | (ele.pt > 1000.0),
                             1.0,
                             correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
@@ -1771,7 +1772,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
                         if syst:
                             sfs_up = np.where(
-                                masknone,
+                                masknone | (ele.pt > 1000.0),
                                 1.0,
                                 correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
@@ -1783,7 +1784,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 ),
                             )
                             sfs_down = np.where(
-                                masknone,
+                                masknone | (ele.pt > 1000.0),
                                 1.0,
                                 correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
@@ -1796,7 +1797,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             )
                     else:
                         sfs = np.where(
-                            masknone,
+                            masknone | (ele.pt > 1000.0),
                             1.0,
                             correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
@@ -1809,7 +1810,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
                         if syst:
                             sfs_up = np.where(
-                                masknone,
+                                masknone | (ele.pt > 1000.0),
                                 1.0,
                                 correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
@@ -1820,7 +1821,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 ),
                             )
                             sfs_down = np.where(
-                                masknone,
+                                masknone | (ele.pt > 1000.0),
                                 1.0,
                                 correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
