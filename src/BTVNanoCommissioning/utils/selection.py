@@ -92,17 +92,17 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
 
 ## FIXME: Electron cutbased Id & MVA ID not exist in Winter22Run3 sample
 def ele_cuttightid(events, campaign):
+    ele_etaSC = events.Electron.eta + events.Electron.deltaEtaSC if "Summer24" not in campaign else events.Electron.superclusterEta
     elemask = (
-        (abs(events.Electron.eta) < 1.4442)
-        | ((abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566))
+        (abs(ele_etaSC) < 1.4442) | ((abs(ele_etaSC) > 1.566) & (abs(ele_etaSC) < 2.5))
     ) & (events.Electron.cutBased > 3)
     return elemask
 
 
 def ele_mvatightid(events, campaign):
+    ele_etaSC = events.Electron.eta + events.Electron.deltaEtaSC if "Summer24" not in campaign else events.Electron.superclusterEta
     elemask = (
-        (abs(events.Electron.eta) < 1.4442)
-        | ((abs(events.Electron.eta) < 2.5) & (abs(events.Electron.eta) > 1.566))
+        (abs(ele_etaSC) < 1.4442) | ((abs(ele_etaSC) > 1.566) & (abs(ele_etaSC) < 2.5))
     ) & (events.Electron.mvaIso_WP80 > 0.5)
     return elemask
 

@@ -1512,7 +1512,6 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             ele = allele[:, nele]
             ele_etaSC = ak.fill_none(ele.eta + ele.deltaEtaSC, -2.5) if "Summer24" not in correct_map["campaign"] else ak.fill_none(ele.superclusterEta, -2.5)
             ele_pt = ak.fill_none(ele.pt, 20)
-            mask = ele.pt > 20.0
             masknone = ak.is_none(ele.pt)
             sfs_alle, sfs_alle_up, sfs_alle_down = (
                 np.ones_like(allele[:, 0].pt),
@@ -1529,7 +1528,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                     ele_pt_high = np.clip(ele.pt, 75.0, 500.0)
                     if "Summer23" in correct_map["campaign"]:
                         sfs_low = np.where(
-                            (ele.pt <= 20.0) & (~masknone),
+                            (ele.pt <= 20.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1541,7 +1540,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             1.0,
                         )
                         sfs_high = np.where(
-                            (ele.pt > 75.0) & (~masknone),
+                            (ele.pt > 75.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1553,7 +1552,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             sfs_low,
                         )
                         sfs = np.where(
-                            (ele.pt > 20.0) & (ele.pt <= 75.0) & (~masknone),
+                            (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1592,7 +1591,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 0.0,
                             )
                             sfs_up_high = np.where(
-                                (ele.pt > 75.0) & (~masknone),
+                                (ele.pt > 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -1604,7 +1603,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_up_low,
                             )
                             sfs_down_high = np.where(
-                                (ele.pt > 75.0) & (~masknone),
+                                (ele.pt > 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -1644,7 +1643,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
                     else:
                         sfs_low = np.where(
-                            (ele.pt <= 20.0) & (~masknone),
+                            (ele.pt <= 20.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1655,7 +1654,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             1.0,
                         )
                         sfs_high = np.where(
-                            (ele.pt > 75.0) & (~masknone),
+                            (ele.pt > 75.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1666,7 +1665,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             sfs_low,
                         )
                         sfs = np.where(
-                            (ele.pt > 20.0) & (ele.pt <= 75.0) & (~masknone),
+                            (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1702,7 +1701,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 0.0,
                             )
                             sfs_up_high = np.where(
-                                (ele.pt > 75.0) & (~masknone),
+                                (ele.pt > 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -1713,7 +1712,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_up_low,
                             )
                             sfs_down_high = np.where(
-                                (ele.pt > 75.0) & (~masknone),
+                                (ele.pt > 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -1835,7 +1834,9 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             else:
                 if "ele_Trig" in sf:
                     sfs = np.where(
-                        masknone, 1.0, correct_map["EGM_custom"][sf_type](ele_pt)
+                        masknone,
+                        1.0,
+                        correct_map["EGM_custom"][sf_type](ele_pt)
                     )
                     if syst:
                         sfs_up = np.where(
@@ -1905,10 +1906,8 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
         for nmu in range(ak.num(allmu.pt)[0]):
             mu = allmu[:, nmu]
             masknone = ak.is_none(mu.pt)
-
             mu_pt = np.clip(mu.pt, 15.0, 199.9)
             mu_eta = np.clip(np.abs(mu.eta), 0.0, 2.4)
-            mask = mu_pt > 30
             sfs = 1.0
             if "correctionlib" in str(type(correct_map["MUO"])):
                 sfs = np.where(
@@ -1931,7 +1930,9 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
             else:
                 if "mu" in sf:
                     sfs = np.where(
-                        masknone, 1.0, correct_map["MUO_cfg"][sf_type](mu_eta, mu_pt)
+                        masknone,
+                        1.0,
+                        correct_map["MUO_cfg"][sf_type](mu_eta, mu_pt)
                     )
                     if syst:
                         sfs_up = np.where(
