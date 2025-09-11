@@ -1,4 +1,4 @@
-from BTVNanoCommissioning.utils.selection import btag_wp_dict
+from BTVNanoCommissioning.utils.selection import btag_wp_dict, wp_dict
 from BTVNanoCommissioning.helpers.definitions import (
     definitions,
     SV_definitions,
@@ -6,6 +6,7 @@ from BTVNanoCommissioning.helpers.definitions import (
 )
 import hist as Hist
 import awkward as ak
+import numpy as np
 from BTVNanoCommissioning.helpers.func import flatten
 
 
@@ -426,8 +427,44 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                 syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
     elif "sf_ttsemilep_tnp" in workflow:
-        pass
-        # add histograms for tag and probe method here
+        # objects for common kinematics (writer fills jet*, mu*, MET automatically)
+        obj_list = ["MET", "mu"]
+        for i in range(4):
+            obj_list.append(f"jet{i}")
+
+        # extra axes (top reco & bookkeeping)
+        chi2_axis   = Hist.axis.Regular(60, 0, 60, name="chi2",  label=r"$\chi^2$")
+        tpt_axis    = Hist.axis.Regular(60, 0, 600, name="pt",    label=r"$p_T$ [GeV]")
+
+        # bookkeeping / categories
+        _hist_dict["chi2"]       = Hist.Hist(syst_axis, chi2_axis, Hist.storage.Weight())
+
+        # ttbar reconstruction summaries
+        _hist_dict["tlep_mass"]  = Hist.Hist(syst_axis, mt_axis, Hist.storage.Weight())      # 0..300
+        _hist_dict["thad_mass"]  = Hist.Hist(syst_axis, mt_axis, Hist.storage.Weight())
+        _hist_dict["whad_mass"]  = Hist.Hist(syst_axis, mt_axis, Hist.storage.Weight())
+
+        _hist_dict["tlep_pt"]    = Hist.Hist(syst_axis, tpt_axis, Hist.storage.Weight())
+        _hist_dict["thad_pt"]    = Hist.Hist(syst_axis, tpt_axis, Hist.storage.Weight())
+
+        # a few useful angulars
+        _hist_dict["dr_lep_blep"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_lep_bhad"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+        _hist_dict["dr_ja_jb"]    = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+
+        # Minimal inputs for the b-eff fit: yields per (category, working point, pass/fail, pT bin)
+        cat_axis    = Hist.axis.StrCategory(["had", "lep"], name="cat")
+        tagger_axis = Hist.axis.StrCategory([], name="tagger", growth=True)
+        wp_axis     = Hist.axis.StrCategory(["L", "M", "T", "XT", "XXT"], name="wp")
+        result_axis = Hist.axis.StrCategory(["pass", "fail"], name="result")
+        # Choose your pT(b) binning
+        ptb_edges  = [30., 50., 80., 120., 200., 400., 1000.]
+        ptb_axis   = Hist.axis.Variable(ptb_edges, name="ptb", label="$p_{T}(b)$ [GeV]")
+
+        _hist_dict["tnp_yields"] = Hist.Hist(
+            syst_axis, cat_axis, tagger_axis, wp_axis, result_axis, ptb_axis, Hist.storage.Weight()
+        )
+
 
     ### Common kinematic variables histogram creation
     if "Wc_sf" not in workflow:
@@ -942,6 +979,110 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         discr=seljet[histname.replace(f"_{i}", "")],
                         weight=weights.partial_weight(exclude=exclude_btv),
                     )
+
+            # Tag-and-probe / ttbar reco specific (sf_ttsemilep_tnp)
+            elif histname == "tnp_yields" and all(
+                k in pruned_ev.fields for k in ("tnp_had_fill","tnp_lep_fill","tnp_had_pt","tnp_lep_pt","bhad","blep")
+            ):
+                # ---- Get all available (tagger, WP) from the table ----
+                year     = str(pruned_ev.run_year[0])     if "run_year"     in pruned_ev.fields else None
+                campaign = str(pruned_ev.run_campaign[0]) if "run_campaign" in pruned_ev.fields else None
+                WPD = wp_dict(year, campaign)
+                # Keep only taggers that exist as jet attributes on your pruned_ev jets
+                def _has_score(obj, tagger):
+                    return hasattr(obj, f"btag{tagger}B")
+                available = []
+                for tagger, sub in WPD.items():
+                    if not (_has_score(pruned_ev.bhad, tagger) and _has_score(pruned_ev.blep, tagger)):
+                        continue
+                    # all b-tag working points (skip "No")
+                    for wp_name, thr in sub.get("b", {}).items():
+                        if wp_name == "No":
+                            continue
+                        available.append((tagger, wp_name, float(thr)))
+
+                def _strlist(s, n):
+                    return [s] * int(n)
+
+                w_all = np.asarray(weight)
+
+                # ---------------- had side (probe = BH) ----------------
+                had_fill = ak.to_numpy(ak.fill_none(pruned_ev.tnp_had_fill, False))
+                had_pt   = ak.to_numpy(pruned_ev.tnp_had_pt)
+                bhad     = pruned_ev.bhad
+
+                if had_fill.any():
+                    for tagger, wp_name, thr in available:
+                        probe_scores = getattr(bhad, f"btag{tagger}B")
+                        passed = ak.to_numpy((probe_scores > thr) & had_fill)
+                        # select the entries to be filled
+                        sel   = passed | (~passed & had_fill)  # i.e. all had_fill entries; result is pass/fail
+                        nsel  = int(sel.sum())
+                        if nsel == 0:
+                            continue
+
+                        cat    = _strlist("had",    nsel)
+                        tagarr = _strlist(tagger,   nsel)
+                        wparr  = _strlist(wp_name,  nsel)
+                        res    = np.where(ak.to_numpy(probe_scores > thr)[sel], "pass", "fail").astype(object).tolist()
+                        pt     = had_pt[sel]
+                        wts    = w_all[sel]
+
+                        h.fill(
+                            syst,
+                            cat,             # StrCategory: 'had'
+                            tagarr,          # StrCategory: tagger label
+                            wparr,           # StrCategory: WP label
+                            res,             # StrCategory: 'pass'/'fail'
+                            pt,              # variable axis
+                            weight=wts,
+                        )
+
+                # ---------------- lep side (probe = BL) ----------------
+                lep_fill = ak.to_numpy(ak.fill_none(pruned_ev.tnp_lep_fill, False))
+                lep_pt   = ak.to_numpy(pruned_ev.tnp_lep_pt)       # BL pT you stored
+                blep     = pruned_ev.blep                   # the BL probe jet
+
+                if lep_fill.any():
+                    for tagger, wp_name, thr in available:
+                        probe_scores = getattr(blep, f"btag{tagger}B")
+                        passed = ak.to_numpy((probe_scores > thr) & lep_fill)
+                        sel   = passed | (~passed & lep_fill)
+                        nsel  = int(sel.sum())
+                        if nsel == 0:
+                            continue
+
+                        cat    = _strlist("lep",    nsel)
+                        tagarr = _strlist(tagger,   nsel)
+                        wparr  = _strlist(wp_name,  nsel)
+                        res    = np.where(ak.to_numpy(probe_scores > thr)[sel], "pass", "fail").astype(object).tolist()
+                        pt     = lep_pt[sel]
+                        wts    = w_all[sel]
+
+                        h.fill(
+                            syst,
+                            cat,
+                            tagarr,
+                            wparr,
+                            res,
+                            pt,
+                            weight=wts,
+                        )
+
+            elif histname == "chi2" and "chi2" in pruned_ev.fields:
+                h.fill(syst, flatten(pruned_ev.chi2), weight=weight)
+
+            elif histname in ("tlep_mass", "thad_mass", "whad_mass"):
+                if histname in pruned_ev.fields:
+                    h.fill(syst, flatten(pruned_ev[histname]), weight=weight)
+
+            elif histname in ("tlep_pt", "thad_pt"):
+                if histname in pruned_ev.fields:
+                    h.fill(syst, flatten(pruned_ev[histname]), weight=weight)
+
+            elif histname in ("dr_lep_blep", "dr_lep_bhad", "dr_ja_jb"):
+                if histname in pruned_ev.fields:
+                    h.fill(syst, flatten(pruned_ev[histname]), weight=weight)
 
         if "dr_poslnegl" in output.keys():
             # DY histograms
