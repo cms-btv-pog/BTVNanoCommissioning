@@ -141,9 +141,8 @@ class NanoProcessor(processor.ProcessorABC):
 
         base_jet_mask = jet_id(events, self._campaign)
         jet_mask = ak.fill_none(base_jet_mask & clean_mu & clean_el, False, axis=-1)
-
         event_jet = events.Jet[jet_mask]
-        req_jets = ak.num(event_jet, axis=1) >= 4
+        req_jets = ak.num(event_jet, axis=1) == 4
 
         # require at least one tag jet
         bmask_tag = btag_wp(event_jet, self._year, self._campaign, tagger=self.tag_tagger,   borc="b", wp=self.tag_wp)
@@ -173,7 +172,7 @@ class NanoProcessor(processor.ProcessorABC):
         _cf("metf", req_lumi & req_trig & req_metf)
         _cf("lepveto", req_lumi & req_trig & req_metf & req_lepveto)
         _cf("tightlep", req_lumi & req_trig & req_metf & req_lepveto & req_lep)
-        _cf("jets>=4", req_lumi & req_trig & req_metf & req_lepveto & req_lep & req_jets)
+        _cf("jets==4", req_lumi & req_trig & req_metf & req_lepveto & req_lep & req_jets)
         _cf("bjets>=1", req_lumi & req_trig & req_metf & req_lepveto & req_lep & req_jets & req_btags)
 
         # Event mask
@@ -198,8 +197,9 @@ class NanoProcessor(processor.ProcessorABC):
 
         # -------- ttbar reconstruction --------
 
-        # Limit to N leading jets for speed
-        NMAX = 6
+        # Limit to N leading jets for speed 
+        # (keep this for flexibility, in case the jet multiplicity cut is loosened)
+        NMAX = 4
         jets = jets[:, :NMAX]
         bmask_tag = bmask_tag[:, :NMAX]
 
@@ -357,14 +357,6 @@ class NanoProcessor(processor.ProcessorABC):
         )
         best_chi2 = ak.firsts(chi2[best_mask])
 
-        # tag and probe code flags (the actual logic is in the histogrammer)
-        had_tag = ak.fill_none(ak.firsts(bmask_tag[iBH][best_mask]), False)
-        lep_tag = ak.fill_none(ak.firsts(bmask_tag[iBL][best_mask]), False)
-        had_pt_ok = ak.fill_none(ak.firsts(BH.pt[best_mask]) >= 30.0, False)
-        lep_pt_ok = ak.fill_none(ak.firsts(BL.pt[best_mask]) >= 30.0, False)
-        tnp_had_fill = had_pt_ok & lep_tag
-        tnp_lep_fill = lep_pt_ok & had_tag
-
         # helper for FourVector mass / pt (NumPy ops are fine on Awkward arrays)
         def _four_mass(v):
             return np.sqrt(np.maximum(0.0, v.t * v.t - (v.x * v.x + v.y * v.y + v.z * v.z)))
@@ -389,6 +381,20 @@ class NanoProcessor(processor.ProcessorABC):
         dr_lep_blep = _dR(lep,     best_BL)
         dr_lep_bhad = _dR(lep,     best_BH)
         dr_ja_jb    = _dR(best_JA, best_JB)
+
+        drs = ak.stack([
+            _dr(best_BH, best_JA), _dr(best_BH, best_JB), _dr(best_BH, best_BL),
+            _dr(best_BL, best_JA), _dr(best_BL, best_JB)
+        ], axis=1)
+        mindr = ak.min(drs, axis=1)
+
+        # tag and probe code flags (the actual logic is in the histogrammer)
+        had_tag = ak.fill_none(ak.firsts(bmask_tag[iBH][best_mask]), False)
+        lep_tag = ak.fill_none(ak.firsts(bmask_tag[iBL][best_mask]), False)
+        had_pt_ok = ak.fill_none(ak.firsts(BH.pt[best_mask]) >= 30.0, False)
+        lep_pt_ok = ak.fill_none(ak.firsts(BL.pt[best_mask]) >= 30.0, False)
+        tnp_had_fill = had_pt_ok & lep_tag & (mindr >= 0.8)
+        tnp_lep_fill = lep_pt_ok & had_tag & (mindr >= 0.8)
 
         had_pt_for_tnp = ak.firsts(BH.pt[best_mask])
         lep_pt_for_tnp = ak.firsts(BL.pt[best_mask])
