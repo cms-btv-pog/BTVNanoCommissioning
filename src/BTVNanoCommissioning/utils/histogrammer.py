@@ -746,7 +746,9 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
         "DeepCSVB",
         "DeepJetB",
         "DeepJetC",
-    ]  # exclude b-tag SFs for btag inputs
+    ] 
+    btv_like = [v for v in weights.variations
+            if any(k in v.upper() for k in ("DEEP", "PNET", "ROBUST", "UPART", "BTV", "BTAG", "CTAG"))]   # exclude b-tag SFs for btag inputs
     # define Jet flavor
 
     # Reduce the jet to the correct dimension in the plot
@@ -1004,7 +1006,9 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 def _strlist(s, n):
                     return [s] * int(n)
 
-                w_all = np.asarray(weight)
+                # exclude b-tagging SF for calibration
+                w_all = weights.partial_weight(exclude=set(exclude_btv).union(btv_like))
+                w_all = np.asarray(w_all)
 
                 # ---------------- had side (probe = BH) ----------------
                 had_fill = ak.to_numpy(ak.fill_none(pruned_ev.tnp_had_fill, False))
