@@ -453,16 +453,22 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         _hist_dict["dr_ja_jb"]    = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
 
         # Minimal inputs for the b-eff fit: yields per (category, working point, pass/fail, pT bin)
+        region_axis = Hist.axis.StrCategory(
+            ["central", "sb_iso", "sb_btagM", "sb_btagL", "sb_iso_btagM"],
+            name="region"
+        )
         cat_axis    = Hist.axis.StrCategory(["had", "lep"], name="cat")
         tagger_axis = Hist.axis.StrCategory([], name="tagger", growth=True)
         wp_axis     = Hist.axis.StrCategory(["L", "M", "T", "XT", "XXT"], name="wp")
+        kin_axis = Hist.axis.Regular(27, -0.5, 26.5, name="kinbin", label="kinbin")
+        ttcat_axis  = Hist.axis.StrCategory(["sig", "bkg", "other"], name="tt_cat")
         result_axis = Hist.axis.StrCategory(["pass", "fail"], name="result")
         # Choose your pT(b) binning
         ptb_edges  = [30., 50., 80., 120., 200., 400., 1000.]
         ptb_axis   = Hist.axis.Variable(ptb_edges, name="ptb", label="$p_{T}(b)$ [GeV]")
 
         _hist_dict["tnp_yields"] = Hist.Hist(
-            syst_axis, cat_axis, tagger_axis, wp_axis, result_axis, ptb_axis, Hist.storage.Weight()
+            syst_axis, region_axis, cat_axis, tagger_axis, wp_axis, result_axis, ttcat_axis, kin_axis,  ptb_axis, Hist.storage.Weight()
         )
 
 
@@ -716,6 +722,41 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
                         Hist.storage.Weight(),
                     )
     return _hist_dict
+
+
+# put this near the top of histo_writter or in a utils module
+def partial_weight_excl_btv(weights, syst, exclude_btv_keys, btv_var_markers=("btag", "deepJet", "csv", "cvs", "btagSF")):
+    """
+    Return per-event weights for TnP:
+      - base = partial product excluding BTV SFs
+      - if syst is a non-BTV variation, multiply base by (w_var_all / w_nom_all)
+      - if syst is nominal or a BTV variation, return base
+    """
+    exclude_set = set(exclude_btv_keys)
+    # 1) base partial weight (exclude BTV always)
+    w_base = np.asarray(weights.partial_weight(exclude=exclude_set))
+
+    # 2) nominal / unknown syst: done
+    variations = list(getattr(weights, "variations", []))
+    if syst == "nominal" or syst not in variations:
+        return w_base
+
+    # 3) if this is a BTV-related variation, ignore it for TnP
+    if any(mark in syst for mark in btv_var_markers):
+        return w_base
+
+    # 4) non-BTV variation: apply ratio
+    w_nom_all = np.asarray(weights.weight())                   # central with everything
+    w_var_all = np.asarray(weights.weight(modifier=syst))      # varied with everything
+
+    # be safe with zeros/NaNs
+    scale = np.ones_like(w_nom_all, dtype=float)
+    mask = w_nom_all != 0
+    scale[mask] = w_var_all[mask] / w_nom_all[mask]
+    scale[~mask] = 1.0
+
+    return w_base * scale
+
 
 
 # Filled common histogram
@@ -984,93 +1025,94 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
 
             # Tag-and-probe / ttbar reco specific (sf_ttsemilep_tnp)
             elif histname == "tnp_yields" and all(
-                k in pruned_ev.fields for k in ("tnp_had_fill","tnp_lep_fill","tnp_had_pt","tnp_lep_pt","bhad","blep")
+                k in pruned_ev.fields
+                for k in ("tnp_had_fill","tnp_lep_fill","tnp_had_pt","tnp_lep_pt",
+                        "bhad","blep","tnp_region","tt_cat","kinbin")
             ):
-                # ---- Get all available (tagger, WP) from the table ----
+                # ---- Pull region / tt category / kinbin ----
+                region = np.asarray(ak.to_numpy(pruned_ev.tnp_region), dtype=np.str_)
+                ttcat  = np.asarray(ak.to_numpy(pruned_ev.tt_cat),     dtype=np.str_)
+                kinbin = np.asarray(ak.to_numpy(pruned_ev.kinbin),     dtype=np.int32)
+
+                # ---- Discover (tagger, WP) from your table & available jet attributes ----
                 year     = str(pruned_ev.run_year[0])     if "run_year"     in pruned_ev.fields else None
                 campaign = str(pruned_ev.run_campaign[0]) if "run_campaign" in pruned_ev.fields else None
                 WPD = wp_dict(year, campaign)
-                # Keep only taggers that exist as jet attributes on your pruned_ev jets
+
                 def _has_score(obj, tagger):
                     return hasattr(obj, f"btag{tagger}B")
+
                 available = []
                 for tagger, sub in WPD.items():
                     if not (_has_score(pruned_ev.bhad, tagger) and _has_score(pruned_ev.blep, tagger)):
                         continue
-                    # all b-tag working points (skip "No")
                     for wp_name, thr in sub.get("b", {}).items():
                         if wp_name == "No":
                             continue
                         available.append((tagger, wp_name, float(thr)))
 
-                def _strlist(s, n):
-                    return [s] * int(n)
+                # ---- Weights for TnP: exclude BTV SFs ----
+                w_all = partial_weight_excl_btv(weights, syst, exclude_btv_keys=set(exclude_btv).union(btv_like))
 
-                # exclude b-tagging SF for calibration
-                w_all = weights.partial_weight(exclude=set(exclude_btv).union(btv_like))
-                w_all = np.asarray(w_all)
+
+                # convenient helper
+                def _str_filled(s, n):  # fixed-length string array
+                    return np.full(int(n), s, dtype=np.str_)
 
                 # ---------------- had side (probe = BH) ----------------
-                had_fill = ak.to_numpy(ak.fill_none(pruned_ev.tnp_had_fill, False))
-                had_pt   = ak.to_numpy(pruned_ev.tnp_had_pt)
+                had_fill = np.asarray(ak.to_numpy(ak.fill_none(pruned_ev.tnp_had_fill, False)), dtype=bool)
+                had_pt   = np.asarray(ak.to_numpy(pruned_ev.tnp_had_pt), dtype=float)
                 bhad     = pruned_ev.bhad
 
                 if had_fill.any():
                     for tagger, wp_name, thr in available:
-                        probe_scores = getattr(bhad, f"btag{tagger}B")
-                        passed = ak.to_numpy((probe_scores > thr) & had_fill)
-                        # select the entries to be filled
-                        sel   = passed | (~passed & had_fill)  # i.e. all had_fill entries; result is pass/fail
-                        nsel  = int(sel.sum())
+                        scores = getattr(bhad, f"btag{tagger}B")
+                        tagbit = np.asarray(ak.to_numpy(scores > thr), dtype=bool)
+
+                        sel = had_fill                      # only the gated probes
+                        nsel = int(sel.sum())
                         if nsel == 0:
                             continue
 
-                        cat    = _strlist("had",    nsel)
-                        tagarr = _strlist(tagger,   nsel)
-                        wparr  = _strlist(wp_name,  nsel)
-                        res    = np.where(ak.to_numpy(probe_scores > thr)[sel], "pass", "fail").astype(object).tolist()
-                        pt     = had_pt[sel]
-                        wts    = w_all[sel]
-
                         h.fill(
-                            syst,
-                            cat,             # StrCategory: 'had'
-                            tagarr,          # StrCategory: tagger label
-                            wparr,           # StrCategory: WP label
-                            res,             # StrCategory: 'pass'/'fail'
-                            pt,              # variable axis
-                            weight=wts,
+                            syst=syst,
+                            region=region[sel],
+                            cat=_str_filled("had", nsel),
+                            tagger=_str_filled(tagger, nsel),
+                            wp=_str_filled(wp_name, nsel),
+                            result=np.where(tagbit[sel], "pass", "fail").astype(np.str_),
+                            tt_cat=ttcat[sel],
+                            kinbin=kinbin[sel],
+                            ptb=had_pt[sel],
+                            weight=w_all[sel],
                         )
 
                 # ---------------- lep side (probe = BL) ----------------
-                lep_fill = ak.to_numpy(ak.fill_none(pruned_ev.tnp_lep_fill, False))
-                lep_pt   = ak.to_numpy(pruned_ev.tnp_lep_pt)       # BL pT you stored
-                blep     = pruned_ev.blep                   # the BL probe jet
+                lep_fill = np.asarray(ak.to_numpy(ak.fill_none(pruned_ev.tnp_lep_fill, False)), dtype=bool)
+                lep_pt   = np.asarray(ak.to_numpy(pruned_ev.tnp_lep_pt), dtype=float)
+                blep     = pruned_ev.blep
 
                 if lep_fill.any():
                     for tagger, wp_name, thr in available:
-                        probe_scores = getattr(blep, f"btag{tagger}B")
-                        passed = ak.to_numpy((probe_scores > thr) & lep_fill)
-                        sel   = passed | (~passed & lep_fill)
-                        nsel  = int(sel.sum())
+                        scores = getattr(blep, f"btag{tagger}B")
+                        tagbit = np.asarray(ak.to_numpy(scores > thr), dtype=bool)
+
+                        sel = lep_fill
+                        nsel = int(sel.sum())
                         if nsel == 0:
                             continue
 
-                        cat    = _strlist("lep",    nsel)
-                        tagarr = _strlist(tagger,   nsel)
-                        wparr  = _strlist(wp_name,  nsel)
-                        res    = np.where(ak.to_numpy(probe_scores > thr)[sel], "pass", "fail").astype(object).tolist()
-                        pt     = lep_pt[sel]
-                        wts    = w_all[sel]
-
                         h.fill(
-                            syst,
-                            cat,
-                            tagarr,
-                            wparr,
-                            res,
-                            pt,
-                            weight=wts,
+                            syst=syst,
+                            region=region[sel],
+                            cat=_str_filled("lep", nsel),
+                            tagger=_str_filled(tagger, nsel),
+                            wp=_str_filled(wp_name, nsel),
+                            result=np.where(tagbit[sel], "pass", "fail").astype(np.str_),
+                            tt_cat=ttcat[sel],
+                            kinbin=kinbin[sel],
+                            ptb=lep_pt[sel],
+                            weight=w_all[sel],
                         )
 
             elif histname == "chi2" and "chi2" in pruned_ev.fields:
