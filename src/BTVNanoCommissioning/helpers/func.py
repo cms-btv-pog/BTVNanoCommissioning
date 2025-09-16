@@ -260,3 +260,36 @@ def uproot_writeable(events, include=["events", "run", "luminosityBlock"]):
             if bool(b_nest):
                 ev[bname] = ak.zip(b_nest)
     return ev
+
+
+def partial_weight_excl_btv(weights, syst, exclude_btv_keys, btv_var_markers=("btag", "deepJet", "csv", "cvs", "btagSF")):
+    """
+    Return per-event weights for TnP:
+      - base = partial product excluding BTV SFs
+      - if syst is a non-BTV variation, multiply base by (w_var_all / w_nom_all)
+      - if syst is nominal or a BTV variation, return base
+    """
+    exclude_set = set(exclude_btv_keys)
+    # 1) base partial weight (exclude BTV always)
+    w_base = np.asarray(weights.partial_weight(exclude=exclude_set))
+
+    # 2) nominal / unknown syst: done
+    variations = list(getattr(weights, "variations", []))
+    if syst == "nominal" or syst not in variations:
+        return w_base
+
+    # 3) if this is a BTV-related variation, ignore it for TnP
+    if any(mark in syst for mark in btv_var_markers):
+        return w_base
+
+    # 4) non-BTV variation: apply ratio
+    w_nom_all = np.asarray(weights.weight())                   # central with everything
+    w_var_all = np.asarray(weights.weight(modifier=syst))      # varied with everything
+
+    # be safe with zeros/NaNs
+    scale = np.ones_like(w_nom_all, dtype=float)
+    mask = w_nom_all != 0
+    scale[mask] = w_var_all[mask] / w_nom_all[mask]
+    scale[~mask] = 1.0
+
+    return w_base * scale
