@@ -624,7 +624,7 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
     #         Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels),
     #         Hist.storage.Weight(),
     #     )
- 
+
     ## Discriminators
     for disc in disc_list:
         if disc not in events.Jet.fields:

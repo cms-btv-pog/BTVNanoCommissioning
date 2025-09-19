@@ -483,12 +483,12 @@ def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
                 np.array(
                     input_dict[
                         inputs.name.replace("Jet", "")
-                        .replace("Pt", "pt")
-                        .replace("Phi", "phi")
-                        .replace("Eta", "eta")
-                        .replace("Mass", "mass")
-                        .replace("Rho", "rho")
-                        .replace("A", "area")
+                                   .replace("Pt", "pt")
+                                   .replace("Phi", "phi")
+                                   .replace("Eta", "eta")
+                                   .replace("Mass", "mass")
+                                   .replace("Rho", "rho")
+                                   .replace("A", "area")
                     ]
                 )
             )
