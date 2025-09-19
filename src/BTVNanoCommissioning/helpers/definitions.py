@@ -6365,13 +6365,19 @@ def axes_name(var):
         obj = "soft-$\\mu$"
     elif "mujet" in var:
         obj = "$\\mu$-Jet"
+    elif "njet" in var:
+        obj = "Jet multiplicity"
+    elif "nbjet" in var:
+        obj = "b jet multiplicity"
+    elif "ncjet" in var:
+        obj = "c jet multiplicity"
     elif "jet" in var:
         obj = "Jet"
     elif "w_" in var:
         obj = "W"
     elif "z_" in var:
         obj = "Z"
-    if "pt" in var:
+    if "pt" in var and "2D" not in var:
         unit = " $p_T$ [GeV]"
     elif "mass" in var:
         unit = " mass [GeV]"

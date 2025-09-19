@@ -410,6 +410,8 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         for i in range(4):
             obj_list.append(f"jet{i}")
 
+        _hist_dict[f"nbjet"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
+        _hist_dict[f"ncjet"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
         _hist_dict[f"w_mt"] = Hist.Hist(
             syst_axis,
             mt_axis,
@@ -989,6 +991,10 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 )
             elif "njet" == histname:
                 output["njet"].fill(syst, pruned_ev.njet, weight=weight)
+            elif "nbjet" == histname:
+                output["nbjet"].fill(syst, pruned_ev.nbjet, weight=weight)
+            elif "ncjet" == histname:
+                output["ncjet"].fill(syst, pruned_ev.ncjet, weight=weight)
             # Jet kinematics & deltaR between jet and lepton
             elif (
                 "jet" in histname and "posl" not in histname and "negl" not in histname
