@@ -478,7 +478,6 @@ def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
         if "systematic" in inputs.name:
             input_values.append(jersyst)
         else:
-
             input_values.append(
                 np.array(
                     input_dict[
