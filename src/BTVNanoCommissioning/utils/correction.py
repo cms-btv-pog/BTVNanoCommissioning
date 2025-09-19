@@ -16,6 +16,7 @@ from coffea.btag_tools import BTagScaleFactor
 from BTVNanoCommissioning.helpers.func import update, _compile_jec_, _load_jmefactory
 from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
+from BTVNanoCommissioning.utils.AK4_parameters import get_jes_keys
 
 
 def load_SF(year, campaign, syst=False):
@@ -614,102 +615,124 @@ def JME_shifts(
             met["orig_pt"], met["orig_phi"] = nocorrmet["pt"], nocorrmet["phi"]
 
             ## JEC variations
+            jes_sources = get_jes_keys(year)
             if not isRealData and systematic != False:
-                if systematic != "JERC_split":
-                    jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
-                    jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
-                    unc_jets, unc_met = {}, {}
+                jes_sources_id = systematic.split("_")[1]
+                if jes_sources_id in jes_sources.keys():
+                    jme_correct_map = correct_map["JME"]
+                    unc_jets = {}
+                    unc_met = {}
 
-                    for var in ["up", "down"]:
-                        fac = 1.0 if var == "up" else -1.0
-                        # JES total
-                        unc_jets[f"JES_Total{var}"] = copy.copy(nocorrjet)
-                        unc_met[f"JES_Total{var}"] = copy.copy(nocorrmet)
-
-                        unc_jets[f"JES_Total{var}"]["pt"] = ak.values_astype(
-                            jets["pt"]
-                            * (ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc),
-                            np.float32,
+                    jes_sources_set = jes_sources[jes_sources_id]
+                    for jes_source in jes_sources_set:
+                        jes_source_key = f"{jecname}_{jes_source}_AK4PFPuppi"
+                        jesunc = ak.unflatten(
+                            jme_correct_map[jes_source_key].evaluate(j.eta, j.pt), nj
                         )
-                        unc_jets[f"JES_Total{var}"]["mass"] = ak.values_astype(
-                            jets["mass"]
-                            * (ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc),
-                            np.float32,
-                        )
-                        unc_met[f"JES_Total{var}"]["pt"] = corrected_polar_met(
-                            nocorrmet.pt,
-                            nocorrmet.phi,
-                            unc_jets[f"JES_Total{var}"]["pt"],
-                            jets.phi,
-                            jets.pt_raw,
-                        ).pt
-                        unc_met[f"JES_Total{var}"]["phi"] = corrected_polar_met(
-                            nocorrmet.pt,
-                            nocorrmet.phi,
-                            unc_jets[f"JES_Total{var}"]["pt"],
-                            jets.phi,
-                            jets.pt_raw,
-                        ).phi
+                        jes = f"JES_{jes_source}"
+                        for var, fac in zip(["up", "down"], [1.0, -1.0]):
+                            unc_jets[f"{jes}{var}"] = copy.copy(nocorrjet)
+                            unc_met[f"{jes}{var}"] = copy.copy(nocorrmet)
 
-                        JERSF_input_var = get_corr_inputs(j, JERSF, var)
+                            unc_jets[f"{jes}{var}"]["pt"] = ak.values_astype(
+                                jets["pt"]
+                                * (ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc),
+                                np.float32,
+                            )
+                            unc_jets[f"{jes}{var}"]["mass"] = (
+                                ak.values_astype(
+                                    jets["mass"]
+                                    * (
+                                        ak.unflatten(JECflatCorrFactor, nj)
+                                        + fac * jesunc
+                                    ),
+                                    np.float32,
+                                )
+                            )
+                            unc_met[f"{jes}{var}"]["pt"] = (
+                                corrected_polar_met(
+                                    nocorrmet.pt,
+                                    nocorrmet.phi,
+                                    unc_jets[f"{jes}{var}"]["pt"],
+                                    jets.phi,
+                                    jets.pt_raw,
+                                ).pt
+                            )
+                            unc_met[f"{jes}{var}"]["phi"] = (
+                                corrected_polar_met(
+                                    nocorrmet.pt,
+                                    nocorrmet.phi,
+                                    unc_jets[f"{jes}{var}"]["pt"],
+                                    jets.phi,
+                                    jets.pt_raw,
+                                ).phi
+                            )
 
-                        ## JER variations
-                        unc_jets[f"JER{var}"] = copy.copy(nocorrjet)
-                        unc_met[f"JER{var}"] = copy.copy(nocorrmet)
-                        j["JERSF"] = JERSF.evaluate(*JERSF_input_var)
-                        JERsmear_input_var = get_corr_inputs(j, sf_jersmear)
+                        jets[f"{jes}"] = ak.zip(
+                            {
+                                "up": unc_jets[f"{jes}up"],
+                                "down": unc_jets[f"{jes}down"],
+                            }
+                        )
+                        met[f"{jes}"] = ak.zip(
+                            {
+                                "up": unc_met[f"{jes}up"],
+                                "down": unc_met[f"{jes}down"],
+                            }
+                        )
 
-                        unc_jets[f"JER{var}"]["pt"] = jets["pt"] * ak.unflatten(
-                            JECflatCorrFactor
-                            * sf_jersmear.evaluate(*JERsmear_input_var),
-                            nj,
-                        )
-                        unc_jets[f"JER{var}"]["mass"] = jets["mass"] * ak.unflatten(
-                            JECflatCorrFactor
-                            * sf_jersmear.evaluate(*JERsmear_input_var),
-                            nj,
-                        )
-                        unc_met[f"JER{var}"]["pt"] = corrected_polar_met(
-                            nocorrmet.pt,
-                            nocorrmet.phi,
-                            unc_jets[f"JER{var}"]["pt"],
-                            jets.phi,
-                            jets.pt_raw,
-                        ).pt
-                        unc_met[f"JER{var}"]["phi"] = corrected_polar_met(
-                            nocorrmet.pt,
-                            nocorrmet.phi,
-                            unc_jets[f"JER{var}"]["pt"],
-                            jets.phi,
-                            jets.pt_raw,
-                        ).phi
-                    jets["JES_Total"] = ak.zip(
-                        {
-                            "up": unc_jets["JES_Totalup"],
-                            "down": unc_jets["JES_Totaldown"],
-                        }
-                    )
-                    jets["JER"] = ak.zip(
-                        {
-                            "up": unc_jets["JERup"],
-                            "down": unc_jets["JERdown"],
-                        }
-                    )
-                    met["JES_Total"] = ak.zip(
-                        {
-                            "up": unc_met["JES_Totalup"],
-                            "down": unc_met["JES_Totaldown"],
-                        }
-                    )
-                    met["JER"] = ak.zip(
-                        {
-                            "up": unc_met["JERup"],
-                            "down": unc_met["JERdown"],
-                        }
-                    )
                 else:
-                    raise NotImplementedError
+                    raise ValueError(
+                        f"Unknown JES source set: {jes_sources_id}. "
+                        f"Available: {list(jes_sources.keys())}."
+                    )
 
+                # JER variations
+                for var in ("up", "down"):
+                    JERSF_input_var = get_corr_inputs(j, JERSF, var)
+
+                    unc_jets[f"JER{var}"] = copy.copy(nocorrjet)
+                    unc_met[f"JER{var}"] = copy.copy(nocorrmet)
+                    j["JERSF"] = JERSF.evaluate(*JERSF_input_var)
+                    JERsmear_input_var = get_corr_inputs(j, sf_jersmear)
+
+                    unc_jets[f"JER{var}"]["pt"] = jets["pt"] * ak.unflatten(
+                        JECflatCorrFactor
+                        * sf_jersmear.evaluate(*JERsmear_input_var),
+                        nj,
+                    )
+                    unc_jets[f"JER{var}"]["mass"] = jets["mass"] * ak.unflatten(
+                        JECflatCorrFactor
+                        * sf_jersmear.evaluate(*JERsmear_input_var),
+                        nj,
+                    )
+                    unc_met[f"JER{var}"]["pt"] = corrected_polar_met(
+                        nocorrmet.pt,
+                        nocorrmet.phi,
+                        unc_jets[f"JER{var}"]["pt"],
+                        jets.phi,
+                        jets.pt_raw,
+                    ).pt
+                    unc_met[f"JER{var}"]["phi"] = corrected_polar_met(
+                        nocorrmet.pt,
+                        nocorrmet.phi,
+                        unc_jets[f"JER{var}"]["pt"],
+                        jets.phi,
+                        jets.pt_raw,
+                    ).phi
+
+                jets["JER"] = ak.zip(
+                    {
+                        "up": unc_jets["JERup"],
+                        "down": unc_jets["JERdown"],
+                    }
+                )
+                met["JER"] = ak.zip(
+                    {
+                        "up": unc_met["JERup"],
+                        "down": unc_met["JERdown"],
+                    }
+                )
         else:
             if isRealData:
                 if "2016preVFP_UL" == campaign:
@@ -741,12 +764,12 @@ def JME_shifts(
             )
             met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
             ## systematics
+        
         if not isRealData:
             if systematic != False:
-                if systematic == "split":
-                    for jes in met.fields:
-                        if "JES" not in jes or "Total" in jes:
-                            continue
+                if (jes_sources_id := systematic.split("_")[1]) in jes_sources.keys():
+                    for jes in jes_sources[jes_sources_id]:
+                        jes = f"JES_{jes}"
                         shifts += [
                             (
                                 {
@@ -765,23 +788,7 @@ def JME_shifts(
                         ]
 
                 else:
-                    if "JES_Total" in jets.fields:
-                        shifts += [
-                            (
-                                {
-                                    "Jet": jets.JES_Total.up,
-                                    "MET": met.JES_Total.up,
-                                },
-                                "JESUp",
-                            ),
-                            (
-                                {
-                                    "Jet": jets.JES_Total.down,
-                                    "MET": met.JES_Total.down,
-                                },
-                                "JESDown",
-                            ),
-                        ]
+                    # TODO: Indentation? when to add MET_UnclusteredEnergy
                     if "MET_UnclusteredEnergy" in met.fields:
                         shifts += [
                             (
@@ -799,23 +806,24 @@ def JME_shifts(
                                 "UESDown",
                             ),
                         ]
-                    if "JER" in jets.fields:
-                        shifts += [
-                            (
-                                {
-                                    "Jet": jets.JER.up,
-                                    "MET": met.JER.up,
-                                },
-                                "JERUp",
-                            ),
-                            (
-                                {
-                                    "Jet": jets.JER.down,
-                                    "MET": met.JER.down,
-                                },
-                                "JERDown",
-                            ),
-                        ]
+                # TODO: Indentation?
+                if "JER" in jets.fields:
+                    shifts += [
+                        (
+                            {
+                                "Jet": jets.JER.up,
+                                "MET": met.JER.up,
+                            },
+                            "JERUp",
+                        ),
+                        (
+                            {
+                                "Jet": jets.JER.down,
+                                "MET": met.JER.down,
+                            },
+                            "JERDown",
+                        ),
+                    ]
 
     else:
         met = events.PuppiMET
@@ -2045,9 +2053,12 @@ def common_shifts(self, events):
     dataset = events.metadata["dataset"]
     shifts = []
     if "JME" in self.SF_map.keys():
-        syst_JERC = self.isSyst
-        if self.isSyst == "JERC_split":
-            syst_JERC = "split"
+        # syst_JERC = self.isSyst
+        # if self.isSyst == "JERC_split":
+        #     syst_JERC = "split"
+        # first test if not false -> is name -> split JERC_
+        # if self.isSyst and self.isSyst.startswith("JERC_"):
+        #     syst_JERC = self.isSyst.split("_")[1]
         shifts = JME_shifts(
             shifts,
             self.SF_map,
@@ -2055,7 +2066,7 @@ def common_shifts(self, events):
             self._year,
             self._campaign,
             isRealData,
-            syst_JERC,
+            self.isSyst,
         )
     else:
         ## Using PFMET
