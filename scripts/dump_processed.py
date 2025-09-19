@@ -5,7 +5,7 @@ import sys, json, glob
 import os
 
 
-def dump_lumi(output, fname):
+def dump_lumi(output, fname, year):
     lumi, run = [], []
     for m in output.keys():
         for f in output[m].keys():
@@ -30,12 +30,13 @@ def dump_lumi(output, fname):
     with open(f"{fname}_lumi.json", "w") as outfile:
         json.dump(dicts, outfile, indent=2)
 
-    lumi_in_pb = os.popen(
+    # https://twiki.cern.ch/twiki/bin/viewauth/CMS/LumiRecommendationsRun3
+    if year in ["2022", "2023"]:
+        brilcalc_cmd = f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json -c web -i {fname}_lumi.json -u /pb \'"
+    elif year in ["2024", "2025"]:
         # Using recommended temporary Run 3 normtag
-        # https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart
-        # https://twiki.cern.ch/twiki/bin/viewauth/CMS/LumiRecommendationsRun3
-        f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json -c web -i {fname}_lumi.json -u /pb --datatag online \'"
-    ).read()
+        brilcalc_cmd = f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json -c web -i {fname}_lumi.json -u /pb --datatag online \'"
+    lumi_in_pb = os.popen(brilcalc_cmd).read()
     lumi_in_pb = lumi_in_pb[
         lumi_in_pb.find("#Summary:") : lumi_in_pb.find("#Check JSON:")
     ]
@@ -90,6 +91,13 @@ if __name__ == "__main__":
         help="Choose the function for dump luminosity(`lumi`)/failed files(`failed`) into json",
     )
     parser.add_argument(
+        "-y",
+        "--year",
+        default="2024",
+        choices=["2022", "2023", "2024", "2025"],
+        help="The data-taking year to process the luminosity for",
+    )
+    parser.add_argument(
         "-c",
         "--coffea",
         required=True,
@@ -102,7 +110,7 @@ if __name__ == "__main__":
         "-j",
         "--jsons",
         type=str,
-        help="Original json files, splitted by ,. Wildcard option * available as well. ",
+        help="Original json files, splitted by ,. Wildcard option * available as well.",
     )
     args = parser.parse_args()
     if len(args.coffea.split(",")) > 1:
@@ -115,7 +123,7 @@ if __name__ == "__main__":
 
     if args.type == "all" or args.type == "lumi":
         print("===>Dump Processed Luminosity")
-        dump_lumi(output, args.fname)
+        dump_lumi(output, args.fname, args.year)
     if args.type == "all" or args.type == "failed":
         print("===>Dump Failed Files")
         dump_dataset(output, args.fname, args.jsons)

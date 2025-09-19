@@ -626,7 +626,7 @@ for index, discr in enumerate(var_set):
         scale = "_norm"
     name = "all"
     if args.split == "sample":
-        name = name + "_sample"
+        name += "_sample"
     try:
         hep.mpl_magic(ax=ax)
     except RuntimeError as e:
@@ -639,12 +639,12 @@ for index, discr in enumerate(var_set):
             print(f"Still failed: {e2}")
             # Continue anyway - the plot will still be usable
     if args.log:
+        name += "_log"
         print(
             "creating:",
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         ax.set_yscale("log")
-        name = "log"
         ax.set_ylim(bottom=0.1)
         hep.mpl_magic(ax=ax)
         fig.savefig(
