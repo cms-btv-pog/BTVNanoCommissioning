@@ -51,7 +51,7 @@ def get_xrootd_sites_map():
                                     )
                         else:
                             sites_xrootd_access[site["rse"]] = proc["prefix"]
-        json.dump(sites_xrootd_access, open(".sites_map.json", "w"))
+        json.dump(sites_xrootd_access, open(".sites_map.json", "w"), indent=4)
 
     return json.load(open(".sites_map.json"))
 

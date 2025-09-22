@@ -80,7 +80,6 @@ class NanoProcessor(processor.ProcessorABC):
                 self._campaign,
                 isRealData,
                 False,
-                True,
             )
         else:
             if int(self._year) < 2020:
