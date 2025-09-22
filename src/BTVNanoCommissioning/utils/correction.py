@@ -1015,7 +1015,7 @@ def MUO_shifts(shifts, correct_map, events, isRealData, systematic=False):
         )
         mu_pt_corr_resolup = pt_resol_var(
             mu_pt_scalecorr,
-            mu_ptcorr,
+            mu_pt_corr,
             mu.eta,
             "up",
             correct_map["muonSS"],
@@ -1023,7 +1023,7 @@ def MUO_shifts(shifts, correct_map, events, isRealData, systematic=False):
         )
         mu_pt_corr_resoldown = pt_resol_var(
             mu_pt_scalecorr,
-            mu_ptcorr,
+            mu_pt_corr,
             mu.eta,
             "dn",
             correct_map["muonSS"],
