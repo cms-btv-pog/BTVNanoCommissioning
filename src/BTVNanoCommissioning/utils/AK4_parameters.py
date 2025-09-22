@@ -183,7 +183,7 @@ correction_config = {
             # TODO: HLT SFs are a placeholder for now (August 2025)
             "ele_Trig 2023PromptD Electron-HLT-SF": "HLT_SF_Ele30_MVAiso80ID",
         },
-        "muonSS": "",
+        "muonSS": "", # TODO: using 2023BPix version for now (August 2025)
         "electronSS": ["EGMScale_Compound_Ele_2024", "EGMSmearAndSyst_ElePTsplit_2024"],
     },
     "prompt_dataMC": {"lumiMask": "$PROMPT_DATAMC"},
