@@ -32,10 +32,10 @@ def dump_lumi(output, fname, year):
 
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/LumiRecommendationsRun3
     if year in ["2022", "2023"]:
-        brilcalc_cmd = f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json -c web -i {fname}_lumi.json -u /pb \'"
+        brilcalc_cmd = f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval 'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json -c web -i {fname}_lumi.json -u /pb '"
     elif year in ["2024", "2025"]:
         # Using recommended temporary Run 3 normtag
-        brilcalc_cmd = f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval \'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json -c web -i {fname}_lumi.json -u /pb --datatag online \'"
+        brilcalc_cmd = f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval 'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json -c web -i {fname}_lumi.json -u /pb --datatag online '"
     lumi_in_pb = os.popen(brilcalc_cmd).read()
     lumi_in_pb = lumi_in_pb[
         lumi_in_pb.find("#Summary:") : lumi_in_pb.find("#Check JSON:")
