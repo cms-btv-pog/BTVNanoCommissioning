@@ -72,6 +72,11 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 ),
             ),
         )
+        jetid = ak.where(
+            np.abs(events.Jet.eta) <= 2.7,
+            jetid & (events.Jet.muEF < 0.8) & (events.Jet.chEmEF < 0.8),
+            jetid,
+        )
     else:
         jetid = events.Jet.jetId >= 5
 
