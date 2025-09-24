@@ -39,6 +39,7 @@ def get_histograms(axes, **kwargs):
     )
     hists["dilep_mass"] = Hist.Hist(
         axes["syst"],
+        axes["osss"],
         Hist.axis.Regular(50, 50, 100, name="mass", label=" $m_{\\ell\\ell}$ [GeV]"),
         Hist.storage.Weight(),
     )
