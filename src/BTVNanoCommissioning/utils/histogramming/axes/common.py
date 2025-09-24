@@ -23,7 +23,7 @@ axes = {
     "dz": hist.axis.Regular(40, -0.01, 0.01, name="dz", label="$d_{z}$ [cm]"),
     "qcddxy": hist.axis.Regular(40, -0.002, 0.002, name="dxy", label="$d_{xy}$ [cm]"),
     "sip3d": hist.axis.Regular(20, 0, 0.2, name="sip3d", label="SIP 3D"),
-    "ratio": hist.axis.Regular(50, 0, 1, name="ratio", label="ratio"),
+    "ptratio": hist.axis.Regular(50, 0, 1, name="ratio", label="ratio"),
     "n": hist.axis.Integer(0, 10, name="n", label="N obj"),
     "osss": hist.axis.IntCategory([1, -1], name="osss", label="OS(+)/SS(-)"),
 }
