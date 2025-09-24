@@ -40,6 +40,8 @@ def histogrammer(
 
     return _hist_dict
 
+def histo_writer(pruned_ev, output, weights, systematics, isSyst, SF_map):
+    return histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map)
 
 # Filled common histogram
 def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
