@@ -13,6 +13,7 @@ fi
 env
 
 WORKDIR=`pwd`
+touch $WORKDIR/.success
 
 cd $COMMDIR
 export X509_USER_PROXY=$COMMDIR/proxy
@@ -62,7 +63,7 @@ if [ $OUTPUT -ne 0 ]; then
     exit $OUTPUT
 fi
 
-echo "Job $JOBID completed successfully"
-touch $WORKDIR/.success
+#echo "Job $JOBID completed successfully"
+#touch $WORKDIR/.success
 
 exit $OUTPUT
