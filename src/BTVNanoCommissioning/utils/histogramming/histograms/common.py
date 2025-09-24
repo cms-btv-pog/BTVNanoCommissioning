@@ -15,13 +15,22 @@ def get_histograms(axes, **kwargs):
     include_sv_variables = kwargs.get("include_sv_variables", False)
 
     if include_njet:
-        hists["njet"] = Hist.Hist(axes["syst"], axes["n"], Hist.storage.Weight())
+        if kwargs.get("include_osss", False):
+            hists["njet"] = Hist.Hist(axes["syst"], axes["osss"], axes["n"], Hist.storage.Weight())
+        else:
+            hists["njet"] = Hist.Hist(axes["syst"], axes["n"], Hist.storage.Weight())
 
     if include_nmujet:
-        hists["nmujet"] = Hist.Hist(axes["syst"], axes["n"], Hist.storage.Weight())
+        if kwargs.get("include_osss", False):
+            hists["nmujet"] = Hist.Hist(axes["syst"], axes["osss"], axes["n"], Hist.storage.Weight())
+        else:
+            hists["nmujet"] = Hist.Hist(axes["syst"], axes["n"], Hist.storage.Weight())
 
     if include_nsoftmu:
-        hists["nsoftmu"] = Hist.Hist(axes["syst"], axes["n"], Hist.storage.Weight())
+        if kwargs.get("include_osss", False):
+            hists["nsoftmu"] = Hist.Hist(axes["syst"], axes["osss"], axes["n"], Hist.storage.Weight())
+        else:
+            hists["nsoftmu"] = Hist.Hist(axes["syst"], axes["n"], Hist.storage.Weight())
 
     if include_discriminators:
         hists = hists | _get_discriminators(axes, **kwargs)

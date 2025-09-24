@@ -31,16 +31,6 @@ def get_histograms(axes, **kwargs):
 
     hists = {}
 
-    hists["njet"] = Hist.Hist(
-        axes["syst"], axes["osss"], axes["n"], Hist.storage.Weight()
-    )
-    hists["nmujet"] = Hist.Hist(
-        axes["syst"], axes["osss"], axes["n"], Hist.storage.Weight()
-    )
-    hists["nsoftmu"] = Hist.Hist(
-        axes["syst"], axes["osss"], axes["n"], Hist.storage.Weight()
-    )
-
     hists["SV_charge"] = Hist.Hist(
         axes["syst"],
         axes["osss"],
