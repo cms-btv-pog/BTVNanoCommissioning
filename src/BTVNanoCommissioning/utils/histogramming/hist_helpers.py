@@ -3,7 +3,6 @@ from .axes.common import axes as common_axes
 from .histograms.common import get_histograms as common_hists
 from .histograms.ctag_ttdilep import get_histograms as ctag_ttdilep_hists
 from .histograms.ctag_ttsemilep import get_histograms as ctag_ttsemilep_hists
-from .histograms.c_ttsemilep import get_histograms as c_ttsemilep_hists
 from .histograms.dy import get_histograms as dy_hists
 from .histograms.example import get_histograms as example_hists
 from .histograms.fourvec import get_histograms as fourvec_hists
