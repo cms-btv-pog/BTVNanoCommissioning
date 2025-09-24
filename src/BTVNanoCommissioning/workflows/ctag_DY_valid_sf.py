@@ -15,6 +15,7 @@ from BTVNanoCommissioning.utils.correction import (
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import histogrammer as hists_new
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -78,7 +79,14 @@ class NanoProcessor(processor.ProcessorABC):
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
         histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
-        output = {} if self.noHist else histogrammer(events, histname[self.selMod])
+        output = {}
+        if not self.noHist:
+            # histogrammer(events, histname[self.selMod])
+            output = hists_new(
+                events.Jet.fields,
+                obj_list = ["posl", "negl", "dilep", "jet0"],
+                hist_collections = ["common", "fourvec", "DY"],
+            )
 
         if isRealData:
             output["sumw"] = len(events)

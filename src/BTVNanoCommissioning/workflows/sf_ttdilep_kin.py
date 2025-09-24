@@ -44,6 +44,7 @@ from BTVNanoCommissioning.helpers.definitions import disc_list
 
 ## load histograms & selctions for this workflow
 from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import histogrammer as hists_new
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -259,7 +260,14 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
 
-        output = {"": None} if self.noHist else histogrammer(events, "sf_ttdilep_kin")
+        output = {"": None}
+        if not self.noHist
+            # histogrammer(events, "sf_ttdilep_kin")
+            output = hists_new(
+                events.Jet.fields,
+                obj_list = ["dilep"],
+                hist_collections = ["common", "fourvec", "ttdilep_kin"],
+            )
 
         # TODO: implement proper sum of event weights for variations
         if shift_name is None:
