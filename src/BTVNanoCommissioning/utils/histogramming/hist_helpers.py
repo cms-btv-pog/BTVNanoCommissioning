@@ -45,7 +45,7 @@ def get_axes_collections(
 
 
 def get_hist_collections(
-    axes: dict, obj_list: list, hist_collections: list = ["example"], **kwargs
+    axes: dict, hist_collections: list = ["example"], **kwargs
 ):
     available_collections = {
         "example": example_hists,
