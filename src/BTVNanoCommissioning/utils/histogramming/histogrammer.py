@@ -32,8 +32,8 @@ def histogrammer(
     ## Histograms
     _hist_dict = get_hist_collections(
         axes,
-        obj_list,
-        hist_collections=hist_collections,
+        hist_collections,
+        obj_list=obj_list,
         jet_fields=jet_fields,
         **kwargs,
     )
