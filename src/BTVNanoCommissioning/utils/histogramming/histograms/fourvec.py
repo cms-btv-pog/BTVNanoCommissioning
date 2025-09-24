@@ -5,6 +5,8 @@ def get_histograms(axes, **kwargs):
     hists = {}
 
     obj_list = kwargs.get("obj_list", [])
+    if len(obj_list) == 0:
+        raise ValueError("obj_list is not specified when running fourvec workflow.")
     include_osss = kwargs.get("include_osss", False)
 
     if not include_osss:
