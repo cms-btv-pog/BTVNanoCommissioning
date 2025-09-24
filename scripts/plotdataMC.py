@@ -55,7 +55,8 @@ parser.add_argument(
     "-v",
     "--variable",
     type=str,
-    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
+    default="all",
+    help="variables to plot, split by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
 parser.add_argument(
     "--xlabel",
@@ -139,7 +140,9 @@ collated = {
     key: value for key, value in collated.items() if isinstance(collated[key], dict)
 }
 print(collated.keys())
+
 ### input text settings
+input_txt = "placeholder"
 if "Wc" in args.phase:
     input_txt = "W+c"
     if args.splitOSSS == 1:
