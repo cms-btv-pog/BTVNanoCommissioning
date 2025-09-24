@@ -77,7 +77,7 @@ class NanoProcessor(processor.ProcessorABC):
             # histogrammer(events, "ttdilep_sf")
             output = hists_new(
                 events.Jet.fields,
-                obj_list=["mu", "ele"],
+                obj_list=["mu", "ele", "jet0", "jet1"],
                 hist_collections=["common", "fourvec", "ttdilep"],
             )
 

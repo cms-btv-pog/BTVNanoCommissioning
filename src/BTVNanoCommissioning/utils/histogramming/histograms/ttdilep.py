@@ -5,7 +5,7 @@ def get_histograms(axes, **kwargs):
     hists = {}
 
     for i in range(2):
-        hists[f"jet{i}"] = Hist.Hist(
+        hists[f"dr_mujet{i}"] = Hist.Hist(
             axes["syst"], axes["flav"], axes["dr"], Hist.storage.Weight()
         )
 

@@ -76,9 +76,13 @@ class NanoProcessor(processor.ProcessorABC):
         output = {}
         if not self.noHist:
             # histogrammer(events, histname)
+            objs = ["mu", "MET", "cjet"]
+            if not self.ttaddsel == "c_tt_semilep":
+                for i in range(4):
+                    objs.append(f"jet{i}")
             output = hists_new(
                 events.Jet.fields,
-                obj_list=["mu", "MET", "cjet"],
+                obj_list=objs,
                 hist_collections=["common", "fourvec", "ttsemilep"],
                 c_ttsemilep=self.ttaddsel == "c_tt_semilep",
             )
