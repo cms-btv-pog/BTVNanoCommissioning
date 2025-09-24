@@ -109,7 +109,7 @@ def get_histograms(axes, **kwargs):
             hists[f"{i}_dxy"] = Hist.Hist(
                 axes["syst"], axes["osss"], axes["qcddxy"], Hist.storage.Weight()
             )
-            hists[f"{i}_dz"] = hist.Hist(
+            hists[f"{i}_dz"] = Hist.Hist(
                 axes["syst"], axes["osss"], axes["dz"], Hist.storage.Weight()
             )
 
