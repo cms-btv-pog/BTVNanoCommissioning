@@ -4,13 +4,14 @@ import hist as Hist
 import awkward as ak
 from BTVNanoCommissioning.helpers.func import flatten
 
+
 def histogrammer(
-    jet_fields = None,
-    obj_list = [],
-    hist_collections = ["fourvector"],
-    axes_collections = ["common"],
-    custom_axes = None,
-    **kwargs
+    jet_fields=None,
+    obj_list=[],
+    hist_collections=["fourvector"],
+    axes_collections=["common"],
+    custom_axes=None,
+    **kwargs,
 ):
     """
 
@@ -29,7 +30,13 @@ def histogrammer(
         axes = get_axes_collections(axes_collections)
 
     ## Histograms
-    _hist_dict = get_hist_collections(axes, obj_list, hist_collections = hist_collections, jet_fields = jet_fields, **kwargs)
+    _hist_dict = get_hist_collections(
+        axes,
+        obj_list,
+        hist_collections=hist_collections,
+        jet_fields=jet_fields,
+        **kwargs,
+    )
 
     return _hist_dict
 

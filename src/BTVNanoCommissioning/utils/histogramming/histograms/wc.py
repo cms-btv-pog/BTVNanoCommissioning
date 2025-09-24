@@ -2,23 +2,32 @@ import hist as Hist
 
 from BTVNanoCommissioning.utils.selection import btag_wp_dict
 
+
 def get_histograms(axes, **kwargs):
 
     year = kwargs.get("year", None)
     if year == None:
-        raise ValueError("year is not specified. Please specify the year in histogrammer.")
+        raise ValueError(
+            "year is not specified. Please specify the year in histogrammer."
+        )
 
     campaign = kwargs.get("campaign", None)
     if campaign == None:
-        raise ValueError("campaign is not specified. Please specify the campaign in histogrammer.")
+        raise ValueError(
+            "campaign is not specified. Please specify the campaign in histogrammer."
+        )
 
     cutbased = kwargs.get("cutbased", None)
     if cutbased == None:
-        raise ValueError("cutbased is not specified. Please specify whether to use a cutbased wf or not.")
+        raise ValueError(
+            "cutbased is not specified. Please specify whether to use a cutbased wf or not."
+        )
 
     obj_list = kwargs.get("obj_list", [])
     if not obj_list:
-        raise ValueError("obj_list is empty. Please specify the objects to be histogrammed.")
+        raise ValueError(
+            "obj_list is empty. Please specify the objects to be histogrammed."
+        )
 
     hists = {}
 
@@ -73,13 +82,25 @@ def get_histograms(axes, **kwargs):
     for i in ["hl", "sl", "soft_l"]:
         if i == "soft_l":
             hists[f"soft_l_pfRelIso04_all"] = Hist.Hist(
-                axes["syst"], axes["flav"], axes["osss"], axes["softliso"], Hist.storage.Weight(),
+                axes["syst"],
+                axes["flav"],
+                axes["osss"],
+                axes["softliso"],
+                Hist.storage.Weight(),
             )
             hists[f"{i}_dxy"] = Hist.Hist(
-                axes["syst"], axes["flav"], axes["osss"], axes["dxy"], Hist.storage.Weight()
+                axes["syst"],
+                axes["flav"],
+                axes["osss"],
+                axes["dxy"],
+                Hist.storage.Weight(),
             )
             hists[f"{i}_dz"] = Hist.Hist(
-                axes["syst"], axes["flav"], axes["osss"], axes["dz"], Hist.storage.Weight()
+                axes["syst"],
+                axes["flav"],
+                axes["osss"],
+                axes["dz"],
+                Hist.storage.Weight(),
             )
         else:
             hists[f"{i}_pfRelIso04_all"] = Hist.Hist(
@@ -93,7 +114,11 @@ def get_histograms(axes, **kwargs):
             )
 
         hists[f"{i}_ptratio"] = Hist.Hist(
-            axes["syst"], axes["flav"], axes["osss"], axes["ptratio"], Hist.storage.Weight()
+            axes["syst"],
+            axes["flav"],
+            axes["osss"],
+            axes["ptratio"],
+            Hist.storage.Weight(),
         )
 
     for obj in obj_list:
@@ -102,9 +127,11 @@ def get_histograms(axes, **kwargs):
                 for wp in btag_wp_dict[year + "_" + campaign][tagger]["c"].keys():
                     if not "No" in wp:
                         hists[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
-                            axes["syst"], axes["flav"], axes["osss"], axes["pt"], Hist.storage.Weight()
+                            axes["syst"],
+                            axes["flav"],
+                            axes["osss"],
+                            axes["pt"],
+                            Hist.storage.Weight(),
                         )
-
-            
 
     return hists

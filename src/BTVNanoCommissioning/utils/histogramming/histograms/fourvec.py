@@ -1,9 +1,7 @@
 import hist as Hist
 
-def get_histograms(
-    axes,
-    **kwargs
-):
+
+def get_histograms(axes, **kwargs):
     hists = {}
 
     obj_list = kwargs.get("obj_list", [])
@@ -31,30 +29,16 @@ def get_histograms(
     for obj in obj_list:
         if "jet" in obj or "soft_l" in obj:
             if obj == "soft_l":
-                hists["softlpt"] = Hist.Hist(
-                    *soft_l_pt_axes, Hist.storage.Weight()
-                )
+                hists["softlpt"] = Hist.Hist(*soft_l_pt_axes, Hist.storage.Weight())
             else:
-                hists[f"{obj}_pt"] = Hist.Hist(
-                    *pt_axes, Hist.storage.Weight()
-                )
-            hists[f"{obj}_eta"] = Hist.Hist(
-                *eta_axes, Hist.storage.Weight()
-            )
-            hists[f"{obj}_phi"] = Hist.Hist(
-                *phi_axes, Hist.storage.Weight()
-            )
-            hists[f"{obj}_mass"] = Hist.Hist(
-                *mass_axes, Hist.storage.Weight()
-            )
+                hists[f"{obj}_pt"] = Hist.Hist(*pt_axes, Hist.storage.Weight())
+            hists[f"{obj}_eta"] = Hist.Hist(*eta_axes, Hist.storage.Weight())
+            hists[f"{obj}_phi"] = Hist.Hist(*phi_axes, Hist.storage.Weight())
+            hists[f"{obj}_mass"] = Hist.Hist(*mass_axes, Hist.storage.Weight())
 
         else:
-            hists[f"{obj}_pt"] = Hist.Hist(
-                *pt_axes_no_flav, Hist.storage.Weight()
-            )
-            hists[f"{obj}_phi"] = Hist.Hist(
-                *phi_axes_no_flav, Hist.storage.Weight()
-            )
+            hists[f"{obj}_pt"] = Hist.Hist(*pt_axes_no_flav, Hist.storage.Weight())
+            hists[f"{obj}_phi"] = Hist.Hist(*phi_axes_no_flav, Hist.storage.Weight())
             if obj != "MET":
                 hists[f"{obj}_eta"] = Hist.Hist(
                     *eta_axes_no_flav, Hist.storage.Weight()

@@ -18,7 +18,9 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
 from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
-from BTVNanoCommissioning.utils.histogramming.histogrammer import histogrammer as hists_new
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer as hists_new,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -75,10 +77,9 @@ class NanoProcessor(processor.ProcessorABC):
             # histogrammer(events, "ttdilep_sf")
             output = hists_new(
                 events.Jet.fields,
-                obj_list = ["mu", "ele"],
-                hist_collections = ["common", "fourvec", "ttdilep"],
+                obj_list=["mu", "ele"],
+                hist_collections=["common", "fourvec", "ttdilep"],
             )
-
 
         if shift_name is None:
             if isRealData:

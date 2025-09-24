@@ -3,7 +3,9 @@ from coffea import processor
 from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi
 from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
-from BTVNanoCommissioning.utils.histogramming.histogrammer import histogrammer as hists_new
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer as hists_new,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.correction import (
@@ -63,8 +65,8 @@ class NanoProcessor(processor.ProcessorABC):
             # histogrammer(events, "QCD")
             output = hists_new(
                 events.Jet.fields,
-                obj_list = ["jet0"],
-                hist_collections = ["common", "fourvec", "QCD"],
+                obj_list=["jet0"],
+                hist_collections=["common", "fourvec", "QCD"],
             )
 
         if isRealData:

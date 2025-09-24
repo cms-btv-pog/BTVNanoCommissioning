@@ -2,10 +2,8 @@ import hist as Hist
 
 from BTVNanoCommissioning.utils.histogramming import hist_helpers
 
-def get_histograms(
-    axes,
-    **kwargs
-):
+
+def get_histograms(axes, **kwargs):
     hists = {}
 
     include_njet = kwargs.get("include_njet", True)
@@ -36,13 +34,16 @@ def get_histograms(
 
     return hists
 
+
 def _get_btag_input(axes, **kwargs):
 
     include_osss = kwargs.get("include_osss", False)
     jet_fields = kwargs.get("jet_fields", None)
 
     if jet_fields is None:
-        raise ValueError("Tried to get btag input histograms without passing jet_fields (list of keys in the jet collection)")
+        raise ValueError(
+            "Tried to get btag input histograms without passing jet_fields (list of keys in the jet collection)"
+        )
 
     hists = {}
 
@@ -55,19 +56,32 @@ def _get_btag_input(axes, **kwargs):
         ranges = definitions[d]["manual_ranges"]
         binning = definitions[d]["bins"]
         labels = (
-            definitions[d]["displayname"] + " [" + definitions[d]["inputVar_units"] + "]"
+            definitions[d]["displayname"]
+            + " ["
+            + definitions[d]["inputVar_units"]
+            + "]"
             if definitions[d]["inputVar_units"] is not None
             else definitions[d]["displayname"]
         )
 
         if include_osss:
-            ax = [axes["syst"], axes["flav"], axes["osss"], Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels)]
+            ax = [
+                axes["syst"],
+                axes["flav"],
+                axes["osss"],
+                Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels),
+            ]
         else:
-            ax = [axes["syst"], axes["flav"], Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels)]
+            ax = [
+                axes["syst"],
+                axes["flav"],
+                Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels),
+            ]
 
         hists[d] = Hist.Hist(*ax, Hist.storage.Weight())
 
     return hists
+
 
 # NOTE: This was commented out in the old histogrammer
 # Disabled by default in get_histograms()
@@ -83,28 +97,40 @@ def _get_sv_variables(axes, **kwargs):
         ranges = definitions[d]["manual_ranges"]
         binning = definitions[d]["bins"]
         labels = (
-            definitions[d]["displayname"] + " [" + definitions[d]["inputVar_units"] + "]"
+            definitions[d]["displayname"]
+            + " ["
+            + definitions[d]["inputVar_units"]
+            + "]"
             if definitions[d]["inputVar_units"] is not None
             else definitions[d]["displayname"]
         )
 
         if include_osss:
-            ax = [axes["syst"], axes["flav"], axes["osss"], Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels)]
+            ax = [
+                axes["syst"],
+                axes["flav"],
+                axes["osss"],
+                Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels),
+            ]
         else:
-            ax = [axes["syst"], axes["flav"], Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels)]
+            ax = [
+                axes["syst"],
+                axes["flav"],
+                Hist.axis.Regular(binning, ranges[0], ranges[1], name=d, label=labels),
+            ]
 
         hists[d] = Hist.Hist(*ax, Hist.storage.Weight())
 
     return hists
 
-def _get_discriminators(
-    axes,
-    **kwargs
-):
+
+def _get_discriminators(axes, **kwargs):
     jet_fields = kwargs.get("jet_fields", None)
 
     if jet_fields is None:
-        raise ValueError("Tried to get discriminator histograms without passing jet_fields (list of keys in the jet collection)")
+        raise ValueError(
+            "Tried to get discriminator histograms without passing jet_fields (list of keys in the jet collection)"
+        )
 
     include_osss = kwargs.get("include_osss", False)
     njet = kwargs.get("njet", 1)
@@ -167,7 +193,7 @@ def _get_discriminators(
                     disc_axes["Bprob"],
                     Hist.storage.Weight(),
                 )
-            
+
             if include_osss:
                 if "Res" in d:
                     hists[d] = Hist.Hist(
@@ -197,7 +223,3 @@ def _get_discriminators(
                     )
 
     return hists
-
-    
-
-

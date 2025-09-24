@@ -1,13 +1,12 @@
 import hist as Hist
 
+
 def get_histograms(axes, **kwargs):
     hists = {}
 
     hists["dilep_mass"] = Hist.Hist(
         axes["syst"],
-        Hist.axis.Regular(
-            50, 50, 100, name="mass", label=" $m_{\\ell\\ell}$ [GeV]"
-        ),
+        Hist.axis.Regular(50, 50, 100, name="mass", label=" $m_{\\ell\\ell}$ [GeV]"),
         Hist.storage.Weight(),
     )
     # delta R between soft muon and mu-jet
@@ -19,9 +18,7 @@ def get_histograms(axes, **kwargs):
         axes["syst"], axes["flav"], axes["dr"], Hist.storage.Weight()
     )
     # delta R between hard muon and soft-muon
-    hists["dr_hmusmu"] = Hist.Hist(
-        axes["syst"], axes["dr"], Hist.storage.Weight()
-    )
+    hists["dr_hmusmu"] = Hist.Hist(axes["syst"], axes["dr"], Hist.storage.Weight())
     for i in ["hl", "soft_l"]:
         if i == "soft_l":
             hists[f"soft_l_pfRelIso04_all"] = Hist.Hist(

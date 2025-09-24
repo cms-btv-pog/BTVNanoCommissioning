@@ -29,23 +29,23 @@ def get_axes_collections(
     }
 
     output = {}
-    
+
     if axes_list is None:
         for ax in available_collections:
             output = output | available_collections[ax]
     else:
         for ax in axes_list:
             if ax not in available_collections:
-                raise ValueError(f"Axis {ax} not found in {available_collections.keys()}. Check utils/histogramming/axes")
+                raise ValueError(
+                    f"Axis {ax} not found in {available_collections.keys()}. Check utils/histogramming/axes"
+                )
             output = output | available_collections[ax]
 
     return output
 
+
 def get_hist_collections(
-    axes: dict,
-    obj_list: list,
-    hist_collections: list = ["example"],
-    **kwargs
+    axes: dict, obj_list: list, hist_collections: list = ["example"], **kwargs
 ):
     available_collections = {
         "example": example_hists,
@@ -67,7 +67,9 @@ def get_hist_collections(
 
     for h in hist_collections:
         if h not in available_collections:
-            raise ValueError(f"Histogram collection {h} not found in {available_collections.keys()}. Check utils/histogramming/histograms")
+            raise ValueError(
+                f"Histogram collection {h} not found in {available_collections.keys()}. Check utils/histogramming/histograms"
+            )
         output = output | available_collections[h](axes, **kwargs)
 
     return output
@@ -112,10 +114,13 @@ def get_btag_input(
 
     for d in include_definitions:
         if d not in available_definitions:
-            raise ValueError(f"Definitions for variable {d} not found {available_definitions.keys()}. Check utils/histogramming/definitions")
+            raise ValueError(
+                f"Definitions for variable {d} not found {available_definitions.keys()}. Check utils/histogramming/definitions"
+            )
         output = output | available_definitions[d]
 
     return output
+
 
 def get_discriminators():
     disc_list = [
@@ -193,6 +198,7 @@ def get_discriminators():
     ]
 
     return disc_list
+
 
 def get_axis_name(var):
     unit = ""

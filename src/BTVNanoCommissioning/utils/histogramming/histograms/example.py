@@ -1,5 +1,6 @@
 import hist as Hist
 
+
 def get_histograms(axes, **kwargs):
     hists = {
         "dr_mujet0": Hist.Hist(

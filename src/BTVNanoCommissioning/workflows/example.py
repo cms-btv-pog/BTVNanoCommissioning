@@ -80,10 +80,10 @@ class NanoProcessor(processor.ProcessorABC):
         output = {}
         if not self.noHist:
             output = histogrammer(
-                jet_fields = events.Jet.fields,
-                obj_list = ["jet", "mu"],
-                hist_collections = ["example", "common", "fourvec"]
-                )
+                jet_fields=events.Jet.fields,
+                obj_list=["jet", "mu"],
+                hist_collections=["example", "common", "fourvec"],
+            )
 
         if shift_name is None:
             if isRealData:

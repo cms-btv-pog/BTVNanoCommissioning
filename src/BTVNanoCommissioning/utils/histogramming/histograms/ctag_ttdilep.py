@@ -1,5 +1,6 @@
 import hist as Hist
 
+
 def get_histograms(axes, **kwargs):
     hists = {}
 
@@ -19,13 +20,14 @@ def get_histograms(axes, **kwargs):
         axes["syst"], axes["flav"], axes["dr"], Hist.storage.Weight()
     )
     # delta R between soft muon and hard muon
-    hists["dr_hmusmu"] = Hist.Hist(
-        axes["syst"], axes["dr"], Hist.storage.Weight()
-    )
+    hists["dr_hmusmu"] = Hist.Hist(axes["syst"], axes["dr"], Hist.storage.Weight())
     for i in ["hl", "sl", "soft_l"]:
         if i == "soft_l":
             hists[f"soft_l_pfRelIso04_all"] = Hist.Hist(
-                axes["syst"], axes["flav"], axes["softliso"], Hist.storage.Weight(),
+                axes["syst"],
+                axes["flav"],
+                axes["softliso"],
+                Hist.storage.Weight(),
             )
             hists[f"{i}_dxy"] = Hist.Hist(
                 axes["syst"], axes["flav"], axes["dxy"], Hist.storage.Weight()
