@@ -19,7 +19,7 @@ This framework is based on [coffea processor](https://coffeateam.github.io/coffe
 
 The minimum requirement commands are shown in follow, specified the selections, datataset, campaign and year
 ```
-python runner.py --workflow example --json metadata/test_bta_run3.json --campaign Summer23 --year 2023 --limit 1 --only 
+python runner.py --workflow example --json metadata/test_bta_run3.json --campaign Summer23 --year 2023
 ```
 - Detailed documentation [here](https://btvnanocommissioning.readthedocs.io/en/latest/)
 - To running the commissioning task or producing the template: go to [Preparation for commissioning/SFs tasks](https://btvnanocommissioning.readthedocs.io/en/latest/user.html)
