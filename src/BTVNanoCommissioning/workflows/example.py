@@ -22,8 +22,7 @@ from BTVNanoCommissioning.helpers.func import (
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
-from BTVNanoCommissioning.utils.histogramming.histogrammer import histogrammer
-from BTVNanoCommissioning.utils.histogrammer import histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import histogrammer, histo_writer
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -185,7 +184,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms- fill the histograms with pruned objects
         if not self.noHist:
-            output = histo_writter(
+            output = histo_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays - store the pruned objects in the output arrays

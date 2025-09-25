@@ -12,9 +12,9 @@ from BTVNanoCommissioning.utils.correction import (
 
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
-    histogrammer as hists_new,
+    histogrammer,
+    histo_writter
 )
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
@@ -66,7 +66,6 @@ class NanoProcessor(processor.ProcessorABC):
         isRealData = not hasattr(events, "genWeight")
         output = {}
         if not self.noHist:
-            # output = histogrammer(events, "emctag_ttdilep_sf")
             output = hists_new(
                 events.Jet.fields,
                 obj_list=["hl", "sl", "soft_l", "MET", "dilep", "lmujet"],

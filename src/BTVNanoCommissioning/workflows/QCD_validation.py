@@ -2,9 +2,9 @@ import collections, numpy as np, awkward as ak, os
 from coffea import processor
 from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
-    histogrammer as hists_new,
+    histogrammer,
+    histo_writter,
 )
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
@@ -59,10 +59,8 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         isRealData = not hasattr(events, "genWeight")
         dataset = events.metadata["dataset"]
-        # output = {} if self.noHist else histogrammer(events, "QCD")
         output = {}
         if not self.noHist:
-            # histogrammer(events, "QCD")
             output = hists_new(
                 events.Jet.fields,
                 obj_list=["jet0"],

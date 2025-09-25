@@ -3,9 +3,9 @@ from coffea import processor
 from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.utils.selection import jet_cut
 from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi, PFCand_link
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
-    histogrammer as hists_new,
+    histogrammer,
+    histo_writter
 )
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
@@ -69,8 +69,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         output = {}
         if not self.noHist:
-            # histogrammer(events, "QCD_smu")
-            output = hists_new(
+            output = histogrammer(
                 events.Jet.fields,
                 obj_list=["mujet", "hl", "soft_l"],
                 hist_collections=["common", "fourvec", "QCD_smu"],

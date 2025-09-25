@@ -1,7 +1,7 @@
 import hist as Hist
 import awkward as ak
 from BTVNanoCommissioning.helpers.func import flatten
-from .hist_helpers import get_hist_collections
+from .hist_helpers import get_hist_collections, get_axes_collections
 
 
 def histogrammer(

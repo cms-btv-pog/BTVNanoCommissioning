@@ -40,12 +40,12 @@ from BTVNanoCommissioning.utils.correction import (
 # user helper function
 from BTVNanoCommissioning.helpers.func import update, dump_lumi
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.helpers.definitions import disc_list
+from BTVNanoCommissioning.helpers.definitions import get_discriminators
 
 ## load histograms & selctions for this workflow
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
-    histogrammer as hists_new,
+    histogrammer,
+    histo_writter,
 )
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
@@ -264,8 +264,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         output = {"": None}
         if not self.noHist:
-            # histogrammer(events, "sf_ttdilep_kin")
-            output = hists_new(
+            output = histogrammer(
                 events.Jet.fields,
                 obj_list=["dilep"],
                 hist_collections=["common", "fourvec", "ttdilep_kin"],
@@ -498,6 +497,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # list of available taggers
         taggers = {}
+        disc_list = get_discriminators()
         for tag in disc_list:
             if tag in ev_jets.fields:
                 taggers[tag] = get_tagger(ev_jets, tag)
