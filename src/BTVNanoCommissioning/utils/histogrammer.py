@@ -425,6 +425,14 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             _hist_dict[f"dr_{i}jet"] = Hist.Hist(
                 syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
             )
+    elif "dijet" in workflow: #LisaMod
+        obj_list = ["jet0", "jet1"]
+        _hist_dict["mjj"] = Hist.Hist(
+            syst_axis,
+            Hist.axis.Regular(60, 0, 3000, name="mass", label="$m_{jj}$ [GeV]"),
+            Hist.storage.Weight(),
+        )
+
     elif "qgtag" in workflow:
         pass
 
