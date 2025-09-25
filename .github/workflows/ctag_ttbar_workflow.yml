@@ -87,15 +87,32 @@ jobs:
         X509_DEFAULT_USER_CERT: $HOME/.globus/usercert.pem
         X509_DEFAULT_USER_KEY: $HOME/.globus/userkey.pem
       run: |
-        mkdir $HOME/.globus
-        printf $GRID_USERKEY | base64 -d > $HOME/.globus/userkey.pem
-        printf $GRID_USERCERT | base64 -d > $HOME/.globus/usercert.pem
-        # DEBUG: dump decoded cert, cert is public, but don't dump key!
-        # base64 -i $HOME/.globus/usercert.pem
+        sudo apt-get update
+        sudo apt-get install fetch-crl ca-certificates
+        
+        # Set up user certificates
+        mkdir -p $HOME/.globus
+        printf "$GRID_USERKEY" | base64 -d > $HOME/.globus/userkey.pem
+        printf "$GRID_USERCERT" | base64 -d > $HOME/.globus/usercert.pem
+        
+        # Set proper permissions
         chmod 400 $HOME/.globus/userkey.pem
-        openssl rand -out $HOME/.rnd  -hex 256
-        printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init --voms cms  --debug --pwstdin -certdir $X509_CERT_DIR  -vomses $X509_VOMSES
-        chmod 755 /usr/share/miniconda/envs/btv_coffea/etc/grid-security/certificates
+        chmod 644 $HOME/.globus/usercert.pem
+        
+        # Generate random seed
+        openssl rand -out $HOME/.rnd -hex 256
+        
+        # Create VOMS proxy with --ignorewarn to handle CRL issues
+        printf "${{secrets.GRID_PASSWORD}}" | voms-proxy-init \
+          --voms cms \
+          --pwstdin \
+          -certdir /cvmfs/grid.cern.ch/etc/grid-security/certificates/ \
+          -vomses $X509_VOMSES \
+          --valid 12:00 \
+          --ignorewarn
+        
+        # Verify proxy was created
+        voms-proxy-info -all
         
     
     - name: Install Repo

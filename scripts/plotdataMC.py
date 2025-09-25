@@ -101,7 +101,13 @@ parser.add_argument(
 args = parser.parse_args()
 
 if len(args.input.split(",")) > 1:
-    output = {i: load(i) for i in args.input.split(",")}
+    allinps = []
+    for inp in args.input.split(","):
+        if "*" in inp:
+            allinps.extend(glob.glob(inp))
+        else:
+            allinps.append(inp)
+    output = {i: load(i) for i in allinps}
 elif "*" in args.input:
     files = glob.glob(args.input)
     output = {i: load(i) for i in files}
@@ -196,7 +202,6 @@ elif "*" in args.variable:
             )
             != None
         ]
-
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
@@ -244,7 +249,7 @@ for index, discr in enumerate(var_set):
             for i in range(collated["mc"][discr].axes[0].size)
         ]
         if "noSF" in systlist:
-            noSF_axis["syst"] = "nominal"
+            noSF_axis["syst"] = "noSF"
 
     ## rebin config, add xerr
     do_xerr = False
@@ -607,15 +612,25 @@ for index, discr in enumerate(var_set):
         scale = "_norm"
     name = "all"
     if args.split == "sample":
-        name = name + "_sample"
-    hep.mpl_magic(ax=ax)
+        name += "_sample"
+    try:
+        hep.mpl_magic(ax=ax)
+    except RuntimeError as e:
+        print(f"Warning: {e}")
+        print("Using soft_fail=True for legend placement")
+        try:
+            # Try with soft_fail=True
+            hep.mpl_magic(ax=ax, soft_fail=True)
+        except Exception as e2:
+            print(f"Still failed: {e2}")
+            # Continue anyway - the plot will still be usable
     if args.log:
+        name += "_log"
         print(
             "creating:",
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         ax.set_yscale("log")
-        name = "log"
         ax.set_ylim(bottom=0.1)
         hep.mpl_magic(ax=ax)
         fig.savefig(
@@ -635,3 +650,4 @@ for index, discr in enumerate(var_set):
         fig.savefig(
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
         )
+    plt.close(fig)

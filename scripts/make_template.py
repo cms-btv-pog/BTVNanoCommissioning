@@ -1,6 +1,10 @@
 from coffea.util import load
+import numpy as np
 import uproot, sys, os, argparse, hist
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
+from BTVNanoCommissioning.utils.plot_utils import (
+    rebin_hist,
+)
 import numpy as np
 
 parser = argparse.ArgumentParser(description="Make templates from coffea files")
@@ -44,6 +48,11 @@ parser.add_argument(
     default=None,
     help="Specify mergemap as dict, '{merge1:[dataset1,dataset2]...}' Also works with the json file with dict",
 )
+parser.add_argument(
+    "--autorebin",
+    default=None,
+    help="Rebin the plotting variables, input `int` or `list`. int: merge N bins. list of number: rebin edges(non-uniform bin is possible)",
+)
 
 
 def create_template(inputs, variable, mergemap, axis, lumi, output):
@@ -54,7 +63,29 @@ def create_template(inputs, variable, mergemap, axis, lumi, output):
     hall = merge_all["all"][variable][axis]
 
     fout = uproot.recreate(f"{variable}_{output}")
+    subtract = False
+    if "osss" in axis.keys():
+        if "sum" in str(axis["osss"]):
+            subtract = True
+            axis.pop("osss")
     for data in collated.keys():
+        if subtract:
+            collated[data][variable] = (
+                collated[data][variable][{"osss": 0}]
+                + collated[data][variable][{"osss": 1}] * -1
+            )
+        if arg.autorebin is not None:
+            if arg.autorebin.isdigit():
+                rebin = int(arg.autorebin)
+            else:
+                rebin = np.array([float(i) for i in arg.autorebin.split(",")])
+            fout[data.replace("-", "_")] = rebin_hist(
+                collated[data][variable][axis],
+                collated[data][variable].axes[-1].name,
+                rebin,
+            )
+        else:
+            fout[data.replace("-", "_")] = collated[data][variable][axis]
         if variable not in collated[data].keys():
             raise f"{variable} not in {data}"
         elif np.sum(collated[data][variable].values()) == 0:
@@ -90,6 +121,7 @@ if __name__ == "__main__":
             for d in inputs[f].keys():
                 flists.append(d)
         mergemap = {d: d for d in flists}
+
     axis = json.loads(arg.axis)
     # modify axis to hist methods
     for a in axis:

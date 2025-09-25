@@ -11,6 +11,31 @@ sys.path.insert(0, parent_dir)
 from runner import config_parser, scaleout_parser, debug_parser
 
 
+def is_running_in_ci():
+    """Check if running in GitLab CI environment"""
+    return os.environ.get("GITLAB_CI") == "true"
+
+
+def should_refresh_dataset(json_file, max_age_minutes=10):
+    """Check if the dataset JSON file needs refreshing based on its age"""
+    import os
+    import time
+
+    if not os.path.exists(json_file):
+        return True  # File doesn't exist, must fetch
+
+    file_mtime = os.path.getmtime(json_file)
+    current_time = time.time()
+    age_in_minutes = (current_time - file_mtime) / 60
+
+    if age_in_minutes > max_age_minutes:
+        print(
+            f"⚠️ Dataset file {json_file} is {age_in_minutes:.1f} minutes old, needs refreshing"
+        )
+        return True
+    return False
+
+
 # Get lumi
 def get_lumi_from_web(year):
     import requests
@@ -148,7 +173,7 @@ if __name__ == "__main__":
         ## Run the workflows
         for types in predefined_sample[wf].keys():
 
-            if (types != "data" or types != "MC") and args.scheme == "Validation":
+            if (types != "data" and types != "MC") and args.scheme == "Validation":
                 continue
             print(
                 f"hists_{wf}_{types}_{args.campaign}_{args.year}_{wf}/hists_{wf}_{types}_{args.campaign}_{args.year}_{wf}.coffea"
@@ -165,10 +190,21 @@ if __name__ == "__main__":
                     raise Exception(
                         f"metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json not exist"
                     )
+                json_file = f"metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json"
+
+                # Check if dataset needs refreshing because of age
+                if should_refresh_dataset(json_file):
+                    print(f"Refreshing dataset: {json_file}")
+                    fetch_cmd = f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation --overwrite "
+                    os.system(fetch_cmd)
+
                 runner_config_required = f"python runner.py --wf {wf} --json metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json {overwrite} --campaign {args.campaign} --year {args.year}"
                 runner_config = ""
+                limit_added = False  # Track if we've already added a limit flag
+
                 for key, value in vars(args).items():
                     # Required info or things not relevant for runner, skip
+                    # Skip keys that don't apply to runner
                     if key in [
                         "workflow",
                         "json",
@@ -181,6 +217,8 @@ if __name__ == "__main__":
                         "debug",
                     ]:
                         continue
+
+                    # Handle boolean flags
                     if key in [
                         "isArray",
                         "noHist",
@@ -191,27 +229,107 @@ if __name__ == "__main__":
                         if value == True:
                             runner_config += f" --{key}"
                     elif value is not None:
-                        if (
-                            "Validation" == args.scheme
-                            and types == "MC"
-                            and "limit" not in key
-                        ):
-                            runner_config += " --limit 50"
-
+                        if key == "limit":
+                            runner_config += f" --{key}={value}"
+                            limit_added = True
                         else:
                             runner_config += f" --{key}={value}"
+
+                # Add limit for MC validation if not already present
+                if "Validation" == args.scheme and types == "MC" and not limit_added:
+                    runner_config += " --limit 50"
+                    imit_added = True
+                    print(f"⚠️ Running Validation with 50 files limit for MC")
                 runner_config = runner_config_required + runner_config
                 if args.debug:
                     print(f"run the workflow: {runner_config}")
+                os.system(runner_config)
+
                 with open(
                     f"config_{args.year}_{args.campaign}_{args.scheme}_{args.version}.txt",
                     "w",
                 ) as config_list:
                     config_list.write(runner_config)
 
-                os.system(runner_config)
         if args.debug:
             print(f"workflow is finished for {wf}!")
+
+        if is_running_in_ci():
+            import numpy as np
+            import awkward as ak
+            import json
+
+            print(f"Running in CI environment - creating lumi JSON for {wf}")
+
+            # Extract luminosity JSON for use in CI
+            coffea_file = f"hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea"
+            if os.path.exists(coffea_file):
+                try:
+                    from coffea.util import load
+
+                    # Create lumi_bril directory if needed
+                    os.makedirs("lumi_bril", exist_ok=True)
+
+                    # Create the same structure as dump_processed.py expects
+                    # The key is the coffea file path, value is the loaded coffea file
+                    output = {coffea_file: load(coffea_file)}
+
+                    # Now follow the exact same logic as in dump_lumi
+                    lumi, run = [], []
+                    for m in output.keys():  # m is the coffea file path
+                        for f in output[
+                            m
+                        ].keys():  # f is the dataset key inside the coffea file
+                            if "lumi" in output[m][f] and "run" in output[m][f]:
+                                try:
+                                    lumi.extend(output[m][f]["lumi"].value)
+                                    run.extend(output[m][f]["run"].value)
+                                except Exception as e:
+                                    print(f"  Error extracting run/lumi from {f}: {e}")
+
+                    if len(run) > 0 and len(lumi) > 0:
+                        print(f"Found {len(run)} run/lumi pairs, creating JSON")
+
+                        # Sort runs and keep lumisections matched
+                        run, lumi = np.array(run), np.array(lumi)
+                        sorted_indices = np.lexsort(
+                            (lumi, run)
+                        )  # Sort by run first, then lumi
+                        run = run[sorted_indices]
+                        lumi = lumi[sorted_indices]
+
+                        # Create dictionary with ls values for each run
+                        dicts = {}
+                        for r in np.unique(run):
+                            # Make sure to cast to int to avoid string keys
+                            dicts[str(int(r))] = lumi[run == r]
+
+                        # Convert to format for brilcalc (exactly as in dump_lumi)
+                        for r in dicts.keys():
+                            ar = ak.singletons(ak.Array(dicts[r]))
+                            ars = ak.concatenate([ar, ar], axis=-1)
+                            dicts[r] = ak.values_astype(ars, int).tolist()
+
+                        # Save JSON file for brilcalc
+                        json_path = f"lumi_bril/{wf}_bril_lumi.json"
+                        with open(json_path, "w") as outfile:
+                            json.dump(dicts, outfile, indent=2)
+
+                        print(f"Created luminosity JSON file for {wf} at {json_path}")
+                    else:
+                        print(f"No run/lumi information found for {wf}")
+                        # Create an empty file so we know we tried
+                        with open(f"lumi_bril/{wf}_bril_empty.json", "w") as outfile:
+                            json.dump({}, outfile)
+                except Exception as e:
+                    print(f"ERROR creating luminosity JSON for {wf}: {e}")
+                    import traceback
+
+                    traceback.print_exc()
+
+            # Skip the rest of luminosity calculation and plotting in CI
+            print(f"Skipping luminosity calculation and plotting for {wf}")
+            continue
         # Get luminosity
         if (
             os.path.exists(
@@ -224,7 +342,7 @@ if __name__ == "__main__":
                     f"Get the luminosity from hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea"
                 )
             if not os.path.exists(
-                f"hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea "
+                f"hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea"
             ):
                 raise Exception(
                     f"hists_{wf}_data_{args.campaign}_{args.year}_{wf}/hists_{wf}_data_{args.campaign}_{args.year}_{wf}.coffea not exist"
