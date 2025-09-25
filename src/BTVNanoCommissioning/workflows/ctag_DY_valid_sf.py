@@ -68,7 +68,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         isMu = False
         isEle = False
-        if "DYM" in self.selMod:
+        if "DYM" in self.selMod or "QG" in self.selMod:
             triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
             isMu = True
         elif "DYE" in self.selMod:
@@ -77,7 +77,7 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
-        histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
+        histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf", "QG": "qgtag_DY_sf"}
         output = {} if self.noHist else histogrammer(events, histname[self.selMod])
 
         if isRealData:
@@ -128,17 +128,6 @@ class NanoProcessor(processor.ProcessorABC):
             axis=-1,
         )
 
-        pl_iso = ak.all(
-            events.Jet.metric_table(pos_dilep) > 0.4, axis=2, mask_identity=True
-        )
-        nl_iso = ak.all(
-            events.Jet.metric_table(neg_dilep) > 0.4, axis=2, mask_identity=True
-        )
-        jet_sel = ak.fill_none(
-            jet_id(events, self._campaign) & pl_iso & nl_iso,
-            False,
-            axis=-1,
-        )
 
         pos_dilep = ak.pad_none(pos_dilep, 1, axis=1)
         neg_dilep = ak.pad_none(neg_dilep, 1, axis=1)
@@ -155,15 +144,21 @@ class NanoProcessor(processor.ProcessorABC):
         nl_iso = ak.all(
             events.Jet.metric_table(neg_dilep[:, 0]) > 0.4, axis=2, mask_identity=True
         )
-        event_jet = events.Jet[
-            ak.fill_none(
-                jet_id(events, self._campaign) & pl_iso & nl_iso,
-                False,
-                axis=-1,
-            )
-        ]
+
+        if "QG" in self.selMod:
+            jetmask = jet_id(events, self._campaign, max_eta=5.13)
+        else:
+            jetmask = jet_id(events, self._campaign)
+
+        jet_sel = ak.fill_none(
+            pl_iso & nl_iso & jetmask,
+            False,
+            axis=-1,
+        )
+
+        event_jet = events.Jet[jet_sel]
+
         req_jets = ak.count(event_jet.pt, axis=1) >= 1
-        # event_jet = ak.pad_none(event_jet, 1, axis=1)
 
         # store jet index for PFCands, create mask on the jet index
         jetindx = ak.mask(
@@ -173,8 +168,25 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = ak.pad_none(jetindx, 1)
         jetindx = jetindx[:, 0]
 
+        selection = (
+            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets & req_metfilter
+        )
+
+        if "QG" in self.selMod:
+            temp_jet = ak.pad_none(event_jet, 1, axis=1)
+
+            req_lead_jet = ak.fill_none(
+                (
+                    np.abs(temp_jet[:, 0].delta_phi(pos_dilep[:, 0] + neg_dilep[:, 0]))
+                    > 2.7
+                ),
+                False,
+                axis=-1,
+            )
+            selection = selection & req_lead_jet
+
         event_level = ak.fill_none(
-            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets & req_metfilter,
+            selection,
             False,
         )
         if len(events[event_level]) == 0:
@@ -208,7 +220,11 @@ class NanoProcessor(processor.ProcessorABC):
         )
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
-        pruned_ev["SelJet"] = event_jet[event_level]
+        if self.selMod == "QG":
+            pruned_ev["SelJet"] = event_jet[event_level][:, 0]
+        else:
+            pruned_ev["SelJet"] = event_jet[event_level]
+
         if isMu:
             pruned_ev["MuonPlus"] = sposmu
             pruned_ev["MuonMinus"] = snegmu
@@ -233,7 +249,7 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
         pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
-        if "PFCands" in events.fields:
+        if "PFCands" in events.fields and "QG" not in self.selMod:
             pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
 
         ####################
@@ -254,8 +270,40 @@ class NanoProcessor(processor.ProcessorABC):
             )
         # Output arrays
         if self.isArray:
+            if "QG" in self.selMod:
+                othersData = [
+                    "SV_*",
+                    "PV_npvs",
+                    "PV_npvsGood",
+                    "Rho_*",
+                    "SoftMuon_dxySig",
+                    "Muon_sip3d",
+                    "run",
+                    "luminosityBlock",
+                ]
+                for trigger in triggers:
+                    othersData.append(f"HLT_{trigger}")
+            else:
+                othersData = [
+                    "PFCands_*",
+                    "MuonJet_*",
+                    "SV_*",
+                    "PV_npvs",
+                    "PV_npvsGood",
+                    "Rho_*",
+                    "SoftMuon_dxySig",
+                    "Muon_sip3d",
+                ]
+
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData
+                self,
+                pruned_ev,
+                events,
+                weights,
+                systematics,
+                dataset,
+                isRealData,
+                othersData=othersData,
             )
 
         return {dataset: output}
