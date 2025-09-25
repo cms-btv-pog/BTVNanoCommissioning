@@ -87,7 +87,7 @@ class NanoProcessor(processor.ProcessorABC):
                 jet_fields=events.Jet.fields,
                 obj_list=["posl", "negl", "dilep", "jet0"],
                 hist_collections=["common", "fourvec", "DY"],
-                include_m = isMu
+                include_m=isMu,
             )
 
         if isRealData:

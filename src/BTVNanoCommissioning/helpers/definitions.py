@@ -5,6 +5,7 @@ from .definition_vars.deepjet import get_variables as deepjet_definitions
 from .definition_vars.deepcsv import get_variables as deepcsv_definitions
 from .definition_vars.sv import get_variables as sv_definitions
 
+
 def get_definitions(
     include_definitions: list = ["DeepJet", "DeepCSV", "PFCands"],
 ):
@@ -48,6 +49,7 @@ def get_definitions(
         output = output | available_definitions[d]
 
     return output
+
 
 def get_discriminators():
     disc_list = [
@@ -125,6 +127,7 @@ def get_discriminators():
     ]
 
     return disc_list
+
 
 def axes_name(var):
 
