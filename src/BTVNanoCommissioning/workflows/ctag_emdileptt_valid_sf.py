@@ -12,7 +12,10 @@ from BTVNanoCommissioning.utils.correction import (
 
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writter,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -61,7 +64,15 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        output = {} if self.noHist else histogrammer(events, "emctag_ttdilep_sf")
+        output = {}
+        if not self.noHist:
+            output = histogrammer(
+                events.Jet.fields,
+                obj_list=["hl", "sl", "soft_l", "MET", "dilep", "lmujet"],
+                hist_collections=["common", "fourvec", "ctag_ttdilep"],
+                include_nmujet=True,
+                include_nsoftmu=True,
+            )
 
         if shift_name is None:
             if isRealData:

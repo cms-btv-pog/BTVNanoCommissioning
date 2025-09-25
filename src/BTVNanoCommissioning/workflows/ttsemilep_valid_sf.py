@@ -14,7 +14,10 @@ from BTVNanoCommissioning.utils.correction import (
 
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writter,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -69,7 +72,19 @@ class NanoProcessor(processor.ProcessorABC):
         histname = (
             "ttsemilep_sf" if self.ttaddsel != "c_tt_semilep" else "c_ttsemilep_sf"
         )
-        output = {} if self.noHist else histogrammer(events, histname)
+        output = {}
+        if not self.noHist:
+            objs = ["mu", "MET", "cjet"]
+            if not self.ttaddsel == "c_tt_semilep":
+                for i in range(4):
+                    objs.append(f"jet{i}")
+
+            output = histogrammer(
+                events.Jet.fields,
+                obj_list=objs,
+                hist_collections=["common", "fourvec", "ttsemilep"],
+                c_ttsemilep=self.ttaddsel == "c_tt_semilep",
+            )
 
         if shift_name is None:
             if isRealData:

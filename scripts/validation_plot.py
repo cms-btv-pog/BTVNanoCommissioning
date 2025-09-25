@@ -1,8 +1,8 @@
-from coffea.util import load
 import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
 import uproot, sys, os, argparse, hist
+from coffea.util import load
 from BTVNanoCommissioning.utils.plot_utils import plotratio
 from matplotlib.offsetbox import AnchoredText
 
