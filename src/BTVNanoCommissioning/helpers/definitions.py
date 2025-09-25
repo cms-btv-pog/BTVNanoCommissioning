@@ -1,9 +1,9 @@
 ## code source: Master Thesis Annika Stein
 ## https://git.rwth-aachen.de/annika-stein/ai_safety_2021/-/blob/master/june_21/evaluate/definitions.py
-from .definition_vars.pfcands import get_vardict as pfcands_definitions
-from .definition_vars.deepjet import get_vardict as deepjet_definitions
-from .definition_vars.deepcsv import get_vardict as deepcsv_definitions
-from .definition_vars.sv import get_vardict as sv_definitions
+from .definition_vars.pfcands import get_variables as pfcands_definitions
+from .definition_vars.deepjet import get_variables as deepjet_definitions
+from .definition_vars.deepcsv import get_variables as deepcsv_definitions
+from .definition_vars.sv import get_variables as sv_definitions
 
 def get_definitions(
     include_definitions: list = ["DeepJet", "DeepCSV", "PFCands"],
