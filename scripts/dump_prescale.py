@@ -1,4 +1,4 @@
-import json, os, argparse, pandas
+import json, os, argparse, pandas, io, subprocess, numpy
 import correctionlib.schemav2 as cs
 from BTVNanoCommissioning.helpers.BTA_helper import BTA_HLT
 from concurrent.futures import ThreadPoolExecutor
@@ -18,22 +18,33 @@ parser.add_argument("-H", "--HLT", default=None, type=str, help="Which HLT is us
 parser.add_argument("-v", "--verbose", action="store_true", help="debugging")
 parser.add_argument("-t", "--test", action="store_true", help="test with only 5 runs")
 parser.add_argument("-f", "--force", action="store_true", help="recreate .csv")
+parser.add_argument("-i", "--ignore_csv_output", action="store_true", help="Ignore writing the .csv")
 
 ### NOTICE The scripts only works on lxplus...
 
+def process_run(run_input):
+    run, trg = run_input
 
-def process_run(ir_run):
-    ir, run = ir_run
-    tmpfile = f".tmp_{ir}.csv"
-    os.system(
-        f"singularity -s exec --env PYTHONPATH=/home/bril/.local/lib/python3.10/site-packages "
-        f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cloud/brilws-docker:latest "
-        f"brilcalc trg --prescale --hltpath 'HLT_{HLT}_v*' -r {run} --output-style csv &>{tmpfile}"
+    bc_alias = "singularity -s exec  --env PYTHONPATH=/home/bril/.local/lib/python3.10/site-packages /cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cloud/brilws-docker:latest brilcalc"
+    brilcall = [f"{bc_alias} trg -r {str(run)} --prescale --hltpath HLT_{str(trg)}_v* --output-style csv"]
+
+    command = subprocess.run(brilcall, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True, executable="/bin/bash")
+
+    if command.returncode != 0:
+        print(f"Error: {command.stderr}")
+        return None
+
+    csv_output = command.stdout
+    df = pandas.read_csv(
+        io.StringIO(csv_output),
+        usecols=["cmsls", "totprescval", "# run"],
+        dtype={"cmsls": numpy.int32, "totprescval": numpy.float64, "# run": numpy.int32},
     )
-    return pandas.read_csv(tmpfile)
+
+    return df
 
 
-def get_prescale(HLT, lumimask, verbose=False, test=False, force=False):
+def get_prescale(HLT, lumimask, verbose=False, test=False, force=False, ignore_csv_output=False):
     # os.system("source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env")
     prescales = pandas.DataFrame()
     runs = json.load(open(lumimask))
@@ -45,13 +56,14 @@ def get_prescale(HLT, lumimask, verbose=False, test=False, force=False):
     if force or not os.path.exists(outcsv):
         with ThreadPoolExecutor() as executor:
             dfs = list(
-                tqdm(executor.map(process_run, enumerate(runs)), total=len(runs))
+                # tqdm(executor.map(process_run, [enumerate(runs), trigger]), total=len(runs))
+                tqdm(executor.map(process_run, [(run, HLT) for run in runs]), total=len(runs))
             )
 
         prescales = pandas.concat(dfs, ignore_index=True)
         # prescales= prescales[prescales['totprescval']!=0]
-        prescales.to_csv(outcsv)
-        os.system(f"rm -rf .tmp_*.csv")
+        if not ignore_csv_output:
+            prescales.to_csv(outcsv)
 
         if verbose:
             print("prescales :", prescales)
@@ -162,7 +174,7 @@ if __name__ == "__main__":
     for HLT in args.HLT:
         print("HLT : ", HLT)
         ps_csvData = get_prescale(
-            HLT, args.lumimask, args.verbose, args.test, args.force
+            HLT, args.lumimask, args.verbose, args.test, args.force, args.ignore_csv_output
         )
         psCorr = cs.Correction.parse_obj(
             {
