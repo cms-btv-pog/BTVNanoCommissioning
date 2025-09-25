@@ -17,12 +17,13 @@ from BTVNanoCommissioning.helpers.definitions import get_definitions, get_discri
 # Suppress the specific FutureWarning from uproot
 warnings.filterwarnings("ignore", category=FutureWarning, module="uproot")
 
+definitions_dict = get_definitions()
+disc_list = get_discriminators()
+
 filtered_names = [
     name for name in disc_list if name.endswith("B") and not name.endswith("CvB")
 ]
 
-definitions_dict = get_definitions()
-disc_list = get_discriminators()
 
 
 def is_within_range(array, min_value, max_value):
