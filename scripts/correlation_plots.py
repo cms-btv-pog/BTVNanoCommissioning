@@ -25,7 +25,6 @@ filtered_names = [
 ]
 
 
-
 def is_within_range(array, min_value, max_value):
     """Check if all values in the array are within the specified range."""
     return ak.all((array >= min_value) & (array <= max_value))
