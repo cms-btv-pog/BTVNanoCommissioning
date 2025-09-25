@@ -43,9 +43,15 @@ from BTVNanoCommissioning.workflows.BTA_ttbar_producer import (
     NanoProcessor as BTA_ttbar_processor,
 )  # ttbar -kinFit
 
-## QG - Dijet producer
+## QG
 from BTVNanoCommissioning.workflows.qgtag_dijet_producer import (
     NanoProcessor as QGtagDijetProcessor,
+)
+from BTVNanoCommissioning.workflows.qgtag_photonjet_producer import (
+    NanoProcessor as QGtagPhotonjetProcessor,
+)
+from BTVNanoCommissioning.workflows.qgtag_photonjet_producer import (
+    NanoProcessor as QGtagPhotonjetProcessor,
 )
 
 # from BTVNanoCommissioning.workflows.example import (
