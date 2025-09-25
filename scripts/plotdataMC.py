@@ -121,8 +121,9 @@ if not os.path.isdir(f"plot/{args.phase}_{args.ext}/"):
 if not any(".coffea" in o for o in output.keys()):
     if "sample" in args.split:
         mergemap = sample_mergemap
-    mergemap["data"] = [m for m in output.keys() if "Run" in m]
     mergemap["mc"] = [m for m in output.keys() if "Run" not in m]
+    mergemap["data"] = [m for m in output.keys() if "Run" in m]
+    
 else:
     datalist = []
     mclist = []
