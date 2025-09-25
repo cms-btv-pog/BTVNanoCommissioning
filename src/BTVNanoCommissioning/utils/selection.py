@@ -72,6 +72,11 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 ),
             ),
         )
+        jetid = ak.where(
+            np.abs(events.Jet.eta) <= 2.7,
+            jetid & (events.Jet.muEF < 0.8) & (events.Jet.chEmEF < 0.8),
+            jetid,
+        )
     else:
         jetid = events.Jet.jetId >= 5
 
@@ -92,7 +97,11 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
 
 ## FIXME: Electron cutbased Id & MVA ID not exist in Winter22Run3 sample
 def ele_cuttightid(events, campaign):
-    ele_etaSC = events.Electron.eta + events.Electron.deltaEtaSC if "Summer24" not in campaign else events.Electron.superclusterEta
+    ele_etaSC = (
+        events.Electron.eta + events.Electron.deltaEtaSC
+        if "Summer24" not in campaign
+        else events.Electron.superclusterEta
+    )
     elemask = (
         (abs(ele_etaSC) < 1.4442) | ((abs(ele_etaSC) > 1.566) & (abs(ele_etaSC) < 2.5))
     ) & (events.Electron.cutBased > 3)
@@ -100,7 +109,11 @@ def ele_cuttightid(events, campaign):
 
 
 def ele_mvatightid(events, campaign):
-    ele_etaSC = events.Electron.eta + events.Electron.deltaEtaSC if "Summer24" not in campaign else events.Electron.superclusterEta
+    ele_etaSC = (
+        events.Electron.eta + events.Electron.deltaEtaSC
+        if "Summer24" not in campaign
+        else events.Electron.superclusterEta
+    )
     elemask = (
         (abs(ele_etaSC) < 1.4442) | ((abs(ele_etaSC) > 1.566) & (abs(ele_etaSC) < 2.5))
     ) & (events.Electron.mvaIso_WP80 > 0.5)
@@ -254,7 +267,7 @@ btag_wp_dict = {
             },
             "c": {
                 "No": [0.0, 0.0],
-                "L": [0.042, 0.208], # CvL, then CvB
+                "L": [0.042, 0.208],  # CvL, then CvB
                 "M": [0.108, 0.299],
                 "T": [0.303, 0.243],
             },
@@ -304,7 +317,7 @@ btag_wp_dict = {
             },
             "c": {
                 "No": [0.0, 0.0],
-                "L": [0.042, 0.206], # CvL, then CvB
+                "L": [0.042, 0.206],  # CvL, then CvB
                 "M": [0.108, 0.298],
                 "T": [0.305, 0.241],
             },
@@ -354,7 +367,7 @@ btag_wp_dict = {
             },
             "c": {
                 "No": [0.0, 0.0],
-                "L": [0.042, 0.234], # CvL, then CvB
+                "L": [0.042, 0.234],  # CvL, then CvB
                 "M": [0.102, 0.322],
                 "T": [0.250, 0.262],
                 "XT": [0.371, 0.440],
@@ -407,7 +420,7 @@ btag_wp_dict = {
             },
             "c": {
                 "No": [0.0, 0.0],
-                "L": [0.042, 0.242], # CvL, then CvB
+                "L": [0.042, 0.242],  # CvL, then CvB
                 "M": [0.102, 0.328],
                 "T": [0.250, 0.267],
                 "XT": [0.371, 0.444],
@@ -460,7 +473,7 @@ btag_wp_dict = {
             },
             "c": {
                 "No": [0.0, 0.0],
-                "L": [0.086, 0.233], # CvL, then CvB
+                "L": [0.086, 0.233],  # CvL, then CvB
                 "M": [0.291, 0.457],
                 "T": [0.650, 0.421],
                 "XT": [0.810, 0.736],
@@ -506,6 +519,7 @@ btag_wp_dict = {
 
 
 import os, correctionlib
+
 
 def wp_dict(year, campaign):
     """

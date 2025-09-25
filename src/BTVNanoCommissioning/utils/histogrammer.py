@@ -66,10 +66,10 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
         obj_list = [
             "jet",
             "mu",
-        ] # store basic 4-vector, pt,eta, phi, mass for the object
+        ]  # store basic 4-vector, pt,eta, phi, mass for the object
         _hist_dict[f"dr_mujet0"] = Hist.Hist(
             syst_axis, flav_axis, dr_axis, Hist.storage.Weight()
-        ) # create cutstomize histogram
+        )  # create cutstomize histogram
 
     elif "QCD" == workflow:
         obj_list = ["jet0"]
@@ -561,7 +561,9 @@ def histogrammer(events, workflow, year="2022", campaign="Summer22"):
             if "mujet" in obj:
                 if "cutbased" in workflow:
                     for tagger in btag_wp_dict[year + "_" + campaign].keys():
-                        for wp in btag_wp_dict[year + "_" + campaign][tagger]["c"].keys():
+                        for wp in btag_wp_dict[year + "_" + campaign][tagger][
+                            "c"
+                        ].keys():
                             if not "No" in wp:
                                 _hist_dict[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
                                     syst_axis,
@@ -808,20 +810,21 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
         "DeepCSVB",
         "DeepJetB",
         "DeepJetC",
-    ] # exclude b-tag SFs for btag inputs
+    ]  # exclude b-tag SFs for btag inputs
     # define Jet flavor
 
     # Reduce the jet to the correct dimension in the plot
     found4jets = False
     found2jets = False
     for key in output.keys():
-        if "jet3" in key: # Because 0-indexing
+        if "jet3" in key:  # Because 0-indexing
             found4jets = True
             break
-        if "jet1" in key: # Because 0-indexing
+        if "jet1" in key:  # Because 0-indexing
             found2jets = True
     nj = 4 if found4jets else 2 if found2jets else 1
-    if nj != 1: pruned_ev["SelJet"] = pruned_ev.SelJet[:, :nj]
+    if nj != 1:
+        pruned_ev["SelJet"] = pruned_ev.SelJet[:, :nj]
     if "var" in str(ak.type(pruned_ev.SelJet.pt)) and nj == 1:
         pruned_ev.SelJet = pruned_ev.SelJet[:, 0]
 
