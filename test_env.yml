@@ -1,7 +1,7 @@
 name: btv_coffea
 channels:
   - conda-forge
-  - defaults
+
 dependencies:
   - python[version='<=3.10']
   - voms
@@ -18,4 +18,3 @@ dependencies:
   - parsl==2024.01.29
   - arrow
   - dask-jobqueue
-  

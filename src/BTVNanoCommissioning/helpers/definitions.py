@@ -6403,8 +6403,6 @@ def axes_name(var):
             unit = unit + " Prob(bb)"
         elif "B_lepb" in var:
             unit = unit + " Prob(lepb)"
-        elif "B_lepb" in var:
-            unit = unit + " Prob(lepb)"
         elif "QvG" in var or "QG" in var:
             unit = unit + " QvG"
         elif "G" in var:
