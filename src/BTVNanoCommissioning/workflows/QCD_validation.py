@@ -61,7 +61,7 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         output = {}
         if not self.noHist:
-            output = hists_new(
+            output = histogrammer(
                 events.Jet.fields,
                 obj_list=["jet0"],
                 hist_collections=["common", "fourvec", "QCD"],
