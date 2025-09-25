@@ -26,7 +26,7 @@ def process_run(run_input):
     run, trg = run_input
 
     bc_alias = "singularity -s exec  --env PYTHONPATH=/home/bril/.local/lib/python3.10/site-packages /cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cloud/brilws-docker:latest brilcalc"
-    brilcall = [f"{bc_alias} trg -r {str(run)} --prescale --hltpath HLT_{str(trg)}_v* --output-style csv"]
+    brilcall = [f"{bc_alias} trg -r {run} --prescale --hltpath HLT_{trg}_v* --output-style csv"]
 
     command = subprocess.run(brilcall, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True, executable="/bin/bash")
 
@@ -37,8 +37,8 @@ def process_run(run_input):
     csv_output = command.stdout
     df = pandas.read_csv(
         io.StringIO(csv_output),
-        usecols=["cmsls", "totprescval", "# run"],
-        dtype={"cmsls": numpy.int32, "totprescval": numpy.float64, "# run": numpy.int32},
+        usecols=["cmsls", "totprescval", "# run", "hltpath/prescval"],
+        dtype={"cmsls": numpy.int32, "totprescval": numpy.float64, "# run": numpy.int32, "hltpath/prescval": str},
     )
 
     return df
@@ -90,7 +90,7 @@ def build_lumibins(ps, verbose=False):
     ##### to sort as bin edges properly, starting lumi sections need to be stored as floats
     if verbose:
         print("Path: ", ps["hltpath/prescval"], ps["totprescval"])
-    edges = sorted(set(ps["cmsls"].astype(float)))
+    edges = sorted(set(ps["cmsls"]))
     if len(edges) == 1:
         return get_ps(ps)
     elif len(edges) > 1:
