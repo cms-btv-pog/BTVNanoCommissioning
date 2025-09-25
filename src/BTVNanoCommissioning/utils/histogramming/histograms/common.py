@@ -1,42 +1,41 @@
 import hist as Hist
 
 from BTVNanoCommissioning.utils.histogramming import hist_helpers
+from BTVNanoCommissioning.helpers.definitions import get_definitions, get_discriminators
 
 
 def get_histograms(axes, **kwargs):
     hists = {}
+
+    include_osss = kwargs.get("include_osss", False)
 
     include_njet = kwargs.get("include_njet", True)
     include_nmujet = kwargs.get("include_nmujet", False)
     include_nsoftmu = kwargs.get("include_nsoftmu", False)
 
     include_discriminators = kwargs.get("include_discriminators", True)
-    include_btag_input = kwargs.get("include_btag_input", True)
+    include_common_definitions = kwargs.get("include_common_definitions", True)
     include_sv_variables = kwargs.get("include_sv_variables", False)
 
+    if include_osss:
+        n_axes = [axes["syst"], axes["osss"], axes["n"]]
+    else:
+        n_axes = [axes["syst"], axes["n"]]
+
     if include_njet:
-        if kwargs.get("include_osss", False):
-            hists["njet"] = Hist.Hist(axes["syst"], axes["osss"], axes["n"], Hist.storage.Weight())
-        else:
-            hists["njet"] = Hist.Hist(axes["syst"], axes["n"], Hist.storage.Weight())
+        hists["njet"] = Hist.Hist(*n_axes, Hist.storage.Weight())
 
     if include_nmujet:
-        if kwargs.get("include_osss", False):
-            hists["nmujet"] = Hist.Hist(axes["syst"], axes["osss"], axes["n"], Hist.storage.Weight())
-        else:
-            hists["nmujet"] = Hist.Hist(axes["syst"], axes["n"], Hist.storage.Weight())
+        hists["nmujet"] = Hist.Hist(*n_axes, Hist.storage.Weight())
 
     if include_nsoftmu:
-        if kwargs.get("include_osss", False):
-            hists["nsoftmu"] = Hist.Hist(axes["syst"], axes["osss"], axes["n"], Hist.storage.Weight())
-        else:
-            hists["nsoftmu"] = Hist.Hist(axes["syst"], axes["n"], Hist.storage.Weight())
+        hists["nsoftmu"] = Hist.Hist(*n_axes, Hist.storage.Weight())
 
     if include_discriminators:
         hists = hists | _get_discriminators(axes, **kwargs)
 
-    if include_btag_input:
-        hists = hists | _get_btag_input(axes, **kwargs)
+    if include_common_definitions:
+        hists = hists | _get_common_definitions(axes, **kwargs)
 
     if include_sv_variables:
         hists = hists | _get_sv_variables(axes, **kwargs)
@@ -44,7 +43,7 @@ def get_histograms(axes, **kwargs):
     return hists
 
 
-def _get_btag_input(axes, **kwargs):
+def _get_common_definitions(axes, **kwargs):
 
     include_osss = kwargs.get("include_osss", False)
     jet_fields = kwargs.get("jet_fields", None)
@@ -56,7 +55,7 @@ def _get_btag_input(axes, **kwargs):
 
     hists = {}
 
-    definitions = hist_helpers.get_btag_input()
+    definitions = get_definitions()
 
     for d in definitions:
         if d not in jet_fields:
@@ -145,7 +144,7 @@ def _get_discriminators(axes, **kwargs):
     njet = kwargs.get("njet", 1)
     c_wf = kwargs.get("c_wf", False)
 
-    disc_list = hist_helpers.get_discriminators()
+    disc_list = get_discriminators()
 
     hists = {}
 

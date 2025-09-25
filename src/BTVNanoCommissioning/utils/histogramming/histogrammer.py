@@ -1,8 +1,7 @@
-from BTVNanoCommissioning.utils.selection import btag_wp_dict
-from .hist_helpers import get_axes_collections, get_hist_collections
 import hist as Hist
 import awkward as ak
 from BTVNanoCommissioning.helpers.func import flatten
+from .hist_helpers import get_hist_collections
 
 
 def histogrammer(
@@ -14,11 +13,26 @@ def histogrammer(
     **kwargs,
 ):
     """
+    Get a dictionary of histograms from the given histogram collections with the specified axes.
 
     Parameters:
+    jet_fields (list): List of jet fields to be included in the histograms, e.g. events.Jet.fields
+    obj_list (list): List of objects to be included in the histograms, e.g. "jet", "mu", "jet0". Accessed by the collections.
+    hist_collections (list): List of histogram collections to be included in the histograms. Defined in the utils/histogramming/histograms directory.
+    axes_collections (list): List of axes collections to be included in the histograms. Defined in the utils/histogramming/axes directory.
+    custom_axes (dict): Dictionary of custom axes to be included in the histograms. Overwrites the axes defined in the axes_collections.
+    **kwargs: Additional keyword arguments to be passed to the histogram collection functions.
 
     Example:
-
+    ```python
+    output = histogrammer(
+        jet_fields=events.Jet.fields,
+        obj_list=["jet", "mu"],
+        hist_collections=["example", "common"],
+        axes_collections=["common"],
+    )
+    ```
+        
     Returns:
     dict: A dictionary containing the defined histograms.
     """

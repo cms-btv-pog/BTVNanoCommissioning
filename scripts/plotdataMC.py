@@ -1,18 +1,18 @@
 import numpy as np
 import argparse, os, arrow, glob, re, sys
-from coffea.util import load
 import matplotlib.pyplot as plt
-from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
+from coffea.util import load
+from matplotlib.offsetbox import AnchoredText
 
 plt.style.use(hep.style.ROOT)
+
 from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
 from BTVNanoCommissioning.helpers.definitions import (
-    definitions,
+    get_definitions,
     axes_name,
-    SV_definitions,
 )
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
@@ -24,8 +24,8 @@ from BTVNanoCommissioning.utils.plot_utils import (
     color_map,
 )
 
-bininfo = definitions()
-SV_bininfo = SV_definitions()
+bininfo = get_definitions()
+SV_bininfo = get_definitions(include_definitions=["SV"])
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
 parser.add_argument("--com", default="13.6", type=str, help="sqrt(s) in TeV")
