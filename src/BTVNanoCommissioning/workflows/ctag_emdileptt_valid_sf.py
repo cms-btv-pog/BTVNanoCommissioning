@@ -66,7 +66,7 @@ class NanoProcessor(processor.ProcessorABC):
         isRealData = not hasattr(events, "genWeight")
         output = {}
         if not self.noHist:
-            output = hists_new(
+            output = histogrammer(
                 events.Jet.fields,
                 obj_list=["hl", "sl", "soft_l", "MET", "dilep", "lmujet"],
                 hist_collections=["common", "fourvec", "ctag_ttdilep"],

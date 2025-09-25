@@ -98,7 +98,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         output = {}
         if not self.noHist:
-            output = hists_new(
+            output = histogrammer(
                 events.Jet.fields,
                 obj_list=["hl", "soft_l", "MET", "dilep", "mujet"],
                 hist_collections=["common", "fourvec", "Wc"],
