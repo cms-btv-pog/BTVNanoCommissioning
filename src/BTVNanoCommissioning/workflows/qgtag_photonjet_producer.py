@@ -31,6 +31,15 @@ from BTVNanoCommissioning.utils.selection import (
     MET_filters,
 )
 
+import hist as Hist
+hists = {
+    "SelJet_pt": Hist.Hist(
+        Hist.axis.StrCategory([], name="syst", growth=True),
+        Hist.axis.Regular(100, 0, 200, name="jet0_pt", underflow=False, overflow=False),
+        Hist.storage.Weight(),
+    )
+}
+
 
 class NanoProcessor(processor.ProcessorABC):
     def __init__(
@@ -63,10 +72,10 @@ class NanoProcessor(processor.ProcessorABC):
     ## Apply corrections on momentum/mass on MET, Jet, Muon
     def process(self, events):
         events = missing_branch(events)
-        shifts = common_shifts(self, events)
+        vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
-            self.process_shift(update(events, collections), name)
+            self.process_shift(update(vetoed_events, collections), name)
             for collections, name in shifts
         )
 
@@ -77,16 +86,12 @@ class NanoProcessor(processor.ProcessorABC):
         ######################
         #  Create histogram  # : Get the histogram dict from `histogrammer`
         ######################
-        _hist_event_dict = (
+        output = (
             {}
             if self.noHist
-            else histogrammer(events, "qgtag_photonjet")  # this is the place to modify
+            else hists
         )
 
-        output = {
-            "sumw": processor.defaultdict_accumulator(float),
-            **_hist_event_dict,
-        }
         if isRealData:
             output["sumw"] = len(events)
         else:
@@ -104,7 +109,7 @@ class NanoProcessor(processor.ProcessorABC):
             output = dump_lumi(events[req_lumi], output)
 
         ## HLT
-        if self.year == "2022" or self.year == "2023":
+        if self._year == "2022" or self._year == "2023":
             triggers = [
                 "Photon20_HoverELoose",
                 "Photon30EB_TightID_TightIso",
@@ -114,7 +119,7 @@ class NanoProcessor(processor.ProcessorABC):
                 "Photon110EB_TightID_TightIso",
                 "Photon200"
             ]
-        elif self.year == "2024" or self.year == "2025":
+        elif self._year == "2024" or self._year == "2025":
             triggers = [
                 "Photon30EB_TightID_TightIso",
                 "Photon40EB_TightID_TightIso",
@@ -127,7 +132,7 @@ class NanoProcessor(processor.ProcessorABC):
             ]
         else:
             raise ValueError(
-                self.year, "is not a valid selection modifier."
+                self._year, "is not a valid selection modifier."
             )
 
         req_trig = HLT_helper(events, triggers)

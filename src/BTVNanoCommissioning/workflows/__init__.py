@@ -120,6 +120,7 @@ workflows["qgtag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="QG
 workflows["qgtag_dijet"] = partial(QGtagDijetProcessor, selectionModifier="DiPFJetAve")
 workflows["qgtag_dijet_zb"] = partial(QGtagDijetProcessor, selectionModifier="ZB")
 workflows["qgtag_dijet_pfjet"] = partial(QGtagDijetProcessor, selectionModifier="PFJet")
+workflows["qgtag_photonjet"] = QGtagPhotonjetProcessor
 
 # Tutorial
 # workflows["example"] = ExampleProcessor
