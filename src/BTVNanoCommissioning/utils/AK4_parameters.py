@@ -148,7 +148,7 @@ correction_config = {
         "PU": "puwei_Summer23BPix.histo.root",
         "JME": {
             "MC": "Summer23BPixPrompt23_V3",
-            "Run2023D": "Summer23BPixPrompt23_RunD_V1",
+            "Run2023D": "Summer23BPixPrompt23_V3",
             "jername": "Summer23BPixPrompt23_RunD_JRV1_MC",
         },
         # "JME": "jec_compiled.pkl.gz",
