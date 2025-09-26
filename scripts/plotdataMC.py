@@ -141,6 +141,7 @@ collated = {
 }
 print(collated.keys())
 ### input text settings
+input_txt = "placeholder"
 if "Wc" in args.phase:
     input_txt = "W+c"
     if args.splitOSSS == 1:
