@@ -12,7 +12,10 @@ from BTVNanoCommissioning.utils.correction import (
 )
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link, flatten
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writter,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -93,23 +96,19 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
-        histoname = {
-            "WcM": "ctag_Wc_sf",
-            "WcE": "ectag_Wc_sf",
-            "cutbased_WcM": "ctag_cutbased_Wc_sf",
-            "cutbased_WcE": "ectag_cutbased_Wc_sf",
-            "semittM": "ctag_Wc_sf",  # same histogram representation as W+c, since only nJet is different
-            "semittE": "ectag_Wc_sf",  # same histogram representation as W+c, since only nJet is different
-            "WcM_noMuVeto": "ctag_Wc_sf",
-            "semittM_noMuVeto": "ctag_Wc_sf",  # same histogram representation as W+c, since only nJet is different
-        }
-        output = (
-            {}
-            if self.noHist
-            else histogrammer(
-                events, histoname[self.selMod], self._year, self._campaign
+        output = {}
+        if not self.noHist:
+            output = histogrammer(
+                events.Jet.fields,
+                obj_list=["hl", "soft_l", "MET", "dilep", "mujet"],
+                hist_collections=["common", "fourvec", "Wc"],
+                include_nmujet=True,
+                include_nsoftmu=True,
+                include_osss=True,
+                cutbased=("cutbased" in self.selMod),
+                year=self._year,
+                campaign=self._campaign,
             )
-        )
 
         if isRealData:
             output["sumw"] = len(events)

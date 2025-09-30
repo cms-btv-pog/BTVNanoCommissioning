@@ -53,13 +53,10 @@ from BTVNanoCommissioning.workflows.qgtag_dijet_producer import (
 from BTVNanoCommissioning.workflows.qgtag_photonjet_producer import (
     NanoProcessor as QGtagPhotonjetProcessor,
 )
-from BTVNanoCommissioning.workflows.qgtag_photonjet_producer import (
-    NanoProcessor as QGtagPhotonjetProcessor,
-)
 
-# from BTVNanoCommissioning.workflows.example import (
-#     NanoProcessor as ExampleProcessor,
-# )
+from BTVNanoCommissioning.workflows.example import (
+    NanoProcessor as ExampleProcessor,
+)
 
 
 # FIXME - make names more systematic?
@@ -125,7 +122,8 @@ workflows["qgtag_dijet_zbppfjet"] = partial(QGtagDijetProcessor, selectionModifi
 workflows["qgtag_photonjet"] = QGtagPhotonjetProcessor
 
 # Tutorial
-# workflows["example"] = ExampleProcessor
+workflows["example"] = ExampleProcessor
+
 # BTA producers
 workflows["BTA"] = BTA_processor
 workflows["BTA_addPFMuons"] = partial(BTA_processor, addPFMuons=True)
