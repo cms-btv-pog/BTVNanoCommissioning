@@ -102,7 +102,10 @@ class NanoProcessor(processor.ProcessorABC):
         req_metfilter = MET_filters(events, self._campaign)
 
         # Muon cuts
-        dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
+        if "QG" not in self.selMod:
+            dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
+        else:
+            dilep_mu = events.Muon[(events.Muon[:, 0].pt >= 21) & mu_idiso(events, self._campaign)]
 
         # Electron cuts
         dilep_ele = events.Electron[
