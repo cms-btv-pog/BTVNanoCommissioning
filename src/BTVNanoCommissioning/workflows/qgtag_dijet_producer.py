@@ -182,7 +182,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_metfilter = MET_filters(events, self._campaign)
 
-        event_level = req_trig & req_lumi & req_metfilter
+        event_level = req_lumi & req_metfilter
 
         ##### Add some selections
         ## Jet cuts
