@@ -14,6 +14,7 @@ from BTVNanoCommissioning.utils.correction import (
 
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
+from BTVNanoCommissioning.utils.histogramming.histograms.qgtag import qg_writer
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
     histo_writter,
@@ -83,12 +84,21 @@ class NanoProcessor(processor.ProcessorABC):
         histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
         output = {}
         if not self.noHist:
-            output = histogrammer(
-                jet_fields=events.Jet.fields,
-                obj_list=["posl", "negl", "dilep", "jet0"],
-                hist_collections=["common", "fourvec", "DY"],
-                include_m=isMu,
-            )
+            if "QG" not in self.selMod:
+                output = histogrammer(
+                    jet_fields=events.Jet.fields,
+                    obj_list=["posl", "negl", "dilep", "jet0"],
+                    hist_collections=["common", "fourvec", "DY"],
+                    include_m=isMu,
+                )
+            else:
+                output = histogrammer(
+                    jet_fields=events.Jet.fields,
+                    obj_list=[],
+                    hist_collections=["qgtag"],
+                    axes_collections=["qgtag"],
+                    is_dijet=False,
+                )
 
         if isRealData:
             output["sumw"] = len(events)
@@ -113,9 +123,13 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Muon cuts
         if "QG" not in self.selMod:
-            dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
+            dilep_mu = events.Muon[
+                (events.Muon.pt > 12) & mu_idiso(events, self._campaign)
+            ]
         else:
-            dilep_mu = events.Muon[(events.Muon[:, 0].pt >= 21) & mu_idiso(events, self._campaign)]
+            dilep_mu = events.Muon[
+                (events.Muon[:, 0].pt >= 21) & mu_idiso(events, self._campaign)
+            ]
 
         # Electron cuts
         dilep_ele = events.Electron[
@@ -140,7 +154,6 @@ class NanoProcessor(processor.ProcessorABC):
             False,
             axis=-1,
         )
-
 
         pos_dilep = ak.pad_none(pos_dilep, 1, axis=1)
         neg_dilep = ak.pad_none(neg_dilep, 1, axis=1)
@@ -283,9 +296,19 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
-                pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
-            )
+            if "QG" not in self.selMod:
+                output = histo_writter(
+                    pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
+                )
+            else:
+                output = qg_writer(
+                    pruned_ev,
+                    output,
+                    weights,
+                    systematics,
+                    self.isSyst,
+                    self.SF_map,
+                )
         # Output arrays
         if self.isArray:
             if "QG" in self.selMod:

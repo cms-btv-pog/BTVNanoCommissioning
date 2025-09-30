@@ -2,6 +2,7 @@ import hist as Hist
 import awkward as ak
 import numpy as np
 
+
 def _flavor_label(flav):
     absflavs = np.abs(flav)
     conditions = [
@@ -13,6 +14,7 @@ def _flavor_label(flav):
     ]
     choices = [0, 1, 2, 3, 4]
     return np.select(conditions, choices, default=5)
+
 
 def get_histograms(axes, **kwargs):
     hists = {}
@@ -41,7 +43,7 @@ def get_histograms(axes, **kwargs):
         "btagUParTAK4QG",
         "btagUParTAK4QvG",
         "btagUParTAK4SvCB",
-        "btagUParTAK4SvUDG"
+        "btagUParTAK4SvUDG",
     ]
 
     objs = ["Tag", "SelJet"]
@@ -50,7 +52,9 @@ def get_histograms(axes, **kwargs):
 
     for obj in objs:
         if obj == "Tag":
-            obj_axes = [axes["syst"],]
+            obj_axes = [
+                axes["syst"],
+            ]
         else:
             obj_axes = [axes["syst"], axes["flav"]]
 
@@ -93,6 +97,7 @@ def get_histograms(axes, **kwargs):
 
     return hists
 
+
 def qg_writer(
     events,
     output,
@@ -126,10 +131,11 @@ def qg_writer(
             if is_pteta:
                 obj_axes["pt"] = ak.flatten(events[hobj]["pt"], axis=None)
                 obj_axes["eta"] = ak.flatten(events[hobj]["eta"], axis=None)
-                
 
             if obj != "Tag":
-                obj_axes["flav"] = ak.flatten(_flavor_label(events[hobj].partonFlavour), axis=None)
+                obj_axes["flav"] = ak.flatten(
+                    _flavor_label(events[hobj].partonFlavour), axis=None
+                )
 
             output[histname].fill(**obj_axes)
 

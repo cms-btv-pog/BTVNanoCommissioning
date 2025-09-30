@@ -23,7 +23,11 @@ from BTVNanoCommissioning.helpers.func import (
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
-from BTVNanoCommissioning.utils.histogramming.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writter,
+)
+from BTVNanoCommissioning.utils.histogramming.histograms.qgtag import qg_writer
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -34,19 +38,6 @@ from BTVNanoCommissioning.utils.selection import (
 )
 
 import hist as Hist
-hists = {
-    "jet0_pt": Hist.Hist(
-        Hist.axis.StrCategory([], name="syst", growth=True),
-        Hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour"),
-        Hist.axis.Regular(100, 0, 200, name="pt", underflow=False, overflow=False),
-        Hist.storage.Weight(),
-    ),
-    "njet": Hist.Hist(
-        Hist.axis.StrCategory([], name="syst", growth=True),
-        Hist.axis.Regular(10, 0, 10, name="njet", underflow=False, overflow=False),
-        Hist.storage.Weight(),
-    ),
-}
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -94,11 +85,16 @@ class NanoProcessor(processor.ProcessorABC):
         ######################
         #  Create histogram  # : Get the histogram dict from `histogrammer`
         ######################
-        output = (
-            {}
-            if self.noHist
-            else hists
-        )
+        output = {}
+
+        if not self.noHist:
+            output = histogrammer(
+                jet_fields=events.Jet.fields,
+                obj_list=[],
+                hist_collections=["qgtag"],
+                axes_collections=["qgtag"],
+                is_dijet=False,
+            )
 
         if isRealData:
             output["sumw"] = len(events)
@@ -139,9 +135,7 @@ class NanoProcessor(processor.ProcessorABC):
                 "Photon200": [200, 9999],
             }
         else:
-            raise ValueError(
-                self._year, "is not a valid selection modifier."
-            )
+            raise ValueError(self._year, "is not a valid selection modifier.")
 
         req_metfilter = MET_filters(events, self._campaign)
 
@@ -227,7 +221,6 @@ class NanoProcessor(processor.ProcessorABC):
                 )
             return {dataset: output}
 
-
         ##===>  Ntuplization  : store custom information
         ####################
         # Selected objects # : Pruned objects with reduced event_level
@@ -278,7 +271,6 @@ class NanoProcessor(processor.ProcessorABC):
             systematics = ["nominal"] + list(weights.variations)
         else:
             systematics = [shift_name]
-
 
         # Configure histograms
         if not self.noHist:

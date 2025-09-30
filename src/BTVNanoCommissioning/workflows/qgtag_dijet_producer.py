@@ -21,7 +21,10 @@ from BTVNanoCommissioning.helpers.func import (
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
-from BTVNanoCommissioning.utils.histogramming.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writter,
+)
 from BTVNanoCommissioning.utils.histogramming.histograms.qgtag import qg_writer
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
@@ -31,6 +34,7 @@ from BTVNanoCommissioning.utils.selection import (
     ele_cuttightid,
     MET_filters,
 )
+
 
 class NanoProcessor(processor.ProcessorABC):
     def __init__(
@@ -220,7 +224,7 @@ class NanoProcessor(processor.ProcessorABC):
             rmin, rmax = pt_range
             if "DiPFJetAve" in self.selectionModifier:
                 thistrigreq = (
-                    (HLT_helper(events, [trigger])) 
+                    (HLT_helper(events, [trigger]))
                     # Average
                     # & (ak.fill_none(0.5 * (event_jet[:, 0].pt + event_jet[:, 1].pt) >= rmin, False))
                     # & (ak.fill_none(0.5 * (event_jet[:, 0].pt + event_jet[:, 1].pt) < rmax, False))
@@ -230,7 +234,6 @@ class NanoProcessor(processor.ProcessorABC):
                 )
                 trigbools[trigger] = thistrigreq
                 req_trig = req_trig | thistrigreq
-
 
         event_level = event_level & req_jet & req_dphi & req_subjet & req_trig
 
@@ -258,7 +261,6 @@ class NanoProcessor(processor.ProcessorABC):
                 )
             return {dataset: output}
 
-
         ##===>  Ntuplization  : store custom information
         ####################
         # Selected objects # : Pruned objects with reduced event_level
@@ -277,7 +279,9 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev.Jet[:, 0],
             pruned_ev.Jet[:, 1],
         )
-        pruned_ev["RndJet"] = pruned_ev.Jet[:, np.random.randint(0, 2, size=len(pruned_ev))]
+        pruned_ev["RndJet"] = pruned_ev.Jet[
+            :, np.random.randint(0, 2, size=len(pruned_ev))
+        ]
         pruned_ev["SelJet"] = pruned_ev.Jet[:, :2]
         pruned_ev["njet"] = ak.count(pruned_ev.Jet.pt, axis=1)
 
@@ -316,7 +320,6 @@ class NanoProcessor(processor.ProcessorABC):
             systematics = ["nominal"] + list(weights.variations)
         else:
             systematics = [shift_name]
-
 
         # Configure histograms
         if not self.noHist:

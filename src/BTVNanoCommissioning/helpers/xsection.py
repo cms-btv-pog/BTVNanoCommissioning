@@ -1427,7 +1427,6 @@ xsection = [
         "shower": "none",
         "matrix_generator": "Madgraph",
         "energy": "13.6",
-
     },
     {
         "process_name": "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",

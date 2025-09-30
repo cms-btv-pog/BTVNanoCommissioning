@@ -6,7 +6,9 @@ axes = {
     # PartonFlavour categories: 0=ud, 1=s, 2=c, 3=b, 4=g, 5=other
     "pflav": hist.axis.IntCategory([0, 1, 2, 3, 4, 5], name="flav", label="Genflavour"),
     "syst": hist.axis.StrCategory([], name="syst", growth=True),
-    "pt": hist.axis.Variable(np.geomspace(15, 2000, 90), name="pt", label=" $p_{T}$ [GeV]"),
+    "pt": hist.axis.Variable(
+        np.geomspace(15, 2000, 90), name="pt", label=" $p_{T}$ [GeV]"
+    ),
     "jpt": hist.axis.Regular(300, 0, 3000, name="pt", label=" $p_{T}$ [GeV]"),
     "softlpt": hist.axis.Regular(25, 0, 25, name="pt", label=" $p_{T}$ [GeV]"),
     "mass": hist.axis.Regular(50, 0, 300, name="mass", label=" mass [GeV]"),
