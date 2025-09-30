@@ -62,6 +62,13 @@ def get_histograms(axes, **kwargs):
                 Hist.axis.Regular(50, 0, 1, name=tagger, label=tagger),
                 storage=Hist.storage.Weight(),
             )
+            hists[f"Obj{obj}_Var{tagger}_pteta"] = Hist.Hist(
+                *obj_axes,
+                Hist.axis.Regular(50, 0, 1, name=tagger, label=tagger),
+                axes["pt"],
+                axes["eta"],
+                storage=Hist.storage.Weight(),
+            )
 
         hists[f"Obj{obj}_Varpt"] = Hist.Hist(
             *obj_axes,
@@ -104,7 +111,8 @@ def qg_writer(
         )
         for histname, hist in output.items():
             hobj = histname.split("_Var")[0].replace("Obj", "")
-            var = histname.split("_Var")[1]
+            var = histname.split("_Var")[1].split("_")[0]
+            is_pteta = histname.endswith("_pteta")
             if hobj not in events.fields:
                 continue
             if var not in events[hobj].fields:
@@ -115,6 +123,10 @@ def qg_writer(
                 var: ak.flatten(events[hobj][var], axis=None),
                 "weight": weight,
             }
+            if is_pteta:
+                obj_axes["pt"] = ak.flatten(events[hobj]["pt"], axis=None)
+                obj_axes["eta"] = ak.flatten(events[hobj]["eta"], axis=None)
+                
 
             if obj != "Tag":
                 obj_axes["flav"] = ak.flatten(_flavor_label(events[hobj].partonFlavour), axis=None)
