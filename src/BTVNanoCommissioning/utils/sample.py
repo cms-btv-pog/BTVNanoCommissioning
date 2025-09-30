@@ -368,6 +368,8 @@ predefined_sample = {
             "GJ-4Jets_Bin-HT-400to600-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "GJ-4Jets_Bin-HT-600to1000-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "GJ-4Jets_Bin-HT-1000-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # Sherpa NLO
+            "GJ-4Jets-2NLO2LO_Bin-PTG-25_Par-BiasedPTG_TuneSherpaDef_13p6TeV_sherpaMEPS"
             # Summer22/Summer23
             # HT binned
             "GJ-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",

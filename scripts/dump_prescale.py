@@ -56,12 +56,10 @@ def get_prescale(HLT, lumimask, verbose=False, test=False, force=False, ignore_c
     if force or not os.path.exists(outcsv):
         with ThreadPoolExecutor() as executor:
             dfs = list(
-                # tqdm(executor.map(process_run, [enumerate(runs), trigger]), total=len(runs))
                 tqdm(executor.map(process_run, [(run, HLT) for run in runs]), total=len(runs))
             )
 
         prescales = pandas.concat(dfs, ignore_index=True)
-        # prescales= prescales[prescales['totprescval']!=0]
         if not ignore_csv_output:
             prescales.to_csv(outcsv)
 

@@ -1,4 +1,5 @@
 from .axes.common import axes as common_axes
+from .axes.qgtag import axes as qgtag_axes
 
 from .histograms.common import get_histograms as common_hists
 from .histograms.ctag_ttdilep import get_histograms as ctag_ttdilep_hists
@@ -13,6 +14,7 @@ from .histograms.qcd import get_histograms as qcd_hists
 from .histograms.qcd_smu import get_histograms as qcd_smu_hists
 from .histograms.validation import get_histograms as validation_hists
 from .histograms.wc import get_histograms as wc_hists
+from .histograms.qgtag import get_histograms as qgtag_hists
 
 
 def get_axes_collections(
@@ -20,6 +22,7 @@ def get_axes_collections(
 ):
     available_collections = {
         "common": common_axes,
+        "qgtag": qgtag_axes,
     }
 
     output = {}
@@ -54,6 +57,7 @@ def get_hist_collections(axes: dict, hist_collections: list, **kwargs):
         "ttsemilep": ttsemilep_hists,
         "validation": validation_hists,
         "Wc": wc_hists,
+        "qgtag": qgtag_hists,
     }
 
     output = {}

@@ -235,6 +235,11 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev = events[event_level]
         if self.selMod == "QG":
             pruned_ev["SelJet"] = event_jet[event_level][:, 0]
+            pruned_ev["Tag"] = sz
+            pruned_ev["Tag", "pt"] = pruned_ev.Tag.pt
+            pruned_ev["Tag", "eta"] = pruned_ev.Tag.eta
+            pruned_ev["Tag", "phi"] = pruned_ev.Tag.phi
+            pruned_ev["Tag", "mass"] = pruned_ev.Tag.mass
         else:
             pruned_ev["SelJet"] = event_jet[event_level]
 

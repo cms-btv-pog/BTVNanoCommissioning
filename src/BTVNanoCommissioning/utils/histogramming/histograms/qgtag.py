@@ -1,0 +1,124 @@
+import hist as Hist
+import awkward as ak
+import numpy as np
+
+def _flavor_label(flav):
+    absflavs = np.abs(flav)
+    conditions = [
+        (absflavs == 1) | (absflavs == 2),
+        absflavs == 3,
+        absflavs == 4,
+        absflavs == 5,
+        absflavs == 21,
+    ]
+    choices = [0, 1, 2, 3, 4]
+    return np.select(conditions, choices, default=5)
+
+def get_histograms(axes, **kwargs):
+    hists = {}
+
+    is_dijet = kwargs.get("is_dijet", False)
+    jet_fields = kwargs.get("jet_fields", [])
+
+    # Taggers
+    taggers = [
+        "btagDeepFlavB",
+        "btagDeepFlavCvB",
+        "btagDeepFlavCvL",
+        "btagDeepFlavQG",
+        "btagPNetB",
+        "btagPNetCvB",
+        "btagPNetCvL",
+        "btagPNetQvG",
+        "btagRobustParTAK4B",
+        "btagRobustParTAK4CvB",
+        "btagRobustParTAK4CvL",
+        "btagRobustParTAK4QG",
+        "btagUParTAK4B",
+        "btagUParTAK4CvB",
+        "btagUParTAK4CvNotB",
+        "btagUParTAK4CvL",
+        "btagUParTAK4QG",
+        "btagUParTAK4QvG",
+        "btagUParTAK4SvCB",
+        "btagUParTAK4SvUDG"
+    ]
+
+    objs = ["Tag", "SelJet"]
+    if is_dijet:
+        objs.extend(["FwdJet", "CenJet", "RndJet"])
+
+    for obj in objs:
+        if obj == "Tag":
+            obj_axes = [axes["syst"],]
+        else:
+            obj_axes = [axes["syst"], axes["flav"]]
+
+        for tagger in taggers:
+            if tagger not in jet_fields:
+                continue
+            hists[f"Obj{obj}_Var{tagger}"] = Hist.Hist(
+                *obj_axes,
+                Hist.axis.Regular(50, 0, 1, name=tagger, label=tagger),
+                storage=Hist.storage.Weight(),
+            )
+
+        hists[f"Obj{obj}_Varpt"] = Hist.Hist(
+            *obj_axes,
+            axes["pt"],
+            storage=Hist.storage.Weight(),
+        )
+        hists[f"Obj{obj}_Vareta"] = Hist.Hist(
+            *obj_axes,
+            axes["eta"],
+            storage=Hist.storage.Weight(),
+        )
+        hists[f"Obj{obj}_Varphi"] = Hist.Hist(
+            *obj_axes,
+            axes["phi"],
+            storage=Hist.storage.Weight(),
+        )
+        hists[f"Obj{obj}_Varmass"] = Hist.Hist(
+            *obj_axes,
+            axes["mass"],
+            storage=Hist.storage.Weight(),
+        )
+
+    return hists
+
+def qg_writer(
+    events,
+    output,
+    weights,
+    systematics: list,
+    isSyst: bool,
+    SF_map: dict,
+):
+    for syst in systematics:
+        if not isSyst and syst != "nominal":
+            break
+        weight = (
+            weights.weight()
+            if syst == "nominal" or syst not in list(weights.variations)
+            else weights.weight(modifier=syst)
+        )
+        for histname, hist in output.items():
+            hobj = histname.split("_Var")[0].replace("Obj", "")
+            var = histname.split("_Var")[1]
+            if hobj not in events.fields:
+                continue
+            if var not in events[hobj].fields:
+                continue
+
+            obj_axes = {
+                "syst": syst,
+                var: ak.flatten(events[hobj][var], axis=None),
+                "weight": weight,
+            }
+
+            if obj != "Tag":
+                obj_axes["flav"] = ak.flatten(_flavor_label(events[hobj].partonFlavour), axis=None)
+
+            output[histname].fill(**obj_axes)
+
+    return output

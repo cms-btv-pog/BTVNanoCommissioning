@@ -132,7 +132,7 @@ if args.DAS_campaign == "auto":
             f"Automatically selected DAS_campaign {args.DAS_campaign} based on {key}."
         )
     else:
-        raise (
+        raise ValueError(
             f"Cannot automatically assign DAS_campaign based on {key}. Valid keys:",
             list(DAS_campaign_map.keys()),
         )
