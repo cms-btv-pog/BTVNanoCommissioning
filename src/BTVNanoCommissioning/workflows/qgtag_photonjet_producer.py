@@ -1,5 +1,7 @@
 import awkward as ak
+import os
 import numpy as np
+import correctionlib
 from coffea import processor
 from coffea.analysis_tools import Weights
 
@@ -33,11 +35,17 @@ from BTVNanoCommissioning.utils.selection import (
 
 import hist as Hist
 hists = {
-    "SelJet_pt": Hist.Hist(
+    "jet0_pt": Hist.Hist(
         Hist.axis.StrCategory([], name="syst", growth=True),
-        Hist.axis.Regular(100, 0, 200, name="jet0_pt", underflow=False, overflow=False),
+        Hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour"),
+        Hist.axis.Regular(100, 0, 200, name="pt", underflow=False, overflow=False),
         Hist.storage.Weight(),
-    )
+    ),
+    "njet": Hist.Hist(
+        Hist.axis.StrCategory([], name="syst", growth=True),
+        Hist.axis.Regular(10, 0, 10, name="njet", underflow=False, overflow=False),
+        Hist.storage.Weight(),
+    ),
 }
 
 
@@ -110,35 +118,34 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## HLT
         if self._year == "2022" or self._year == "2023":
-            triggers = [
-                "Photon20_HoverELoose",
-                "Photon30EB_TightID_TightIso",
-                "Photon50",
-                "Photon75",
-                "Photon90",
-                "Photon110EB_TightID_TightIso",
-                "Photon200"
-            ]
+            triggers = {
+                "Photon20_HoverELoose": [20, 30],
+                "Photon30EB_TightID_TightIso": [30, 50],
+                "Photon50": [50, 75],
+                "Photon75": [75, 90],
+                "Photon90": [90, 110],
+                "Photon110EB_TightID_TightIso": [110, 200],
+                "Photon200": [200, 9999],
+            }
         elif self._year == "2024" or self._year == "2025":
-            triggers = [
-                "Photon30EB_TightID_TightIso",
-                "Photon40EB_TightID_TightIso",
-                "Photon50EB_TightID_TightIso",
-                "Photon55EB_TightID_TightIso",
-                "Photon75EB_TightID_TightIso",
-                "Photon90EB_TightID_TightIso",
-                "Photon110EB_TightID_TightIso",
-                "Photon200",
-            ]
+            triggers = {
+                "Photon30EB_TightID_TightIso": [30, 40],
+                "Photon40EB_TightID_TightIso": [40, 50],
+                "Photon50EB_TightID_TightIso": [50, 55],
+                "Photon55EB_TightID_TightIso": [55, 75],
+                "Photon75EB_TightID_TightIso": [75, 90],
+                "Photon90EB_TightID_TightIso": [90, 110],
+                "Photon110EB_TightID_TightIso": [110, 200],
+                "Photon200": [200, 9999],
+            }
         else:
             raise ValueError(
                 self._year, "is not a valid selection modifier."
             )
 
-        req_trig = HLT_helper(events, triggers)
         req_metfilter = MET_filters(events, self._campaign)
 
-        event_level = req_trig & req_lumi & req_metfilter
+        event_level = req_lumi & req_metfilter
 
         ##### Add some selections
         ## Jet cuts
@@ -162,6 +169,20 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_photon = ak.count(event_ph.pt, axis=1) > 0
 
+        req_trig = np.zeros(len(events), dtype="bool")
+        trigbools = {}
+        for trigger, ptrange in triggers.items():
+            ptmin = ptrange[0]
+            ptmax = ptrange[1]
+            # Require *leading photon* to be in the pT range of the trigger
+            thistrigreq = (
+                (HLT_helper(events, [trigger]))
+                & (ak.fill_none(ak.firsts(event_ph.pt) >= ptmin, False))
+                & (ak.fill_none(ak.firsts(event_ph.pt) < ptmax, False))
+            )
+            trigbools[trigger] = thistrigreq
+            req_trig = (req_trig) | (thistrigreq)
+
         if self._year == "2016":
             jet_puid = events.Jet.puId >= 1
         elif self._year in ["2017", "2018"]:
@@ -180,7 +201,7 @@ class NanoProcessor(processor.ProcessorABC):
         req_dphi = np.abs(event_jet[:, 0].delta_phi(event_ph[:, 0])) > 2.7
         req_scale = np.abs(1.0 - event_jet[:, 0].pt / event_ph[:, 0].pt) < 0.7
 
-        event_level = event_level & req_jet & req_dphi & req_scale
+        event_level = event_level & req_jet & req_dphi & req_scale & req_trig
 
         ## MC only: require gen vertex to be close to reco vertex
         if "GenVtx_z" in events.fields:
@@ -230,6 +251,28 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         # Configure SFs
         weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
+        if isRealData:
+            if self._year == "2022":
+                run_num = "355374_362760"
+            elif self._year == "2023":
+                run_num = "366727_370790"
+
+            psweight = np.zeros(len(pruned_ev))
+            for trigger, trigbool in trigbools.items():
+                psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
+                if not os.path.isfile(psfile):
+                    raise NotImplementedError(
+                        f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py`."
+                    )
+                pseval = correctionlib.CorrectionSet.from_file(psfile)
+                thispsweight = pseval["prescaleWeight"].evaluate(
+                    pruned_ev.run,
+                    f"HLT_{trigger}",
+                    ak.values_astype(pruned_ev.luminosityBlock, np.float32),
+                )
+                psweight = ak.where(trigbool[event_level], thispsweight, psweight)
+            weights.add("psweight", psweight)
+
         # Configure systematics
         if shift_name is None:
             systematics = ["nominal"] + list(weights.variations)
@@ -266,8 +309,6 @@ class NanoProcessor(processor.ProcessorABC):
                 isRealData,
                 othersData=othersData,
             )
-
-        print({dataset: output})
 
         return {dataset: output}
 
