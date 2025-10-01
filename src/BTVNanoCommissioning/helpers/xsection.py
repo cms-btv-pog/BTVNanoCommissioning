@@ -1217,11 +1217,6 @@ xsection = [
         "DAS": "/GJ-4Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8/Run3Summer23BPixMiniAODv4-130X_mcRun3_2023_realistic_postBPix_v2-v1/MINIAODSIM",
         "MCM": "GEN-Run3Summer23BPixMiniAODv4-00262",
         "equivalent_lumi": 0.6417,
-        "comments": "Automatically computed",
-        "modifiedOn": "2024-03-02 04:40:55",
-        "createdOn": "2024-03-02 04:40:55",
-        "modifiedBy": "dawei.fu@cern.ch",
-        "createdBy": "dawei.fu@cern.ch",
     },
     {
         "id": "65e2add8c9012c00640bf7b3",
