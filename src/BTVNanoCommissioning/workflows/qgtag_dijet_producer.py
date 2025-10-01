@@ -1,5 +1,7 @@
 import awkward as ak
 import numpy as np
+import correctionlib
+import os
 from coffea import processor
 from coffea.analysis_tools import Weights
 
@@ -234,6 +236,15 @@ class NanoProcessor(processor.ProcessorABC):
                 )
                 trigbools[trigger] = thistrigreq
                 req_trig = req_trig | thistrigreq
+            else:
+                thistrigreq = (
+                    (HLT_helper(events, [trigger]))
+                    & (ak.fill_none(event_jet[:, 0].pt >= rmin, False))
+                    & (ak.fill_none(event_jet[:, 0].pt < rmax, False))
+                )
+                trigbools[trigger] = thistrigreq
+                req_trig = req_trig | thistrigreq
+
 
         event_level = event_level & req_jet & req_dphi & req_subjet & req_trig
 
@@ -284,6 +295,7 @@ class NanoProcessor(processor.ProcessorABC):
         ]
         pruned_ev["SelJet"] = pruned_ev.Jet[:, :2]
         pruned_ev["njet"] = ak.count(pruned_ev.Jet.pt, axis=1)
+        print("Number of events passing selection: ", len(pruned_ev))
 
         ## <========= end: store custom objects
 

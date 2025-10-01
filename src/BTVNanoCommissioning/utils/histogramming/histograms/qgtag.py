@@ -115,6 +115,8 @@ def qg_writer(
             else weights.weight(modifier=syst)
         )
         for histname, hist in output.items():
+            if histname == "sumw":
+                continue
             hobj = histname.split("_Var")[0].replace("Obj", "")
             var = histname.split("_Var")[1].split("_")[0]
             is_pteta = histname.endswith("_pteta")
@@ -132,10 +134,16 @@ def qg_writer(
                 obj_axes["pt"] = ak.flatten(events[hobj]["pt"], axis=None)
                 obj_axes["eta"] = ak.flatten(events[hobj]["eta"], axis=None)
 
-            if obj != "Tag":
-                obj_axes["flav"] = ak.flatten(
-                    _flavor_label(events[hobj].partonFlavour), axis=None
-                )
+            if hobj != "Tag":
+                if "partonFlavour" not in events[hobj].fields:
+                    continue
+                    obj_axes["flav"] = ak.zeros_like(
+                        ak.flatten(events[hobj].pt, axis=None), dtype=int
+                    )
+                else:
+                    obj_axes["flav"] = ak.flatten(
+                        _flavor_label(events[hobj].partonFlavour), axis=None
+                    )
 
             output[histname].fill(**obj_axes)
 
