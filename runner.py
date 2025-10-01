@@ -889,9 +889,9 @@ if __name__ == "__main__":
         elif "lxplus" in args.executor:
             # details: https://batchdocs.web.cern.ch/specialpayload/dask.html
             n_port = 8786
-            if not check_port(8786):
+            if not check_port(n_port):
                 raise RuntimeError(
-                    "Port '8786' is not occupied on this node. Try another one."
+                    f"Port '{n_port}' is not occupied on this node. Try another one."
                 )
             import socket
 
