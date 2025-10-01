@@ -122,18 +122,13 @@ class NanoProcessor(processor.ProcessorABC):
         req_metfilter = MET_filters(events, self._campaign)
 
         # Muon cuts
-        if "QG" not in self.selMod:
-            dilep_mu = events.Muon[
-                (events.Muon.pt > 12) & mu_idiso(events, self._campaign)
-            ]
-        else:
-            dilep_mu = events.Muon[
-                (events.Muon[:, 0].pt >= 21) & mu_idiso(events, self._campaign)
-            ]
+        dilep_mu = events.Muon[
+            ak.any(events.Muon.pt > 20, axis=1) & (events.Muon.pt > 12) & mu_idiso(events, self._campaign)
+        ]
 
         # Electron cuts
         dilep_ele = events.Electron[
-            (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
+            ak.any(events.Electron.pt > 26, axis=1) & (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
         ]
         if isMu:
             thisdilep = dilep_mu
@@ -145,12 +140,20 @@ class NanoProcessor(processor.ProcessorABC):
         # dilepton
         pos_dilep = thisdilep[thisdilep.charge > 0]
         neg_dilep = thisdilep[thisdilep.charge < 0]
+
+        if isMu:
+            req_trg_turnon = (
+                ak.any(pos_dilep.pt > 21, axis=1) | ak.any(neg_dilep.pt > 21, axis=1)
+            )
+        else:
+            req_trg_turnon = True
+
         req_pl = ak.count(pos_dilep.pt, axis=1) >= 1
         req_nl = ak.count(neg_dilep.pt, axis=1) >= 1
         req_dilep_chrg = ak.num(thisdilep.charge) >= 2
         req_otherdilep_chrg = ak.num(otherdilep.charge) == 0
         req_dilep = ak.fill_none(
-            req_pl & req_nl & req_dilep_chrg & req_otherdilep_chrg,
+            req_pl & req_nl & req_dilep_chrg & req_otherdilep_chrg, # & req_trg_turnon,
             False,
             axis=-1,
         )
