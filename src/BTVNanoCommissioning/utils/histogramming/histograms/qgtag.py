@@ -4,13 +4,21 @@ import numpy as np
 
 
 def _flavor_label(flav):
-	absflavs = np.abs(flav)
-	labels = ak.where( (absflavs == 1) | (absflavs == 2), 0,
-        ak.where( absflavs == 3, 1,
-        ak.where( absflavs == 4, 2,
-        ak.where( absflavs == 5, 3,
-        ak.where( absflavs == 21, 4, 5 ) ) ) ) )
-	return labels
+    absflavs = np.abs(flav)
+    labels = ak.where(
+        (absflavs == 1) | (absflavs == 2),
+        0,
+        ak.where(
+            absflavs == 3,
+            1,
+            ak.where(
+                absflavs == 4,
+                2,
+                ak.where(absflavs == 5, 3, ak.where(absflavs == 21, 4, 5)),
+            ),
+        ),
+    )
+    return labels
 
 
 def get_histograms(axes, **kwargs):
@@ -21,22 +29,22 @@ def get_histograms(axes, **kwargs):
 
     # Taggers
     taggers = [
-        "btagDeepFlavB",
-        "btagDeepFlavCvB",
-        "btagDeepFlavCvL",
+        # "btagDeepFlavB",
+        # "btagDeepFlavCvB",
+        # "btagDeepFlavCvL",
         "btagDeepFlavQG",
-        "btagPNetB",
-        "btagPNetCvB",
-        "btagPNetCvL",
+        # "btagPNetB",
+        # "btagPNetCvB",
+        # "btagPNetCvL",
         "btagPNetQvG",
-        "btagRobustParTAK4B",
-        "btagRobustParTAK4CvB",
-        "btagRobustParTAK4CvL",
+        # "btagRobustParTAK4B",
+        # "btagRobustParTAK4CvB",
+        # "btagRobustParTAK4CvL",
         "btagRobustParTAK4QG",
-        "btagUParTAK4B",
-        "btagUParTAK4CvB",
-        "btagUParTAK4CvNotB",
-        "btagUParTAK4CvL",
+        # "btagUParTAK4B",
+        # "btagUParTAK4CvB",
+        # "btagUParTAK4CvNotB",
+        # "btagUParTAK4CvL",
         "btagUParTAK4QG",
         "btagUParTAK4QvG",
         "btagUParTAK4SvCB",
@@ -58,11 +66,11 @@ def get_histograms(axes, **kwargs):
         for tagger in taggers:
             if tagger not in jet_fields:
                 continue
-            hists[f"Obj{obj}_Var{tagger}"] = Hist.Hist(
-                *obj_axes,
-                Hist.axis.Regular(50, 0, 1, name=tagger, label=tagger),
-                storage=Hist.storage.Weight(),
-            )
+            # hists[f"Obj{obj}_Var{tagger}"] = Hist.Hist(
+            # *obj_axes,
+            # Hist.axis.Regular(50, 0, 1, name=tagger, label=tagger),
+            # storage=Hist.storage.Weight(),
+            # )
             hists[f"Obj{obj}_Var{tagger}_pteta"] = Hist.Hist(
                 *obj_axes,
                 Hist.axis.Regular(50, 0, 1, name=tagger, label=tagger),
@@ -111,6 +119,8 @@ def qg_writer(
             if syst == "nominal" or syst not in list(weights.variations)
             else weights.weight(modifier=syst)
         )
+        # weight = weight * weights.partial_weight(include=["psweight"])
+
         for histname, hist in output.items():
             if histname in ["sumw", "fname", "run", "lumi", "processed", "out"]:
                 continue
@@ -143,7 +153,6 @@ def qg_writer(
 
             w = ak.flatten(ak.broadcast_arrays(weight, events[hobj][var])[0], axis=None)
             obj_axes["weight"] = w
-            
 
             output[histname].fill(**obj_axes)
 

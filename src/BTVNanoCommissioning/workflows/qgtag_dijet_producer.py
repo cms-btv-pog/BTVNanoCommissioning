@@ -245,7 +245,6 @@ class NanoProcessor(processor.ProcessorABC):
                 trigbools[trigger] = thistrigreq
                 req_trig = req_trig | thistrigreq
 
-
         event_level = event_level & req_jet & req_dphi & req_subjet & req_trig
 
         ## MC only: require gen vertex to be close to reco vertex
@@ -290,9 +289,14 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev.Jet[:, 0],
             pruned_ev.Jet[:, 1],
         )
-        pruned_ev["RndJet"] = pruned_ev.Jet[
-            :, np.random.randint(0, 2, size=len(pruned_ev))
-        ]
+        # pruned_ev["RndJet"] = pruned_ev.Jet[
+        # :, np.random.randint(0, 2)#, size=len(pruned_ev))
+        # ]
+        pruned_ev["RndJet"] = ak.where(
+            np.random.randint(0, 2, size=len(pruned_ev)) == 0,
+            pruned_ev.Jet[:, 0],
+            pruned_ev.Jet[:, 1],
+        )
         pruned_ev["SelJet"] = pruned_ev.Jet[:, :2]
         pruned_ev["njet"] = ak.count(pruned_ev.Jet.pt, axis=1)
 
