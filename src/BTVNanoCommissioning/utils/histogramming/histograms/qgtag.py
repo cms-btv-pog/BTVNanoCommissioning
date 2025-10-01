@@ -4,16 +4,13 @@ import numpy as np
 
 
 def _flavor_label(flav):
-    absflavs = np.abs(flav)
-    conditions = [
-        (absflavs == 1) | (absflavs == 2),
-        absflavs == 3,
-        absflavs == 4,
-        absflavs == 5,
-        absflavs == 21,
-    ]
-    choices = [0, 1, 2, 3, 4]
-    return np.select(conditions, choices, default=5)
+	absflavs = np.abs(flav)
+	labels = ak.where( (absflavs == 1) | (absflavs == 2), 0,
+        ak.where( absflavs == 3, 1,
+        ak.where( absflavs == 4, 2,
+        ak.where( absflavs == 5, 3,
+        ak.where( absflavs == 21, 4, 5 ) ) ) ) )
+	return labels
 
 
 def get_histograms(axes, **kwargs):
@@ -115,7 +112,7 @@ def qg_writer(
             else weights.weight(modifier=syst)
         )
         for histname, hist in output.items():
-            if histname in ["sumw", "fname", "run", "lumi", "processed"]:
+            if histname in ["sumw", "fname", "run", "lumi", "processed", "out"]:
                 continue
             hobj = histname.split("_Var")[0].replace("Obj", "")
             var = histname.split("_Var")[1].split("_")[0]
@@ -128,7 +125,7 @@ def qg_writer(
             obj_axes = {
                 "syst": syst,
                 var: ak.flatten(events[hobj][var], axis=None),
-                "weight": weight,
+                # "weight": weight,
             }
             if is_pteta:
                 obj_axes["pt"] = ak.flatten(events[hobj]["pt"], axis=None)
@@ -136,7 +133,6 @@ def qg_writer(
 
             if hobj != "Tag":
                 if "partonFlavour" not in events[hobj].fields:
-                    continue
                     obj_axes["flav"] = ak.zeros_like(
                         ak.flatten(events[hobj].pt, axis=None), dtype=int
                     )
@@ -144,6 +140,10 @@ def qg_writer(
                     obj_axes["flav"] = ak.flatten(
                         _flavor_label(events[hobj].partonFlavour), axis=None
                     )
+
+            w = ak.flatten(ak.broadcast_arrays(weight, events[hobj][var])[0], axis=None)
+            obj_axes["weight"] = w
+            
 
             output[histname].fill(**obj_axes)
 
