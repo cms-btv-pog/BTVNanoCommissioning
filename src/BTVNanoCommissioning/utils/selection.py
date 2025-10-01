@@ -645,6 +645,26 @@ met_filters = {
             "eeBadScFilter",
         ],
     },
+    "Summer24": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+    },
     "prompt_dataMC": {
         "data": [
             "goodVertices",

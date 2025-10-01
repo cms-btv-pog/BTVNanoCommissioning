@@ -8,7 +8,7 @@ from BTVNanoCommissioning.utils.correction import (
     weight_manager,
     common_shifts,
 )
-from BTVNanoCommissioning.utils.selection import btag_wp_dict  # noqa
+from BTVNanoCommissioning.utils.selection import btag_wp_dict
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
@@ -222,6 +222,9 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["SelJet"] = event_jet[event_level]
         pruned_ev["AllSelJet"] = event_jet[event_level]  # untouched by histo_writter
 
+        # print("----------debug--------------")
+        # print(event_jet.fields)
+        # print("----------debug--------------")
         for tagger, tag_obj in btag_wp_dict[f"{self._year}_{self._campaign}"].items():
             for stringency, wp in tag_obj["b"].items():
                 if stringency == "No":
