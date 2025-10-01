@@ -295,7 +295,6 @@ class NanoProcessor(processor.ProcessorABC):
         ]
         pruned_ev["SelJet"] = pruned_ev.Jet[:, :2]
         pruned_ev["njet"] = ak.count(pruned_ev.Jet.pt, axis=1)
-        print("Number of events passing selection: ", len(pruned_ev))
 
         ## <========= end: store custom objects
 
@@ -362,8 +361,6 @@ class NanoProcessor(processor.ProcessorABC):
                 isRealData,
                 othersData=othersData,
             )
-
-        print({dataset: output})
 
         return {dataset: output}
 
