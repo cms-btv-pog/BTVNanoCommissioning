@@ -1167,6 +1167,20 @@ xsection = [
         "MCM": "BTV-Run3Summer22MiniAODv3-00007",
     },
     {
+        "process_name": "QCD-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "status": "new",
+        "cross_section": 25400000,
+        "total_uncertainty": 74010,
+        "accuracy": "LO",
+        "DAS": "/QCD-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8/Run3Summer22EEMiniAODv3-124X_mcRun3_2022_realistic_postEE_v1-v2/MINIAODSIM",
+        "MCM": "GEN-Run3Summer22EEMiniAODv3-00113",
+        "equivalent_lumi": 0.00003937,
+        "fraction_negative_weight": 0,
+        "shower": "none",
+        "matrix_generator": "Madgraph",
+        "energy": "13.6",
+    },
+    {
         "process_name": "GJ-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "status": "new",
         "cross_section": 7328,
@@ -1181,7 +1195,6 @@ xsection = [
         "energy": "13.6",
     },
     {
-        "id": "65e2add7c9012c00640bf7b2",
         "process_name": "QCD-4Jets_HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "status": "new",
         "cross_section": 883.7,
