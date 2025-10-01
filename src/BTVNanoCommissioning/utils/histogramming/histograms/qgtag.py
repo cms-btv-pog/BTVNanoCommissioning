@@ -115,7 +115,7 @@ def qg_writer(
             else weights.weight(modifier=syst)
         )
         for histname, hist in output.items():
-            if histname == "sumw":
+            if histname in ["sumw", "fname", "run", "lumi", "processed"]:
                 continue
             hobj = histname.split("_Var")[0].replace("Obj", "")
             var = histname.split("_Var")[1].split("_")[0]
