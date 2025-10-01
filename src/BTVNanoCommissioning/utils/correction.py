@@ -1954,7 +1954,7 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
                                 mu_eta, mu_pt
                             ),
                         )
-                        sf_down = np.where(
+                        sfs_down = np.where(
                             masknone,
                             1.0,
                             sfs
