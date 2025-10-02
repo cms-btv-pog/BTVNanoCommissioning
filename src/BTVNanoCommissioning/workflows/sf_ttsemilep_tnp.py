@@ -14,10 +14,9 @@ from BTVNanoCommissioning.utils.selection import (
     mu_idiso, ele_mvatightid,
     btag_wp, wp_dict
 )
-from BTVNanoCommissioning.helpers.definitions import (
-    definitions,
-    disc_list,
-)
+
+from BTVNanoCommissioning.helpers.definitions import get_discriminators, get_definitions
+
 
 def select_lepton(events, channel, campaign, iso_mode="tight"):
     if channel == "mu":
@@ -283,7 +282,7 @@ class NanoProcessor(processor.ProcessorABC):
                         )
 
             # B-tagger scores
-            for disc in disc_list:
+            for disc in get_discriminators():
                 if disc not in events.Jet.fields:
                     continue
                 njet = 1
@@ -361,9 +360,11 @@ class NanoProcessor(processor.ProcessorABC):
                 else weights.weight(modifier=syst)
             )
             # a version that excludes BTV like systematics for b tag score plots
-            evt_w_excl_btv = weights.partial_weight(
-                exclude=[k for k in exclude_btv if k in weights.variations]
-            )
+            exclude_list = [k for k in exclude_btv if k in weights.variations]
+            if exclude_list:
+                evt_w_excl_btv = weights.partial_weight(exclude=exclude_list)
+            else:
+                evt_w_excl_btv = evt_w  # Nothing to exclude, use full weight
 
             # fill each histogram, but only with events that match its region prefix
             for histname, h in output.items():
@@ -544,11 +545,12 @@ class NanoProcessor(processor.ProcessorABC):
 
     def process(self, events):
         events = missing_branch(events)
-        shifts = common_shifts(self, events)
+        vetoed_events, shifts = common_shifts(self, events)
         return processor.accumulate(
-            self.process_shift(update(events, collections), name)
+            self.process_shift(update(vetoed_events, collections), name)
             for collections, name in shifts
         )
+
 
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
@@ -574,7 +576,7 @@ class NanoProcessor(processor.ProcessorABC):
         # MET filters
         req_metf = MET_filters(events, self._campaign)
 
-        # Loose veto objects (for exactly-one-lepton selection and jet cleaning)
+        # Loose veto objects
         mu_loose = (
             (events.Muon.pt > 15) & (abs(events.Muon.eta) < 2.4) &
             ak.fill_none(events.Muon.looseId, False)
@@ -583,10 +585,10 @@ class NanoProcessor(processor.ProcessorABC):
             (events.Electron.pt > 15) & (abs(events.Electron.eta) < 2.4) &
             ~((abs(events.Electron.eta) > 1.4442) & (abs(events.Electron.eta) < 1.566)) &
             (ak.fill_none(events.Electron.cutBased >= 2, False) |
-             ak.fill_none(getattr(events.Electron, "mvaIso_WP90", False), False))
+            ak.fill_none(getattr(events.Electron, "mvaIso_WP90", False), False))
         )
 
-        # Jet cleaning vs extra loose leptons
+        # Jet cleaning
         def _clean_jets(ev, other_mu_mask, other_el_mask):
             dr_mu = ev.Jet.metric_table(ev.Muon[other_mu_mask])
             dr_el = ev.Jet.metric_table(ev.Electron[other_el_mask])
@@ -598,7 +600,7 @@ class NanoProcessor(processor.ProcessorABC):
             base_jet_mask = jet_id(ev, self._campaign)
             return ak.fill_none(base_jet_mask & clean_mu & clean_el, False, axis=-1)
 
-        # cutflow helper
+        # Cutflow helper
         if not self.noHist and "cutflow" not in output:
             cf_axis = Hist.axis.StrCategory([], name="step", growth=True)
             output["cutflow"] = Hist.Hist(cf_axis, Hist.storage.Weight())
@@ -611,16 +613,8 @@ class NanoProcessor(processor.ProcessorABC):
         _cf("trig", req_lumi & req_trig)
         _cf("metf", req_lumi & req_trig & req_metf)
 
-        # -------------------- Build regions --------------------
-        # There are five regions:
-        # - central: tag b-jet working point "M", tight isolated lepton
-        # - isolation side-band: tag b-jet working point "M", lepton fail tight isolation but pass loose isolation
-        # - btagM sideband: tag b-jet working point fail "M" but pass "L", tight isolated lepton
-        # - btagL sideband: tag b-jet working point fail "M" and fail "L", tight isolated lepton
-        # - btagM + iso sideband: tag b-jet working point fail "M" but pass "L", lepton fail tight isolation but pass loose isolation
-
+        # Region specs
         region_specs = [
-            # name, iso_mode, tag_btagWP
             ("central", "tight", "M"),  
             ("sb_iso", "sbiso", "M"),
             ("sb_btagM", "tight", "L"),
@@ -628,16 +622,26 @@ class NanoProcessor(processor.ProcessorABC):
             ("sb_iso_btagM", "sbiso", "L")
         ]
 
-        # Collect all regions here
-        all_pruned = []
+        # Helper functions for 4-vector operations
+        def _four_mass(v):
+            arg = v.t*v.t - (v.x*v.x + v.y*v.y + v.z*v.z)
+            return np.sqrt(ak.where(arg > 0, arg, 0.0))
+
+        def _four_pt(v):
+            arg = v.x*v.x + v.y*v.y
+            return np.sqrt(ak.where(arg > 0, arg, 0.0))
+
+        def _dR(a, b):
+            dphi = ak.where((a.phi - b.phi) >  np.pi, a.phi - b.phi - 2*np.pi,
+                ak.where((a.phi - b.phi) < -np.pi, a.phi - b.phi + 2*np.pi, a.phi - b.phi))
+            arg = (a.eta - b.eta)**2 + dphi**2
+            return np.sqrt(ak.where(arg > 0, arg, 0.0))
 
         # Loop over isolation modes
         for iso_mode in ["tight", "sbiso"]:
-            # Select 1 lepton of requested isolation working point
             sel_leps, sel_mask = select_lepton(events, self.channel, self._campaign, iso_mode=iso_mode)
 
-
-            # exactly one of those leptons, zero of the other flavor (veto)
+            # Lepton veto
             if self.channel == "mu":
                 req_lepveto = (ak.num(events.Muon[mu_loose], axis=1) == 1) & (ak.num(events.Electron[el_loose], axis=1) == 0)
                 other_mu = events.Muon[mu_loose & ~ak.fill_none(sel_mask, False)]
@@ -651,78 +655,90 @@ class NanoProcessor(processor.ProcessorABC):
             _cf(f"{iso_mode}:lepveto", req_lumi & req_trig & req_metf & req_lepveto)
             _cf(f"{iso_mode}:tightlep", req_lumi & req_trig & req_metf & req_lepveto & req_lep)
 
-            # Jets (cleaned)
+            # Jets
             jet_mask = _clean_jets(events, other_mu_mask=mu_loose & ~ak.fill_none((events.Muon.pt > 30), False),
                                             other_el_mask=el_loose & ~ak.fill_none((events.Electron.pt > 30), False))
             jets_all = events.Jet[jet_mask]
             req_jets = ak.num(jets_all, axis=1) == 4
             _cf(f"{iso_mode}:jets==4", req_lumi & req_trig & req_metf & req_lepveto & req_lep & req_jets)
 
-            # Base mask for this family (no btag condition yet)
+            # Base mask
             evmask_base = req_lumi & req_trig & req_metf & req_lepveto & req_lep & req_jets
             if not ak.any(evmask_base):
                 continue
 
-            # Slice to base
-            ev_base   = events[evmask_base]
+            # Slice to base once
+            ev_base = events[evmask_base]
             jets_base = jets_all[evmask_base]
-            lep_base  = ak.firsts(sel_leps[evmask_base])
+            lep_base = ak.firsts(sel_leps[evmask_base])
 
-            # B-tag counts at L and M for event-level sideband logic
+            # B-tag counts
             bmask_L = btag_wp(jets_base, self._year, self._campaign, tagger=self.tag_tagger, borc="b", wp="L")
             bmask_M = btag_wp(jets_base, self._year, self._campaign, tagger=self.tag_tagger, borc="b", wp="M")
             nb_L = ak.sum(ak.fill_none(bmask_L, False), axis=1)
             nb_M = ak.sum(ak.fill_none(bmask_M, False), axis=1)
 
-            # Central requires ≥1 M tag
             mask_central = (nb_M >= 1)
-
-            # Sidebands in b-tag:  sb_btagM: (0 M) & (≥1 L), sb_btagL: (0 L)
             mask_sb_btagM = (nb_M == 0) & (nb_L >= 1)
             mask_sb_btagL = (nb_L == 0)
 
             # MET 4-vector
             met_b = ak.zip(
                 {"x": ev_base.MET.pt * np.cos(ev_base.MET.phi),
-                 "y": ev_base.MET.pt * np.sin(ev_base.MET.phi),
-                 "z": ak.zeros_like(ev_base.MET.pt),
-                 "t": ev_base.MET.pt},
+                "y": ev_base.MET.pt * np.sin(ev_base.MET.phi),
+                "z": ak.zeros_like(ev_base.MET.pt),
+                "t": ev_base.MET.pt},
                 with_name="FourVector",
             )
 
-            # ttbar reco on this family once
+            # ttbar reco ONCE per iso family
             best = ttbar_reco(jets_base, lep_base, met_b, maxjets=4)
             has_cand = best.get("has_cand", ak.Array([]))
             if not ak.any(has_cand):
                 continue
 
-            BH = best["BH"]
-            BL = best["BL"]
-            JA = best["JA"]
-            JB = best["JB"]
-            nu = best["nu"]
-            tlep = best["tlep"]
-            thad = best["thad"]
-            chi2 = best["chi2"]
+            # Extract results once
+            BH, BL, JA, JB = best["BH"], best["BL"], best["JA"], best["JB"]
+            nu, tlep, thad, chi2 = best["nu"], best["tlep"], best["thad"], best["chi2"]
 
+            # Compute derived quantities once
             had_tag = ak.fill_none(btag_wp(BH, self._year, self._campaign, tagger=self.tag_tagger, borc="b", wp="M"), False)
             lep_tag = ak.fill_none(btag_wp(BL, self._year, self._campaign, tagger=self.tag_tagger, borc="b", wp="M"), False)
             had_pt_ok = ak.fill_none(BH.pt >= 30.0, False)
             lep_pt_ok = ak.fill_none(BL.pt >= 30.0, False)
 
-            def _four_mass(v):
-                arg = v.t*v.t - (v.x*v.x + v.y*v.y + v.z*v.z)
-                return np.sqrt(ak.where(arg > 0, arg, 0.0))
+            # Compute masses and kinematics once
+            W_full = ak.zip({"x": JA.x + JB.x, "y": JA.y + JB.y, "z": JA.z + JB.z, "t": JA.t + JB.t},
+                            with_name="FourVector")
+            tlep_mass_full = _four_mass(tlep)
+            thad_mass_full = _four_mass(thad)
+            whad_mass_full = _four_mass(W_full)
+            tlep_pt_full = _four_pt(tlep)
+            thad_pt_full = _four_pt(thad)
+            dr_lep_blep_full = _dR(lep_base, BL)
+            dr_lep_bhad_full = _dR(lep_base, BH)
+            dr_ja_jb_full = _dR(JA, JB)
 
-            def _four_pt(v):
-                arg = v.x*v.x + v.y*v.y
-                return np.sqrt(ak.where(arg > 0, arg, 0.0))
+            # Compute kinbin once
+            met_vals = ak.to_numpy(ev_base.MET.pt)
+            chi2_np = ak.to_numpy(chi2)
+            met_edges = np.array([0., 40., 80., 200.], dtype=float)
+            prob_edges = np.arange(11., 21., 1.0)
+            q = chi2_np / (2.0*np.log(10.0))
+            met_bin = np.clip(np.digitize(met_vals, met_edges) - 1, 0, len(met_edges)-2)
+            prob_bin = np.clip(np.digitize(q, prob_edges) - 1, 0, len(prob_edges) - 2)
+            NQ = len(prob_edges) - 1
+            kinbin_full = (met_bin * NQ + prob_bin).astype(np.int32)
 
-            # build pruned for each region
+            # Truth category once
+            tt_cat_full = tt_truth_category(BL, BH, is_mc=not isRealData)
+
+            # Now loop over regions and write immediately
             for rname, riso_mode, rtag_btagwp in region_specs:
                 if iso_mode != riso_mode:
                     continue
 
+                # Select region mask
                 if rtag_btagwp == "M":
                     rmask = has_cand & mask_central
                 elif rtag_btagwp == "L":
@@ -731,119 +747,70 @@ class NanoProcessor(processor.ProcessorABC):
                     rmask = has_cand & mask_sb_btagL
 
                 rmask_np = ak.to_numpy(ak.fill_none(rmask, False))
-                
-                if not np.any(rmask_np):  # Skip empty regions
+                if not np.any(rmask_np):
                     continue
 
-                # TnP fills (gate on opposite-side tag only for central)
+                # TnP fills
                 require_tag = (rname == "central")
                 ones = ak.ones_like(had_pt_ok, dtype=bool)
                 tnp_had_fill = ak.to_numpy(had_pt_ok & (lep_tag if require_tag else ones))[rmask_np]
                 tnp_lep_fill = ak.to_numpy(lep_pt_ok & (had_tag if require_tag else ones))[rmask_np]
-                tnp_had_pt   = ak.to_numpy(BH.pt)[rmask_np]
-                tnp_lep_pt   = ak.to_numpy(BL.pt)[rmask_np]
+                tnp_had_pt = ak.to_numpy(BH.pt)[rmask_np]
+                tnp_lep_pt = ak.to_numpy(BL.pt)[rmask_np]
 
-                # per-region slices
-                ev_r   = ev_base[rmask_np]
+                # Slice everything for this region
+                ev_r = ev_base[rmask_np]
                 jets_r = jets_base[rmask_np]
-                lep_r  = lep_base[rmask_np]
-                BL_r   = BL[rmask_np]
+                lep_r = lep_base[rmask_np]
+                BL_r = BL[rmask_np]
                 BH_r = BH[rmask_np]
-                JA_r   = JA[rmask_np]
+                JA_r = JA[rmask_np]
                 JB_r = JB[rmask_np]
-                nu_r   = nu[rmask_np]
+                nu_r = nu[rmask_np]
                 tl_r = tlep[rmask_np]
                 th_r = thad[rmask_np]
-                chi2_r = ak.to_numpy(chi2)[rmask_np]
 
-                # compute metric for quality of kinematic fit
-                met_r = ak.to_numpy(ev_r.MET.pt)
-                met_edges = np.array([0., 40., 80., 200.], dtype=float)
-                prob_edges = np.arange(11., 21., 1.0)  # 11,12,...,20  => 9 bins
-                # proper implementation:
-                #    from scipy.special import gammaincc
-                #    p = np.clip(gammaincc(1.5, ak.to_numpy(chi2_r)/2.0), 1e-300, 1.0)
-                #    q = -np.log10(p)
-                # fast workaround:
-                q = ak.to_numpy(chi2_r) / (2.0*np.log(10.0))
-                met_bin = np.clip(np.digitize(met_r, met_edges) - 1, 0, len(met_edges)-2)
-                prob_bin = np.clip(np.digitize(q,      prob_edges) - 1, 0, len(prob_edges) - 2)
-                NQ = len(prob_edges) - 1
-                kinbin = (met_bin * NQ + prob_bin).astype(np.int32)
-
-                # masses, pts, ΔR
-                W_r = ak.zip({"x": JA_r.x + JB_r.x, "y": JA_r.y + JB_r.y,
-                              "z": JA_r.z + JB_r.z, "t": JA_r.t + JB_r.t},
-                             with_name="FourVector")
-                tlep_mass = _four_mass(tl_r)
-                thad_mass = _four_mass(th_r)
-                whad_mass = _four_mass(W_r)
-                tlep_pt   = _four_pt(tl_r)
-                thad_pt   = _four_pt(th_r)
-
-                def _dR(a, b):
-                    dphi = ak.where((a.phi - b.phi) >  np.pi, a.phi - b.phi - 2*np.pi,
-                        ak.where((a.phi - b.phi) < -np.pi, a.phi - b.phi + 2*np.pi, a.phi - b.phi))
-                    arg = (a.eta - b.eta)**2 + dphi**2
-                    return np.sqrt(ak.where(arg > 0, arg, 0.0))
-
-                dr_lep_blep = _dR(lep_r, BL_r)
-                dr_lep_bhad = _dR(lep_r, BH_r)
-                dr_ja_jb    = _dR(JA_r,  JB_r)
-
-                # TT truth category (fast proxy): 'sig' if both chosen jets are b-hadron jets
-                tt_cat = tt_truth_category(BL_r, BH_r, is_mc=not isRealData)
-
-                # assemble pruned view
+                # Assemble pruned view for this region only
                 pr = ev_r
-                pr = ak.with_field(pr, BL_r,              "blep")
-                pr = ak.with_field(pr, BH_r,              "bhad")
-                pr = ak.with_field(pr, JA_r,              "ja")
-                pr = ak.with_field(pr, JB_r,              "jb")
-                pr = ak.with_field(pr, nu_r,              "nu")
-                pr = ak.with_field(pr, tl_r,              "tlep")
-                pr = ak.with_field(pr, th_r,              "thad")
-                pr = ak.with_field(pr, chi2_r,            "chi2")
-                pr = ak.with_field(pr, self._year,        "run_year")
-                pr = ak.with_field(pr, self._campaign,    "run_campaign")
-                pr = ak.with_field(pr, jets_r[:, :4],"SelJet")
+                pr = ak.with_field(pr, BL_r, "blep")
+                pr = ak.with_field(pr, BH_r, "bhad")
+                pr = ak.with_field(pr, JA_r, "ja")
+                pr = ak.with_field(pr, JB_r, "jb")
+                pr = ak.with_field(pr, nu_r, "nu")
+                pr = ak.with_field(pr, tl_r, "tlep")
+                pr = ak.with_field(pr, th_r, "thad")
+                pr = ak.with_field(pr, chi2_np[rmask_np], "chi2")
+                pr = ak.with_field(pr, self._year, "run_year")
+                pr = ak.with_field(pr, self._campaign, "run_campaign")
+                pr = ak.with_field(pr, jets_r[:, :4], "SelJet")
+                
                 if self.channel == "mu":
-                    pr = ak.with_field(pr, lep_r,     "SelMuon")
+                    pr = ak.with_field(pr, lep_r, "SelMuon")
                 else:
-                    pr = ak.with_field(pr, lep_r,     "SelElectron")
+                    pr = ak.with_field(pr, lep_r, "SelElectron")
+                
                 pr = ak.with_field(pr, ak.num(pr.SelJet, axis=1), "njet")
-
-                pr = ak.with_field(pr, tlep_mass,         "tlep_mass")
-                pr = ak.with_field(pr, thad_mass,         "thad_mass")
-                pr = ak.with_field(pr, whad_mass,         "whad_mass")
-                pr = ak.with_field(pr, tlep_pt,           "tlep_pt")
-                pr = ak.with_field(pr, thad_pt,           "thad_pt")
-                pr = ak.with_field(pr, dr_lep_blep,       "dr_lep_blep")
-                pr = ak.with_field(pr, dr_lep_bhad,       "dr_lep_bhad")
-                pr = ak.with_field(pr, dr_ja_jb,          "dr_ja_jb")
-
-                # tag-and-probe payload
+                pr = ak.with_field(pr, tlep_mass_full[rmask_np], "tlep_mass")
+                pr = ak.with_field(pr, thad_mass_full[rmask_np], "thad_mass")
+                pr = ak.with_field(pr, whad_mass_full[rmask_np], "whad_mass")
+                pr = ak.with_field(pr, tlep_pt_full[rmask_np], "tlep_pt")
+                pr = ak.with_field(pr, thad_pt_full[rmask_np], "thad_pt")
+                pr = ak.with_field(pr, dr_lep_blep_full[rmask_np], "dr_lep_blep")
+                pr = ak.with_field(pr, dr_lep_bhad_full[rmask_np], "dr_lep_bhad")
+                pr = ak.with_field(pr, dr_ja_jb_full[rmask_np], "dr_ja_jb")
                 pr = ak.with_field(pr, tnp_had_fill, "tnp_had_fill")
                 pr = ak.with_field(pr, tnp_lep_fill, "tnp_lep_fill")
-                pr = ak.with_field(pr, tnp_had_pt,   "tnp_had_pt")
-                pr = ak.with_field(pr, tnp_lep_pt,   "tnp_lep_pt")
-
-                # region & tt category labels for histogramming
+                pr = ak.with_field(pr, tnp_had_pt, "tnp_had_pt")
+                pr = ak.with_field(pr, tnp_lep_pt, "tnp_lep_pt")
                 pr = ak.with_field(pr, np.full(len(pr), rname, dtype=np.str_), "tnp_region")
-                pr = ak.with_field(pr, tt_cat,                                    "tt_cat")
-                pr = ak.with_field(pr, ak.Array(kinbin), "kinbin")                
-                all_pruned.append(pr)
+                pr = ak.with_field(pr, tt_cat_full[rmask_np], "tt_cat")
+                pr = ak.with_field(pr, ak.Array(kinbin_full[rmask_np]), "kinbin")
 
-        # -------------------- Output --------------------
-        # Write histograms once with all regions combined
-        if all_pruned:
-            pruned_all = ak.concatenate(all_pruned, axis=0)
-            weights = weight_manager(pruned_all, self.SF_map, self.isSyst)
-            systematics = [shift_name] if shift_name is not None else ["nominal"] + list(weights.variations)
-            
-            if not self.noHist:
-                output = self.write_histograms(pruned_all, output, weights, systematics, self.isSyst, self.SF_map)
-
+                # Write immediately for this region
+                if not self.noHist:
+                    weights = weight_manager(pr, self.SF_map, self.isSyst)
+                    systematics = [shift_name] if shift_name is not None else ["nominal"] + list(weights.variations)
+                    output = self.write_histograms(pr, output, weights, systematics, self.isSyst, self.SF_map)
 
         return {dataset: output}
 
