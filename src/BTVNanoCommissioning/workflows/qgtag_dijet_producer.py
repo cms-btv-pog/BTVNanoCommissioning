@@ -1,5 +1,7 @@
 import awkward as ak
 import numpy as np
+import correctionlib
+import os
 from coffea import processor
 from coffea.analysis_tools import Weights
 
@@ -21,7 +23,11 @@ from BTVNanoCommissioning.helpers.func import (
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writter,
+)
+from BTVNanoCommissioning.utils.histogramming.histograms.qgtag import qg_writer
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -60,13 +66,12 @@ class NanoProcessor(processor.ProcessorABC):
     def accumulator(self):
         return self._accumulator
 
-    ## Apply corrections on momentum/mass on MET, Jet, Muon
     def process(self, events):
         events = missing_branch(events)
-        shifts = common_shifts(self, events)
+        vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
-            self.process_shift(update(events, collections), name)
+            self.process_shift(update(vetoed_events, collections), name)
             for collections, name in shifts
         )
 
@@ -77,16 +82,18 @@ class NanoProcessor(processor.ProcessorABC):
         ######################
         #  Create histogram  # : Get the histogram dict from `histogrammer`
         ######################
-        _hist_event_dict = (
-            {}
-            if self.noHist
-            else histogrammer(events, "qgtag_dijet")  # this is the place to modify
-        )
 
-        output = {
-            "sumw": processor.defaultdict_accumulator(float),
-            **_hist_event_dict,
-        }
+        output = {}
+
+        if not self.noHist:
+            output = histogrammer(
+                jet_fields=events.Jet.fields,
+                obj_list=[],
+                hist_collections=["qgtag"],
+                axes_collections=["qgtag"],
+                is_dijet=True,
+            )
+
         if isRealData:
             output["sumw"] = len(events)
         else:
@@ -105,45 +112,83 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## HLT
         if self.selectionModifier == "ZB":
-            triggers = [
-                "ZeroBias",
-            ]
+            triggers = {
+                "ZeroBias": [15, 45],
+            }
         elif self.selectionModifier == "PFJet":
-            triggers = [
-                "PFJet40",
-                "PFJet60",
-                "PFJet80",
-                "PFJet110",
-                "PFJet140",
-                "PFJet200",
-                "PFJet260",
-                "PFJet320",
-                "PFJet400",
-                "PFJet450",
-                "PFJet500",
-                "PFJet550",
-            ]
+            triggers = {
+                "PFJet40": [45, 80],
+                "PFJet60": [80, 110],
+                "PFJet80": [110, 160],
+                "PFJet140": [160, 220],
+                "PFJet200": [220, 300],
+                "PFJet260": [300, 340],
+                "PFJet320": [340, 420],
+                "PFJet400": [420, 470],
+                "PFJet450": [470, 530],
+                "PFJet500": [530, 600],
+                "PFJet550": [600, 1e7],
+            }
+            if int(self._year) > 2022:
+                triggers["PFJet80"] = [110, 140]
+                triggers["PFJet110"] = [140, 180]
+                triggers["PFJet140"] = [180, 220]
+        elif self.selectionModifier == "ZBpPFJet":
+            triggers = {
+                "ZeroBias": [15, 45],
+                "PFJet40": [45, 80],
+                "PFJet60": [80, 110],
+                "PFJet80": [110, 180],
+                # "PFJet110": [160, 180],
+                "PFJet140": [180, 220],
+                "PFJet200": [220, 300],
+                "PFJet260": [300, 340],
+                "PFJet320": [340, 420],
+                "PFJet400": [420, 470],
+                "PFJet450": [470, 530],
+                "PFJet500": [530, 600],
+                "PFJet550": [600, 1e7],
+            }
+            if int(self._year) > 2022:
+                triggers["PFJet80"] = [110, 140]
+                triggers["PFJet110"] = [140, 180]
+                triggers["PFJet140"] = [180, 220]
         elif self.selectionModifier == "DiPFJetAve":
-            triggers = [
-                "DiPFJetAve40",
-                "DiPFJetAve60",
-                "DiPFJetAve80",
-                "DiPFJetAve140",
-                "DiPFJetAve200",
-                "DiPFJetAve260",
-                "DiPFJetAve320",
-                "DiPFJetAve400",
-                "DiPFJetAve500",
-            ]
+            # These act on the minimum pT of the two leading jets
+            # Should test effect with average pT of the two leading jets
+            triggers = {
+                "DiPFJetAve40": [40, 60],
+                "DiPFJetAve60": [60, 80],
+                "DiPFJetAve80": [80, 140],
+                "DiPFJetAve140": [140, 200],
+                "DiPFJetAve200": [200, 260],
+                "DiPFJetAve260": [260, 320],
+                "DiPFJetAve320": [320, 400],
+                "DiPFJetAve400": [400, 500],
+                "DiPFJetAve500": [500, 1e7],
+            }
+        elif self.selectionModifier == "DiPFJet_HF":
+            triggers = {
+                "DiPFJetAve60_HFJEC": [60, 80],
+                "DiPFJetAve80_HFJEC": [80, 100],
+                "DiPFJetAve100_HFJEC": [100, 160],
+                "DiPFJetAve160_HFJEC": [160, 220],
+                "DiPFJetAve220_HFJEC": [220, 300],
+                "DiPFJetAve300_HFJEC": [300, 1e7],
+            }
+            if int(self._year) > 2022:
+                triggers["DiPFJetAve220_HFJEC"] = [220, 260]
+                triggers["DiPFJetAve260_HFJEC"] = [260, 300]
+                triggers["DiPFJetAve300_HFJEC"] = [300, 1e7]
+
         else:
             raise ValueError(
                 self.selectionModifier, "is not a valid selection modifier."
             )
 
-        req_trig = HLT_helper(events, triggers)
         req_metfilter = MET_filters(events, self._campaign)
 
-        event_level = req_trig & req_lumi & req_metfilter
+        event_level = req_lumi & req_metfilter
 
         ##### Add some selections
         ## Jet cuts
@@ -174,14 +219,33 @@ class NanoProcessor(processor.ProcessorABC):
             event_jet[:, 2].pt / (0.5 * (event_jet[:, 0] + event_jet[:, 1])).pt < 1.0,
             ak.ones_like(req_jet),
         )
-        req_tagjet = ak.where(
-            req_jet,
-            ak.fill_none(np.abs(event_jet.eta[:, 0]) < 1.3, False)
-            | ak.fill_none(np.abs(event_jet.eta[:, 1]) < 1.3, False),
-            ak.zeros_like(req_jet),
-        )
 
-        event_level = event_level & req_jet & req_dphi & req_subjet # & req_tagjet
+        req_trig = np.zeros_like(len(events), dtype=bool)
+        trigbools = {}
+        for trigger, pt_range in triggers.items():
+            rmin, rmax = pt_range
+            if "DiPFJetAve" in self.selectionModifier:
+                thistrigreq = (
+                    (HLT_helper(events, [trigger]))
+                    # Average
+                    # & (ak.fill_none(0.5 * (event_jet[:, 0].pt + event_jet[:, 1].pt) >= rmin, False))
+                    # & (ak.fill_none(0.5 * (event_jet[:, 0].pt + event_jet[:, 1].pt) < rmax, False))
+                    # Minimum
+                    & (ak.fill_none(event_jet[:, 1].pt >= rmin, False))
+                    & (ak.fill_none(event_jet[:, 1].pt < rmax, False))
+                )
+                trigbools[trigger] = thistrigreq
+                req_trig = req_trig | thistrigreq
+            else:
+                thistrigreq = (
+                    (HLT_helper(events, [trigger]))
+                    & (ak.fill_none(event_jet[:, 0].pt >= rmin, False))
+                    & (ak.fill_none(event_jet[:, 0].pt < rmax, False))
+                )
+                trigbools[trigger] = thistrigreq
+                req_trig = req_trig | thistrigreq
+
+        event_level = event_level & req_jet & req_dphi & req_subjet & req_trig
 
         ## MC only: require gen vertex to be close to reco vertex
         if "GenVtx_z" in events.fields:
@@ -207,7 +271,6 @@ class NanoProcessor(processor.ProcessorABC):
                 )
             return {dataset: output}
 
-
         ##===>  Ntuplization  : store custom information
         ####################
         # Selected objects # : Pruned objects with reduced event_level
@@ -215,28 +278,26 @@ class NanoProcessor(processor.ProcessorABC):
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
 
-        # pruned_ev["Tag"] = ak.where(
-            # ak.fill_none(np.abs(pruned_ev.Jet.eta)[:, 0] < 1.3, False)
-            # & ak.fill_none(np.abs(pruned_ev.Jet.eta)[:, 1] < 1.3, False),
-            # pruned_ev.Jet[
-                # :, np.random.randint(0, 2)
-            # ],  # Is this correct? Is a single value returned for the whole program or for each event?
-            # ak.where(
-                # np.abs(pruned_ev.Jet.eta)[:, 0] < 1.3,
-                # pruned_ev.Jet[:, 0],
-                # pruned_ev.Jet[:, 1],
-            # ),
-        # )
-        pruned_ev["Tag"] = pruned_ev.Jet[:, np.random.randint(0, 2)]
-        pruned_ev["Tag", "pt"] = pruned_ev["Tag"].pt
-        pruned_ev["Tag", "eta"] = pruned_ev["Tag"].eta
-        pruned_ev["Tag", "phi"] = pruned_ev["Tag"].phi
-        pruned_ev["Tag", "mass"] = pruned_ev["Tag"].mass
-        pruned_ev["SelJet"] = ak.where(
-            pruned_ev.Jet[:, 0].pt == pruned_ev.Tag.pt,
-            pruned_ev.Jet[:, 1],
+        # Central jet, Forward jet, Random jet, Selected two jets
+        pruned_ev["CenJet"] = ak.where(
+            np.abs(pruned_ev.Jet[:, 0].eta) < np.abs(pruned_ev.Jet[:, 1].eta),
             pruned_ev.Jet[:, 0],
+            pruned_ev.Jet[:, 1],
         )
+        pruned_ev["FwdJet"] = ak.where(
+            np.abs(pruned_ev.Jet[:, 0].eta) > np.abs(pruned_ev.Jet[:, 1].eta),
+            pruned_ev.Jet[:, 0],
+            pruned_ev.Jet[:, 1],
+        )
+        # pruned_ev["RndJet"] = pruned_ev.Jet[
+        # :, np.random.randint(0, 2)#, size=len(pruned_ev))
+        # ]
+        pruned_ev["RndJet"] = ak.where(
+            np.random.randint(0, 2, size=len(pruned_ev)) == 0,
+            pruned_ev.Jet[:, 0],
+            pruned_ev.Jet[:, 1],
+        )
+        pruned_ev["SelJet"] = pruned_ev.Jet[:, :2]
         pruned_ev["njet"] = ak.count(pruned_ev.Jet.pt, axis=1)
 
         ## <========= end: store custom objects
@@ -246,16 +307,38 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         # Configure SFs
         weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
+        if isRealData:
+            if self._year == "2022":
+                run_num = "355374_362760"
+            elif self._year == "2023":
+                run_num = "366727_370790"
+
+            # if 369869 in pruned_ev.run: continue
+            psweight = np.zeros(len(pruned_ev))
+            for trigger, trigbool in trigbools.items():
+                psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
+                if not os.path.isfile(psfile):
+                    raise NotImplementedError(
+                        f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py`."
+                    )
+                pseval = correctionlib.CorrectionSet.from_file(psfile)
+                thispsweight = pseval["prescaleWeight"].evaluate(
+                    pruned_ev.run,
+                    f"HLT_{trigger}",
+                    ak.values_astype(pruned_ev.luminosityBlock, np.float32),
+                )
+                psweight = ak.where(trigbool[event_level], thispsweight, psweight)
+            weights.add("psweight", psweight)
+
         # Configure systematics
         if shift_name is None:
             systematics = ["nominal"] + list(weights.variations)
         else:
             systematics = [shift_name]
 
-
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
+            output = qg_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays
@@ -282,8 +365,6 @@ class NanoProcessor(processor.ProcessorABC):
                 isRealData,
                 othersData=othersData,
             )
-
-        print({dataset: output})
 
         return {dataset: output}
 

@@ -1,18 +1,18 @@
 import numpy as np
 import argparse, os, arrow, glob, re, sys
-from coffea.util import load
 import matplotlib.pyplot as plt
-from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
+from coffea.util import load
+from matplotlib.offsetbox import AnchoredText
 
 plt.style.use(hep.style.ROOT)
+
 from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
 from BTVNanoCommissioning.helpers.definitions import (
-    definitions,
+    get_definitions,
     axes_name,
-    SV_definitions,
 )
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
@@ -24,8 +24,8 @@ from BTVNanoCommissioning.utils.plot_utils import (
     color_map,
 )
 
-bininfo = definitions()
-SV_bininfo = SV_definitions()
+bininfo = get_definitions()
+SV_bininfo = get_definitions(include_definitions=["SV"])
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
 parser.add_argument("--com", default="13.6", type=str, help="sqrt(s) in TeV")
@@ -55,7 +55,8 @@ parser.add_argument(
     "-v",
     "--variable",
     type=str,
-    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
+    default="all",
+    help="variables to plot, split by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
 parser.add_argument(
     "--xlabel",
@@ -123,7 +124,6 @@ if not any(".coffea" in o for o in output.keys()):
         mergemap = sample_mergemap
     mergemap["mc"] = [m for m in output.keys() if "Run" not in m]
     mergemap["data"] = [m for m in output.keys() if "Run" in m]
-    
 else:
     datalist = []
     mclist = []
@@ -140,7 +140,9 @@ collated = {
     key: value for key, value in collated.items() if isinstance(collated[key], dict)
 }
 print(collated.keys())
+
 ### input text settings
+input_txt = "placeholder"
 if "Wc" in args.phase:
     input_txt = "W+c"
     if args.splitOSSS == 1:

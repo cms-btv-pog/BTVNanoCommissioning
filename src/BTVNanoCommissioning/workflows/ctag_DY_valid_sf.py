@@ -14,7 +14,11 @@ from BTVNanoCommissioning.utils.correction import (
 
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histograms.qgtag import qg_writer
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writter,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -77,8 +81,24 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
-        histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf", "QG": "qgtag_DY_sf"}
-        output = {} if self.noHist else histogrammer(events, histname[self.selMod])
+        histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
+        output = {}
+        if not self.noHist:
+            if "QG" not in self.selMod:
+                output = histogrammer(
+                    jet_fields=events.Jet.fields,
+                    obj_list=["posl", "negl", "dilep", "jet0"],
+                    hist_collections=["common", "fourvec", "DY"],
+                    include_m=isMu,
+                )
+            else:
+                output = histogrammer(
+                    jet_fields=events.Jet.fields,
+                    obj_list=[],
+                    hist_collections=["qgtag"],
+                    axes_collections=["qgtag"],
+                    is_dijet=False,
+                )
 
         if isRealData:
             output["sumw"] = len(events)
@@ -102,11 +122,13 @@ class NanoProcessor(processor.ProcessorABC):
         req_metfilter = MET_filters(events, self._campaign)
 
         # Muon cuts
-        dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
+        dilep_mu = events.Muon[
+            ak.any(events.Muon.pt > 20, axis=1) & (events.Muon.pt > 12) & mu_idiso(events, self._campaign)
+        ]
 
         # Electron cuts
         dilep_ele = events.Electron[
-            (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
+            ak.any(events.Electron.pt > 26, axis=1) & (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
         ]
         if isMu:
             thisdilep = dilep_mu
@@ -118,16 +140,23 @@ class NanoProcessor(processor.ProcessorABC):
         # dilepton
         pos_dilep = thisdilep[thisdilep.charge > 0]
         neg_dilep = thisdilep[thisdilep.charge < 0]
+
+        if isMu:
+            req_trg_turnon = (
+                ak.any(pos_dilep.pt > 21, axis=1) | ak.any(neg_dilep.pt > 21, axis=1)
+            )
+        else:
+            req_trg_turnon = True
+
         req_pl = ak.count(pos_dilep.pt, axis=1) >= 1
         req_nl = ak.count(neg_dilep.pt, axis=1) >= 1
         req_dilep_chrg = ak.num(thisdilep.charge) >= 2
         req_otherdilep_chrg = ak.num(otherdilep.charge) == 0
         req_dilep = ak.fill_none(
-            req_pl & req_nl & req_dilep_chrg & req_otherdilep_chrg,
+            req_pl & req_nl & req_dilep_chrg & req_otherdilep_chrg, # & req_trg_turnon,
             False,
             axis=-1,
         )
-
 
         pos_dilep = ak.pad_none(pos_dilep, 1, axis=1)
         neg_dilep = ak.pad_none(neg_dilep, 1, axis=1)
@@ -222,6 +251,11 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev = events[event_level]
         if self.selMod == "QG":
             pruned_ev["SelJet"] = event_jet[event_level][:, 0]
+            pruned_ev["Tag"] = sz
+            pruned_ev["Tag", "pt"] = pruned_ev.Tag.pt
+            pruned_ev["Tag", "eta"] = pruned_ev.Tag.eta
+            pruned_ev["Tag", "phi"] = pruned_ev.Tag.phi
+            pruned_ev["Tag", "mass"] = pruned_ev.Tag.mass
         else:
             pruned_ev["SelJet"] = event_jet[event_level]
 
@@ -265,9 +299,19 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
-                pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
-            )
+            if "QG" not in self.selMod:
+                output = histo_writter(
+                    pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
+                )
+            else:
+                output = qg_writer(
+                    pruned_ev,
+                    output,
+                    weights,
+                    systematics,
+                    self.isSyst,
+                    self.SF_map,
+                )
         # Output arrays
         if self.isArray:
             if "QG" in self.selMod:
