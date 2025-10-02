@@ -1,18 +1,18 @@
 import numpy as np
 import argparse, os, arrow, glob, re, sys
-from coffea.util import load
 import matplotlib.pyplot as plt
-from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
+from coffea.util import load
+from matplotlib.offsetbox import AnchoredText
 
 plt.style.use(hep.style.ROOT)
+
 from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
 from BTVNanoCommissioning.helpers.definitions import (
-    definitions,
+    get_definitions,
     axes_name,
-    SV_definitions,
 )
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
@@ -24,8 +24,8 @@ from BTVNanoCommissioning.utils.plot_utils import (
     color_map,
 )
 
-bininfo = definitions()
-SV_bininfo = SV_definitions()
+bininfo = get_definitions()
+SV_bininfo = get_definitions(include_definitions=["SV"])
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
 parser.add_argument("--com", default="13.6", type=str, help="sqrt(s) in TeV")
@@ -55,7 +55,8 @@ parser.add_argument(
     "-v",
     "--variable",
     type=str,
-    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
+    default="all",
+    help="variables to plot, split by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
 parser.add_argument(
     "--xlabel",
@@ -101,7 +102,13 @@ parser.add_argument(
 args = parser.parse_args()
 
 if len(args.input.split(",")) > 1:
-    output = {i: load(i) for i in args.input.split(",")}
+    allinps = []
+    for inp in args.input.split(","):
+        if "*" in inp:
+            allinps.extend(glob.glob(inp))
+        else:
+            allinps.append(inp)
+    output = {i: load(i) for i in allinps}
 elif "*" in args.input:
     files = glob.glob(args.input)
     output = {i: load(i) for i in files}
@@ -133,7 +140,9 @@ collated = {
     key: value for key, value in collated.items() if isinstance(collated[key], dict)
 }
 print(collated.keys())
+
 ### input text settings
+input_txt = "placeholder"
 if "Wc" in args.phase:
     input_txt = "W+c"
     if args.splitOSSS == 1:
@@ -195,7 +204,6 @@ elif "*" in args.variable:
             )
             != None
         ]
-
 else:
     var_set = args.variable.split(",")
 for index, discr in enumerate(var_set):
@@ -243,7 +251,7 @@ for index, discr in enumerate(var_set):
             for i in range(collated["mc"][discr].axes[0].size)
         ]
         if "noSF" in systlist:
-            noSF_axis["syst"] = "nominal"
+            noSF_axis["syst"] = "noSF"
 
     ## rebin config, add xerr
     do_xerr = False
@@ -606,7 +614,7 @@ for index, discr in enumerate(var_set):
         scale = "_norm"
     name = "all"
     if args.split == "sample":
-        name = name + "_sample"
+        name += "_sample"
     try:
         hep.mpl_magic(ax=ax)
     except RuntimeError as e:
@@ -619,12 +627,12 @@ for index, discr in enumerate(var_set):
             print(f"Still failed: {e2}")
             # Continue anyway - the plot will still be usable
     if args.log:
+        name += "_log"
         print(
             "creating:",
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         ax.set_yscale("log")
-        name = "log"
         ax.set_ylim(bottom=0.1)
         hep.mpl_magic(ax=ax)
         fig.savefig(
@@ -644,3 +652,4 @@ for index, discr in enumerate(var_set):
         fig.savefig(
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
         )
+    plt.close(fig)

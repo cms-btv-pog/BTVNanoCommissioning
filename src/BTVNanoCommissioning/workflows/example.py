@@ -22,7 +22,10 @@ from BTVNanoCommissioning.helpers.func import (
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writer,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -61,10 +64,10 @@ class NanoProcessor(processor.ProcessorABC):
     ## Apply corrections on momentum/mass on MET, Jet, Muon
     def process(self, events):
         events = missing_branch(events)
-        shifts = common_shifts(self, events)
+        vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
-            self.process_shift(update(events, collections), name)
+            self.process_shift(update(vetoed_events, collections), name)
             for collections, name in shifts
         )
 
@@ -76,7 +79,13 @@ class NanoProcessor(processor.ProcessorABC):
         #  Create histogram  # : Get the histogram dict from `histogrammer`
         ######################
         # this is the place to modify
-        output = {} if self.noHist else histogrammer(events, "example")
+        output = {}
+        if not self.noHist:
+            output = histogrammer(
+                jet_fields=events.Jet.fields,
+                obj_list=["jet", "mu"],
+                hist_collections=["example", "common", "fourvec"],
+            )
 
         if shift_name is None:
             if isRealData:
@@ -153,6 +162,7 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
+        pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
         pruned_ev["SelJet"] = event_jet[event_level][:, 0]
         pruned_ev["SelMuon"] = event_mu[event_level][:, 0]
         pruned_ev["SelElectron"] = event_e[event_level][:, 0]
@@ -177,7 +187,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms- fill the histograms with pruned objects
         if not self.noHist:
-            output = histo_writter(
+            output = histo_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays - store the pruned objects in the output arrays

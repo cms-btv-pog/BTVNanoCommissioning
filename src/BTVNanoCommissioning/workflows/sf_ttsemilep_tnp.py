@@ -8,14 +8,16 @@ from BTVNanoCommissioning.utils.correction import (
 )
 from BTVNanoCommissioning.helpers.func import update, dump_lumi
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper, jet_id, MET_filters,
     mu_idiso, ele_mvatightid,
     btag_wp, wp_dict
 )
-
+from BTVNanoCommissioning.helpers.definitions import (
+    definitions,
+    disc_list,
+)
 
 def select_lepton(events, channel, campaign, iso_mode="tight"):
     if channel == "mu":
@@ -165,7 +167,6 @@ def tt_truth_category(best_BL, best_BH, is_mc):
     return ak.Array(lab)
 
 
-
 class NanoProcessor(processor.ProcessorABC):
     def __init__(
         self,
@@ -194,10 +195,352 @@ class NanoProcessor(processor.ProcessorABC):
         self._wp_table = wp_dict(year, campaign)
         self._all_taggers = sorted(self._wp_table.keys())
         self.tag_tagger = tag_tagger
+        self._regions = ["central", "sb_iso", "sb_btagM", "sb_btagL", "sb_iso_btagM"]
 
     @property
     def accumulator(self):
         return self._accumulator
+
+
+    def define_histograms(self, events):
+        """
+        Define histograms to be written out by workflow
+        """
+        _hist_dict = {}
+
+        ## Common axes
+        flav_axis = Hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour")
+        syst_axis = Hist.axis.StrCategory([], name="syst", growth=True)
+        pt_axis = Hist.axis.Regular(60, 0, 300, name="pt", label=" $p_{T}$ [GeV]")
+        mass_axis = Hist.axis.Regular(50, 0, 300, name="mass", label=" $p_{T}$ [GeV]")
+        eta_axis = Hist.axis.Regular(25, -2.5, 2.5, name="eta", label=" $\eta$")
+        phi_axis = Hist.axis.Regular(30, -3, 3, name="phi", label="$\phi$")
+        mt_axis = Hist.axis.Regular(30, 0, 300, name="mt", label=" $m_{T}$ [GeV]")
+        chi2_axis = Hist.axis.Regular(60, 0, 60, name="chi2", label=r"$\chi^2$")
+        tpt_axis = Hist.axis.Regular(60, 0, 600, name="pt", label=r"$p_T$ [GeV]")
+        dr_axis = Hist.axis.Regular(20, 0, 8, name="dr", label="$\Delta$R")
+        n_axis = Hist.axis.Integer(0, 10, name="n", label="N obj")
+
+        # TnP-specific axes
+        cat_axis = Hist.axis.StrCategory(["had", "lep"], name="cat")
+        wp_axis = Hist.axis.StrCategory(["L", "M", "T", "XT", "XXT"], name="wp")
+        kin_axis = Hist.axis.Regular(27, -0.5, 26.5, name="kinbin", label="kinbin")
+        ttcat_axis = Hist.axis.StrCategory(["sig", "bkg", "other"], name="tt_cat")
+        result_axis = Hist.axis.StrCategory(["pass", "fail"], name="result")
+        ptb_edges = [30., 50., 80., 120., 200., 400., 1000.]
+        ptb_axis = Hist.axis.Variable(ptb_edges, name="ptb", label="$p_{T}(b)$ [GeV]")
+
+        # objects for common kinematics
+        obj_list = ["MET", "mu"]
+        for i in range(4):
+            obj_list.append(f"jet{i}")
+
+        # Create histograms for each region
+        for region in self._regions:
+            # Basic kinematics
+            _hist_dict[f"{region}_njet"] = Hist.Hist(syst_axis, n_axis, Hist.storage.Weight())
+
+            # Bookkeeping / categories
+            _hist_dict[f"{region}_chi2"] = Hist.Hist(syst_axis, chi2_axis, Hist.storage.Weight())
+
+            # ttbar reconstruction summaries
+            _hist_dict[f"{region}_tlep_mass"] = Hist.Hist(syst_axis, mt_axis, Hist.storage.Weight())
+            _hist_dict[f"{region}_thad_mass"] = Hist.Hist(syst_axis, mt_axis, Hist.storage.Weight())
+            _hist_dict[f"{region}_whad_mass"] = Hist.Hist(syst_axis, mt_axis, Hist.storage.Weight())
+            _hist_dict[f"{region}_tlep_pt"] = Hist.Hist(syst_axis, tpt_axis, Hist.storage.Weight())
+            _hist_dict[f"{region}_thad_pt"] = Hist.Hist(syst_axis, tpt_axis, Hist.storage.Weight())
+
+            # Angular variables
+            _hist_dict[f"{region}_dr_lep_blep"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+            _hist_dict[f"{region}_dr_lep_bhad"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+            _hist_dict[f"{region}_dr_ja_jb"] = Hist.Hist(syst_axis, dr_axis, Hist.storage.Weight())
+
+            # Basic kinematics for objects
+            for obj in obj_list:
+                if "jet" in obj:
+                    _hist_dict[f"{region}_{obj}_pt"] = Hist.Hist(
+                        syst_axis, flav_axis, pt_axis, Hist.storage.Weight()
+                    )
+                    _hist_dict[f"{region}_{obj}_eta"] = Hist.Hist(
+                        syst_axis, flav_axis, eta_axis, Hist.storage.Weight()
+                    )
+                    _hist_dict[f"{region}_{obj}_phi"] = Hist.Hist(
+                        syst_axis, flav_axis, phi_axis, Hist.storage.Weight()
+                    )
+                    _hist_dict[f"{region}_{obj}_mass"] = Hist.Hist(
+                        syst_axis, flav_axis, mass_axis, Hist.storage.Weight()
+                    )
+                else:
+                    _hist_dict[f"{region}_{obj}_pt"] = Hist.Hist(
+                        syst_axis, pt_axis, Hist.storage.Weight()
+                    )
+                    _hist_dict[f"{region}_{obj}_phi"] = Hist.Hist(
+                        syst_axis, phi_axis, Hist.storage.Weight()
+                    )
+                    if obj != "MET":
+                        _hist_dict[f"{region}_{obj}_eta"] = Hist.Hist(
+                            syst_axis, eta_axis, Hist.storage.Weight()
+                        )
+
+            # B-tagger scores
+            for disc in disc_list:
+                if disc not in events.Jet.fields:
+                    continue
+                njet = 1
+                for i in range(njet):
+                    if "btag" in disc or "ProbaN" == disc:
+                        _hist_dict[f"{region}_{disc}_{i}"] = Hist.Hist(
+                            syst_axis,
+                            flav_axis,
+                            Hist.axis.Regular(50, 0.0, 1, name="discr", label=disc),
+                            Hist.storage.Weight(),
+                        )
+
+            # TnP yields per region per tagger
+            for tagger in self._all_taggers:
+                _hist_dict[f"{region}_{tagger}_tnp_yields"] = Hist.Hist(
+                    syst_axis, cat_axis, wp_axis, result_axis, ttcat_axis, 
+                    kin_axis, ptb_axis, Hist.storage.Weight()
+                )
+
+        return _hist_dict
+
+
+    def write_histograms(self, pruned_ev, output, weights, systematics, isSyst, SF_map):
+        """
+        Write histograms to the output dictionary based on pruned events and other parameters.
+        Fills each region's histograms using a boolean mask built from pruned_ev.tnp_region.
+        """
+
+        # exclude b tag SFs for btag inputs
+        exclude_btv = [
+            v for v in weights.variations
+            if any(k in v.upper() for k in ("DEEP", "PNET", "ROBUST", "UPART", "BTV", "BTAG", "CTAG"))
+        ]
+
+        nj = 4
+        pruned_ev.SelJet = pruned_ev.SelJet[:, :nj]
+
+        # data or MC
+        if "hadronFlavour" in pruned_ev.SelJet.fields:
+            isRealData = False
+            genflavor = ak.values_astype(
+                pruned_ev.SelJet.hadronFlavour
+                + 1
+                * (
+                    (pruned_ev.SelJet.partonFlavour == 0)
+                    & (pruned_ev.SelJet.hadronFlavour == 0)
+                ),
+                int,
+            )
+        else:
+            isRealData = True
+            genflavor = ak.zeros_like(pruned_ev.SelJet.pt, dtype=int)
+
+        # region labels from the pruned view
+        # every event in pruned_ev belongs to exactly one region
+        if "tnp_region" in pruned_ev.fields:
+            region_labels = np.asarray(ak.to_numpy(pruned_ev.tnp_region), dtype=np.str_)
+        else:
+            # if you ever call this before assigning the region field, treat all as "central"
+            region_labels = np.full(len(pruned_ev), "central", dtype=np.str_)
+
+        # helper, do not rely on any global flatten
+        def _flat(x):
+            return ak.to_numpy(ak.flatten(x))
+
+        # Loop over the systematic variations
+        for syst in systematics:
+            if isSyst is False and syst != "nominal":
+                break
+
+            # pick weights for this syst
+            evt_w = (
+                weights.weight()
+                if syst == "nominal" or syst not in list(weights.variations)
+                else weights.weight(modifier=syst)
+            )
+            # a version that excludes BTV like systematics for b tag score plots
+            evt_w_excl_btv = weights.partial_weight(
+                exclude=[k for k in exclude_btv if k in weights.variations]
+            )
+
+            # fill each histogram, but only with events that match its region prefix
+            for histname, h in output.items():
+                # only touch histograms that are region scoped, they all start with "<region>_"
+                if "_" not in histname:
+                    continue
+                region_prefix = histname.split("_", 1)[0]
+                if region_prefix not in self._regions:
+                    continue
+
+                # build the mask for this region, slice all inputs with it
+                rmask = (region_labels == region_prefix)
+                if not np.any(rmask):
+                    continue
+
+                # light aliases for sliced things
+                ev = pruned_ev[rmask]
+                w  = evt_w[rmask]
+                w_excl_btv = evt_w_excl_btv[rmask]
+
+                # Selected electron histograms
+                if "SelElectron" in ev.fields and ("ele_" in histname) and (histname.replace(f"{region_prefix}_ele_", "") in ev.SelElectron.fields):
+                    fld = histname.replace(f"{region_prefix}_ele_", "")
+                    h.fill(syst, _flat(ev.SelElectron[fld]), weight=w)
+                    continue
+
+                # Selected muon histograms
+                if "SelMuon" in ev.fields and ("mu_" in histname) and (histname.replace(f"{region_prefix}_mu_", "") in ev.SelMuon.fields):
+                    fld = histname.replace(f"{region_prefix}_mu_", "")
+                    h.fill(syst, _flat(ev.SelMuon[fld]), weight=w)
+                    continue
+
+                # njet
+                if histname == f"{region_prefix}_njet":
+                    h.fill(syst, _flat(ev.njet), weight=w)
+                    continue
+
+                # Jet kinematics and flavours
+                if "jet" in histname:
+                    for i in range(nj):
+                        if f"jet{i}_" not in histname:
+                            continue
+                        # e.g. "<region>_jet0_pt" gives fld "pt"
+                        fld = histname.replace(f"{region_prefix}_jet{i}_", "")
+                        if fld not in ev.SelJet.fields:
+                            continue
+                        sel_jet = ev.SelJet[:, i]
+                        flav = genflavor[rmask][:, i] if genflavor.ndim == 2 else genflavor[rmask]
+                        h.fill(
+                            syst,
+                            _flat(flav),
+                            _flat(sel_jet[fld]),
+                            weight=w,
+                        )
+                    continue
+
+                # b tag discriminants, filled with BTV excluded weights
+                if any(k in histname for k in ("btag", "PNet", "ProbaN")):
+                    # hist names like "<region>_btagDeepFlavB_0"
+                    # grab the jet index suffix
+                    idx_str = histname.rsplit("_", 1)[-1]
+                    if not idx_str.isdigit():
+                        continue
+                    i = int(idx_str)
+                    if i >= nj:
+                        continue
+                    disc_name = histname.replace(f"{region_prefix}_", "").rsplit("_", 1)[0]
+                    if disc_name not in ev.SelJet.fields:
+                        continue
+                    seljet = ev.SelJet[:, i]
+                    flav   = genflavor[rmask][:, i] if genflavor.ndim == 2 else genflavor[rmask]
+                    h.fill(
+                        syst=syst,
+                        flav=_flat(flav),
+                        discr=_flat(seljet[disc_name]),
+                        weight=w_excl_btv,
+                    )
+                    continue
+
+                # TnP yields, per region and per tagger
+                # keys look like "<region>_<TAGGER>_tnp_yields"
+                if histname.endswith("_tnp_yields"):
+                    # parse the tagger for sanity if you need it
+                    # tagger = histname.replace(f"{region_prefix}_", "").replace("_tnp_yields", "")
+                    needed = {"tnp_had_fill","tnp_lep_fill","tnp_had_pt","tnp_lep_pt",
+                            "bhad","blep","tt_cat","kinbin"}
+                    if not needed.issubset(set(ev.fields)):
+                        continue
+
+                    # build available (tagger, wp, thr) from current run info
+                    year     = str(ev.run_year[0])     if "run_year"     in ev.fields else None
+                    campaign = str(ev.run_campaign[0]) if "run_campaign" in ev.fields else None
+                    WPD = wp_dict(year, campaign)
+
+                    def _has_score(obj, tagger):
+                        return hasattr(obj, f"btag{tagger}B")
+
+                    available = []
+                    for tagger, sub in WPD.items():
+                        if not (_has_score(ev.bhad, tagger) and _has_score(ev.blep, tagger)):
+                            continue
+                        for wp_name, thr in sub.get("b", {}).items():
+                            if wp_name == "No":
+                                continue
+                            available.append((tagger, wp_name, float(thr)))
+
+                    ttcat  = np.asarray(ak.to_numpy(ev.tt_cat), dtype=np.str_)
+                    kinbin = np.asarray(ak.to_numpy(ev.kinbin), dtype=np.int32)
+
+                    # had side
+                    had_fill = np.asarray(ak.to_numpy(ak.fill_none(ev.tnp_had_fill, False)), dtype=bool)
+                    had_pt   = np.asarray(ak.to_numpy(ev.tnp_had_pt), dtype=float)
+                    bhad     = ev.bhad
+
+                    if had_fill.any():
+                        sel = had_fill
+                        nsel = int(sel.sum())
+                        for tagger, wp_name, thr in available:
+                            scores = getattr(bhad, f"btag{tagger}B")
+                            tagbit = np.asarray(ak.to_numpy(scores > thr), dtype=bool)
+                            if nsel == 0:
+                                continue
+                            h.fill(
+                                syst=syst,
+                                cat=np.full(nsel, "had", dtype=np.str_),
+                                wp=np.full(nsel, wp_name, dtype=np.str_),
+                                result=np.where(tagbit[sel], "pass", "fail").astype(np.str_),
+                                tt_cat=ttcat[sel],
+                                kinbin=kinbin[sel],
+                                ptb=had_pt[sel],
+                                weight=evt_w[rmask][sel],
+                            )
+
+                    # lep side
+                    lep_fill = np.asarray(ak.to_numpy(ak.fill_none(ev.tnp_lep_fill, False)), dtype=bool)
+                    lep_pt   = np.asarray(ak.to_numpy(ev.tnp_lep_pt), dtype=float)
+                    blep     = ev.blep
+
+                    if lep_fill.any():
+                        sel = lep_fill
+                        nsel = int(sel.sum())
+                        for tagger, wp_name, thr in available:
+                            scores = getattr(blep, f"btag{tagger}B")
+                            tagbit = np.asarray(ak.to_numpy(scores > thr), dtype=bool)
+                            if nsel == 0:
+                                continue
+                            h.fill(
+                                syst=syst,
+                                cat=np.full(nsel, "lep", dtype=np.str_),
+                                wp=np.full(nsel, wp_name, dtype=np.str_),
+                                result=np.where(tagbit[sel], "pass", "fail").astype(np.str_),
+                                tt_cat=ttcat[sel],
+                                kinbin=kinbin[sel],
+                                ptb=lep_pt[sel],
+                                weight=evt_w[rmask][sel],
+                            )
+                    continue
+
+                # chi2 and ttbar reco summaries
+                base_name = histname.replace(f"{region_prefix}_", "")
+                if base_name in ("chi2", "tlep_mass", "thad_mass", "whad_mass", "tlep_pt", "thad_pt",
+                                "dr_lep_blep", "dr_lep_bhad", "dr_ja_jb"):
+                    if base_name in ev.fields:
+                        h.fill(syst, _flat(ev[base_name]), weight=w)
+                    continue
+
+                # MET, use the region scoped keys
+                if histname == f"{region_prefix}_MET_pt":
+                    h.fill(syst, _flat(ev.MET.pt), weight=w)
+                    continue
+                if histname == f"{region_prefix}_MET_phi":
+                    h.fill(syst, _flat(ev.MET.phi), weight=w)
+                    continue
+
+        return output
+
+
 
     def process(self, events):
         events = missing_branch(events)
@@ -210,7 +553,7 @@ class NanoProcessor(processor.ProcessorABC):
     def process_shift(self, events, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        output = {} if self.noHist else histogrammer(events, "sf_ttsemilep_tnp")
+        output = {} if self.noHist else self.define_histograms(events)
 
         if shift_name is None:
             output["sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
@@ -285,6 +628,10 @@ class NanoProcessor(processor.ProcessorABC):
             ("sb_iso_btagM", "sbiso", "L")
         ]
 
+        # Collect all regions here
+        all_pruned = []
+
+        # Loop over isolation modes
         for iso_mode in ["tight", "sbiso"]:
             # Select 1 lepton of requested isolation working point
             sel_leps, sel_mask = select_lepton(events, self.channel, self._campaign, iso_mode=iso_mode)
@@ -384,6 +731,9 @@ class NanoProcessor(processor.ProcessorABC):
                     rmask = has_cand & mask_sb_btagL
 
                 rmask_np = ak.to_numpy(ak.fill_none(rmask, False))
+                
+                if not np.any(rmask_np):  # Skip empty regions
+                    continue
 
                 # TnP fills (gate on opposite-side tag only for central)
                 require_tag = (rname == "central")
@@ -481,14 +831,19 @@ class NanoProcessor(processor.ProcessorABC):
                 # region & tt category labels for histogramming
                 pr = ak.with_field(pr, np.full(len(pr), rname, dtype=np.str_), "tnp_region")
                 pr = ak.with_field(pr, tt_cat,                                    "tt_cat")
-                pr = ak.with_field(pr, ak.Array(kinbin), "kinbin")
+                pr = ak.with_field(pr, ak.Array(kinbin), "kinbin")                
+                all_pruned.append(pr)
 
-                # -------------------- Output --------------------
-                weights = weight_manager(pr, self.SF_map, self.isSyst)
-                systematics = [shift_name] if shift_name is not None else ["nominal"] + list(weights.variations)
+        # -------------------- Output --------------------
+        # Write histograms once with all regions combined
+        if all_pruned:
+            pruned_all = ak.concatenate(all_pruned, axis=0)
+            weights = weight_manager(pruned_all, self.SF_map, self.isSyst)
+            systematics = [shift_name] if shift_name is not None else ["nominal"] + list(weights.variations)
+            
+            if not self.noHist:
+                output = self.write_histograms(pruned_all, output, weights, systematics, self.isSyst, self.SF_map)
 
-                if not self.noHist:
-                    output = histo_writter(pr, output, weights, systematics, self.isSyst, self.SF_map)
 
         return {dataset: output}
 

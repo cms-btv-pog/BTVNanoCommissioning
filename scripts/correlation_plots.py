@@ -1,22 +1,24 @@
 import psutil
 import os
-from tqdm import tqdm
 import uproot
 import warnings
 import argparse
 import glob
 import matplotlib.pyplot as plt
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 import numpy as np
 import seaborn as sns
 import awkward as ak
-from BTVNanoCommissioning.helpers.definitions import definitions_dict
-from BTVNanoCommissioning.helpers.definitions import disc_list
+from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from BTVNanoCommissioning.helpers.definitions import get_definitions, get_discriminators
 
 
 # Suppress the specific FutureWarning from uproot
 warnings.filterwarnings("ignore", category=FutureWarning, module="uproot")
+
+definitions_dict = get_definitions()
+disc_list = get_discriminators()
 
 filtered_names = [
     name for name in disc_list if name.endswith("B") and not name.endswith("CvB")
