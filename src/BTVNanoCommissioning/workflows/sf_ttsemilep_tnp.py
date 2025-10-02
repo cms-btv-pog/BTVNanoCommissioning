@@ -156,13 +156,13 @@ def tt_truth_category(best_BL, best_BH, is_mc):
     """Return an Awkward string array: 'sig' / 'bkg' (MC) or 'other' (data)."""
     n = len(best_BL)
     if not is_mc:
-        return ak.Array(np.full(n, "other", dtype=np.str_))
+        return ak.Array(np.full(n, "other", dtype='U5'))
 
     bl_b = ak.fill_none(ak.values_astype(getattr(best_BL, "hadronFlavour", 0) == 5, bool), False)
     bh_b = ak.fill_none(ak.values_astype(getattr(best_BH, "hadronFlavour", 0) == 5, bool), False)
     is_sig = ak.to_numpy(bl_b & bh_b)
 
-    lab = np.where(is_sig, "sig", "bkg").astype(np.str_)
+    lab = np.where(is_sig, "sig", "bkg").astype('U5')
     return ak.Array(lab)
 
 
@@ -175,7 +175,7 @@ class NanoProcessor(processor.ProcessorABC):
         isSyst=False,
         isArray=False,
         noHist=False,
-        chunksize=25000,
+        chunksize=10000,
         selectionModifier="mu",  # "mu" or "el"
         tag_tagger="UParTAK4",
     ):
@@ -194,7 +194,7 @@ class NanoProcessor(processor.ProcessorABC):
         self._wp_table = wp_dict(year, campaign)
         self._all_taggers = sorted(self._wp_table.keys())
         self.tag_tagger = tag_tagger
-        self._regions = ["central", "sb_iso", "sb_btagM", "sb_btagL", "sb_iso_btagM"]
+        self._regions = ["central", "sbiso", "sbbtagM", "sbbtagL", "sbisobtagM"]
 
     @property
     def accumulator(self):
@@ -339,19 +339,15 @@ class NanoProcessor(processor.ProcessorABC):
         # region labels from the pruned view
         # every event in pruned_ev belongs to exactly one region
         if "tnp_region" in pruned_ev.fields:
-            region_labels = np.asarray(ak.to_numpy(pruned_ev.tnp_region), dtype=np.str_)
+            region_labels = np.asarray(ak.to_numpy(pruned_ev.tnp_region), dtype='U20')  # Up to 20 chars
         else:
             # if you ever call this before assigning the region field, treat all as "central"
-            region_labels = np.full(len(pruned_ev), "central", dtype=np.str_)
-
-        # helper, do not rely on any global flatten
-        def _flat(x):
-            return ak.to_numpy(ak.flatten(x))
+            region_labels = np.full(len(pruned_ev), "central", dtype='U20')  # Up to 20 chars
 
         # Loop over the systematic variations
         for syst in systematics:
             if isSyst is False and syst != "nominal":
-                break
+                continue
 
             # pick weights for this syst
             evt_w = (
@@ -368,9 +364,6 @@ class NanoProcessor(processor.ProcessorABC):
 
             # fill each histogram, but only with events that match its region prefix
             for histname, h in output.items():
-                # only touch histograms that are region scoped, they all start with "<region>_"
-                if "_" not in histname:
-                    continue
                 region_prefix = histname.split("_", 1)[0]
                 if region_prefix not in self._regions:
                     continue
@@ -386,20 +379,20 @@ class NanoProcessor(processor.ProcessorABC):
                 w_excl_btv = evt_w_excl_btv[rmask]
 
                 # Selected electron histograms
-                if "SelElectron" in ev.fields and ("ele_" in histname) and (histname.replace(f"{region_prefix}_ele_", "") in ev.SelElectron.fields):
+                if "ele" in ev.fields and ("ele_" in histname) and (histname.replace(f"{region_prefix}_ele_", "") in ev.ele.fields):
                     fld = histname.replace(f"{region_prefix}_ele_", "")
-                    h.fill(syst, _flat(ev.SelElectron[fld]), weight=w)
+                    h.fill(syst, ak.to_numpy(ev.ele[fld]), weight=w)
                     continue
 
                 # Selected muon histograms
-                if "SelMuon" in ev.fields and ("mu_" in histname) and (histname.replace(f"{region_prefix}_mu_", "") in ev.SelMuon.fields):
+                if "mu" in ev.fields and ("mu_" in histname) and (histname.replace(f"{region_prefix}_mu_", "") in ev.mu.fields):
                     fld = histname.replace(f"{region_prefix}_mu_", "")
-                    h.fill(syst, _flat(ev.SelMuon[fld]), weight=w)
+                    h.fill(syst, ak.to_numpy(ev.mu[fld]), weight=w)
                     continue
 
                 # njet
                 if histname == f"{region_prefix}_njet":
-                    h.fill(syst, _flat(ev.njet), weight=w)
+                    h.fill(syst, ak.to_numpy(ev.njet), weight=w)
                     continue
 
                 # Jet kinematics and flavours
@@ -415,8 +408,8 @@ class NanoProcessor(processor.ProcessorABC):
                         flav = genflavor[rmask][:, i] if genflavor.ndim == 2 else genflavor[rmask]
                         h.fill(
                             syst,
-                            _flat(flav),
-                            _flat(sel_jet[fld]),
+                            ak.to_numpy(flav),
+                            ak.to_numpy(sel_jet[fld]),
                             weight=w,
                         )
                     continue
@@ -438,8 +431,8 @@ class NanoProcessor(processor.ProcessorABC):
                     flav   = genflavor[rmask][:, i] if genflavor.ndim == 2 else genflavor[rmask]
                     h.fill(
                         syst=syst,
-                        flav=_flat(flav),
-                        discr=_flat(seljet[disc_name]),
+                        flav=ak.to_numpy(flav),
+                        discr=ak.to_numpy(seljet[disc_name]),
                         weight=w_excl_btv,
                     )
                     continue
@@ -455,9 +448,7 @@ class NanoProcessor(processor.ProcessorABC):
                         continue
 
                     # build available (tagger, wp, thr) from current run info
-                    year     = str(ev.run_year[0])     if "run_year"     in ev.fields else None
-                    campaign = str(ev.run_campaign[0]) if "run_campaign" in ev.fields else None
-                    WPD = wp_dict(year, campaign)
+                    WPD = wp_dict(self._year, self._campaign)
 
                     def _has_score(obj, tagger):
                         return hasattr(obj, f"btag{tagger}B")
@@ -471,7 +462,7 @@ class NanoProcessor(processor.ProcessorABC):
                                 continue
                             available.append((tagger, wp_name, float(thr)))
 
-                    ttcat  = np.asarray(ak.to_numpy(ev.tt_cat), dtype=np.str_)
+                    ttcat  = np.asarray(ak.to_numpy(ev.tt_cat), dtype='U5')
                     kinbin = np.asarray(ak.to_numpy(ev.kinbin), dtype=np.int32)
 
                     # had side
@@ -489,9 +480,9 @@ class NanoProcessor(processor.ProcessorABC):
                                 continue
                             h.fill(
                                 syst=syst,
-                                cat=np.full(nsel, "had", dtype=np.str_),
-                                wp=np.full(nsel, wp_name, dtype=np.str_),
-                                result=np.where(tagbit[sel], "pass", "fail").astype(np.str_),
+                                cat=np.full(nsel, "had", dtype='U3'),
+                                wp=np.full(nsel, wp_name, dtype='U3'),
+                                result=np.where(tagbit[sel], "pass", "fail").astype('U4'),
                                 tt_cat=ttcat[sel],
                                 kinbin=kinbin[sel],
                                 ptb=had_pt[sel],
@@ -513,9 +504,9 @@ class NanoProcessor(processor.ProcessorABC):
                                 continue
                             h.fill(
                                 syst=syst,
-                                cat=np.full(nsel, "lep", dtype=np.str_),
-                                wp=np.full(nsel, wp_name, dtype=np.str_),
-                                result=np.where(tagbit[sel], "pass", "fail").astype(np.str_),
+                                cat=np.full(nsel, "lep", dtype='U3'),
+                                wp=np.full(nsel, wp_name, dtype='U3'),
+                                result=np.where(tagbit[sel], "pass", "fail").astype('U4'),
                                 tt_cat=ttcat[sel],
                                 kinbin=kinbin[sel],
                                 ptb=lep_pt[sel],
@@ -528,15 +519,15 @@ class NanoProcessor(processor.ProcessorABC):
                 if base_name in ("chi2", "tlep_mass", "thad_mass", "whad_mass", "tlep_pt", "thad_pt",
                                 "dr_lep_blep", "dr_lep_bhad", "dr_ja_jb"):
                     if base_name in ev.fields:
-                        h.fill(syst, _flat(ev[base_name]), weight=w)
+                        h.fill(syst, ak.to_numpy(ev[base_name]), weight=w)
                     continue
 
                 # MET, use the region scoped keys
                 if histname == f"{region_prefix}_MET_pt":
-                    h.fill(syst, _flat(ev.MET.pt), weight=w)
+                    h.fill(syst, ak.to_numpy(ev.MET.pt), weight=w)
                     continue
                 if histname == f"{region_prefix}_MET_phi":
-                    h.fill(syst, _flat(ev.MET.phi), weight=w)
+                    h.fill(syst, ak.to_numpy(ev.MET.phi), weight=w)
                     continue
 
         return output
@@ -556,6 +547,8 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
         output = {} if self.noHist else self.define_histograms(events)
+        # print(f"=== process_shift: {dataset}, shift={shift_name}, isData={isRealData}, n={len(events)} ===")
+
 
         if shift_name is None:
             output["sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
@@ -616,10 +609,10 @@ class NanoProcessor(processor.ProcessorABC):
         # Region specs
         region_specs = [
             ("central", "tight", "M"),  
-            ("sb_iso", "sbiso", "M"),
-            ("sb_btagM", "tight", "L"),
-            ("sb_btagL", "tight", "No"),
-            ("sb_iso_btagM", "sbiso", "L")
+            ("sbiso", "sbiso", "M"),
+            ("sbbtagM", "tight", "L"),
+            ("sbbtagL", "tight", "No"),
+            ("sbisobtagM", "sbiso", "L")
         ]
 
         # Helper functions for 4-vector operations
@@ -664,6 +657,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             # Base mask
             evmask_base = req_lumi & req_trig & req_metf & req_lepveto & req_lep & req_jets
+
             if not ak.any(evmask_base):
                 continue
 
@@ -780,14 +774,12 @@ class NanoProcessor(processor.ProcessorABC):
                 pr = ak.with_field(pr, tl_r, "tlep")
                 pr = ak.with_field(pr, th_r, "thad")
                 pr = ak.with_field(pr, chi2_np[rmask_np], "chi2")
-                pr = ak.with_field(pr, self._year, "run_year")
-                pr = ak.with_field(pr, self._campaign, "run_campaign")
                 pr = ak.with_field(pr, jets_r[:, :4], "SelJet")
                 
                 if self.channel == "mu":
-                    pr = ak.with_field(pr, lep_r, "SelMuon")
+                    pr = ak.with_field(pr, lep_r, "mu")
                 else:
-                    pr = ak.with_field(pr, lep_r, "SelElectron")
+                    pr = ak.with_field(pr, lep_r, "ele")
                 
                 pr = ak.with_field(pr, ak.num(pr.SelJet, axis=1), "njet")
                 pr = ak.with_field(pr, tlep_mass_full[rmask_np], "tlep_mass")
@@ -802,7 +794,7 @@ class NanoProcessor(processor.ProcessorABC):
                 pr = ak.with_field(pr, tnp_lep_fill, "tnp_lep_fill")
                 pr = ak.with_field(pr, tnp_had_pt, "tnp_had_pt")
                 pr = ak.with_field(pr, tnp_lep_pt, "tnp_lep_pt")
-                pr = ak.with_field(pr, np.full(len(pr), rname, dtype=np.str_), "tnp_region")
+                pr = ak.with_field(pr, np.full(len(pr), rname, dtype='U12'), "tnp_region")
                 pr = ak.with_field(pr, tt_cat_full[rmask_np], "tt_cat")
                 pr = ak.with_field(pr, ak.Array(kinbin_full[rmask_np]), "kinbin")
 
