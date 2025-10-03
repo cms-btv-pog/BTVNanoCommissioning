@@ -195,7 +195,7 @@ class NanoProcessor(processor.ProcessorABC):
         jet_sel = (
             (events.Jet.pt >= 15)
             & (abs(events.Jet.eta) < 5.31)
-            & (events.Jet.jetId >= 4)
+            # & (events.Jet.jetId >= 4)
         )
 
         if self._year == "2016":
@@ -312,6 +312,8 @@ class NanoProcessor(processor.ProcessorABC):
                 run_num = "355374_362760"
             elif self._year == "2023":
                 run_num = "366727_370790"
+            elif self._year == "2024":
+                run_num = "378985_386951"
 
             # if 369869 in pruned_ev.run: continue
             psweight = np.zeros(len(pruned_ev))
