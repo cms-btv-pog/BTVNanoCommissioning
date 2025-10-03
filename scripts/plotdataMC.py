@@ -266,6 +266,12 @@ for index, discr in enumerate(var_set):
                 collated[s][discr], collated[s][discr].axes[-1].name, rebin
             )
 
+    # check if plottable, skip otherwise
+    hmc = collated["mc"][discr][allaxis]
+    if len(hmc.axes) > 2:
+        print(f"Skipping {discr}: after selections still has {len(hmc.axes)} axes")
+        continue
+
     ## Rescale noSF & SF to same MC yields
     if (
         "flav" in collated["mc"][discr].axes.name
