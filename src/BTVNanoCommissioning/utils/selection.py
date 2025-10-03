@@ -140,12 +140,6 @@ def mu_idiso(events, campaign):
     )
     return mumask
 
-def mu_iso(events, campaign):
-    mumask = (
-        (abs(events.Muon.eta) < 2.4)
-        & (events.Muon.pfRelIso04_all <= 0.15)
-    )
-    return mumask
 
 def btag_mu_idiso(events, campaign):
     mumask = (
