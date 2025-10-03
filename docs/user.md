@@ -19,9 +19,9 @@ Each steps are also explained in detailed below, this can be obtain by
 
 ## 0.  Make the dataset json files 
 
-Use `fetch.py` in folder `scripts/` to obtain your samples json files for the predefined workflow with the refined MC. For more flexible usage please find [details](scripts.md#fetchpy--create-input-json)
+Use `fetch.py` in folder `scripts/` to obtain your samples json files for the predefined workflow with the refined MC. For more flexible usage please find [details](scripts.md#fetchpy--create-input-json).
 
-The fetch script reads the predefine data & MC samples dataset name and output the json file to `metadata/$CAMPAIGN/`, but to find the exact dataset for BTV studies, we usually need to specify the `DAS_campaign`
+The fetch script reads the predefine data & MC samples dataset name and output the json file to `metadata/$CAMPAIGN/`, but to find the exact dataset for BTV studies, we usually need to specify the `DAS_campaign`.
 
 ```
 python scripts/fetch.py -c {campaign} --year {args.year}  --from_workflow {wf} --DAS_campaign {DAS_campaign} {overwrite} 
@@ -34,18 +34,18 @@ python scripts/fetch.py -c {campaign} --year {args.year}  --from_workflow {wf} -
 
 
 :::{caution}
-Do not make the file list greater than 4k files to avoid scaleout issues in various site (file open limit)
+Do not make the file list greater than 4k files to avoid scaleout issues in various site (file open limit).
 :::
 
 :::{tip}
-If `gfal-ls` does not work on your machine, reset the gfal-python with `GFAL_PYTHONBIN=/usr/bin/python3`
+If `gfal-ls` does not work on your machine, reset the gfal-python with `GFAL_PYTHONBIN=/usr/bin/python3`.
 :::
 
 ## 1. Correction files configurations & add new correction files (Optional)
 
 If the correction files are not supported yet by jsonpog-integration, you can still try with custom input data.
 
-All the `lumiMask`, correction files (SFs, pileup weight), and JEC, JER files are under  `BTVNanoCommissioning/src/data/` following the substructure `${type}/${year}_${campaign}/${files}`(except `lumiMasks` and `Prescales`)
+All the `lumiMask`, correction files (SFs, pileup weight), and JEC, JER files are under  `BTVNanoCommissioning/src/data/` following the substructure `${type}/${year}_${campaign}/${files}`(except `lumiMasks` and `Prescales`).
 
 | Type        | File type |  Comments|
 | :---:   | :---: | :---: |
@@ -62,80 +62,82 @@ Create a `dict` entry under `correction_config` with dedicated campaigns in `BTV
 
   
   
-The official correction files collected in [jsonpog-integration](https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration) is updated by POG, except `lumiMask` and `JME` still updated by by the BTVNanoCommissioning framework user/developer.  For centrally maintained correction files, no input files have to be defined anymore in the `correction_config`. The example to implemented new corrections from POG can be found in [git](https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/blob/master/examples/), and the contents of the correction files are in the [summary](https://cms-nanoaod-integration.web.cern.ch/commonJSONSFs/)
+The official correction files collected in [jsonpog-integration](https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration) is updated by POG, except `lumiMask` and `JME` still updated by by the BTVNanoCommissioning framework user/developer.  For centrally maintained correction files, no input files have to be defined anymore in the `correction_config`. The example to implemented new corrections from POG can be found in [git](https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/blob/master/examples/), and the contents of the correction files are in the [summary](https://cms-analysis-corrections.docs.cern.ch/).
 
+<details><summary>Example of a Run 2 corrections dictionary:</summary>
+<p>
 
-  ```python
-    "2017_UL": {
-          # Same with custom config
-          "lumiMask": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.json",
+```python
+"2017_UL": {
+      # Same with custom config
+      "lumiMask": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.json",
 
-          "JME": {
-             "MC": "Summer19UL17_V5_MC",
-            "Run2017F": "Summer19UL17_RunF_V5_DATA",
-          },
-          ### Alternatively, take the txt files in  https://github.com/cms-jet/JECDatabase/tree/master/textFiles
-          "JME": {
-                      # specified the name of JEC
-                      "name": "V1_AK4PFPuppi",
-                      # dictionary of jec text files
-                      "MC": [
-                          "Summer23Prompt23_V1_MC_L1FastJet_AK4PFPuppi",
-                          "Summer23Prompt23_V1_MC_L2Relative_AK4PFPuppi",
-                          "Summer23Prompt23_V1_MC_L2Residual_AK4PFPuppi",
-                          "Summer23Prompt23_V1_MC_L3Absolute_AK4PFPuppi",
-                          "Summer23Prompt23_V1_MC_UncertaintySources_AK4PFPuppi",
-                          "Summer23Prompt23_V1_MC_Uncertainty_AK4PFPuppi",
-                          "Summer23Prompt23_JRV1_MC_SF_AK4PFPuppi",
-                          "Summer23Prompt23_JRV1_MC_PtResolution_AK4PFPuppi",
-                      ],
-                      "dataCv123": [
-                          "Summer23Prompt23_RunCv123_V1_DATA_L1FastJet_AK4PFPuppi",
-                          "Summer23Prompt23_RunCv123_V1_DATA_L2Relative_AK4PFPuppi",
-                          "Summer23Prompt23_RunCv123_V1_DATA_L3Absolute_AK4PFPuppi",
-                          "Summer23Prompt23_RunCv123_V1_DATA_L2L3Residual_AK4PFPuppi",
-                      ],
-                      "dataCv4": [
-                          "Summer23Prompt23_RunCv4_V1_DATA_L1FastJet_AK4PFPuppi",
-                          "Summer23Prompt23_RunCv4_V1_DATA_L2Relative_AK4PFPuppi",
-                          "Summer23Prompt23_RunCv4_V1_DATA_L3Absolute_AK4PFPuppi",
-                          "Summer23Prompt23_RunCv4_V1_DATA_L2L3Residual_AK4PFPuppi",
-                      ],
-                  },
-          ###
-          # no config need to be specify for PU weights
-          "PU": None,
-          # Alternatively, take root file as input
-          "PU": "puwei_Summer23.histo.root",
-          # Btag SFs - specify $TAGGER : $TYPE-> find [$TAGGER_$TYPE] in json file
-          "BTV": {"deepCSV": "shape", "deepJet": "shape"},
-          "roccor": None,
-          # JMAR, IDs from JME- Following the scheme: "${SF_name}": "${WP}"
-          "JMAR": {"PUJetID_eff": "L"},
-          "LSF": {
-          # Electron SF - Following the scheme: "${SF_name} ${year}": "${WP}"
-          # https://github.com/cms-egamma/cms-egamma-docs/blob/master/docs/EgammaSFJSON.md
-              "ele_ID 2017": "wp90iso",
-              "ele_Reco 2017": "RecoAbove20",
-
-          # Muon SF - Following the scheme: "${SF_name} ${year}": "${WP}"
-
-              "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
-              "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
-              "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
-              "mu_Iso 2017_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
-          },
-          # use for BTA production, jet probablity
-        "JPCalib": {
-            "Run2022E": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
-            "Run2022F": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
-            "Run2022G": "calibeHistoWrite_Data2022G_NANO130X_v1.root",
-            "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",
-        },
+      "JME": {
+          "MC": "Summer19UL17_V5_MC",
+        "Run2017F": "Summer19UL17_RunF_V5_DATA",
       },
-  ```
+      ### Alternatively, take the txt files in  https://github.com/cms-jet/JECDatabase/tree/master/textFiles
+      "JME": {
+                  # specified the name of JEC
+                  "name": "V1_AK4PFPuppi",
+                  # dictionary of jec text files
+                  "MC": [
+                      "Summer23Prompt23_V1_MC_L1FastJet_AK4PFPuppi",
+                      "Summer23Prompt23_V1_MC_L2Relative_AK4PFPuppi",
+                      "Summer23Prompt23_V1_MC_L2Residual_AK4PFPuppi",
+                      "Summer23Prompt23_V1_MC_L3Absolute_AK4PFPuppi",
+                      "Summer23Prompt23_V1_MC_UncertaintySources_AK4PFPuppi",
+                      "Summer23Prompt23_V1_MC_Uncertainty_AK4PFPuppi",
+                      "Summer23Prompt23_JRV1_MC_SF_AK4PFPuppi",
+                      "Summer23Prompt23_JRV1_MC_PtResolution_AK4PFPuppi",
+                  ],
+                  "dataCv123": [
+                      "Summer23Prompt23_RunCv123_V1_DATA_L1FastJet_AK4PFPuppi",
+                      "Summer23Prompt23_RunCv123_V1_DATA_L2Relative_AK4PFPuppi",
+                      "Summer23Prompt23_RunCv123_V1_DATA_L3Absolute_AK4PFPuppi",
+                      "Summer23Prompt23_RunCv123_V1_DATA_L2L3Residual_AK4PFPuppi",
+                  ],
+                  "dataCv4": [
+                      "Summer23Prompt23_RunCv4_V1_DATA_L1FastJet_AK4PFPuppi",
+                      "Summer23Prompt23_RunCv4_V1_DATA_L2Relative_AK4PFPuppi",
+                      "Summer23Prompt23_RunCv4_V1_DATA_L3Absolute_AK4PFPuppi",
+                      "Summer23Prompt23_RunCv4_V1_DATA_L2L3Residual_AK4PFPuppi",
+                  ],
+              },
+      ###
+      # no config need to be specify for PU weights
+      "PU": None,
+      # Alternatively, take root file as input
+      "PU": "puwei_Summer23.histo.root",
+      # Btag SFs - specify $TAGGER : $TYPE-> find [$TAGGER_$TYPE] in json file
+      "BTV": {"deepCSV": "shape", "deepJet": "shape"},
+      "roccor": None,
+      # JMAR, IDs from JME- Following the scheme: "${SF_name}": "${WP}"
+      "JMAR": {"PUJetID_eff": "L"},
+      "LSF": {
+      # Electron SF - Following the scheme: "${SF_name} ${year}": "${WP}"
+      # https://github.com/cms-egamma/cms-egamma-docs/blob/master/docs/EgammaSFJSON.md
+          "ele_ID 2017": "wp90iso",
+          "ele_Reco 2017": "RecoAbove20",
 
+      # Muon SF - Following the scheme: "${SF_name} ${year}": "${WP}"
 
+          "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
+          "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
+          "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
+          "mu_Iso 2017_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
+      },
+      # use for BTA production, jet probablity
+    "JPCalib": {
+        "Run2022E": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
+        "Run2022F": "calibeHistoWrite_Data2022F_NANO130X_v1.root",
+        "Run2022G": "calibeHistoWrite_Data2022G_NANO130X_v1.root",
+        "MC": "calibeHistoWrite_MC2022EE_NANO130X_v1.root",
+    },
+  },
+```
+</p>
+</details>
 
 
 ## 2. Run the workflow to get coffea files
@@ -154,9 +156,7 @@ python runner.py --wf {wf} --json metadata/{args.campaign}/{types}_{args.campaig
 - Sometimes the global redirector is insufficient, you can increase the numbers of retries (only in parsl/dask) `--retries 30`, or skip the files `--skipbadfiles` and later reprocess the missing info by create the json with skipped files. Methods to create the json files discussed in the next part.
 :::
 
-Other options detail can be found here 
-
-<details><summary>runner options</summary>
+<details><summary>Other runner options</summary>
 <p>
 
 ```python
@@ -209,10 +209,10 @@ Other options detail can be found here
 
 ## 3. Dump processed information to obtain luminoisty and processed files
 
-After obtained `coffea` file, we can check the processed files and obtain the luminoisty.
+After obtaining the `.coffea` file, we can check the processed files and obtain the luminosity in the processed files.
 
-Get the run & luminosity information for the processed events from the coffea output files. When you use `--skipbadfiles`, the submission will ignore files not accesible(or time out) by xrootd. This script helps you to dump the processed luminosity into a json file which can be calculated by brilcalc tool and provide a list of failed lumi sections by comparing the original json input to the one from the `.coffea` files.
-We will see the luminosity info in `/pb` and the skipped files as new json for resubmission.
+To get the run & luminosity information for the processed events from the `.coffea` output files use the `scripts/dump_processed.py` script. This script helps you to dump the processed luminosity into a json file that can be used by the brilcalc tool to calculate the output luminosity. A list of failed lumi sections can then be obtained by comparing the original json input to the one from the `.coffea` files.
+We will see the luminosity info in `/pb` and the files skipped by the runner flag `--skipbadfiles` as new json ready for resubmission.
 
 
 ```bash
@@ -229,11 +229,11 @@ python scripts/dump_processed.py -t all -c INPUT_COFFEA --json ORIGINAL_JSON_INP
 
 ## 4. Obtain data/MC plots 
 
-We can obtain data/MC plots from coffea via the plotting scripts: 
+We can obtain data/MC plots from coffea via the `scripts/plotdataMC.py` plotting script. For other possible plotting scripts see [plotting scripts](scripts.md#Plotting-code).
 
-You can specify `-v all` to plot all the variables in the `coffea` file, or use wildcard options (e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`)
+You can specify `-v all` to plot all the variables in the `.coffea` file, or use wildcard options, e.g. `-v "*DeepJet*"` for the input variables containing `DeepJet`.
 
-:new: non-uniform rebinning is possible, specify the bins with  list of edges `--autorebin 50,80,81,82,83,100.5`
+:new: non-uniform rebinning is possible, specify the bins with  list of edges `--autorebin 50,80,81,82,83,100.5`.
 
 ```bash
 python scripts/plotdataMC.py -i a.coffea,b.coffea --lumi 41500 -p ttdilep_sf -v z_mass,z_pt  
@@ -241,10 +241,10 @@ python scripts/plotdataMC.py -i "test*.coffea" --lumi 41500 -p ttdilep_sf -v z_m
 
 ```
 
-<details><summary>options</summary>
+<details><summary> Options:</summary>
 <p>
+
 ```
-options:
   -h, --help            show this help message and exit
   --lumi LUMI           luminosity in /pb
   --com COM             sqrt(s) in TeV
@@ -280,13 +280,12 @@ options:
 ## Reading coffea `hist`  
 
 
-Quick tutorial to go through coffea files. Example coffea files can be found in `testfile/` 
+Quick tutorial to go through coffea files. Example coffea files can be found in `testfile/`. 
 
 
 ### Structure of the file
 
-The coffea contains histograms  wrapped in a dictionary with `$dataset:{$histname:hist}`, the `hist` is the object using
-[hist](https://hist.readthedocs.io/en/latest/) which allows multidimensional bins with different types of array
+The coffea file contains histograms  wrapped in a dictionary with `$dataset:{$histname:hist}`, where the `hist` is a [hist](https://hist.readthedocs.io/en/latest/) histogram that allows multidimensional binning with different datatypes, for example:
 ```python
 {'WW_TuneCP5_13p6TeV-pythia8':{
 'btagDeepFlavB_b_0': Hist(
@@ -306,11 +305,11 @@ The coffea contains histograms  wrapped in a dictionary with `$dataset:{$histnam
   Regular(30, -0.2, 1, name='discr', label='btagDeepFlavB_lepb'),
   storage=Weight()) # Sum: WeightedSum(value=140, variance=140)}}
 ```
-There are also `column_array` stores the processed file and lumi/run info in each dataset for data. The information are used in [dump_processed info](user.md#3-dump-processed-information-to-obtain-luminoisty-and-processed-files) 
+The processed file and lumi/run info are also stored for each dataset in the file. This information is used in [dump_processed info](user.md#3-dump-processed-information-to-obtain-luminoisty-and-processed-files).
 
 
 
-The histogram is a multidimentinal histogram, with all the axis listed
+The stored histograms are multidimensional histograms, with the axes such as:
 ```python
 Hist(
   IntCategory([0, 1, 4, 5, 6], name='flav', label='Genflavour'),# different genflavor, 0 for light, 1 for PU, 2 for c, 3 for b. Always 0 for data.
@@ -354,7 +353,7 @@ hep.histplot(hist1D)
 ```
 ### convert coffea hist to ROOT TH1
 
- `scripts/make_template.py` does the work to convert the coffea hist into 1D/2D ROOT histogram:
+You can use `scripts/make_template.py` to convert the histograms in the coffea files into 1D/2D ROOT histograms:
 
 ```python
 python scripts/make_template.py -i $INPUT_COFFEA --lumi $LUMI_IN_invPB -o $ROOTFILE_NAME -v $VARIABLE -a $HIST_AXIS 
