@@ -16,7 +16,7 @@ from BTVNanoCommissioning.workflows.sf_ttdilep_kin import (
     NanoProcessor as TTdilepKinSFProcessor,
 )
 from BTVNanoCommissioning.workflows.sf_ttsemilep_tnp import (
-    NanoProcessor as TTsemilepTnPSFProcessor
+    NanoProcessor as TTsemilepTnPSFProcessor,
 )
 
 # C-tag
