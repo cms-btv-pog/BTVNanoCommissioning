@@ -113,8 +113,14 @@ class NanoProcessor(processor.ProcessorABC):
         ## HLT
         if self.selectionModifier == "ZB":
             triggers = {
-                "ZeroBias": [15, 45],
+                "ZeroBias": [15, 80],
             }
+            ptmin, ptmax = 15, 80
+        elif self.selectionModifier == "PFJet500":
+            triggers = {
+                "PFJet500": [500, 1e7],
+            }
+            ptmin, ptmax = 500, 1e7
         elif self.selectionModifier == "PFJet":
             triggers = {
                 "PFJet40": [45, 80],
@@ -133,26 +139,28 @@ class NanoProcessor(processor.ProcessorABC):
                 triggers["PFJet80"] = [110, 140]
                 triggers["PFJet110"] = [140, 180]
                 triggers["PFJet140"] = [180, 220]
+            ptmin, ptmax = 45, 1e7
         elif self.selectionModifier == "ZBpPFJet":
             triggers = {
-                "ZeroBias": [15, 45],
-                "PFJet40": [45, 80],
-                "PFJet60": [80, 110],
-                "PFJet80": [110, 180],
+                "ZeroBias": [15, 80],
+                "PFJet40": [80, 110],
+                "PFJet60": [110, 150],
+                "PFJet80": [150, 200],
                 # "PFJet110": [160, 180],
-                "PFJet140": [180, 220],
-                "PFJet200": [220, 300],
-                "PFJet260": [300, 340],
-                "PFJet320": [340, 420],
-                "PFJet400": [420, 470],
-                "PFJet450": [470, 530],
-                "PFJet500": [530, 600],
-                "PFJet550": [600, 1e7],
+                "PFJet140": [220, 280],
+                "PFJet200": [280, 340],
+                "PFJet260": [340, 400],
+                "PFJet320": [400, 480],
+                "PFJet400": [480, 560],
+                "PFJet450": [560, 640],
+                "PFJet500": [640, 720],
+                "PFJet550": [720, 1e7],
             }
             if int(self._year) > 2022:
-                triggers["PFJet80"] = [110, 140]
-                triggers["PFJet110"] = [140, 180]
-                triggers["PFJet140"] = [180, 220]
+                triggers["PFJet80"] = [150, 190]
+                triggers["PFJet110"] = [190, 230]
+                triggers["PFJet140"] = [230, 280]
+            ptmin, ptmax = 15, 1e7
         elif self.selectionModifier == "DiPFJetAve":
             # These act on the minimum pT of the two leading jets
             # Should test effect with average pT of the two leading jets
@@ -167,6 +175,7 @@ class NanoProcessor(processor.ProcessorABC):
                 "DiPFJetAve400": [400, 500],
                 "DiPFJetAve500": [500, 1e7],
             }
+            ptmin, ptmax = 40, 1e7
         elif self.selectionModifier == "DiPFJet_HF":
             triggers = {
                 "DiPFJetAve60_HFJEC": [60, 80],
@@ -180,7 +189,7 @@ class NanoProcessor(processor.ProcessorABC):
                 triggers["DiPFJetAve220_HFJEC"] = [220, 260]
                 triggers["DiPFJetAve260_HFJEC"] = [260, 300]
                 triggers["DiPFJetAve300_HFJEC"] = [300, 1e7]
-
+            ptmin, ptmax = 60, 1e7
         else:
             raise ValueError(
                 self.selectionModifier, "is not a valid selection modifier."
@@ -193,8 +202,8 @@ class NanoProcessor(processor.ProcessorABC):
         ##### Add some selections
         ## Jet cuts
         jet_sel = (
-            (events.Jet.pt >= 15)
-            & (abs(events.Jet.eta) < 5.31)
+            (events.Jet.pt >= ptmin)
+            & (abs(events.Jet.eta) < 2.5)
             # & (events.Jet.jetId >= 4)
         )
 
@@ -212,6 +221,7 @@ class NanoProcessor(processor.ProcessorABC):
             events.Jet, 3
         )  # Make sure that the shape is consistent
 
+        req_leadjet = event_jet[:, 0].pt < ptmax
         req_jet = ak.count(event_jet.pt, axis=1) > 1
         req_dphi = abs(event_jet[:, 0].delta_phi(event_jet[:, 1])) > 2.7
         req_subjet = ak.where(
@@ -219,6 +229,7 @@ class NanoProcessor(processor.ProcessorABC):
             event_jet[:, 2].pt / (0.5 * (event_jet[:, 0] + event_jet[:, 1])).pt < 1.0,
             ak.ones_like(req_jet),
         )
+        req_bal = event_jet[:, 1].pt / event_jet[:, 0].pt > 0.7
 
         req_trig = np.zeros_like(len(events), dtype=bool)
         trigbools = {}
@@ -245,7 +256,7 @@ class NanoProcessor(processor.ProcessorABC):
                 trigbools[trigger] = thistrigreq
                 req_trig = req_trig | thistrigreq
 
-        event_level = event_level & req_jet & req_dphi & req_subjet & req_trig
+        event_level = event_level & req_jet & req_dphi & req_subjet & req_trig & req_bal & req_leadjet
 
         ## MC only: require gen vertex to be close to reco vertex
         if "GenVtx_z" in events.fields:
