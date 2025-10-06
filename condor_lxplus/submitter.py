@@ -198,6 +198,13 @@ if __name__ == "__main__":
     os.mkdir(job_dir)
     os.mkdir(job_dir + "/log")
 
+    # Create output dir
+    if not os.path.exists(args.outputDir):
+        os.makedirs(args.outputDir)
+        print(f"Output directory created: {args.outputDir}")
+    else:
+        print(f"Output directory already exists: {args.outputDir}")
+
     # Handle voms proxy
     proxy_file = get_proxy_path()
     os.system(f"scp {proxy_file} proxy")
