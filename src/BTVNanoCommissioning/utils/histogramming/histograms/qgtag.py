@@ -61,7 +61,7 @@ def get_histograms(axes, **kwargs):
                 axes["syst"],
             ]
         else:
-            obj_axes = [axes["syst"], axes["flav"]]
+            obj_axes = [axes["syst"], axes["pflav"]]
 
         for tagger in taggers:
             if tagger not in jet_fields:
