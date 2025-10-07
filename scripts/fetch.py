@@ -224,6 +224,8 @@ def get_xrootd_sites_map():
         json.dump(sites_xrootd_access, open(".sites_map.json", "w"))
 
     return json.load(open(".sites_map.json"))
+
+
 if args.DAS_campaign == "auto":
     DAS_campaign_map = {
         "Summer22_2022": "Run2022C*Sep2023,Run2022D*Sep2023,Run3Summer22NanoAODv12-130X",
@@ -2038,7 +2040,9 @@ def main(args):
                         dsname, file_paths = future.result()
                         if dsname and file_paths:
                             if dsname in fdict:
-                                print(f"⚠️ Accumulating files for {dsname} (adding {len(file_paths)} files to existing {len(fdict[dsname])} files)")
+                                print(
+                                    f"⚠️ Accumulating files for {dsname} (adding {len(file_paths)} files to existing {len(fdict[dsname])} files)"
+                                )
                                 fdict[dsname].extend(file_paths)
                             else:
                                 fdict[dsname] = file_paths

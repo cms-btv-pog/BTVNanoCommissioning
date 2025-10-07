@@ -20,75 +20,90 @@ def validate(file):
     except:
         print("Corrupted file: {}".format(file))
         return file
-    
+
+
 def validate_dataset_structure(fileset):
     """Check dataset files and return a filtered fileset with only valid files."""
     import uproot
     import logging
     from copy import deepcopy
-    
+
     # Critical branches that must be present
     required_branches = [
-        "Jet_pt", "Muon_pt", "Electron_pt", 
-        "PV_npvsGood", "PFMET_pt", 
-        "Jet_eta", "Jet_phi",
-        "Muon_eta", "Muon_phi", "SV_pt"
+        "Jet_pt",
+        "Muon_pt",
+        "Electron_pt",
+        "PV_npvsGood",
+        "PFMET_pt",
+        "Jet_eta",
+        "Jet_phi",
+        "Muon_eta",
+        "Muon_phi",
+        "SV_pt",
     ]
-    
+
     filtered_fileset = deepcopy(fileset)
     all_files_invalid = True
-    
+
     # Check each sample in the fileset
     for sample_name, files in fileset.items():
         valid_files = []
-        
+
         # Check each file in the sample
         for filename in files:
             try:
-                #print(f"Validating file: {filename}")
+                # print(f"Validating file: {filename}")
                 file = uproot.open(filename)
                 events = file["Events"]
                 branches = set(events.keys())
-                
+
                 # Check branch count
                 if len(branches) < 20:
-                    print(f"WARNING: File has too few branches ({len(branches)}): {filename}")
-                    #print(f"Branches present: {branches}")
+                    print(
+                        f"WARNING: File has too few branches ({len(branches)}): {filename}"
+                    )
+                    # print(f"Branches present: {branches}")
                     continue
-                
+
                 # Check required branches
                 missing = [b for b in required_branches if b not in branches]
                 if missing:
-                    print(f"WARNING: File missing critical branches {missing}: {filename}")
+                    print(
+                        f"WARNING: File missing critical branches {missing}: {filename}"
+                    )
                     continue
-                    
+
                 # Check event count
                 if len(events) < 10:
-                    print(f"WARNING: File has too few events ({len(events)}): {filename}")
+                    print(
+                        f"WARNING: File has too few events ({len(events)}): {filename}"
+                    )
                     continue
-                
+
                 # File passed all checks
                 valid_files.append(filename)
                 all_files_invalid = False
-                #print(f"File validation successful: {filename}")
-                
+                # print(f"File validation successful: {filename}")
+
             except Exception as e:
                 print(f"ERROR validating file: {filename}, {e}")
                 continue
-        
+
         # Update the filtered fileset with valid files
         if valid_files:
             filtered_fileset[sample_name] = valid_files
         else:
             # Remove the sample if no valid files
             del filtered_fileset[sample_name]
-    
+
     # Summary
     if all_files_invalid:
         print("WARNING: All files in dataset failed validation!")
         return None
     else:
-        print(f"Dataset validation complete. {len(filtered_fileset)} valid samples remaining.")
+        print(
+            f"Dataset validation complete. {len(filtered_fileset)} valid samples remaining."
+        )
         return filtered_fileset
 
 
@@ -470,13 +485,14 @@ if __name__ == "__main__":
         args.noHist,
         args.chunk,
     )
-    
+
     filtered_sample_dict = validate_dataset_structure(sample_dict)
 
     if filtered_sample_dict is None:
         print(f"Creating empty output file for incompatible dataset: {args.samplejson}")
-        # Create minimal empty output 
+        # Create minimal empty output
         from coffea.util import save
+
         empty_output = {}  # Minimal dict output
         outname = os.path.join(args.outputdir, args.output)
         os.makedirs(os.path.dirname(outname), exist_ok=True)

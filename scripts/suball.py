@@ -275,13 +275,11 @@ if __name__ == "__main__":
                         or args.limit_MC
                     ):
                         runner_config += " --limit 50"
-                        limit_added = True  
+                        limit_added = True
                         print(f"⚠️ Running with 50 files limit for MC samples")
-                    elif (
-                        args.limit_MC_Wc
-                    ):
+                    elif args.limit_MC_Wc:
                         runner_config += " --limit 100"
-                        limit_added = True  
+                        limit_added = True
                         print(f"⚠️ Running with 100 files limit for MC samples")
                 runner_config = runner_config_required + runner_config
                 if args.debug:

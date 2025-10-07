@@ -245,11 +245,17 @@ for index, discr in enumerate(var_set):
     if "syst" in collated["mc"][discr].axes.name:
         # Get list of available systematics
         systlist = [
-            collated["mc"][discr].axes[collated["mc"][discr].axes.name.index("syst")].value(i)
-            for i in range(collated["mc"][discr].axes[collated["mc"][discr].axes.name.index("syst")].size)
+            collated["mc"][discr]
+            .axes[collated["mc"][discr].axes.name.index("syst")]
+            .value(i)
+            for i in range(
+                collated["mc"][discr]
+                .axes[collated["mc"][discr].axes.name.index("syst")]
+                .size
+            )
         ]
         print(f"Available systematics: {systlist}")
-        
+
         # Choose the appropriate systematic name
         if "nominal" in systlist:
             allaxis["syst"] = "nominal"
@@ -258,8 +264,10 @@ for index, discr in enumerate(var_set):
         elif len(systlist) > 0:
             # Fallback to first available systematic
             allaxis["syst"] = systlist[0]
-            print(f"Warning: 'nominal' not found in systematics, using '{systlist[0]}' instead")
-        
+            print(
+                f"Warning: 'nominal' not found in systematics, using '{systlist[0]}' instead"
+            )
+
         SF_axis = allaxis.copy()
         noSF_axis = allaxis.copy()
         if "noSF" in systlist:
