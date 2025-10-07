@@ -25,7 +25,6 @@ def get_histograms(axes, **kwargs):
         n_axes = [axes["syst"], axes["n"]]
         npv_axes = [axes["syst"], axes["npv"]]
 
-
     if include_npv:
         hists["npv"] = Hist.Hist(*npv_axes, Hist.storage.Weight())
 
