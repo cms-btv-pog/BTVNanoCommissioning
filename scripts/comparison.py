@@ -1,12 +1,12 @@
 import numpy as np
 import argparse, os, arrow, glob, json, re
-from coffea.util import load
 import matplotlib.pyplot as plt
-from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
+from matplotlib.offsetbox import AnchoredText
+from coffea.util import load
 from BTVNanoCommissioning.workflows import workflows
-from BTVNanoCommissioning.helpers.definitions import definitions, axes_name
+from BTVNanoCommissioning.helpers.definitions import get_definitions, axes_name
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
     markers,
@@ -32,7 +32,7 @@ custom_palette = [
 plt.rcParams["axes.prop_cycle"] = plt.cycler(color=custom_palette)
 from BTVNanoCommissioning.helpers.xs_scaler import collate
 
-bininfo = definitions()
+bininfo = get_definitions()
 parser = argparse.ArgumentParser(description="make comparison for different campaigns")
 parser.add_argument(
     "-p",

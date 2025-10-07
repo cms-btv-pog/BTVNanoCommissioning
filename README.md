@@ -19,7 +19,7 @@ This framework is based on [coffea processor](https://coffeateam.github.io/coffe
 
 The minimum requirement commands are shown in follow, specified the selections, datataset, campaign and year
 ```
-python runner.py --workflow ttsemilep_sf --json metadata/test_bta_run3.json --campaign Summer22EERun3 --year 2022
+python runner.py --workflow example --json metadata/test_bta_run3.json --campaign Summer23 --year 2023
 ```
 - Detailed documentation [here](https://btvnanocommissioning.readthedocs.io/en/latest/)
 - To running the commissioning task or producing the template: go to [Preparation for commissioning/SFs tasks](https://btvnanocommissioning.readthedocs.io/en/latest/user.html)
@@ -64,7 +64,7 @@ conda/micromamba activate  /eos/home-m/milee/miniforge3/envs/btv_coffea
 git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
 # Once the environment is set up, compile the python package:
 pip install -e .
-pip install -e .[dev, doc] # for developer
+pip install -e .[dev,doc] # for developer
 ```
 
 You can still install additional packages itself by `pip install $PACKAGE`

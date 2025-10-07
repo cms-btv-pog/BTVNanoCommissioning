@@ -3,7 +3,10 @@ from coffea import processor
 from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.utils.selection import jet_cut
 from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi, PFCand_link
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writter,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.correction import (
@@ -53,17 +56,24 @@ class NanoProcessor(processor.ProcessorABC):
 
     def process(self, events):
         events = missing_branch(events)
-        shifts = common_shifts(self, events)
+        vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
-            self.process_shift(update(events, collections), name)
+            self.process_shift(update(vetoed_events, collections), name)
             for collections, name in shifts
         )
 
     def process_shift(self, events, shift_name):
         isRealData = not hasattr(events, "genWeight")
         dataset = events.metadata["dataset"]
-        output = {} if self.noHist else histogrammer(events, "QCD_smu")
+
+        output = {}
+        if not self.noHist:
+            output = histogrammer(
+                events.Jet.fields,
+                obj_list=["mujet", "hl", "soft_l"],
+                hist_collections=["common", "fourvec", "QCD_smu"],
+            )
 
         if isRealData:
             output["sumw"] = len(events)

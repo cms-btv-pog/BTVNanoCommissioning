@@ -12,6 +12,7 @@ def array_writer(
     systname,  # name of systematic shift
     dataset,  # dataset name
     isRealData,  # boolean
+    out_dir_base="",  # string
     remove=[
         "SoftMuon",
         "MuonJet",
@@ -50,7 +51,7 @@ def array_writer(
     othersMC=["Pileup_nTrueInt", "Pileup_nPU"],  # other fields, for MC only
     empty=False,
 ):
-    if not isRealData and systname != ["nominal"]:
+    if weights is not None:
         pruned_event["weight"] = weights.weight()
         for ind_wei in weights.weightStatistics.keys():
             pruned_event[f"{ind_wei}_weight"] = weights.partial_weight(
@@ -92,7 +93,7 @@ def array_writer(
 
     # Write to root files
     print("Branches to write:", out_branch)
-    outdir = f"{processor_class.name}/{systname[0]}/{dataset}/"
+    outdir = f"{out_dir_base}{processor_class.name}/{systname[0]}/{dataset}/"
     os.system(f"mkdir -p {outdir}")
 
     with uproot.recreate(

@@ -9,6 +9,7 @@ import time
 import re
 from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.utils.sample import predefined_sample
+from BTVNanoCommissioning.utils.xrootdtools import get_xrootd_sites_map
 
 # Adapt some developments from Andrey Pozdnyakov in CoffeaRunner https://github.com/cms-rwth/CoffeaRunner/blob/master/filefetcher/fetch.py
 parser = argparse.ArgumentParser(
@@ -98,7 +99,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--DAS_campaign",
-    help="campaign info, specifying dataset name in DAS. If you are running with ```from_workflow`` option, please do ```data_camapgin,mc_campaign``` split by ,",
+    help="campaign info, specifying dataset name in DAS. If you are running with ```from_workflow`` option, please do ```campaign1,campaign2,campaign3``` split by `,`. E.g. `--DAS_campaign Run2022C*Sep2023,Run2022D*Sep2023,Run3Summer22NanoAODv12-130X`",
     default=None,
     type=str,
 )
@@ -223,6 +224,25 @@ def get_xrootd_sites_map():
         json.dump(sites_xrootd_access, open(".sites_map.json", "w"))
 
     return json.load(open(".sites_map.json"))
+if args.DAS_campaign == "auto":
+    DAS_campaign_map = {
+        "Summer22_2022": "Run2022C*Sep2023,Run2022D*Sep2023,Run3Summer22NanoAODv12-130X",
+        "Summer22EE_2022": "Run2022E*Sep2023,Run2022F*Sep2023,Run2022G*Sep2023,Run3Summer22EENanoAODv12-130X",
+        "Summer23_2023": "Run2023C*Sep2023,Run3Summer23NanoAODv12",
+        "Summer23BPix_2023": "Run2023D*Sep2023,Run3Summer23BPixNanoAODv12",
+        "Summer24_2024": "Run2024*MINIv6,RunIII2024Summer24NanoAODv15",
+    }
+    key = f"{args.campaign}_{args.year}"
+    if key in DAS_campaign_map:
+        args.DAS_campaign = DAS_campaign_map[key]
+        print(
+            f"Automatically selected DAS_campaign {args.DAS_campaign} based on {key}."
+        )
+    else:
+        raise (
+            f"Cannot automatically assign DAS_campaign based on {key}. Valid keys:",
+            list(DAS_campaign_map.keys()),
+        )
 
 
 def _get_pfn_for_site(path, rules):
@@ -1721,7 +1741,7 @@ def validate(file):
             return fin["Events"].num_entries
         except:
             print("retries", n_tries, file)
-            n_tries += n_tries
+            n_tries += 1
     if not_able_open:
         return f"FailedRetries: {file}"
 
@@ -1870,10 +1890,7 @@ def main(args):
             for sample in predefined_sample[args.from_workflow].keys():
                 lines += predefined_sample[args.from_workflow][sample]
             args.input = args.from_workflow + "_predef"
-            data_campaign, mc_campaign = (
-                args.DAS_campaign.split(",")[0],
-                args.DAS_campaign.split(",")[1],
-            )
+            campaign_list = args.DAS_campaign.split(",")
 
         if args.DAS_campaign is None:
             raise ("Please provide the campaign info when input dataset")
@@ -1884,42 +1901,43 @@ def main(args):
             l = l.replace("\n", "")
             # read campaigns from two inputs
             if args.from_workflow is not None:
-                args.DAS_campaign = (
-                    data_campaign
-                    if l in predefined_sample[args.from_workflow]["data"]
-                    else mc_campaign
-                )
-
-            dataset = direct_das_query(l, args.DAS_campaign)
+                dataset = []
+                for campaign in campaign_list:
+                    dataset.extend(direct_das_query(l, campaign))
 
             if not dataset:
                 print(
-                    f"WARNING: No datasets found for {l} with campaign {args.DAS_campaign}"
+                    f"WARNING: No datasets found for {l} among campaigns {campaign_list}\n"
                 )
                 continue  # Skip this dataset if query fails
 
-            if dataset[0] == "":
-                print(l, "not Found! List all campaigns")
-                dataset = direct_das_query(l, args.DAS_campaign)
-
-                if not dataset:
-                    print(
-                        f"WARNING: No datasets found for {l} with campaign {args.DAS_campaign}"
+            if len(dataset) > 1:
+                while True:
+                    print(f"Found multiple datasets for {l}:")
+                    for i, d in enumerate(dataset):
+                        print(f"  {i+1}: {d}")
+                    campaigns = [d.split("/")[2] for d in dataset]
+                    campaign_input = input(
+                        f"{l} is which campaign? [Enter integer corresponding to above list. Use ',' for multiple]: "
                     )
-                    continue  # Skip this dataset if query fails
-                if dataset[0] == "":
-                    print(f"{l} is not a valid dataset")
-                    continue
-                campaigns = [
-                    d.split("/")[2]
-                    for d in dataset
-                    if "CMSSW" not in d and "Tier0" not in d and "ECAL" not in d
-                ]
-                args.DAS_campaign = input(f"which campaign? \n {campaigns} \n")
-                dataset = direct_das_query(l, args.DAS_campaign)
+                    camp_idxs = []
+                    for camp_idx in campaign_input.split(","):
+                        try:
+                            idx = int(camp_idx) - 1
+                            campaigns[idx]
+                            camp_idxs.append(idx)
+                        except:
+                            print(f"{camp_idx} is not a valid input. Try again!\n")
+                            continue
+                    break
+
+                dataset = []
+                for idx in camp_idxs:
+                    dataset.extend(direct_das_query(l, campaigns[idx]))
 
                 if dataset and not any("ERROR:" in d for d in dataset):
-                    outf.write(dataset[0] + "\n")
+                    for d in dataset:
+                        outf.write(d + "\n")
                 else:
                     print(f"WARNING: Skipping invalid dataset result for {l}")
                 # continue
@@ -1953,6 +1971,8 @@ def main(args):
                     outf.write(dataset[0] + "\n")
                 else:
                     print(f"WARNING: Skipping invalid dataset result for {l}")
+
+            print()
         outf.close()
     ## If put the path
     if args.from_path:
