@@ -243,13 +243,33 @@ for index, discr in enumerate(var_set):
         SF_axis = allaxis
         noSF_axis = allaxis
     if "syst" in collated["mc"][discr].axes.name:
-        allaxis["syst"] = "nominal"
-        SF_axis = allaxis
-        noSF_axis = allaxis
+        # Get list of available systematics
         systlist = [
-            collated["mc"][discr].axes[0].value(i)
-            for i in range(collated["mc"][discr].axes[0].size)
+            collated["mc"][discr]
+            .axes[collated["mc"][discr].axes.name.index("syst")]
+            .value(i)
+            for i in range(
+                collated["mc"][discr]
+                .axes[collated["mc"][discr].axes.name.index("syst")]
+                .size
+            )
         ]
+        print(f"Available systematics: {systlist}")
+
+        # Choose the appropriate systematic name
+        if "nominal" in systlist:
+            allaxis["syst"] = "nominal"
+        elif "SF" in systlist:  # For ctag_Wc_sf workflow
+            allaxis["syst"] = "SF"
+        elif len(systlist) > 0:
+            # Fallback to first available systematic
+            allaxis["syst"] = systlist[0]
+            print(
+                f"Warning: 'nominal' not found in systematics, using '{systlist[0]}' instead"
+            )
+
+        SF_axis = allaxis.copy()
+        noSF_axis = allaxis.copy()
         if "noSF" in systlist:
             noSF_axis["syst"] = "noSF"
 

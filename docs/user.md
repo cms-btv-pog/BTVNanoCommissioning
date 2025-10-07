@@ -11,6 +11,8 @@ All the steps are summarized in the [`suball.py`](#all-in-one-script--scriptssub
 python scripts/suball.py --scheme ${SCHEME_FOR_STUDY} --campaign ${CAMPAIGN_FOR_SF} --year ${YEAR}  --DAS_campaign "$DATA_CAMPAIGN_RGX,$MC_CAMPAIGN_RGX"
 #Example with 2023 Summer23 campaign
 python scripts/suball.py --scheme default_comissioning --campaign Summer23 --year 2023  --DAS_campaign "*Run2023D*Sep2023*,*Run3Summer23BPixNanoAODv12-130X*" 
+#Example with 2024 Summer24 campaign in NanoAODv15
+python scripts/suball.py --scheme Validation --campaign Summer24 --year 2024  --DAS_campaign "*Run2024*BTV*,*Summer24NanoAODv15-BTV*" 
 ```
 This wrap up the steps mentioned above as a streamline to obtained the required info
 
@@ -24,7 +26,7 @@ Use `fetch.py` in folder `scripts/` to obtain your samples json files for the pr
 The fetch script reads the predefine data & MC samples dataset name and output the json file to `metadata/$CAMPAIGN/`, but to find the exact dataset for BTV studies, we usually need to specify the `DAS_campaign`.
 
 ```
-python scripts/fetch.py -c {campaign} --year {args.year}  --from_workflow {wf} --DAS_campaign {DAS_campaign} {overwrite} 
+python scripts/fetch.py -c {campaign} --year {args.year}  --from_workflow {wf} --DAS_campaign {DAS_campaign} {overwrite} {--executor futures}
 # campaign :  the campaign name like Summer23,Winter22
 # year : data taking years 2022/2023...
 # wf: workflow name like ttdilep_sf, ctag_Wc_sf
@@ -40,6 +42,19 @@ Do not make the file list greater than 4k files to avoid scaleout issues in vari
 :::{tip}
 If `gfal-ls` does not work on your machine, reset the gfal-python with `GFAL_PYTHONBIN=/usr/bin/python3`.
 :::
+
+<details>
+<summary><strong>Quick exercise — fetch example (Summer24)</strong></summary>
+
+Try running the following command:
+```python 
+python scripts/fetch.py -c Summer24 --year 2024 -wf ttdilep_sf --DAS_campaign "*Run2024*-BTV*,*Summer24NanoAODv15-BTV*" --skipvalidation --overwrite 
+```
+If you need more information, please run with the `--verbose` flag.
+Can you spot the difference if you run with `--executor futures`?
+Also try out a different workflow, for example, `ctag_DY_sf`
+
+</details>
 
 ## 1. Correction files configurations & add new correction files (Optional)
 
@@ -139,6 +154,40 @@ The official correction files collected in [jsonpog-integration](https://gitlab.
 </p>
 </details>
 
+<details>
+<summary><strong>Quick exercise — corrections example (Summer24)</strong></summary>
+
+Try leaving out lepton scale factors and JME corrections here:
+```python
+"Summer24": {
+        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
+        "PU": "PU_weights_Summer24.histo.root",
+        "JME": {                ###<--- Try running without it
+            # TODO: JER are a placeholder for now (July 2025)
+            "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1",
+            "Run2024C": "Summer24Prompt24_V1",
+            "Run2024D": "Summer24Prompt24_V1",
+            "Run2024E": "Summer24Prompt24_V1",
+            "Run2024F": "Summer24Prompt24_V1",
+            "Run2024G": "Summer24Prompt24_V1",
+            "Run2024H": "Summer24Prompt24_V1",
+            "Run2024I": "Summer24Prompt24_V1",
+        },
+        "jetveto": {"Summer24Prompt24_RunBCDEFGHI_V1": "jetvetomap"},
+        "LSF": {                  ###<--- Try running without it
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+            "ele_Reco 2024 Electron-ID-SF": "",
+            "ele_ID 2024 Electron-ID-SF": "wp80iso",
+        },
+        "muonSS": "",
+        "electronSS": ["EGMScale_Compound_Ele_2024", "EGMSmearAndSyst_ElePTsplit_2024"],
+    }
+```
+Can you spot the difference in distributions?
+
+</details>
+
 
 ## 2. Run the workflow to get coffea files
 
@@ -205,7 +254,16 @@ python runner.py --wf {wf} --json metadata/{args.campaign}/{types}_{args.campaig
 
 </p>
 </details>
+<details>
+<summary><strong>Quick exercise — runner example (Summer24)</strong></summary>
 
+Try running the following command:
+```python 
+python runner.py --wf ctag_DY_sf --json metadata/Summer24/data_Summer24_2024_ctag_DY_sf.json --overwrite --campaign Summer24 --year 2024 --outputdir Commissioning_tutorial/ 
+```
+If you make a test run to see if the code works properly, please add `--limit 1` as a flag. Otherwise, try applying scale out on some cluster.
+
+</details>
 
 ## 3. Dump processed information to obtain luminoisty and processed files
 
@@ -226,7 +284,16 @@ python scripts/dump_processed.py -t all -c INPUT_COFFEA --json ORIGINAL_JSON_INP
 #   -j JSONS, --jsons JSONS
 #                         Original input json files, splitted by ,. Wildcard option * available as well.
 ```
+<details>
+<summary><strong>Quick exercise — postprocessing example (Summer24)</strong></summary>
 
+Try running the following command:
+```python 
+python scripts/dump_processed.py -c Commissioning_tutorial/hists_ctag_DY_sf_data_Summer24_2024_ctag_DY_sf/hists_ctag_DY_sf_data_Summer24_2024_ctag_DY_sf.coffea -n ctag_DY_sf_2024 -t lumi 
+```
+If you encounter any problems when running the script, make sure you activated [BRIL](https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart#Getting_started_without_requirin) environment properly! 
+
+</details>
 ## 4. Obtain data/MC plots 
 
 We can obtain data/MC plots from coffea via the `scripts/plotdataMC.py` plotting script. For other possible plotting scripts see [plotting scripts](scripts.md#Plotting-code).
@@ -275,7 +342,16 @@ python scripts/plotdataMC.py -i "test*.coffea" --lumi 41500 -p ttdilep_sf -v z_m
 </p>
 </details>
 
+<details>
+<summary><strong>Quick exercise — plotting example (Summer24)</strong></summary>
 
+Try running the following command:
+```python 
+python scripts/plotdataMC.py -i Commissioning_tutorial/hists_ctag_DY_sf_data_Summer24_2024_ctag_DY_sf/hists_ctag_DY_sf_data_Summer24_2024_ctag_DY_sf.coffea,Commissioning_tutorial/hists_ctag_DY_sf_MC_Summer24_2024_ctag_DY_sf/hists_ctag_DY_sf_MC_Summer24_2024_ctag_DY_sf.coffea --lumi YOUR_LUMI -p ctag_DY_sf -v jet0_pt
+```
+Run `-v all` if you want a full collection of variables. Try exploring the way to present your plots by splitting them by sample or making them log-scaled
+
+</details>
 
 ## Reading coffea `hist`  
 
