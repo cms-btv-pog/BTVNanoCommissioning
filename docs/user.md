@@ -291,7 +291,7 @@ Try running the following command:
 ```python 
 python scripts/dump_processed.py -c Commissioning_tutorial/hists_ctag_DY_sf_data_Summer24_2024_ctag_DY_sf/hists_ctag_DY_sf_data_Summer24_2024_ctag_DY_sf.coffea -n ctag_DY_sf_2024 -t lumi 
 ```
-Make sure you activated [BRIL](https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart#Getting_started_without_requirin) environment properly before running the command. 
+If you encounter any problems when running the script, make sure you activated [BRIL](https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart#Getting_started_without_requirin) environment properly! 
 
 </details>
 ## 4. Obtain data/MC plots 
