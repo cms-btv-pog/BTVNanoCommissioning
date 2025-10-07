@@ -9,6 +9,7 @@ def get_histograms(axes, **kwargs):
 
     include_osss = kwargs.get("include_osss", False)
 
+    include_npv = kwargs.get("include_npv", True)
     include_njet = kwargs.get("include_njet", True)
     include_nmujet = kwargs.get("include_nmujet", False)
     include_nsoftmu = kwargs.get("include_nsoftmu", False)
@@ -19,8 +20,14 @@ def get_histograms(axes, **kwargs):
 
     if include_osss:
         n_axes = [axes["syst"], axes["osss"], axes["n"]]
+        npv_axes = [axes["syst"], axes["osss"], axes["npv"]]
     else:
         n_axes = [axes["syst"], axes["n"]]
+        npv_axes = [axes["syst"], axes["npv"]]
+
+
+    if include_npv:
+        hists["npv"] = Hist.Hist(*npv_axes, Hist.storage.Weight())
 
     if include_njet:
         hists["njet"] = Hist.Hist(*n_axes, Hist.storage.Weight())
