@@ -294,6 +294,7 @@ python scripts/dump_processed.py -c Commissioning_tutorial/hists_ctag_DY_sf_data
 If you encounter any problems when running the script, make sure you activated [BRIL](https://twiki.cern.ch/twiki/bin/viewauth/CMS/BrilcalcQuickStart#Getting_started_without_requirin) environment properly! 
 
 </details>
+
 ## 4. Obtain data/MC plots 
 
 We can obtain data/MC plots from coffea via the `scripts/plotdataMC.py` plotting script. For other possible plotting scripts see [plotting scripts](scripts.md#Plotting-code).

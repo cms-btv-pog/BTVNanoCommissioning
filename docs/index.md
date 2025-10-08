@@ -30,6 +30,7 @@ Currently the available workflows are summarized
 - Framework structure [overview](./structure.md)
 - Scale out sites and [options](./scaleout.md)
 - Available selections [phase spaces](./wf.md)
+- Available scale factor [modules](./sfmodule.md)
 - Useful scripts: plotting/root template conversion [scripts](./scripts.md)
 - Automation [developments](./auto.md)
 :::
@@ -43,6 +44,7 @@ developer.md
 structure.md
 scaleout.md
 wf.md
+sfmodule.md
 scripts.md
 auto.md
 api.rst
