@@ -1,8 +1,10 @@
-## Documentation for SF modules
+# SF module details
 
 This page is under construction!
 
-### Dileptonic $t\bar{t}$ phase space: b-tag SFs
+## b tagging scale factors (SFb)
 
-### Semileptonic $t\bar{t}$ phase space: b-tag SFs
+### Dileptonic $t\bar{t}$ phase space
+
+### Semileptonic $t\bar{t}$ phase space
 
