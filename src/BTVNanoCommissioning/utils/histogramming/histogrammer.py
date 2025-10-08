@@ -271,6 +271,8 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 )
             elif "njet" == histname:
                 output["njet"].fill(syst, pruned_ev.njet, weight=weight)
+            elif "npv" == histname:
+                output["npv"].fill(syst, pruned_ev.PV.npvsGood, weight=weight)
             # Jet kinematics & deltaR between jet and lepton
             elif (
                 "jet" in histname and "posl" not in histname and "negl" not in histname
