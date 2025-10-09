@@ -53,7 +53,7 @@ python scripts/fetch.py -c Summer24 --year 2024 -wf ttdilep_sf --DAS_campaign "*
 If you need more information, please run with the `--verbose` flag.
 Can you spot the difference if you run with `--executor futures`?
 Also try out a different workflow, for example, `ctag_DY_sf`
-
+See some samples missing? Since 2024 DY samples are lepton flavor split, so you would have to replace the present samples in the `src/BTVNanoCommissioning/utils/sample.py` by the current: `"DYto2E-4Jets_Bin-MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",               "DYto2Mu-4Jets_Bin-MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8"`. Please, add them respectively to the `src/BTVNanoCommissioning/helpers/xsection.py`
 </details>
 
 ## 1. Correction files configurations & add new correction files (Optional)
