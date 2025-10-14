@@ -18,7 +18,7 @@ correction_config = {
             "mu_Iso NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta": "RunBCDEF_MuISOSF.histo.root",
         },
     },
-    "2017_UL": {
+    "2017-UL": {
         "lumiMask": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.txt",
         "PU": None,
         "JME": "jec_compiled.pkl.gz",

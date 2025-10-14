@@ -2,11 +2,35 @@ import awkward as ak
 import numpy as np
 from coffea import processor
 import psutil, os, gzip, importlib, cloudpickle
-import uproot
 from coffea.jetmet_tools import JECStack, CorrectedJetsFactory, CorrectedMETFactory
 from coffea.lookup_tools import extractor
 
 import collections
+
+
+from pathlib import Path
+
+
+def campaign_map():
+    dirs = [
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/"),
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/"),
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/"),
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/"),
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM"),
+    ]
+
+    subdirs = [p.name for d in dirs if d.is_dir() for p in d.iterdir() if p.is_dir()]
+    dirnames = {}
+    for i in range(len(subdirs)):
+        if "Run3" in subdirs[i]:
+            dirnames[subdirs[i].split("-")[2]] = subdirs[i]
+        elif "Run2" in subdirs[i]:
+            dirnames[subdirs[i].split("-")[1] + "-UL"] = subdirs[i]
+        else:
+            raise ValueError("Unknown campaign name")
+
+    return dirnames
 
 
 def memory_usage_psutil():
