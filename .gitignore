@@ -8,6 +8,7 @@
 docs/_build/
 runinfo/
 plot/
+plots*/
 src/BTVNanoCommissioning/version.py
 src/BTVNanoCommissioning.egg-info/
 __pycache__

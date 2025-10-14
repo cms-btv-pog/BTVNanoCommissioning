@@ -42,7 +42,7 @@ parser.add_argument(
     "--input",
     type=str,
     default="",
-    help="input coffea files (str), splitted different files with ','. Wildcard option * available as well.",
+    help="input coffea files (str), split different files with ','. Wildcard option * available as well.",
 )
 parser.add_argument("--log", action="store_true", help="log on y axis")
 parser.add_argument(
@@ -61,7 +61,7 @@ parser.add_argument(
 parser.add_argument(
     "--xlabel",
     type=str,
-    help="rename the label of variables to plot, splitted by ,.  Wildcard option * NOT available here",
+    help="rename the label of variables to plot, split by ,.  Wildcard option * NOT available here",
 )
 parser.add_argument(
     "--ylabel", type=str, default=None, help="Modify y-axis label of plot"
@@ -101,19 +101,60 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-if len(args.input.split(",")) > 1:
-    allinps = []
-    for inp in args.input.split(","):
-        if "*" in inp:
-            allinps.extend(glob.glob(inp))
-        else:
-            allinps.append(inp)
-    output = {i: load(i) for i in allinps}
-elif "*" in args.input:
-    files = glob.glob(args.input)
-    output = {i: load(i) for i in files}
-else:
-    output = {args.input: load(args.input)}
+inputs = args.input.split(",")
+
+output = {}
+for inp in inputs:
+    if not os.path.exists(inp) and "*" not in inp:
+        print(f"{inp} does not exist!")
+        sys.exit(1)
+    
+    files = glob.glob(inp) 
+
+    for i in files:
+        if ".coffea" not in i:
+            print(f"{i} is not a valid coffea file")
+            sys.exit(1)
+        fdict = load(i)
+        for sample in fdict:
+            if sample not in output:
+                output[sample] = fdict[sample]
+            else:
+                for key in fdict[sample]:
+                    if key not in output[sample]:
+                        continue
+                    output[sample][key] += fdict[sample][key]
+
+# if len(args.input.split(",")) > 1:
+    # allinps = []
+    # for inp in args.input.split(","):
+        # if "*" in inp:
+            # allinps.extend(glob.glob(inp))
+        # else:
+            # allinps.append(inp)
+    # output = {i: load(i) for i in allinps}
+# elif "*" in args.input:
+    # files = glob.glob(args.input)
+    # output = {}
+    # for i in files:
+        # if ".coffea" not in i:
+            # print(f"{i} is not a valid coffea file")
+            # sys.exit(1)
+        # fdict = load(i)
+        # for sample in fdict:
+            # if sample not in output:
+                # output[sample] = fdict[sample]
+            # else:
+                # for key in fdict[sample]:
+                    # if key not in output[sample]:
+                        # continue
+                    # output[sample][key] += fdict[sample][key]
+
+    # # output = {i: load(i) for i in files}
+# else:
+    # output = {args.input: load(args.input)}
+
+print(output.keys())
 output = scaleSumW(output, args.lumi)
 mergemap = {}
 ## create merge map from sample set/data MC
@@ -140,6 +181,10 @@ collated = {
     key: value for key, value in collated.items() if isinstance(collated[key], dict)
 }
 print(collated.keys())
+flav_set = ["udsg", "pu", "c", "b"]
+
+if "qgtag" in args.phase:
+    flav_set = ["ud", "s", "c", "b", "g", "other"]
 
 ### input text settings
 input_txt = "placeholder"
@@ -161,6 +206,9 @@ elif "semilep" in args.phase:
 elif "dilep" in args.phase:
     input_txt = r"t$\bar{t}$ dileptonic"
     nj = 2
+elif "dijet" in args.phase:
+    input_txt = "QCD dijet"
+
 if (
     "njet" in args.variable.split(",")
     or "nbjet" in args.variable.split(",")
@@ -175,6 +223,8 @@ elif "QCD" == args.phase:
     input_txt = input_txt + ""
 elif "ttdilep_sf" == args.phase:
     input_txt = input_txt + " (e$\mu$)"
+elif "qgtag" in args.phase:
+    pass
 else:
     input_txt = input_txt + " ($\mu$)"
 if "ctag" in args.phase and "DY" not in args.phase:
@@ -330,7 +380,7 @@ for index, discr in enumerate(var_set):
                 continue
             elif args.split == "sample_flav" and sample == "mc":
                 continue
-            for i, t in enumerate(["udsg", "pu", "c", "b"]):
+            for i, t in enumerate(flav_set):
                 splitflav_axis["flav"] = i
                 splitflav_stack.append(collated[sample][discr][splitflav_axis])
                 if args.split == "flavor":
@@ -351,6 +401,7 @@ for index, discr in enumerate(var_set):
             yerr=True,
             ax=ax,
             flow=args.flow,
+            sort="y",
             **color_config,
         )
         hep.histplot(
@@ -361,6 +412,7 @@ for index, discr in enumerate(var_set):
             yerr=True,
             ax=ax,
             flow=args.flow,
+            sort="y"
         )
         hep.histplot(
             collated["data"][discr][noSF_axis],
@@ -371,6 +423,7 @@ for index, discr in enumerate(var_set):
             ax=ax,
             xerr=do_xerr,
             flow=args.flow,
+            sort="y"
         )
         hmc = collated["mc"][discr][SF_axis]
         MCerrorband(hmc, ax=ax, flow=args.flow)  # stat. unc. errorband
@@ -420,7 +473,7 @@ for index, discr in enumerate(var_set):
                 continue
             elif args.split == "sample_flav" and sample == "mc":
                 continue
-            for i, t in enumerate(["udsg", "pu", "c", "b"]):
+            for i, t in enumerate(flav_set):
                 splitflav_axis["flav"] = i
                 splitflav_stack.append(collated[sample][discr][splitflav_axis])
                 if args.split == "flavor":
@@ -440,6 +493,7 @@ for index, discr in enumerate(var_set):
             yerr=True,
             ax=ax,
             flow=args.flow,
+            sort="y",
             **color_config,
         )
         hep.histplot(
@@ -451,6 +505,7 @@ for index, discr in enumerate(var_set):
             ax=ax,
             xerr=do_xerr,
             flow=args.flow,
+            sort="y"
         )
         hmc = collated["mc"][discr][noSF_axis]
         MCerrorband(hmc, ax=ax, flow=args.flow)  # stat. unc. errorband
@@ -472,7 +527,7 @@ for index, discr in enumerate(var_set):
                 continue
             elif args.split == "sample_flav" and sample == "mc":
                 continue
-            for i, t in enumerate(["udsg", "pu", "c", "b"]):
+            for i, t in enumerate(flav_set):
                 splitflav_axis["flav"] = i
                 splitflav_stack.append(collated[sample][discr][splitflav_axis])
 
@@ -494,6 +549,7 @@ for index, discr in enumerate(var_set):
             yerr=True,
             ax=ax,
             flow=args.flow,
+            sort="y",
             **color_config,
         )
         hep.histplot(
@@ -505,6 +561,7 @@ for index, discr in enumerate(var_set):
             ax=ax,
             xerr=do_xerr,
             flow=args.flow,
+            sort="y"
         )
         hmc = collated["mc"][discr][allaxis]
         MCerrorband(hmc, ax=ax)
@@ -529,6 +586,7 @@ for index, discr in enumerate(var_set):
                     color_map[s] for s in collated.keys() if s != "mc" and s != "data"
                 ],
                 flow=args.flow,
+                sort="y"
             )
         else:
             hep.histplot(
@@ -539,6 +597,7 @@ for index, discr in enumerate(var_set):
                 yerr=True,
                 ax=ax,
                 flow=args.flow,
+                sort="y"
             )
         hep.histplot(
             collated["data"][discr][allaxis],
@@ -549,6 +608,7 @@ for index, discr in enumerate(var_set):
             ax=ax,
             xerr=do_xerr,
             flow=args.flow,
+            sort="y"
         )
         MCerrorband(hmc, ax=ax, flow=args.flow)  # stat. unc. errorband
         rax = plotratio(
@@ -558,7 +618,7 @@ for index, discr in enumerate(var_set):
     ax.set_xlabel(None)
     ax.set_ylabel("Events")
     rax.set_ylabel("Data/MC")
-    ax.ticklabel_format(style="sci", scilimits=(-3, 3))
+    ax.ticklabel_format(style="sci", scilimits=(-4, 4))
     ax.get_yaxis().get_offset_text().set_position((-0.065, 1.05))
     # FIXME: add wildcard option for xlabel
     xlabel = (
@@ -595,7 +655,7 @@ for index, discr in enumerate(var_set):
     if "sample" in args.split:
         ax.legend(ncols=2, prop={"size": 16})
     else:
-        ax.legend()
+        ax.legend(ncols=(2 if len(flav_set) > 3 else 1))
     rax.set_ylim(0.5, 1.5)
     ax.set_ylim(bottom=0.0)
 
@@ -633,6 +693,7 @@ for index, discr in enumerate(var_set):
             f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         ax.set_yscale("log")
+        # ax.set_xscale("log")
         ax.set_ylim(bottom=0.1)
         hep.mpl_magic(ax=ax)
         fig.savefig(

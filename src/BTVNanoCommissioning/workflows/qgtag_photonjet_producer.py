@@ -145,7 +145,7 @@ class NanoProcessor(processor.ProcessorABC):
         ## Jet cuts
         jet_sel = (
             (events.Jet.pt >= 15)
-            & (abs(events.Jet.eta) < 5.13)
+            & (abs(events.Jet.eta) < 5.191)
             & (events.Jet.jetId >= 4)
         )
 

@@ -142,24 +142,23 @@ class NanoProcessor(processor.ProcessorABC):
             ptmin, ptmax = 45, 1e7
         elif self.selectionModifier == "ZBpPFJet":
             triggers = {
-                "ZeroBias": [15, 80],
-                "PFJet40": [80, 110],
-                "PFJet60": [110, 150],
-                "PFJet80": [150, 200],
-                # "PFJet110": [160, 180],
-                "PFJet140": [220, 280],
-                "PFJet200": [280, 340],
-                "PFJet260": [340, 400],
-                "PFJet320": [400, 480],
-                "PFJet400": [480, 560],
-                "PFJet450": [560, 640],
-                "PFJet500": [640, 720],
-                "PFJet550": [720, 1e7],
+                "ZeroBias": [15, 45],
+                "PFJet40": [45, 80],
+                "PFJet60": [80, 110],
+                "PFJet80": [110, 160],
+                "PFJet140": [160, 220],
+                "PFJet200": [220, 300],
+                "PFJet260": [300, 340],
+                "PFJet320": [340, 420],
+                "PFJet400": [420, 470],
+                "PFJet450": [470, 530],
+                "PFJet500": [530, 600],
+                "PFJet550": [600, 1e7],
             }
             if int(self._year) > 2022:
-                triggers["PFJet80"] = [150, 190]
-                triggers["PFJet110"] = [190, 230]
-                triggers["PFJet140"] = [230, 280]
+                triggers["PFJet80"] = [110, 140]
+                triggers["PFJet110"] = [140, 180]
+                triggers["PFJet140"] = [180, 220]
             ptmin, ptmax = 15, 1e7
         elif self.selectionModifier == "DiPFJetAve":
             # These act on the minimum pT of the two leading jets
@@ -203,7 +202,7 @@ class NanoProcessor(processor.ProcessorABC):
         ## Jet cuts
         jet_sel = (
             (events.Jet.pt >= ptmin)
-            & (abs(events.Jet.eta) < 2.5)
+            & (abs(events.Jet.eta) < 5.191)
             # & (events.Jet.jetId >= 4)
         )
 
