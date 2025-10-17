@@ -60,14 +60,15 @@ See some samples missing? Since 2024 DY samples are lepton flavor split, so you 
 
 If the correction files are not supported yet by jsonpog-integration, you can still try with custom input data.
 
-All the `lumiMask`, correction files (SFs, pileup weight), and JEC, JER files are under  `BTVNanoCommissioning/src/data/` following the substructure `${type}/${year}_${campaign}/${files}`(except `lumiMasks` and `Prescales`).
+All the `lumiMask`, correction files (SFs, pileup weight), and JEC, JER files are under  `BTVNanoCommissioning/src/data/` following the substructure `${type}/${year}_${campaign}/${files}`(except `DC` and `Prescales`).
 
 | Type        | File type |  Comments|
 | :---:   | :---: | :---: |
-| `lumiMasks` |`.json` | Masked good lumi-section used for physics analysis|
+| `DC` |`.json` | Masked good lumi-section used for physics analysis|
 | `Prescales` | `.json.` | HLT paths for prescaled triggers|
 | `PU`  | `.pkl.gz` or `.histo.root` | Pileup reweight files, matched MC to data| 
-| `LSF` | `.histo.root` | Lepton ID/Iso/Reco/Trigger SFs|
+| `MUO` | `.histo.root` | Muon ID/Iso/Reco/Trigger SFs|
+| `EGM` | `.histo.root` | Electron ID/Iso/Reco/Trigger SFs|
 | `BTV` | `.csv` or `.root` | b-tagger, c-tagger SFs|
 | `JME` | `.txt` | JER, JEC files|
 | `JPCalib` | `.root` | Jet probablity calibration, used in LTSV methods|
@@ -85,7 +86,7 @@ The official correction files collected in [jsonpog-integration](https://gitlab.
 ```python
 "2017_UL": {
       # Same with custom config
-      "lumiMask": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.json",
+      "DC": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.json",
 
       "JME": {
           "MC": "Summer19UL17_V5_MC",
@@ -121,20 +122,21 @@ The official correction files collected in [jsonpog-integration](https://gitlab.
               },
       ###
       # no config need to be specify for PU weights
-      "PU": None,
+      "LUM": None,
       # Alternatively, take root file as input
-      "PU": "puwei_Summer23.histo.root",
+      "LUM": "puwei_Summer23.histo.root",
       # Btag SFs - specify $TAGGER : $TYPE-> find [$TAGGER_$TYPE] in json file
       "BTV": {"deepCSV": "shape", "deepJet": "shape"},
       "roccor": None,
       # JMAR, IDs from JME- Following the scheme: "${SF_name}": "${WP}"
       "JMAR": {"PUJetID_eff": "L"},
-      "LSF": {
+      "EGM": {
       # Electron SF - Following the scheme: "${SF_name} ${year}": "${WP}"
       # https://github.com/cms-egamma/cms-egamma-docs/blob/master/docs/EgammaSFJSON.md
           "ele_ID 2017": "wp90iso",
           "ele_Reco 2017": "RecoAbove20",
-
+      },
+      "MUO":{
       # Muon SF - Following the scheme: "${SF_name} ${year}": "${WP}"
 
           "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
@@ -160,8 +162,8 @@ The official correction files collected in [jsonpog-integration](https://gitlab.
 Try leaving out lepton scale factors and JME corrections here:
 ```python
 "Summer24": {
-        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
-        "PU": "PU_weights_Summer24.histo.root",
+        "DC": "Cert_Collisions2024_378981_386951_Golden.json",
+        "LUM": "PU_weights_Summer24.histo.root",
         "JME": {                ###<--- Try running without it
             # TODO: JER are a placeholder for now (July 2025)
             "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1",
@@ -174,9 +176,11 @@ Try leaving out lepton scale factors and JME corrections here:
             "Run2024I": "Summer24Prompt24_V1",
         },
         "jetveto": {"Summer24Prompt24_RunBCDEFGHI_V1": "jetvetomap"},
-        "LSF": {                  ###<--- Try running without it
+        "MUO": {                  ###<--- Try running without it
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        },
+        "EGM":{
             "ele_Reco 2024 Electron-ID-SF": "",
             "ele_ID 2024 Electron-ID-SF": "wp80iso",
         },

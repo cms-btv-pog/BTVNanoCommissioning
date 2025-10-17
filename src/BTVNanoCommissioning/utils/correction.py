@@ -67,37 +67,32 @@ def load_SF(year, campaign, syst=False):
     correct_map = {"campaign": campaign}
 
     for SF in config[campaign].keys():
-        if SF == "lumiMask":
+        if SF == "DC":
             continue
         ## pileup weight
-        if SF == "PU":
+        if SF == "LUM":
             ## Check whether files in jsonpog-integration exist
             if os.path.exists(
                 f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/"
             ):
-                correct_map["PU"] = correctionlib.CorrectionSet.from_file(
+                correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
                 )
             ## Otherwise custom files
             else:
-                _pu_path = f"BTVNanoCommissioning.data.PU.{campaign}"
+                _pu_path = f"BTVNanoCommissioning.data.LUM.{campaign}"
                 with importlib.resources.path(
-                    _pu_path, config[campaign]["PU"]
+                    _pu_path, config[campaign]["LUM"]
                 ) as filename:
-                    if str(filename).endswith(".pkl.gz"):
-                        with gzip.open(filename) as fin:
-                            correct_map["PU"] = cloudpickle.load(fin)[
-                                "2017_pileupweight"
-                            ]
-                    elif str(filename).endswith(".json.gz"):
-                        correct_map["PU"] = correctionlib.CorrectionSet.from_file(
+                    if str(filename).endswith(".json.gz"):
+                        correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
                             str(filename)
                         )
                     elif str(filename).endswith(".histo.root"):
                         ext = extractor()
                         ext.add_weight_sets([f"* * {filename}"])
                         ext.finalize()
-                        correct_map["PU"] = ext.make_evaluator()
+                        correct_map["LUM"] = ext.make_evaluator()
 
         ## btag weight
         elif SF == "BTV":
@@ -106,7 +101,7 @@ def load_SF(year, campaign, syst=False):
             ].endswith(".json.gz"):
                 correct_map["btag"] = correctionlib.CorrectionSet.from_file(
                     importlib.resources.path(
-                        f"BTVNanoCommissioning.data.BTV.{year}_{campaign}", filename
+                        f"BTVNanoCommissioning.data.BTV.{campaign}", filename
                     )
                 )
             if "ctag" in config[campaign]["BTV"].keys() and config[campaign]["BTV"][
@@ -114,7 +109,7 @@ def load_SF(year, campaign, syst=False):
             ].endswith(".json.gz"):
                 correct_map["btag"] = correctionlib.CorrectionSet.from_file(
                     importlib.resources.path(
-                        f"BTVNanoCommissioning.data.BTV.{year}_{campaign}", filename
+                        f"BTVNanoCommissioning.data.BTV.{campaign}", filename
                     )
                 )
             if os.path.exists(
@@ -130,7 +125,7 @@ def load_SF(year, campaign, syst=False):
                 correct_map["btag"] = {}
                 correct_map["ctag"] = {}
                 correct_map["btv_cfg"] = config[campaign]["BTV"]
-                _btag_path = f"BTVNanoCommissioning.data.BTV.{year}_{campaign}"
+                _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
                 for tagger in config[campaign]["BTV"]:
                     with importlib.resources.path(
                         _btag_path, config[campaign]["BTV"][tagger]
@@ -159,21 +154,21 @@ def load_SF(year, campaign, syst=False):
                                 )
 
         ## lepton SFs
-        elif SF == "LSF":
+        elif SF == "MUO" or SF == "EGM":
             correct_map["MUO_cfg"] = {
                 mu: f
-                for mu, f in config[campaign]["LSF"].items()
+                for mu, f in config[campaign]["MUO"].items()
                 if "mu" in mu and "_json" not in mu
             }
             correct_map["EGM_cfg"] = {
                 e: f
-                for e, f in config[campaign]["LSF"].items()
+                for e, f in config[campaign]["EGM"].items()
                 if "ele" in e and "_json" not in e
             }
             ## muon
             _mu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{campaign_map()[campaign]}/latest//muon_Z.json.gz"
             if not os.path.exists(_mu_path):
-                _mu_path = f"src/BTVNanoCommissioning/data/LSF/{campaign_map()[campaign]}/latest//muon_Z.json.gz"
+                _mu_path = f"src/BTVNanoCommissioning/data/MUO/{campaign_map()[campaign]}/latest//muon_Z.json.gz"
             if os.path.exists(_mu_path):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(_mu_path)
             ## electron
@@ -183,35 +178,38 @@ def load_SF(year, campaign, syst=False):
             }.items():
                 _ele_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest//{_ele_file}.json.gz"
                 if not os.path.exists(_ele_path):
-                    _ele_path = f"src/BTVNanoCommissioning/data/LSF/{campaign_map()[campaign]}/latest//{_ele_file}.json.gz"
+                    _ele_path = f"src/BTVNanoCommissioning/data/EGM/{campaign_map()[campaign]}/latest//{_ele_file}.json.gz"
                 if os.path.exists(_ele_path):
                     correct_map[_ele_map] = correctionlib.CorrectionSet.from_file(
                         _ele_path
                     )
             ## json
             if any(
-                np.char.find(np.array(list(config[campaign]["LSF"].keys())), "mu_json")
+                np.char.find(np.array(list(config[campaign]["MUO"].keys())), "mu_json")
                 != -1
             ):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/data/LSF/{campaign_map()[campaign]}/latest/{config[campaign]['LSF']['mu_json']}"
+                    f"src/BTVNanoCommissioning/data/MUO/{campaign_map()[campaign]}/latest/{config[campaign]['MUO']['mu_json']}"
                 )
             if any(
-                np.char.find(np.array(list(config[campaign]["LSF"].keys())), "ele_json")
+                np.char.find(np.array(list(config[campaign]["EGM"].keys())), "ele_json")
                 != -1
             ):
                 correct_map["EGM"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/data/LSF/{campaign_map()[campaign]}/latest/{config[campaign]['LSF']['ele_json']}"
+                    f"src/BTVNanoCommissioning/data/EGM/{campaign_map()[campaign]}/latest/{config[campaign]['EGM']['ele_json']}"
                 )
 
             ## check if any custom corrections needed
             # FIXME: (some low pT muons not supported in jsonpog-integration at the moment)
             if (
-                "histo.json" in "\t".join(list(config[campaign]["LSF"].values()))
-                or "histo.txt" in "\t".join(list(config[campaign]["LSF"].values()))
-                or "histo.root" in "\t".join(list(config[campaign]["LSF"].values()))
+                "histo.json" in "\t".join(list(config[campaign]["MUO"].values()))
+                or "histo.txt" in "\t".join(list(config[campaign]["MUO"].values()))
+                or "histo.root" in "\t".join(list(config[campaign]["MUO"].values()))
+                or "histo.json" in "\t".join(list(config[campaign]["EGM"].values()))
+                or "histo.txt" in "\t".join(list(config[campaign]["EGM"].values()))
+                or "histo.root" in "\t".join(list(config[campaign]["EGM"].values()))
             ):
-                _mu_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
+                _mu_path = f"BTVNanoCommissioning.data.MUO.{campaign}"
                 ext = extractor()
                 with contextlib.ExitStack() as stack:
                     inputs, real_paths = [
@@ -252,7 +250,7 @@ def load_SF(year, campaign, syst=False):
                 ext.finalize()
                 correct_map["MUO_custom"] = ext.make_evaluator()
 
-                _ele_path = f"BTVNanoCommissioning.data.LSF.{campaign}"
+                _ele_path = f"BTVNanoCommissioning.data.EGM.{campaign}"
                 ext = extractor()
                 with contextlib.ExitStack() as stack:
                     inputs, real_paths = [
@@ -292,13 +290,13 @@ def load_SF(year, campaign, syst=False):
         elif SF == "muonSS":
             _mu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{campaign_map()[campaign]}/latest/muon_scalesmearing.json.gz"
             if not os.path.exists(_mu_path):
-                _mu_path = f"src/BTVNanoCommissioning/data/LSF/{campaign_map()[campaign]}/latest/muon_scalesmearing.json.gz"
+                _mu_path = f"src/BTVNanoCommissioning/data/MUO/{campaign_map()[campaign]}/latest/muon_scalesmearing.json.gz"
             if os.path.exists(_mu_path):
                 correct_map["muonSS"] = correctionlib.CorrectionSet.from_file(_mu_path)
         elif SF == "electronSS":
             _ele_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest/electronSS_EtDependent{'_v1' if year == '2024' else ''}.json.gz"
             if not os.path.exists(_ele_path):
-                _ele_path = f"src/BTVNanoCommissioning/data/LSF/{campaign_map()[campaign]}/latest/electronSS_EtDependent.json.gz"
+                _ele_path = f"src/BTVNanoCommissioning/data/EGM/{campaign_map()[campaign]}/latest/electronSS_EtDependent.json.gz"
             if os.path.exists(_ele_path):
                 correct_map["electronSS"] = correctionlib.CorrectionSet.from_file(
                     _ele_path
@@ -392,7 +390,7 @@ def load_SF(year, campaign, syst=False):
                 with contextlib.ExitStack() as stack:
                     ext.add_weight_sets(
                         [
-                            f"{run} {stack.enter_context(importlib.resources.path(f'BTVNanoCommissioning.data.JME.{year}_{campaign}', file))}"
+                            f"{run} {stack.enter_context(importlib.resources.path(f'BTVNanoCommissioning.data.JME.{campaign}', file))}"
                             for run, file in config[campaign]["jetveto"].items()
                         ]
                     )
@@ -419,17 +417,15 @@ def load_lumi(campaign):
     FileNotFoundError: If the luminosity mask file does not exist.
     """
 
-    _lumi_path = "BTVNanoCommissioning.data.lumiMasks"
+    _lumi_path = "BTVNanoCommissioning.data.DC"
     if os.path.exists(
-        f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/config[campaign]["lumiMask"]'
+        f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/config[campaign]["DC"]'
     ):
         return LumiMask(
-            f"/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/{config[campaign]['lumiMask']}"
+            f"/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/{config[campaign]['DC']}"
         )
     else:
-        with importlib.resources.path(
-            _lumi_path, config[campaign]["lumiMask"]
-        ) as filename:
+        with importlib.resources.path(_lumi_path, config[campaign]["DC"]) as filename:
 
             return LumiMask(filename)
 
@@ -1265,24 +1261,24 @@ def puwei(nPU, correct_map, weights, syst=False):
     KeyError: If required keys are missing in the correct_map.
     ValueError: If the nPU value is not recognized or supported.
     """
-    if "correctionlib" in str(type(correct_map["PU"])):
+    if "correctionlib" in str(type(correct_map["LUM"])):
         if syst:
             return weights.add(
                 "puweight",
-                correct_map["PU"][list(correct_map["PU"].keys())[0]].evaluate(
+                correct_map["LUM"][list(correct_map["LUM"].keys())[0]].evaluate(
                     nPU, "nominal"
                 ),
-                correct_map["PU"][list(correct_map["PU"].keys())[0]].evaluate(
+                correct_map["LUM"][list(correct_map["LUM"].keys())[0]].evaluate(
                     nPU, "up"
                 ),
-                correct_map["PU"][list(correct_map["PU"].keys())[0]].evaluate(
+                correct_map["LUM"][list(correct_map["LUM"].keys())[0]].evaluate(
                     nPU, "down"
                 ),
             )
         else:
             return weights.add(
                 "puweight",
-                correct_map["PU"][list(correct_map["PU"].keys())[0]].evaluate(
+                correct_map["LUM"][list(correct_map["LUM"].keys())[0]].evaluate(
                     nPU, "nominal"
                 ),
             )
@@ -1290,12 +1286,12 @@ def puwei(nPU, correct_map, weights, syst=False):
         if syst:
             weights.add(
                 "puweight",
-                correct_map["PU"]["PU"](nPU),
-                correct_map["PU"]["PUup"](nPU),
-                correct_map["PU"]["PUdown"](nPU),
+                correct_map["LUM"]["LUM"](nPU),
+                correct_map["LUM"]["PUup"](nPU),
+                correct_map["LUM"]["PUdown"](nPU),
             )
         else:
-            weights.add("puweight", correct_map["PU"]["PU"](nPU))
+            weights.add("puweight", correct_map["LUM"]["LUM"](nPU))
 
 
 def btagSFs(jet, correct_map, weights, SFtype, syst=False):
@@ -2207,7 +2203,7 @@ class JPCalibHandler(object):
                 filename = config[campaign]["JPCalib"]["MC"]
 
             templates = uproot.open(
-                f"src/BTVNanoCommissioning/data/JPCalib/{year}_{campaign}/{filename}"
+                f"src/BTVNanoCommissioning/data/JPCalib/{campaign}/{filename}"
             )
         self.ipsig_histo_val = np.array(
             [templates[f"histoCat{i}"].values() for i in range(10)]
@@ -2476,7 +2472,7 @@ def weight_manager(pruned_ev, SF_map, isSyst):
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
         syst_wei = True if isSyst != False else False
-        if "PU" in SF_map.keys():
+        if "LUM" in SF_map.keys():
             puwei(
                 pruned_ev.Pileup.nTrueInt,
                 SF_map,
