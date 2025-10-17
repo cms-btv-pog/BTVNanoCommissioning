@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description="Create prescale weights(lxplus)")
 parser.add_argument(
     "-l",
     "--lumimask",
-    default="src/BTVNanoCommissioning/data/lumiMasks/Cert_Collisions2022_355100_362760_Golden.json",
+    default="src/BTVNanoCommissioning/data/DC/Cert_Collisions2022_355100_362760_Golden.json",
     help="lumimask to generate prescale weights",
 )
 parser.add_argument("-H", "--HLT", default=None, type=str, help="Which HLT is used")

@@ -64,7 +64,7 @@ def get_lumi_from_web(year):
             -1
         ]  # Assuming lexicographical sorting works for the dates
         os.system(f"wget {url}/{latest_file}")
-        os.system(f"mv {latest_file} src/BTVNanoCommissioning/data/lumiMasks/.")
+        os.system(f"mv {latest_file} src/BTVNanoCommissioning/data/DC/.")
         return latest_file
     else:
         raise (
@@ -153,15 +153,15 @@ if __name__ == "__main__":
         # args.scheme = "test"
 
     # Check lumiMask exists and replace the Validation
-    input_lumi_json = correction_config[args.campaign]["lumiMask"]
+    input_lumi_json = correction_config[args.campaign]["DC"]
     if args.campaign != "prompt_dataMC" and not os.path.exists(
-        f"src/BTVNanoCommissioning/data/lumiMasks/{input_lumi_json}"
+        f"src/BTVNanoCommissioning/data/DC/{input_lumi_json}"
     ):
-        raise f"src/BTVNanoCommissioning/data/lumiMasks/{input_lumi_json} not exist"
+        raise f"src/BTVNanoCommissioning/data/DC/{input_lumi_json} not exist"
 
     if (
         args.campaign == "prompt_dataMC"
-        and correction_config[args.campaign]["lumiMask"] == "$PROMPT_DATAMC"
+        and correction_config[args.campaign]["DC"] == "$PROMPT_DATAMC"
     ):
         input_lumi_json = get_lumi_from_web(args.year)
         os.system(

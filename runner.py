@@ -34,7 +34,7 @@ def validate_dataset_structure(fileset):
         "Muon_pt",
         "Electron_pt",
         "PV_npvsGood",
-        "PFMET_pt",
+        "MET_pt",
         "Jet_eta",
         "Jet_phi",
         "Muon_eta",

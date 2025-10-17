@@ -1,7 +1,7 @@
 correction_config = {
     "Rereco17_94X": {
-        "lumiMask": "Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt",
-        "PU": "94XPUwei_corrections.pkl.gz",
+        "DC": "Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt",
+        "LUM": "94XPUwei_corrections.pkl.gz",
         "JME": "jec_compiled.pkl.gz",
         "BTV": {
             "DeepCSVB": "DeepCSV_94XSF_V5_B_F.csv",
@@ -9,23 +9,27 @@ correction_config = {
             "DeepJetB": "DeepFlavour_94XSF_V4_B_F.csv",
             "DeepJetC": "DeepJet_ctagSF_MiniAOD94X_2017_pTincl_v3_2_interp.root",
         },
-        "LSF": {
+        "EGM": {
             "ele_Trig TrigSF": "Ele32_L1DoubleEG_TrigSF_vhcc.histo.root",
             "ele_ID EGamma_SF2D": "ElectronIDSF_94X_MVA80WP.histo.root",
             "ele_Rereco EGamma_SF2D": "ElectronRecoSF_94X.histo.root",
+        },
+        "MUO": {
             "mu_ID NUM_TightID_DEN_genTracks_pt_abseta": "RunBCDEF_MuIDSF.histo.root",
             "mu_ID_low NUM_TightID_DEN_genTracks_pt_abseta": "RunBCDEF_MuIDSF_lowpT.histo.root",
             "mu_Iso NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta": "RunBCDEF_MuISOSF.histo.root",
         },
     },
-    "2017_UL": {
-        "lumiMask": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.txt",
-        "PU": None,
+    "2017-UL": {
+        "DC": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.txt",
+        "LUM": None,
         "JME": "jec_compiled.pkl.gz",
         "BTV": {"deepCSV": "shape", "deepJet": "shape"},
-        "LSF": {
+        "EGM": {
             "ele_ID 2017 UL-Electron-ID-SF": "wp90iso",
             "ele_Reco 2017 UL-Electron-ID-SF": "RecoAbove20",
+        },
+        "MUO": {
             "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
             "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
             "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
@@ -35,22 +39,24 @@ correction_config = {
         },
     },
     "Winter22Run3": {
-        "lumiMask": "Cert_Collisions2022_355100_357900_Golden.json",
-        "PU": "puweight_Winter22Run3.histo.root",
+        "DC": "Cert_Collisions2022_355100_357900_Golden.json",
+        "LUM": "puweight_Winter22Run3.histo.root",
         "JME": "jec_compiled.pkl.gz",
         "jetveto": {"Run2022CD jetvetomap": "Winter22Run3_RunCD_v1.histo.root"},
     },
     "Summer22": {
-        "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puwei_2022_preEE.histo.root",  # new PU files, based on preEE
+        "DC": "Cert_Collisions2022_355100_362760_Golden.json",
+        "LUM": "puwei_2022_preEE.histo.root",  # new PU files, based on preEE
         "JME": {
             "MC": "Summer22_22Sep2023_V2 Summer22_22Sep2023_JRV1",
             "Run2022C": "Summer22_22Sep2023_RunCD_V2",
             "Run2022D": "Summer22_22Sep2023_RunCD_V2",
         },  # update to latest JEC
-        "LSF": {
+        "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        },
+        "EGM": {
             "ele_ID 2022Re-recoBCD Electron-ID-SF": "Tight",
             "ele_Reco 2022Re-recoBCD Electron-ID-SF": "",
         },
@@ -67,17 +73,19 @@ correction_config = {
         ],
     },
     "Summer22EE": {
-        "lumiMask": "Cert_Collisions2022_355100_362760_Golden.json",
-        "PU": "puwei_2022_postEE.histo.root",  # new PU file, post EE
+        "DC": "Cert_Collisions2022_355100_362760_Golden.json",
+        "LUM": "puwei_2022_postEE.histo.root",  # new PU file, post EE
         "JME": {
             "MC": "Summer22EE_22Sep2023_V2 Summer22EE_22Sep2023_JRV1",
             "Run2022E": "Summer22EE_22Sep2023_RunE_V2",
             "Run2022F": "Summer22EE_22Sep2023_RunF_V2",
             "Run2022G": "Summer22EE_22Sep2023_RunG_V2",
         },
-        "LSF": {
+        "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        },
+        "EGM": {
             "ele_ID 2022Re-recoE+PromptFG Electron-ID-SF": "Tight",
             "ele_Reco 2022Re-recoE+PromptFG Electron-ID-SF": "",
         },
@@ -96,8 +104,8 @@ correction_config = {
         ],
     },
     "Summer23": {
-        "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
-        "PU": "puwei_Summer23.histo.root",
+        "DC": "Cert_Collisions2023_366442_370790_Golden.json",
+        "LUM": "puwei_Summer23.histo.root",
         "JME": {
             "name": "V1_AK4PFPuppi",
             "MC": [
@@ -131,9 +139,11 @@ correction_config = {
             "Run2023C-22Sep2023_v4": "calibeHistoWrite_Data2023C-22Sep2023_v4.root",
             "MC": "calibeHistoWrite_MC2023_Summer23.root",
         },
-        "LSF": {
+        "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        },
+        "EGM": {
             "ele_ID 2023PromptC Electron-ID-SF": "Tight",
             "ele_Reco 2023PromptC Electron-ID-SF": "",
         },
@@ -144,16 +154,17 @@ correction_config = {
         ],
     },
     "Summer23BPix": {
-        "lumiMask": "Cert_Collisions2023_366442_370790_Golden.json",
-        "PU": "puwei_Summer23BPix.histo.root",
+        "DC": "Cert_Collisions2023_366442_370790_Golden.json",
+        "LUM": "puwei_Summer23BPix.histo.root",
         "JME": {
             "MC": "Summer23BPixPrompt23_V1 Summer23BPixPrompt23_RunD_JRV1",
             "Run2023D": "Summer23BPixPrompt23_RunD_V1",
         },
-        # "JME": "jec_compiled.pkl.gz",
-        "LSF": {
+        "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        },
+        "EGM": {
             "ele_ID 2023PromptD Electron-ID-SF": "Tight",
             "ele_Reco 2023PromptD Electron-ID-SF": "",
         },
@@ -171,8 +182,8 @@ correction_config = {
         ],
     },
     "Summer24": {
-        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
-        "PU": "PU_weights_Summer24.histo.root",
+        "DC": "Cert_Collisions2024_378981_386951_Golden.json",
+        "LUM": "PU_weights_Summer24.histo.root",
         "JME": {
             # TODO: JER are a placeholder for now (July 2025)
             "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1",
@@ -185,14 +196,16 @@ correction_config = {
             "Run2024I": "Summer24Prompt24_V1",
         },
         "jetveto": {"Summer24Prompt24_RunBCDEFGHI_V1": "jetvetomap"},
-        "LSF": {
+        "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        },
+        "EGM": {
             "ele_Reco 2024 Electron-ID-SF": "",
             "ele_ID 2024 Electron-ID-SF": "wp80iso",
         },
         "muonSS": "",
         "electronSS": ["EGMScale_Compound_Ele_2024", "EGMSmearAndSyst_ElePTsplit_2024"],
     },
-    "prompt_dataMC": {"lumiMask": "$PROMPT_DATAMC"},
+    "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
 }
