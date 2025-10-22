@@ -721,18 +721,12 @@ class NanoProcessor(processor.ProcessorABC):
         mu_loose = (
             (events.Muon.pt > 15)
             & (abs(events.Muon.eta) < 2.4)
-            & ak.fill_none(events.Muon.looseId, False)
+            & mu_idiso(events, self._campaign)
         )
         el_loose = (
             (events.Electron.pt > 15)
             & (abs(events.Electron.eta) < 2.4)
-            & ~(
-                (abs(events.Electron.eta) > 1.4442) & (abs(events.Electron.eta) < 1.566)
-            )
-            & (
-                ak.fill_none(events.Electron.cutBased >= 2, False)
-                | ak.fill_none(getattr(events.Electron, "mvaIso_WP90", False), False)
-            )
+            & ele_mvatightid(events, self._campaign)
         )
 
         # Jet cleaning
@@ -748,7 +742,7 @@ class NanoProcessor(processor.ProcessorABC):
             clean_el = ak.where(
                 has_el, ak.all(dr_el > 0.4, axis=-1, mask_identity=True), all_true
             )
-            base_jet_mask = jet_id(ev, self._campaign)
+            base_jet_mask = jet_id(ev, self._campaign,max_eta=2.4, min_pt=25)
             return ak.fill_none(base_jet_mask & clean_mu & clean_el, False, axis=-1)
 
         # Cutflow helper
@@ -829,9 +823,8 @@ class NanoProcessor(processor.ProcessorABC):
             # Jets
             jet_mask = _clean_jets(
                 events,
-                other_mu_mask=mu_loose & ~ak.fill_none((events.Muon.pt > 30), False),
-                other_el_mask=el_loose
-                & ~ak.fill_none((events.Electron.pt > 30), False),
+                other_mu_mask=mu_loose,
+                other_el_mask=el_loose,
             )
             jets_all = events.Jet[jet_mask]
             req_jets = ak.num(jets_all, axis=1) == 4
