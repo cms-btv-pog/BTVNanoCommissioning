@@ -2,11 +2,35 @@ import awkward as ak
 import numpy as np
 from coffea import processor
 import psutil, os, gzip, importlib, cloudpickle
-import uproot
 from coffea.jetmet_tools import JECStack, CorrectedJetsFactory, CorrectedMETFactory
 from coffea.lookup_tools import extractor
 
 import collections
+
+
+from pathlib import Path
+
+
+def campaign_map():
+    dirs = [
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/"),
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/"),
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/"),
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/"),
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM"),
+    ]
+
+    subdirs = [p.name for d in dirs if d.is_dir() for p in d.iterdir() if p.is_dir()]
+    dirnames = {}
+    for i in range(len(subdirs)):
+        if "Run3" in subdirs[i]:
+            dirnames[subdirs[i].split("-")[2]] = subdirs[i]
+        elif "Run2" in subdirs[i]:
+            dirnames[subdirs[i].split("-")[1] + "-UL"] = subdirs[i]
+        else:
+            raise ValueError("Unknown campaign name")
+
+    return dirnames
 
 
 def memory_usage_psutil():
@@ -88,7 +112,7 @@ jec_name_map = {
 
 
 def _load_jmefactory(year, campaign, jme_compiles):
-    _jet_path = f"BTVNanoCommissioning.data.JME.{year}_{campaign}"
+    _jet_path = f"BTVNanoCommissioning.data.JME.{campaign}"
     with importlib.resources.path(_jet_path, jme_compiles) as filename:
         with gzip.open(filename) as fin:
             jme_factory = cloudpickle.load(fin)
@@ -116,7 +140,7 @@ def _compile_jec_(year, campaign, factory_map, name):
 
     # add postfix to txt files
     update_factory = {}
-    directory_path = f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/"
+    directory_path = f"src/BTVNanoCommissioning/data/JME/{campaign}/"
     files_in_directory = os.listdir(directory_path)
     for t in factory_map:
         if t == "name":
@@ -125,55 +149,55 @@ def _compile_jec_(year, campaign, factory_map, name):
         for f in factory_map[t]:
             if "Resolution" in f:
                 if not os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.jr.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.jr.txt"
                 ) and os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.txt"
                 ):
                     os.system(
-                        f"mv src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.txt src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.jr.txt"
+                        f"mv src/BTVNanoCommissioning/data/JME/{campaign}/{f}.txt src/BTVNanoCommissioning/data/JME/{campaign}/{f}.jr.txt"
                     )
                 update_factory[t].append(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.jr.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.jr.txt"
                 )
             elif "SF" in f:
                 if not os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.jersf.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.jersf.txt"
                 ) and os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.txt"
                 ):
                     os.system(
-                        f"mv src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.txt src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.jersf.txt"
+                        f"mv src/BTVNanoCommissioning/data/JME/{campaign}/{f}.txt src/BTVNanoCommissioning/data/JME/{campaign}/{f}.jersf.txt"
                     )
                 update_factory[t].append(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.jersf.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.jersf.txt"
                 )
             elif "Uncertainty" in f:
                 if not os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.junc.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.junc.txt"
                 ) and os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.txt"
                 ):
                     os.system(
-                        f"mv src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.txt src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.junc.txt"
+                        f"mv src/BTVNanoCommissioning/data/JME/{campaign}/{f}.txt src/BTVNanoCommissioning/data/JME/{campaign}/{f}.junc.txt"
                     )
                 update_factory[t].append(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.junc.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.junc.txt"
                 )
             else:
                 if not os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.jec.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.jec.txt"
                 ) and os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.txt"
                 ):
                     os.system(
-                        f"mv src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.txt src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.jec.txt"
+                        f"mv src/BTVNanoCommissioning/data/JME/{campaign}/{f}.txt src/BTVNanoCommissioning/data/JME/{campaign}/{f}.jec.txt"
                     )
                 update_factory[t].append(
-                    f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{f}.jec.txt"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign}/{f}.jec.txt"
                 )
 
     with gzip.open(
-        f"src/BTVNanoCommissioning/data/JME/{year}_{campaign}/{name}.pkl.gz", "wb"
+        f"src/BTVNanoCommissioning/data/JME/{campaign}/{name}.pkl.gz", "wb"
     ) as fout:
         cloudpickle.dump(
             {
