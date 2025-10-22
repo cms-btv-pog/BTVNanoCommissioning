@@ -102,6 +102,7 @@ def get_main_parser():
             "Summer22EE",
             "Summer23",
             "Summer23BPix",
+            "Summer24",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",
@@ -196,6 +197,13 @@ if __name__ == "__main__":
     print(f"Job directory created: {job_dir}")
     os.mkdir(job_dir)
     os.mkdir(job_dir + "/log")
+
+    # Create output dir
+    if not os.path.exists(args.outputDir):
+        os.makedirs(args.outputDir)
+        print(f"Output directory created: {args.outputDir}")
+    else:
+        print(f"Output directory already exists: {args.outputDir}")
 
     # Handle voms proxy
     proxy_file = get_proxy_path()

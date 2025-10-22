@@ -23,12 +23,13 @@ color_map = {
     "Ph+jets (HT-binned)": "#f2ab6d",
     "Ph+jets (HT+PTG-binned)": "tab:brown",
     "udsg": "tab:blue",
-    "ud": "tab:cyan",
+    "ud": "tab:blue",
     "s": "tab:olive",
     "g": "tab:purple",
     "pu": "tab:orange",
     "c": "tab:green",
     "b": "tab:red",
+    "other": "tab:gray",
 }
 sample_mergemap = {
     # ttbar
@@ -735,6 +736,8 @@ def MCerrorband(
             label=label,
             **fill_opts,
         )
+
+    return ax
 
 
 ## Very nice implementtion from Kenneth Long:

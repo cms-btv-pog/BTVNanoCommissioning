@@ -61,7 +61,7 @@ def get_histograms(axes, **kwargs):
                 axes["syst"],
             ]
         else:
-            obj_axes = [axes["syst"], axes["flav"]]
+            obj_axes = [axes["syst"], axes["pflav"]]
 
         for tagger in taggers:
             if tagger not in jet_fields:
@@ -73,7 +73,7 @@ def get_histograms(axes, **kwargs):
             # )
             hists[f"Obj{obj}_Var{tagger}_pteta"] = Hist.Hist(
                 *obj_axes,
-                Hist.axis.Regular(50, 0, 1, name=tagger, label=tagger),
+                Hist.axis.Regular(50, 0, 1, name=tagger, label=tagger, underflow=False, overflow=False),
                 axes["pt"],
                 axes["eta"],
                 storage=Hist.storage.Weight(),
@@ -139,7 +139,7 @@ def qg_writer(
             }
             if is_pteta:
                 obj_axes["pt"] = ak.flatten(events[hobj]["pt"], axis=None)
-                obj_axes["eta"] = ak.flatten(events[hobj]["eta"], axis=None)
+                obj_axes["eta"] = ak.flatten(np.abs(events[hobj]["eta"]), axis=None)
 
             if hobj != "Tag":
                 if "partonFlavour" not in events[hobj].fields:

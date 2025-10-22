@@ -161,8 +161,8 @@ correction_config = {
         ],
     },
     "Summer24": {
-        "DC": "Cert_Collisions2024_378981_386951_Golden.json",
-        "LUM": "PU_weights_Summer24.histo.root",
+        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
+        "PU": None,
         "JME": {
             # TODO: JER are a placeholder for now (July 2025)
             "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1",
