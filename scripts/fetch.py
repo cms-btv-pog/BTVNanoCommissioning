@@ -113,9 +113,118 @@ parser.add_argument(
 )
 parser.add_argument("--year", help="year", default=None, type=str)
 
+parser.add_argument(
+    "--verbose",
+    "-v",
+    action="store_true",
+    help="Show detailed processing information (default: show only essential info)",
+)
+
+parser.add_argument(
+    "--executor",
+    choices=["iterative", "futures"],
+    default="iterative",
+    help="The type of executor to use for parallelization",
+)
+parser.add_argument(
+    "--workers",
+    "-w",
+    type=int,
+    default=4,
+    help="Number of workers to use for futures executor",
+)
+
 args = parser.parse_args()
 
+
+def conditional_print(message, level="INFO", always_print=False):
+    """Print message based on verbosity setting"""
+    if always_print or args.verbose or level in ["WARNING", "ERROR"]:
+        if level == "WARNING":
+            print(f"WARNING: {message}")
+        elif level == "ERROR":
+            print(f"ERROR: {message}")
+        else:
+            print(message)
+
+
+# Dataset status helpers - these are always printed
+def print_dataset_start(dataset):
+    """Print the start of dataset processing - always shown"""
+    print(f"📊 Processing dataset: {dataset}")
+
+
+def print_dataset_success(dataset, dsname, file_count):
+    """Print successful dataset processing - always shown"""
+    print(f"✅ Successfully processed: {dataset} → {dsname} ({file_count} files)")
+
+
+def print_dataset_failure(dataset, reason):
+    """Print failed dataset processing - always shown"""
+    print(f"❌ Failed to process: {dataset} - {reason}")
+
+
+def print_dataset_empty(dataset):
+    """Print when a dataset has no files - always shown"""
+    print(f"⚠️ No files found for: {dataset}")
+
+
 site_url_formats = {}
+
+
+# Based on https://github.com/PocketCoffea/PocketCoffea/blob/main/pocket_coffea/utils/rucio.py
+def get_xrootd_sites_map():
+
+    in_ci_env = "CI" in os.environ or "GITLAB_CI" in os.environ
+
+    sites_xrootd_access = defaultdict(dict)
+    # Check if the cache file has been modified in the last 10 minutes
+    cache_valid = False
+    if os.path.exists(".sites_map.json"):
+        file_time = os.path.getmtime(".sites_map.json")
+        current_time = time.time()
+        # ten_minutes_ago = current_time - 600
+        twenty_minutes_ago = current_time - 1200
+        sixty_minutes_ago = current_time - 3600
+        if file_time > sixty_minutes_ago:
+            cache_valid = True
+
+    if not os.path.exists(".sites_map.json") or not cache_valid or in_ci_env:
+        if args.verbose:
+            print("Loading SITECONF info")
+        sites = [
+            (s, "/cvmfs/cms.cern.ch/SITECONF/" + s + "/storage.json")
+            for s in os.listdir("/cvmfs/cms.cern.ch/SITECONF/")
+            if s.startswith("T")
+        ]
+        for site_name, conf in sites:
+            if not os.path.exists(conf):
+                continue
+            try:
+                data = json.load(open(conf))
+            except:
+                continue
+            for site in data:
+                if site["type"] != "DISK":
+                    continue
+                if site["rse"] == None:
+                    continue
+                for proc in site["protocols"]:
+                    if proc["protocol"] == "XRootD":
+                        if proc["access"] not in ["global-ro", "global-rw"]:
+                            continue
+                        if "prefix" not in proc:
+                            if "rules" in proc:
+                                for rule in proc["rules"]:
+                                    sites_xrootd_access[site["rse"]][rule["lfn"]] = (
+                                        rule["pfn"]
+                                    )
+                        else:
+                            sites_xrootd_access[site["rse"]] = proc["prefix"]
+        json.dump(sites_xrootd_access, open(".sites_map.json", "w"))
+
+    return json.load(open(".sites_map.json"))
+
 
 if args.DAS_campaign == "auto":
     DAS_campaign_map = {
@@ -199,17 +308,41 @@ def normalize_xrootd_url(url):
 def access_xrootd_file(url, xrootd_tools, check_all_variants=False):
     """Try to access file with variants of the URL using both stat and open"""
     from XRootD import client
-    import signal
+    import threading
 
-    # Define a timeout handler
+    # Define a timeout exception and handler using threading instead of signals
     class TimeoutException(Exception):
         pass
 
-    def timeout_handler(signum, frame):
-        raise TimeoutException("Operation timed out")
+    def with_timeout(func, args=(), kwargs={}, timeout_duration=40):
+        """Run a function with a timeout using threading instead of signals"""
+        result = [None]
+        exception = [None]
+        finished = [False]
 
-    timeout = 40  # 40 seconds timeout
+        def worker():
+            try:
+                result[0] = func(*args, **kwargs)
+                finished[0] = True
+            except Exception as e:
+                exception[0] = e
+                finished[0] = True
 
+        thread = threading.Thread(target=worker)
+        thread.daemon = True
+        thread.start()
+        thread.join(timeout_duration)
+
+        if finished[0]:
+            if exception[0]:
+                raise exception[0]
+            return result[0]
+        else:
+            raise TimeoutException(
+                f"Operation timed out after {timeout_duration} seconds"
+            )
+
+    timeout = 30  # 40 seconds timeout
     url_variants = normalize_xrootd_url(url)
     success_results = []
 
@@ -218,15 +351,13 @@ def access_xrootd_file(url, xrootd_tools, check_all_variants=False):
 
         # First try direct file open with timeout
         try:
-            # Set the timeout alarm
-            signal.signal(signal.SIGALRM, timeout_handler)
-            signal.alarm(timeout)
-
             file_client = client.File()
-            open_status, _ = file_client.open(variant)
 
-            # Clear the alarm if successful
-            signal.alarm(0)
+            # Use threading-based timeout instead of signals
+            def open_file():
+                return file_client.open(variant)
+
+            open_status, _ = with_timeout(open_file, timeout_duration=timeout)
 
             if open_status.ok:
                 file_client.close()
@@ -236,23 +367,19 @@ def access_xrootd_file(url, xrootd_tools, check_all_variants=False):
                     return True, variant
         except TimeoutException:
             print(f"⚠️ Open timed out after {timeout}s with URL variant {variant}")
-            signal.alarm(0)  # Clear the alarm
         except Exception as e:
             print(f"❌ Open failed with URL variant {variant}: {e}")
-            signal.alarm(0)  # Clear the alarm
 
         # If open fails, try stat method with timeout
         if not variant_success:
             try:
-                # Set the timeout alarm
-                signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(timeout)
-
                 xrd_client = client.FileSystem(variant)
-                status, response = xrd_client.stat(variant)
 
-                # Clear the alarm if successful
-                signal.alarm(0)
+                # Use threading-based timeout instead of signals
+                def stat_file():
+                    return xrd_client.stat(variant)
+
+                status, response = with_timeout(stat_file, timeout_duration=timeout)
 
                 if status.ok:
                     variant_success = True
@@ -261,10 +388,8 @@ def access_xrootd_file(url, xrootd_tools, check_all_variants=False):
                         return True, variant
             except TimeoutException:
                 print(f"⚠️ Stat timed out after {timeout}s with URL variant {variant}")
-                signal.alarm(0)  # Clear the alarm
             except Exception as e:
                 print(f"❌ Stat failed with URL variant {variant}: {e}")
-                signal.alarm(0)  # Clear the alarm
 
     # If we get here and check_all_variants=True, we need to check if any variant succeeded
     if success_results:
@@ -296,7 +421,10 @@ def determine_execution_mode():
 
     # If we're in the btv_coffea environment in CI, use local execution mode
     if in_btv_coffea:
-        print("📌 Detected btv_coffea environment in CI - using local execution mode")
+        if args.verbose:
+            print(
+                "📌 Detected btv_coffea environment in CI - using local execution mode"
+            )
         return False
 
     # Otherwise, use CI execution mode
@@ -325,11 +453,12 @@ def get_dasgoclient_command():
         "/usr/local/bin/dasgoclient",
     ]:
         if os.path.exists(path):
-            print(f"Found dasgoclient at: {path}")
+            if args.verbose:
+                print(f"Found dasgoclient at: {path}")
             return path
 
     # Fallback to the name and let the system handle it
-    print("WARNING: Could not find dasgoclient, using default name")
+    print(f"WARNING: Could not find dasgoclient, using default name")
     return "dasgoclient"
 
 
@@ -802,11 +931,12 @@ def check_xrootd_availability():
     # Check for gfal tools as alternative
     gfal_available = shutil.which("gfal-ls") is not None
 
-    print(
-        f"Environment check: xrdfs: {'✅' if xrdfs_available else '❌'}, "
-        f"Python XRootD: {'✅' if python_xrootd_available else '❌'}, "
-        f"gfal: {'✅' if gfal_available else '❌'}"
-    )
+    if args.verbose:
+        print(
+            f"Environment check: xrdfs: {'✅' if xrdfs_available else '❌'}, "
+            f"Python XRootD: {'✅' if python_xrootd_available else '❌'}, "
+            f"gfal: {'✅' if gfal_available else '❌'}"
+        )
 
     return {
         "xrdfs": xrdfs_available,
@@ -835,10 +965,11 @@ def check_site_completion(site, dataset, xrootd_tools):
         )
 
         if total_files_count == 0:
-            print(f"No files found for dataset {dataset}")
+            print_dataset_empty(dataset)
             return 0.0
 
-        print(f"Dataset has {total_files_count} files in total")
+        if args.verbose:
+            print(f"Dataset has {total_files_count} files in total")
 
         # Now get files at the specific site
         if in_ci:
@@ -855,16 +986,17 @@ def check_site_completion(site, dataset, xrootd_tools):
         # Calculate completion percentage
         if total_files_count > 0 and site_files_count > 0:
             completion_pct = (site_files_count / total_files_count) * 100
-            print(
-                f"Site {site} has {site_files_count}/{total_files_count} files ({completion_pct:.2f}%)"
-            )
+            if args.verbose:
+                print(
+                    f"Site {site} has {site_files_count}/{total_files_count} files ({completion_pct:.2f}%)"
+                )
             return completion_pct
         else:
-            print(f"Site {site} has no valid files for this dataset")
+            print(f"WARNING: Site {site} has no valid files for this dataset")
             return 0.0
 
     except Exception as e:
-        print(f"Error checking completion for site {site}: {e}")
+        print(f"ERROR: Error checking completion for site {site}: {e}")
         import traceback
 
         traceback.print_exc()
@@ -888,7 +1020,10 @@ def check_site_responsiveness(
     # If we have actual files, test ALL files in the dataset
     if dataset_files and len(dataset_files) > 0:
         total_files = len(dataset_files)
-        print(f"Testing accessibility of all {total_files} files for site {site}...")
+        if args.verbose:
+            print(
+                f"Testing accessibility of all {total_files} files for site {site}..."
+            )
 
         # Determine print frequency based on dataset size
         if total_files < 20:
@@ -917,7 +1052,10 @@ def check_site_responsiveness(
                     or idx == 0
                     or idx == total_files - 1
                 ):
-                    print(f"✅ File {idx+1}/{total_files} accessible: {working_url}")
+                    if args.verbose:
+                        print(
+                            f"✅ File {idx+1}/{total_files} accessible: {working_url}"
+                        )
 
                 # Save the first successful redirector format
                 if successful_files == 1:
@@ -936,7 +1074,8 @@ def check_site_responsiveness(
                 return False
 
         # If we've checked all files and they're all accessible, the site passes
-        print(f"✅ Site {site} passes with all {total_files} files accessible")
+        if args.verbose:
+            print(f"✅ Site {site} passes with all {total_files} files accessible")
         return True
     else:
         # Get the redirector for this site
@@ -1115,10 +1254,12 @@ def getFilesFromDas(args):
     # Site handling setup
     if args.blacklist_sites is not None:
         args.blacklist_sites = args.blacklist_sites.split(",")
-        print("blacklist sites:", args.blacklist_sites)
+        if args.verbose:
+            print(f"Blacklist sites: {args.blacklist_sites}")
     if args.whitelist_sites is not None:
         args.whitelist_sites = args.whitelist_sites.split(",")
-        print("whitelist sites:", args.whitelist_sites)
+        if args.verbose:
+            print(f"Blacklist sites: {args.blacklist_sites}")
 
     # Track failed datasets for summary report
     failed_datasets = []
@@ -1128,14 +1269,13 @@ def getFilesFromDas(args):
             continue
 
         dataset = dataset.strip()
-        print(f"\n===== Processing dataset: '{dataset}' =====")
+        print_dataset_start(dataset)
 
         # Validate dataset format
         if not dataset.startswith("/"):
             print(
                 f"WARNING: Dataset '{dataset}' does not start with '/' - trying anyway"
             )
-
         # Try to get dsname safely
         try:
 
@@ -1155,7 +1295,8 @@ def getFilesFromDas(args):
 
         except IndexError:
             print(f"ERROR: Cannot parse dataset name from '{dataset}'")
-            print("Using the entire string as the dataset name")
+            if args.verbose:
+                print("Using the entire string as the dataset name")
             dsname = dataset.replace("/", "_").strip()
 
         # Try multiple DAS query approaches
@@ -1184,7 +1325,8 @@ def getFilesFromDas(args):
             try:
                 flist = run_das_command(query)
                 if flist:
-                    print(f"Found {len(flist)} files with query: {query}")
+                    if args.verbose:
+                        print(f"Found {len(flist)} files with query: {query}")
                     break
             except Exception as e:
                 print(f"Error with DAS query: {e}")
@@ -1220,7 +1362,8 @@ def getFilesFromDas(args):
             try:
                 sites = run_das_command(query)
                 if sites:
-                    print(f"Found {len(sites)} sites with query: {query}")
+                    if args.verbose:
+                        print(f"Found {len(sites)} sites with query: {query}")
                     break
             except Exception as e:
                 print(f"Error with site query: {e}")
@@ -1251,7 +1394,10 @@ def getFilesFromDas(args):
 
         # First gather completion information for all sites without checking responsiveness
         site_completions = []
-        print(f"Evaluating completion for {len(sites)} sites for dataset {dataset}...")
+        if args.verbose:
+            print(
+                f"Evaluating completion for {len(sites)} sites for dataset {dataset}..."
+            )
 
         for site in sites:
             if not site:
@@ -1259,15 +1405,18 @@ def getFilesFromDas(args):
 
             # Handle site blacklisting/whitelisting
             if args.blacklist_sites is not None and site in args.blacklist_sites:
-                print(f"Site {site} is blacklisted, skipping")
+                if args.verbose:
+                    print(f"Site {site} is blacklisted, skipping")
                 continue
             if args.whitelist_sites is not None and site not in args.whitelist_sites:
-                print(f"Site {site} is not in whitelist, skipping")
+                if args.verbose:
+                    print(f"Site {site} is not in whitelist, skipping")
                 continue
 
             # Skip if site has no XRootD access in our map
             if site not in sites_xrootd_prefix:
-                print(f"Site {site} has no XRootD access in our map, skipping")
+                if args.verbose:
+                    print(f"Site {site} has no XRootD access in our map, skipping")
                 continue
 
             # Only check completion first
@@ -1282,15 +1431,17 @@ def getFilesFromDas(args):
 
         # Now check responsiveness only for the top sites in order of completion
         site_candidates = []
-        print(
-            f"Found {len(site_completions)} sites with files, checking responsiveness in order of completion..."
-        )
+        if args.verbose:
+            print(
+                f"Found {len(site_completions)} sites with files, checking responsiveness in order of completion..."
+            )
 
         # Try sites in order of completion until we find a responsive one
         for site, completion in site_completions:
-            print(
-                f"Checking responsiveness for site {site} with {completion:.2f}% completion..."
-            )
+            if args.verbose:
+                print(
+                    f"Checking responsiveness for site {site} with {completion:.2f}% completion..."
+                )
 
             if (
                 xrootd_tools["xrdfs"]
@@ -1329,9 +1480,10 @@ def getFilesFromDas(args):
         else:
             # Use the first (and only) responsive site
             best_site, completion = site_candidates[0]
-            print(
-                f"Selected site {best_site} with {completion:.2f}% dataset completion"
-            )
+            if args.verbose:
+                print(
+                    f"Selected site {best_site} with {completion:.2f}% dataset completion"
+                )
 
             # Get redirector for the best site
             if isinstance(sites_xrootd_prefix[best_site], list):
@@ -1361,11 +1513,13 @@ def getFilesFromDas(args):
 
             if best_site in site_url_formats:
                 redirector = site_url_formats[best_site]["redirector"]
-                print(f"Using redirector for site {best_site}: {redirector}")
+                if args.verbose:
+                    print(f"Using redirector for site {best_site}: {redirector}")
 
                 # Apply the redirector to all files - clean and simple
                 paths = [f"{redirector}{f.lstrip('/')}" for f in flist if len(f) > 1]
-                print(f"Sample path: {paths[0]}")
+                if args.verbose:
+                    print(f"Sample path: {paths[0]}")
             else:
                 # No cached format, use the standard approach
                 paths = [_get_pfn_for_site(f, xrd) for f in flist if len(f) > 1]
@@ -1377,11 +1531,13 @@ def getFilesFromDas(args):
             # Same logic for the else clause
             if best_site and best_site in site_url_formats:
                 redirector = site_url_formats[best_site]["redirector"]
-                print(f"Using redirector for site {best_site}: {redirector}")
+                if args.verbose:
+                    print(f"Using redirector for site {best_site}: {redirector}")
 
                 # Apply the redirector to all files - clean and simple
                 paths = [f"{redirector}{f.lstrip('/')}" for f in flist if len(f) > 1]
-                print(f"Sample path: {paths[0]}")
+                if args.verbose:
+                    print(f"Sample path: {paths[0]}")
             else:
                 # No cached format, use the standard approach
                 paths = [_get_pfn_for_site(f, xrd) for f in flist if len(f) > 1]
@@ -1399,6 +1555,94 @@ def getFilesFromDas(args):
         print(f"Total: {len(failed_datasets)} failed datasets out of {len(fset)}")
 
     return fdict
+
+
+def process_single_dataset(dataset, args_dict):
+    """Process a single dataset, returning (dsname, files)"""
+    import os
+    import re
+    import uuid
+    import time
+
+    # Convert args_dict back to an object
+    class Args:
+        def __init__(self, **kwargs):
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+
+    args = Args(**args_dict)
+
+    # Create a TRULY unique temp filename for this thread
+    # Using UUID and thread-specific timestamp to avoid collisions
+    temp_input_file = f"temp_{os.getpid()}_{uuid.uuid4()}_{time.time()}.txt"
+
+    # Write just this dataset to the temp file
+    with open(temp_input_file, "w") as f:
+        f.write(dataset + "\n")
+
+    # Temporarily replace input file
+    original_input = args.input
+    args.input = temp_input_file
+
+    try:
+        # Force proper run period extraction from this dataset
+        run_pattern = re.search(r"Run20\d\d([A-Z])", dataset)
+        expected_run_full = run_pattern.group(1) if run_pattern else None
+
+        # Also extract version information to distinguish between multiple versions
+        version_pattern = re.search(r"-([^-]+)-v(\d+)/", dataset)
+        version_info = (
+            f"_{version_pattern.group(1)}_v{version_pattern.group(2)}"
+            if version_pattern
+            else ""
+        )
+
+        # Process just this one dataset using existing function
+        result = getFilesFromDas(args)
+
+        # If we got results, extract and validate
+        if result and len(result) > 0:
+            dsname = next(iter(result.keys()))
+            file_list = result[dsname]
+
+            # Fix dsname if needed, preserving the actual run year and adding version
+            if (
+                expected_run_full
+                and "MuonEG" in dsname
+                and not expected_run_full in dsname
+            ):
+                correct_dsname = f"MuonEG{expected_run_full}{version_info}"
+                print(f"⚠️ Fixing incorrect dsname: {dsname} → {correct_dsname}")
+                return correct_dsname, file_list
+            else:
+                # For existing dsnames, append version info if it's a data sample
+                if (
+                    expected_run_full
+                    and "MuonEG" in dsname
+                    and not version_info in dsname
+                ):
+                    correct_dsname = f"{dsname}{version_info}"
+                    return correct_dsname, file_list
+                return dsname, file_list
+        else:
+            # Build a dsname from the dataset name as fallback
+            try:
+                primary_name = dataset.split("/")[1]
+                if expected_run_full:
+                    dsname = f"{primary_name}Run2024{expected_run_full}"
+                else:
+                    dsname = primary_name
+            except:
+                dsname = dataset.replace("/", "_").strip()
+
+            return dsname, []
+    finally:
+        # Always clean up
+        try:
+            os.remove(temp_input_file)
+        except:
+            pass
+        args.input = original_input
 
 
 def getFilesFromPath(args):
@@ -1555,7 +1799,8 @@ def direct_das_query(dataset_name, campaign_pattern):
     # Build query for dataset discovery
     query = f"dataset=/{dataset_name}/*{clean_pattern}*/NANOAOD*"
 
-    print(f"Executing direct DAS query: {query}")
+    if args.verbose:
+        print(f"Executing direct DAS query: {query}")
 
     try:
         # Check if we're in CI environment
@@ -1566,7 +1811,8 @@ def direct_das_query(dataset_name, campaign_pattern):
             # For local environment - use direct dasgoclient call
             cmd = f'dasgoclient -query="instance=prod/global {query}"'
 
-            print(f"Local command: {cmd}")
+            if args.verbose:
+                print(f"Local command: {cmd}")
             # Use the already-working run_das_command function instead of os.popen
             output = run_das_command(cmd)
         else:
@@ -1599,20 +1845,21 @@ def direct_das_query(dataset_name, campaign_pattern):
             valid_outputs = [ds for ds in output if not "Validation error" in ds]
             if valid_outputs:
                 print(f"Query found {len(valid_outputs)} datasets:")
-                for i, ds in enumerate(valid_outputs[:3]):
-                    print(f"  {i+1}: {ds}")
-                if len(valid_outputs) > 3:
-                    print(f"  ... and {len(valid_outputs) - 3} more")
+                if args.verbose:
+                    for i, ds in enumerate(valid_outputs[:3]):
+                        print(f"  {i+1}: {ds}")
+                    if len(valid_outputs) > 3:
+                        print(f"  ... and {len(valid_outputs) - 3} more")
                 return valid_outputs
             else:
                 print("All results were validation errors")
                 return []
         else:
-            print(f"No datasets found matching: {query}")
+            print(f"WARNING: No datasets found matching: {query}")
             return []
 
     except Exception as e:
-        print(f"Error executing DAS query: {e}")
+        print(f"ERROR: Error executing DAS query: {e}")
         import traceback
 
         traceback.print_exc()
@@ -1695,6 +1942,31 @@ def main(args):
                         outf.write(d + "\n")
                 else:
                     print(f"WARNING: Skipping invalid dataset result for {l}")
+                # continue
+
+            elif len(dataset) > 1:
+                if args.verbose:
+                    print(f"Found multiple datasets for {l}:")
+                    for i, d in enumerate(dataset):
+                        print(f"  {i+1}: {d}")
+                campaigns = [d.split("/")[2] for d in dataset]
+                if args.from_workflow is None or dataset[0].endswith("SIM"):
+                    args.DAS_campaign = input(
+                        f"{l} is which campaign? \n {campaigns} \n"
+                    )
+
+                    dataset = direct_das_query(l, args.DAS_campaign)
+
+                    if dataset and not any("ERROR:" in d for d in dataset):
+                        outf.write(dataset[0] + "\n")
+                    else:
+                        print(f"WARNING: Skipping invalid dataset result for {l}")
+                else:
+                    for d in dataset:
+                        if not "ERROR:" in d:
+                            outf.write(d + "\n")
+                        else:
+                            print(f"WARNING: Skipping invalid dataset result: {d}")
 
             else:
                 if dataset and not any("ERROR:" in d for d in dataset):
@@ -1711,12 +1983,83 @@ def main(args):
     elif args.testfile:
         fdict = getTestlist(args)
     else:
-        fdict = getFilesFromDas(args)
+        # This is where we'll add parallelization
+        print(f"Processing datasets with {args.executor} executor")
+
+        # Read dataset list
+        fset = []
+        with open(args.input) as fp:
+            lines = fp.readlines()
+            for line in lines:
+                if not line.startswith("#") and line.strip() != "":
+                    fset.append(line.strip())
+
+        # Choose executor based on args
+        if args.executor == "iterative":
+            # Process sequentially
+            fdict = getFilesFromDas(args)
+
+        elif args.executor == "futures":
+            # Process with concurrent.futures
+            import concurrent.futures
+
+            # Convert args to dict for serialization
+            args_dict = vars(args)
+            fdict = {}
+
+            # Read dataset list and deduplicate
+            fset = []
+            seen_datasets = set()
+            with open(args.input) as fp:
+                lines = fp.readlines()
+                for line in lines:
+                    line = line.strip()
+                    if not line.startswith("#") and line and line not in seen_datasets:
+                        seen_datasets.add(line)
+                        fset.append(line)
+
+            print(
+                f"Processing {len(fset)} unique datasets with futures executor (workers={args.workers})"
+            )
+
+            with concurrent.futures.ThreadPoolExecutor(
+                max_workers=args.workers
+            ) as executor:
+                # Create a mapping of futures to datasets
+                future_to_dataset = {}
+                for dataset in fset:
+                    future = executor.submit(process_single_dataset, dataset, args_dict)
+                    future_to_dataset[future] = dataset
+                    if args.verbose:
+                        print(f"Submitted dataset: {dataset}")
+
+                # Process results as they complete
+                for future in concurrent.futures.as_completed(future_to_dataset):
+                    dataset = future_to_dataset[future]
+                    try:
+                        dsname, file_paths = future.result()
+                        if dsname and file_paths:
+                            if dsname in fdict:
+                                print(
+                                    f"⚠️ Accumulating files for {dsname} (adding {len(file_paths)} files to existing {len(fdict[dsname])} files)"
+                                )
+                                fdict[dsname].extend(file_paths)
+                            else:
+                                fdict[dsname] = file_paths
+                            print_dataset_success(dataset, dsname, len(fdict[dsname]))
+                        else:
+                            print_dataset_empty(dataset)
+                    except Exception as exc:
+                        print_dataset_failure(dataset, str(exc))
+                        import traceback
+
+                        traceback.print_exc()
+
     # Check the any file lists empty
     empty = True
     for dsname, flist in fdict.items():
         if len(flist) == 0:
-            print(dsname, "is empty!!!!")
+            print(f"WARNING: {dsname} is empty!!!!")
             empty = False
     assert empty, "you have empty lists"
     ## Remove files if not exist
@@ -1746,11 +2089,9 @@ def main(args):
         os.system(f"mkdir -p metadata/{args.campaign}/")
         with open(f"metadata/{args.campaign}/{args.output}", "w") as fp:
             json.dump(fdict, fp, indent=4)
-            print(
-                "The file is saved at: metadata/", {args.campaign}, "/", {args.output}
-            )
+            print(f"The file is saved at: metadata/{args.campaign}/{args.output}")
 
 
 if __name__ == "__main__":
-    print("This is the __main__ part")
+    print("Starting fetch.py")
     main(args)
