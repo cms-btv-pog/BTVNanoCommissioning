@@ -118,48 +118,28 @@ class NanoProcessor(processor.ProcessorABC):
             ptmin, ptmax = 15, 80
         elif self.selectionModifier == "PFJet500":
             triggers = {
-                "PFJet500": [500, 1e7],
+                "PFJet500": [575, 1e7],
             }
-            ptmin, ptmax = 500, 1e7
+            ptmin, ptmax = 575, 1e7
         elif self.selectionModifier == "PFJet":
             triggers = {
-                "PFJet40": [45, 80],
-                "PFJet60": [80, 110],
-                "PFJet80": [110, 160],
-                "PFJet140": [160, 220],
-                "PFJet200": [220, 300],
-                "PFJet260": [300, 340],
-                "PFJet320": [340, 420],
-                "PFJet400": [420, 470],
-                "PFJet450": [470, 530],
-                "PFJet500": [530, 600],
-                "PFJet550": [600, 1e7],
+                "PFJet40": [60, 86],
+                "PFJet60": [86, 110],
+                "PFJet80": [110, 170],
+                "PFJet140": [170, 236],
+                "PFJet200": [236, 305],
+                "PFJet260": [305, 375],
+                "PFJet320": [375, 460],
+                "PFJet400": [460, 575],
+                # "PFJet450": [470, 530],
+                "PFJet500": [575, 1e7],
+                # "PFJet550": [600, 1e7],
             }
-            if int(self._year) > 2022:
-                triggers["PFJet80"] = [110, 140]
-                triggers["PFJet110"] = [140, 180]
-                triggers["PFJet140"] = [180, 220]
-            ptmin, ptmax = 45, 1e7
-        elif self.selectionModifier == "ZBpPFJet":
-            triggers = {
-                "ZeroBias": [15, 45],
-                "PFJet40": [45, 80],
-                "PFJet60": [80, 110],
-                "PFJet80": [110, 160],
-                "PFJet140": [160, 220],
-                "PFJet200": [220, 300],
-                "PFJet260": [300, 340],
-                "PFJet320": [340, 420],
-                "PFJet400": [420, 470],
-                "PFJet450": [470, 530],
-                "PFJet500": [530, 600],
-                "PFJet550": [600, 1e7],
-            }
-            if int(self._year) > 2022:
-                triggers["PFJet80"] = [110, 140]
-                triggers["PFJet110"] = [140, 180]
-                triggers["PFJet140"] = [180, 220]
-            ptmin, ptmax = 15, 1e7
+            # if int(self._year) > 2022:
+                # triggers["PFJet80"] = [110, 140]
+                # triggers["PFJet110"] = [140, 180]
+                # triggers["PFJet140"] = [180, 220]
+            ptmin, ptmax = 60, 1e7
         elif self.selectionModifier == "DiPFJetAve":
             # These act on the minimum pT of the two leading jets
             # Should test effect with average pT of the two leading jets
@@ -193,6 +173,16 @@ class NanoProcessor(processor.ProcessorABC):
             raise ValueError(
                 self.selectionModifier, "is not a valid selection modifier."
             )
+
+        # Redefine triggers to match the jet selection
+        events.Jet = ak.pad_none(events.Jet, 2)
+        if isRealData:
+            for trg in triggers:
+                events.HLT[trg] = (
+                    events.HLT[trg]
+                    & ((events.Jet[:, 0].pt >= triggers[trg][0]))
+                    & ((events.Jet[:, 0].pt < triggers[trg][1]))
+                )
 
         req_metfilter = MET_filters(events, self._campaign)
 
@@ -230,30 +220,33 @@ class NanoProcessor(processor.ProcessorABC):
         )
         req_bal = event_jet[:, 1].pt / event_jet[:, 0].pt > 0.7
 
-        req_trig = np.zeros_like(len(events), dtype=bool)
-        trigbools = {}
-        for trigger, pt_range in triggers.items():
-            rmin, rmax = pt_range
-            if "DiPFJetAve" in self.selectionModifier:
-                thistrigreq = (
-                    (HLT_helper(events, [trigger]))
-                    # Average
-                    # & (ak.fill_none(0.5 * (event_jet[:, 0].pt + event_jet[:, 1].pt) >= rmin, False))
-                    # & (ak.fill_none(0.5 * (event_jet[:, 0].pt + event_jet[:, 1].pt) < rmax, False))
-                    # Minimum
-                    & (ak.fill_none(event_jet[:, 1].pt >= rmin, False))
-                    & (ak.fill_none(event_jet[:, 1].pt < rmax, False))
-                )
-                trigbools[trigger] = thistrigreq
-                req_trig = req_trig | thistrigreq
-            else:
-                thistrigreq = (
-                    (HLT_helper(events, [trigger]))
-                    & (ak.fill_none(event_jet[:, 0].pt >= rmin, False))
-                    & (ak.fill_none(event_jet[:, 0].pt < rmax, False))
-                )
-                trigbools[trigger] = thistrigreq
-                req_trig = req_trig | thistrigreq
+        req_trig = HLT_helper(events, list(triggers.keys()))
+        # req_trig = np.zeros_like(len(events), dtype=bool)
+        # trigbools = {}
+        # for trigger, pt_range in triggers.items():
+            # rmin, rmax = pt_range
+            # if "DiPFJetAve" in self.selectionModifier:
+                # thistrigreq = (
+                    # (HLT_helper(events, [trigger]))
+                    # # Average
+                    # # & (ak.fill_none(0.5 * (event_jet[:, 0].pt + event_jet[:, 1].pt) >= rmin, False))
+                    # # & (ak.fill_none(0.5 * (event_jet[:, 0].pt + event_jet[:, 1].pt) < rmax, False))
+                    # # Minimum
+                    # & (ak.fill_none(event_jet[:, 1].pt >= rmin, False))
+                    # & (ak.fill_none(event_jet[:, 1].pt < rmax, False))
+                # )
+                # trigbools[trigger] = thistrigreq
+                # req_trig = req_trig | thistrigreq
+            # else:
+                # thistrigreq = (
+                    # (HLT_helper(events, [trigger]))
+                    # # & (ak.fill_none(event_jet[:, 0].pt >= rmin, False))
+                    # # & (ak.fill_none(event_jet[:, 0].pt < rmax, False))
+                    # & (event_jet[:, 0].pt >= rmin)
+                    # & (event_jet[:, 0].pt < rmax)
+                # )
+                # trigbools[trigger] = thistrigreq
+                # req_trig = req_trig | thistrigreq
 
         event_level = event_level & req_jet & req_dphi & req_subjet & req_trig & req_bal & req_leadjet
 
@@ -274,7 +267,8 @@ class NanoProcessor(processor.ProcessorABC):
                     self,
                     events[event_level],
                     events,
-                    "nominal",
+                    None,
+                    ["nominal"],
                     dataset,
                     isRealData,
                     empty=True,
@@ -325,9 +319,10 @@ class NanoProcessor(processor.ProcessorABC):
             elif self._year == "2024":
                 run_num = "378985_386951"
 
-            # if 369869 in pruned_ev.run: continue
-            psweight = np.zeros(len(pruned_ev))
-            for trigger, trigbool in trigbools.items():
+            pruned_ev["psweight"] = np.zeros(len(pruned_ev))
+            trglist = sorted(list(triggers.keys()), reverse=True, key=lambda x: triggers[x][0])
+            
+            for trigger in triggers:
                 psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
                 if not os.path.isfile(psfile):
                     raise NotImplementedError(
@@ -339,8 +334,10 @@ class NanoProcessor(processor.ProcessorABC):
                     f"HLT_{trigger}",
                     ak.values_astype(pruned_ev.luminosityBlock, np.float32),
                 )
-                psweight = ak.where(trigbool[event_level], thispsweight, psweight)
-            weights.add("psweight", psweight)
+                pruned_ev["psweight"] = ak.where(
+                    (pruned_ev.HLT[trigger]) & (pruned_ev["psweight"] == 0), thispsweight, pruned_ev["psweight"]
+                )
+            weights.add("psweight", pruned_ev["psweight"])
 
         # Configure systematics
         if shift_name is None:

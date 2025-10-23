@@ -42,6 +42,14 @@ predefined_sample = {
         "MC": ["DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8"],
         "minor_MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
     },
+    "qgtag_DY_sf": {
+        "data": ["DoubleMuon", "Muon", "Muon0", "Muon1"],
+        "MC": [
+            "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        ],
+        # "minor_MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
+    },
     "ectag_DY_sf": {
         "data": ["EGamma", "EGamma0", "EGamma1"],
         "MC": ["DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8"],
@@ -381,7 +389,7 @@ predefined_sample = {
             "GJ-4Jets_Bin-HT-600to1000-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "GJ-4Jets_Bin-HT-1000-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             # Sherpa NLO
-            "GJ-4Jets-2NLO2LO_Bin-PTG-25_Par-BiasedPTG_TuneSherpaDef_13p6TeV_sherpaMEPS"
+            # "GJ-4Jets-2NLO2LO_Bin-PTG-25_Par-BiasedPTG_TuneSherpaDef_13p6TeV_sherpaMEPS"
             # Summer22/Summer23
             # HT binned
             "GJ-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",

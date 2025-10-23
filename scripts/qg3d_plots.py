@@ -66,6 +66,22 @@ etar_parser.add_argument(
     "--ietarange", type=str, default=None, help="eta range to select in bin coordinates, e.g. '0,5'"
 )
 
+parser.add_argument(
+    "--logy", action="store_true", help="Use log scale for y axis"
+)
+parser.add_argument(
+    "--logx", action="store_true", help="Use log scale for x axis"
+)
+parser.add_argument(
+    "--ylim", type=float, nargs=2, default=None, help="y axis limits"
+)
+parser.add_argument(
+    "--xlim", type=float, nargs=2, default=None, help="x axis limits"
+)
+parser.add_argument(
+    "--density", action="store_true", help="Normalize histograms to unit area"
+)
+
 args = parser.parse_args()
 
 # Load input files and merge histograms
@@ -118,8 +134,8 @@ if not os.path.exists(args.output):
     os.makedirs(args.output)
 
 for var, split_by in var_split:
-    if "_pteta" in var and "Tag" not in var:
-        plot_roc(hists[var], systname="nominal", var=var)
+    # if "_pteta" in var and "Tag" not in var:
+        # plot_roc(hists[var], systname="nominal", var=var)
 
     ptrange_str = "$p_{T}$: " + var.split("PT")[1].split("_")[0] if "PT" in var else ""
     etarange_str = "$\\eta$: " + var.split("ETA")[1].split("_")[0] if "ETA" in var else ""
@@ -143,7 +159,7 @@ for var, split_by in var_split:
 
     dhists = [hists[var]["data"][s]["nominal",:] for s in hists[var]["data"]]
     hep.histplot(
-        dhists,
+        sum(dhists),
         histtype="errorbar",
         color="black",
         # stack=True,
@@ -151,43 +167,40 @@ for var, split_by in var_split:
         yerr=True,
         ax=ax,
         flow="none",
+        density=args.density,
     )
 
-    mc_hists = hists[var]["mc_flav"] if split_by == "flav" else hists[var]["mc_sample"]
-    
-    hep.histplot(
-        [mc_hists[s]["nominal",:] for s in mc_hists],
-        histtype="fill",
-        stack=True,
-        ax=ax,
-        label=[k for k in mc_hists],
-        sort="y",
-        color=[color_map.get(k, None) for k in mc_hists],
-        flow="none",
-    )
+    mc_hists = None
+    if "mc_flav" in hists[var] or "mc_sample" in hists[var]:
+        mc_hists = hists[var]["mc_flav"] if split_by == "flav" else hists[var]["mc_sample"]
+        if mc_hists:
+            hep.histplot(
+                [mc_hists[s]["nominal",:] for s in mc_hists],
+                histtype="fill",
+                stack=True,
+                ax=ax,
+                label=[k for k in mc_hists],
+                sort="y",
+                color=[color_map.get(k, None) for k in mc_hists],
+                flow="none",
+                density=args.density,
+            )
 
-    rax = plotratio(
-        sum(dhists),
-        sum([mc_hists[s]["nominal",:] for s in mc_hists]),
-        ax=rax,
-    )
+    if dhists and mc_hists:
+        rax = plotratio(
+            sum(dhists),
+            sum([mc_hists[s]["nominal",:] for s in mc_hists]),
+            ax=rax,
+            density=args.density,
+        )
 
-    rax = MCerrorband(
-        sum([mc_hists[s]["nominal",:] for s in mc_hists]),
-        ax=rax,
-    )
+        rax = MCerrorband(
+            sum([mc_hists[s]["nominal",:] for s in mc_hists]),
+            ax=rax,
+        )
 
     std_legend = ax.legend(ncol=2)
     ax.add_artist(std_legend)
-
-    # ptartist = ax.scatter([], [], marker="$p_{T}$", color="black")
-    # etaartist = ax.scatter([], [], marker="$|\\eta|$", color="black")
-    # ax.legend(
-        # handles=[ptartist, etaartist],
-        # labels=[ptrange_str.replace("j", ""), etarange_str.replace("j", "")],
-        # loc="lower right",
-    # )
-    # print(ptrange_str, etarange_str)
 
     ax.set_xlabel(None)
     ax.set_ylabel("Events")
@@ -208,15 +221,25 @@ for var, split_by in var_split:
     rax.hlines([1], xmin=rax.get_xlim()[0], xmax=rax.get_xlim()[1], color="black", ls="--")
     rax.hlines([0.8, 1.2], xmin=rax.get_xlim()[0], xmax=rax.get_xlim()[1], color="black", ls=":")
 
-    ax.set_xlim(rax.get_xlim())
+    # ax.set_xlim(rax.get_xlim())
     ax.ticklabel_format(style="sci", scilimits=(-4, 4))
     ax.get_yaxis().get_offset_text().set_position((-0.065, 1.05))
+
+    if args.logy:
+        ax.set_yscale("log")
+    if args.logx:
+        ax.set_xscale("log")
+
+    if args.ylim:
+        ax.set_ylim(args.ylim)
+    if args.xlim:
+        ax.set_xlim(args.xlim)
 
     plt.savefig(f"{args.output}/{var}_{split_by}.png")
     plt.close()
 
     # Plot the flavour fractions
-    if split_by == "flav":
+    if split_by == "flav" and "mc_flav" in hists[var] and "Tag" not in var and mc_hists:
         fig, ax = plt.subplots(figsize=(10,7))
         fig.subplots_adjust(top=0.92, bottom=0.1, right=0.97)
         hep.cms.label(

@@ -121,9 +121,6 @@ workflows["qgtag_dijet_hf"] = partial(
 workflows["qgtag_dijet_zb"] = partial(QGtagDijetProcessor, selectionModifier="ZB")
 workflows["qgtag_dijet_pfjet500"] = partial(QGtagDijetProcessor, selectionModifier="PFJet500")
 workflows["qgtag_dijet_pfjet"] = partial(QGtagDijetProcessor, selectionModifier="PFJet")
-workflows["qgtag_dijet_zbppfjet"] = partial(
-    QGtagDijetProcessor, selectionModifier="ZBpPFJet"
-)
 workflows["qgtag_photonjet"] = QGtagPhotonjetProcessor
 
 # Tutorial

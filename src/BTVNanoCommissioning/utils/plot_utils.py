@@ -298,6 +298,7 @@ def plotratio(
     unc="num",
     label=None,
     ext_denom_error=None,
+    density=False,
 ):
     """
     Create a ratio plot, dividing two compatible histograms
@@ -416,9 +417,11 @@ def plotratio(
             sumw_denom[-1] + denom.view(flow=True)["value"][-1],
             sumw2_denom[-1] + denom.view(flow=True)["value"][-1],
         )
-    else:
-        sumw_num, sumw2_num = num.values(), num.variances()
-        sumw_denom, sumw2_denom = denom.values(), denom.variances()
+
+    if density:
+        sumw_num = sumw_num / np.sum(sumw_num)
+        sumw_denom = sumw_denom / np.sum(sumw_denom)
+
     rsumw = sumw_num / sumw_denom
     if unc == "clopper-pearson":
         rsumw_err = np.abs(clopper_pearson_interval(sumw_num, sumw_denom) - rsumw)
