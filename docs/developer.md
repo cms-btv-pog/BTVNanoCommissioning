@@ -286,37 +286,37 @@ The corrections are collected in `utils/correction.py`.  There are two types of 
 Depends on corrections file type, read differently from its definition. See details in: [correctionlib official](https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/tree/master/examples), or other custom way used in [coffea](https://coffea-hep.readthedocs.io/en/latest/notebooks/applying_corrections.html). This load all the correction information as `evaluator` can be use to extract weight information later
 ```python
 for SF in config[campaign].keys():
-        if SF == "lumiMask":
+        if SF == "DC":
             continue
         ## pileup weight
-        if SF == "PU":
+        if SF == "LUM":
             ## Check whether files in jsonpog-integration exist
             if os.path.exists(
                 f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/LUM/{year}_{campaign}"
             ):
-                correct_map["PU"] = correctionlib.CorrectionSet.from_file(
+                correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/LUM/{year}_{campaign}/puWeights.json.gz"
                 )
             ## Otherwise custom files
             else:
                 _pu_path = f"BTVNanoCommissioning.data.PU.{campaign}"
                 with importlib.resources.path(
-                    _pu_path, config[campaign]["PU"]
+                    _pu_path, config[campaign]["LUM"]
                 ) as filename:
                     if str(filename).endswith(".pkl.gz"):
                         with gzip.open(filename) as fin:
-                            correct_map["PU"] = cloudpickle.load(fin)[
+                            correct_map["LUM"] = cloudpickle.load(fin)[
                                 "2017_pileupweight"
                             ]
                     elif str(filename).endswith(".json.gz"):
-                        correct_map["PU"] = correctionlib.CorrectionSet.from_file(
+                        correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
                             str(filename)
                         )
                     elif str(filename).endswith(".histo.root"):
                         ext = extractor()
                         ext.add_weight_sets([f"* * {filename}"])
                         ext.finalize()
-                        correct_map["PU"] = ext.make_evaluator()
+                        correct_map["LUM"] = ext.make_evaluator()
 
 ```
 3.1 Add weight based correction

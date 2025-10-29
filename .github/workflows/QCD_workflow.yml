@@ -10,6 +10,7 @@ on:
     - 'src/BTVNanoCommissioning/helpers/definitions.py'
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/QCD_workflow.yml'
+    - 'runner.py'
     
   pull_request_target:
     branches: [ master ]
@@ -20,6 +21,7 @@ on:
     - 'src/BTVNanoCommissioning/helpers/definitions.py'
     - 'src/BTVNanoCommissioning/utils/*'
     - '.github/workflows/QCD_workflow.yml'
+    - 'runner.py'
    
   workflow_dispatch:
 
