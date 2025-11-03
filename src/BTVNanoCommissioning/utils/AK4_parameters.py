@@ -185,6 +185,7 @@ correction_config = {
         },
         "muonSS": "",
         "electronSS": ["EGMScale_Compound_Ele_2024", "EGMSmearAndSyst_ElePTsplit_2024"],
+        "DC": "latest/Cert_Collisions2024_378981_386951_Golden.json",
     },
     "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
 }

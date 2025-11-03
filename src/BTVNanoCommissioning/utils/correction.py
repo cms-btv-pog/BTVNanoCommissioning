@@ -419,8 +419,11 @@ def load_lumi(campaign):
 
     _lumi_path = "BTVNanoCommissioning.data.DC"
     if os.path.exists(
-        f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/config[campaign]["DC"]'
+        f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/{config[campaign]["DC"]}'
     ):
+        print(
+            f'Loading luminosity mask from /cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/{config[campaign]["DC"]}'
+        )
         return LumiMask(
             f"/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/{config[campaign]['DC']}"
         )
@@ -520,9 +523,9 @@ def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
 
 cset_jersmear = (
     correctionlib.CorrectionSet.from_file(
-        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/jer_smear.json.gz"
+        f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/jer_smear.json.gz"
     )
-    if os.path.exists(f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/jer_smear.json.gz")
+    if os.path.exists(f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/jer_smear.json.gz")
     else {"JERSmear": None}
 )
 sf_jersmear = cset_jersmear["JERSmear"]

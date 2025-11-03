@@ -190,11 +190,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         ##### Add some selections
         ## Jet cuts
-        jet_sel = (
-            (events.Jet.pt >= ptmin)
-            & (abs(events.Jet.eta) < 5.191)
-            # & (events.Jet.jetId >= 4)
-        )
+        jet_sel = jet_id(events, self._campaign, max_eta=4.7, min_pt=20)
 
         if self._year == "2016":
             jet_puid = events.Jet.puId >= 1
@@ -215,8 +211,8 @@ class NanoProcessor(processor.ProcessorABC):
         req_dphi = abs(event_jet[:, 0].delta_phi(event_jet[:, 1])) > 2.7
         req_subjet = ak.where(
             ak.count(event_jet.pt, axis=1) > 2,
-            event_jet[:, 2].pt / (0.5 * (event_jet[:, 0] + event_jet[:, 1])).pt < 1.0,
-            ak.ones_like(req_jet),
+            event_jet[:, 2].pt / (0.5 * (event_jet[:, 0] + event_jet[:, 1])).pt < 0.15,
+            ak.ones_like(req_jet, dtype=bool),
         )
         req_bal = event_jet[:, 1].pt / event_jet[:, 0].pt > 0.7
 
@@ -251,12 +247,12 @@ class NanoProcessor(processor.ProcessorABC):
         event_level = event_level & req_jet & req_dphi & req_subjet & req_trig & req_bal & req_leadjet
 
         ## MC only: require gen vertex to be close to reco vertex
-        if "GenVtx_z" in events.fields:
-            req_vtx = np.abs(events.GenVtx_z - events.PV_z) < 0.2
-        else:
-            req_vtx = ak.ones_like(events.run, dtype=bool)
+        # if "GenVtx_z" in events.fields:
+            # req_vtx = np.abs(events.GenVtx_z - events.PV_z) < 0.2
+        # else:
+            # req_vtx = ak.ones_like(events.run, dtype=bool)
 
-        event_level = event_level & req_vtx
+        # event_level = event_level & req_vtx
 
         ##<==== finish selection
         event_level = ak.fill_none(event_level, False)
