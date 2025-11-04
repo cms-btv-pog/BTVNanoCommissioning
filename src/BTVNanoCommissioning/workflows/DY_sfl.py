@@ -52,10 +52,10 @@ class NanoProcessor(processor.ProcessorABC):
 
     def process(self, events):
         events = missing_branch(events)
-        shifts = common_shifts(self, events)
+        vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
-            self.process_shift(update(events, collections), name)
+            self.process_shift(update(vetoed_events, collections), name)
             for collections, name in shifts
         )
 
@@ -105,11 +105,11 @@ class NanoProcessor(processor.ProcessorABC):
         req_metfilter = MET_filters(events, self._campaign)
 
         # Muon cuts
-        dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
+        dilep_mu = events.Muon[(events.Muon.pt > 20) & mu_idiso(events, self._campaign)]
 
         # Electron cuts
         dilep_ele = events.Electron[
-            (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
+            (events.Electron.pt > 25) & ele_mvatightid(events, self._campaign)
         ]
         if isMu:
             thisdilep = dilep_mu
@@ -216,6 +216,7 @@ class NanoProcessor(processor.ProcessorABC):
                 event_jet.hadronFlavour + 1,
                 event_jet.hadronFlavour,
             )
+            flav = ak.where(event_jet.partonFlavour == 21, flav + 6, flav)
 
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
@@ -223,19 +224,19 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["AllSelJet"] = event_jet[event_level]  # untouched by histo_writter
 
         # print("----------debug--------------")
-        # print(event_jet.fields)
+        # print(flav[event_level])
         # print("----------debug--------------")
         for tagger, tag_obj in btag_wp_dict[f"{self._year}_{self._campaign}"].items():
             for stringency, wp in tag_obj["b"].items():
                 if stringency == "No":
                     continue
 
-                key = f"{tagger}{stringency}"
                 mask_postag = event_jet[f"btag{tagger}B"] > wp
                 mask_negtag = event_jet[f"btagNeg{tagger}B"] > wp
                 postag_jet = event_jet[mask_postag][event_level]
                 negtag_jet = event_jet[mask_negtag][event_level]
 
+                key = f"{tagger}{stringency}"
                 pruned_ev[f"{key}_postag_jet"] = postag_jet
                 pruned_ev[f"{key}_negtag_jet"] = negtag_jet
 
