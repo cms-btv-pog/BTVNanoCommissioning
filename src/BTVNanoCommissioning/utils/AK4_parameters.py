@@ -208,7 +208,7 @@ correction_config = {
             # TODO: HLT SFs are a placeholder for now (August 2025)
             "ele_Trig 2023PromptD Electron-HLT-SF": "HLT_SF_Ele30_MVAiso80ID",
         },
-        "muonSS": "", # TODO: using 2023BPix version for now (August 2025)
+        "muonSS": "",
         "electronSS": ["Scale", "SmearAndSyst"],
     },
     "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
