@@ -9,10 +9,11 @@ The main ingredients of the framework are wrapped in `src/` directories with sup
 Stores the customize corrections used in analysis. e.g. jet probality calibration, custom scale factors...etc. It has a structure similar to [`jsonpog-intergration`](https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/) split by POGs, corrections.
 | Type        | File type |  Comments|
 | :---:   | :---: | :---: |
-| `lumiMasks` |`.json` | Masked good lumi-section used for physics analysis|
+| `"DC"` |`.json` | Masked good lumi-section used for physics analysis|
 | `Prescales` | `.json.` | HLT paths for prescaled triggers|
-| `PU`  | `.pkl.gz` or `.histo.root` | Pileup reweight files, matched MC to data| 
-| `LSF` | `.histo.root` | Lepton ID/Iso/Reco/Trigger SFs|
+| `LUM`  | `.histo.root` | Pileup reweight files, matched MC to data| 
+| `MUO` | `.histo.root` | Muon ID/Iso/Reco/Trigger SFs|
+| `EGM` | `.histo.root` | Electron ID/Iso/Reco/Trigger SFs|
 | `BTV` | `.csv` or `.root` | b-tagger, c-tagger SFs|
 | `JME` | `.txt` | JER, JEC files|
 | `JPCalib` | `.root` | Jet probablity calibration, used in LTSV methods|

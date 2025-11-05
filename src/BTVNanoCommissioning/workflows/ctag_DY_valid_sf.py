@@ -14,7 +14,10 @@ from BTVNanoCommissioning.utils.correction import (
 
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writer,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -80,13 +83,24 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
-        histname = {
-            "DYM": "ctag_DY_sf",
-            "DYE": "ectag_DY_sf",
-            "DYM_2D": "ctag_DY_sf_2D",
-            "DYE_2D": "ectag_DY_sf_2D",
-        }
-        output = {} if self.noHist else histogrammer(events, histname[self.selMod])
+        # histname = {
+        #     "DYM": "ctag_DY_sf",
+        #     "DYE": "ectag_DY_sf",
+        #     "DYM_2D": "ctag_DY_sf_2D",
+        #     "DYE_2D": "ectag_DY_sf_2D",
+        # }
+        hists = ["common", "fourvec", "DY"]
+        if "2D" in self.selMod:
+            hists.append("DY_2D")
+        output = {}
+        if not self.noHist:
+            output = histogrammer(
+                jet_fields=events.Jet.fields,
+                obj_list=["posl", "negl", "dilep", "jet0"],
+                hist_collections=hists,
+                include_m=isMu,
+                include_discriminators_2D = True if "2D" in self.selMod else False,
+            )
 
         if isRealData:
             output["sumw"] = len(events)
@@ -272,7 +286,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
+            output = histo_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays

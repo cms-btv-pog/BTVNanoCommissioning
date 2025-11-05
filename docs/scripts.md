@@ -1,6 +1,6 @@
-# Scripts for prepre input & process output
+# Scripts to prepare input & process output
 
-Here lists scripts can be used for BTV tasks
+Here is a list of scripts that can be used for BTV tasks.
 
 
 ## `fetch.py` : create input json 
@@ -62,6 +62,7 @@ python scripts/make_template.py -i "testfile/*.coffea" --lumi 7650 -o test.root 
 
 
 
+.. _plotting_code:
 ## Plotting code
 ### data/MC comparisons
 

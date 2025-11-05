@@ -1,12 +1,7 @@
 # For developers: Add new workflow
 
 
-The BTV tutorial for coffea part is under [`notebooks`](https://github.com/cms-btv-pog/BTVNanoCommissioning/tree/master/notebooks) and the template to construct new workflow is [`src/BTVNanoCommissioning/workflows/example.py`](https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/master/src/BTVNanoCommissioning/workflows/example.py)
-
-The BTV tutorial for coffea part is `notebooks/BTV_commissiong_tutorial-coffea.ipynb` and the template to construct new workflow is `src/BTVNanoCommissioning/workflows/example.py`.
-
-
-Use the `example.py` as template to develope new workflow.
+The BTV tutorial for the coffea part at [`notebooks/BTV_commissioning_tutorial-coffea.ipynb`](https://github.com/cms-btv-pog/BTVNanoCommissioning/tree/master/notebooks/BTV_commissioning_tutorial-coffea.ipynb) and the template to construct new workflow is located at [`src/BTVNanoCommissioning/workflows/example.py`](https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/master/src/BTVNanoCommissioning/workflows/example.py)
 
 ## 0. Add new workflow info to `workflows/__init__.py` 
 
@@ -25,17 +20,22 @@ workflows["ctag_ttsemilep_sf"] = partial(
 ```
 Notice that if you are working on a WP SFs, please put **WP** in the name.
 
-## 1. Add histogram collections to `utils/histogrammer.py`
+## 1. Add histogram collections to `utils/histogramming/histograms`
 
-The histograms are use the [`hist`](https://hist.readthedocs.io/en/latest/) in this framework. This can be easily to convert to root histogram by `uproot` or numpy histograms.  For quick start of hist can be found [here](https://hist.readthedocs.io/en/latest/user-guide/quickstart.html)
+The framework uses [`hist`](https://hist.readthedocs.io/en/latest/) histograms, which can be easily to converted to ROOT histogram by `uproot` or to `numpy` histograms. For a quickstart to hist see [this page](https://hist.readthedocs.io/en/latest/user-guide/quickstart.html).
 
-There are a few axes are predefined and commonly used for all the workflows, notice that the `name` should be consistent with the info in the tree if it is stored.
+There are a common axes located in `utils/histogramming/axes/common.py`, which are used by many of the workflows. You can define your own axes collection in the same directory and then add it to `utils/histogramming/hist_helpers.py` to make it available for the histogrammer. The `name` and dictionary key of the axis should be consistent with axes defined in the histogram.
+
+An example collection of axes:
 ```python
-pt_axis = Hist.axis.Regular(60, 0, 300, name="pt", label=" $p_{T}$ [GeV]")
-eta_axis = Hist.axis.Regular(25, -2.5, 2.5, name="eta", label=" $\eta$")
-phi_axis = Hist.axis.Regular(30, -3, 3, name="phi", label="$\phi$")
+axes = {
+    "flav": hist.axis.IntCategory([0, 1, 4, 5, 6], name="flav", label="Genflavour"),
+    "syst": hist.axis.StrCategory([], name="syst", growth=True),
+    "pt": hist.axis.Regular(60, 0, 300, name="pt", label=" $p_{T}$ [GeV]"),
+}
 ```
-The histograms are wrapped as `dict`, it should contains **syst_axis (at first axis)**,  **Hist.storage.Weight() (in last axis)** and axis for your variable. The key is suggest to use the format of `$OBJECT_$VAR` in case the variable `$VAR` is in the tree. 
+
+Regardless of the axis or histogram collection, the histograms need to be contained in a `dict`, and each histogram should at least contain as its first axis a **syst_axis** and a **Hist.storage.Weight()** as its last axis. The key for the histogram is suggested to use the format `$OBJECT_$VAR`, with `OBJECT` being an object defined during the workflow and `$VAR` a variable for that object, for example:
 
 ```python
 _hist_dict["mujet_pt"] = Hist.Hist(
@@ -43,10 +43,18 @@ _hist_dict["mujet_pt"] = Hist.Hist(
         )  # create cutstomize histogram
 ```
 
-The kinematic variables/workflow specific variables are defined first, then it takes the common collections of input variables from the common defintion. 
-In case you want to add common variables use for all the workflow, you can go to [`helper/definition.py`](#add-new-common-variables)
+After choosing and defining the axis and histogram collections you want to use in your workflow, use the [histogrammer](https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/5c56c0affa6209c7b3f99855ed52c41fe5e225ec/src/BTVNanoCommissioning/utils/histogramming/histogrammer.py#L7) function to create the output histograms. Note that there are also common histogram collections for creating common histograms ([common.py](https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/master/src/BTVNanoCommissioning/utils/histogramming/histograms/common.py)) and 4-vector histograms for a given `obj_list` ([fourvec.py](https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/master/src/BTVNanoCommissioning/utils/histogramming/histograms/fourvec.py)). An example histogrammer call could be:
+```python
+output = histogrammer(
+    jet_fields=events.Jet.fields, # Pass the jet fields to check available jet variables
+    obj_list=["posl", "negl", "dilep", "jet0"], # Pass the objects to define 4-vector quantities for
+    hist_collections=["common", "fourvec", "DY"], # Choose the histogram collections to use
+    include_m=isMu, # Pass a collection specific kwarg
+    # This call uses the common axis collection
+)
+```
 
-##  2. Selections: Implemented selections on events (`workflow/`)
+##  2. Selections: Implement selections on events (`workflow/`)
 
 Create `boolean` arrays along event axis. Also check whether some common selctions already in `utils/selection.py`
 
@@ -73,7 +81,7 @@ Create `boolean` arrays along event axis. Also check whether some common selctio
       )
 ```
 
-In case you are modifying exist workflow, you need to add to  `__init__` and in the selections 
+In case you are modifying an existing workflow, you need to add to  `__init__` and in the selections create a `selectionModifier`:
 
 ```python
 # in init
@@ -84,7 +92,7 @@ if self.selMod=="WcM":
 ```
 
 ##  3. Selected objects: Pruned objects with reduced event_level
-Store the selected objects to event-based arrays. The selected object must contains **Sel**, for the muon-enriched jet and soft muon is **MuonJet** and **SoftMu**, the kinematics will store. The cross-object variables need to create entry specifically. 
+Store the selected objects to event-based arrays. If using the common [histogram writer](https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/5c56c0affa6209c7b3f99855ed52c41fe5e225ec/src/BTVNanoCommissioning/utils/histogramming/histogrammer.py#L63), the selected object must contain **Sel**, and the muon-enriched jet and soft muon are called **MuonJet** and **SoftMu**, respectively. You can then use the defined objects to derive new variables, ie.
 
 ```python
   # Keep the structure of events and pruned the object size
@@ -96,11 +104,11 @@ Store the selected objects to event-based arrays. The selected object must conta
 ```
 
 
- The pruned information are then proceed to store into histograms, output arrays and use to evaluate the weight. In case you have customize object for [corrections](#add-additional-weight-or-uncertainty-information), new common [variables](#add-new-common-variables) need to add, please go to dedicated section.
+ The pruned information is then stored into the defined histograms and the output arrays, and used to evaluate the event weights. In case you have a custom object for [corrections](#add-additional-weight-or-uncertainty-information), or a new common [variable](#add-new-common-variables) that you need to add, please go to dedicated section.
  
-See the details below for the usage of `pruned_ev`
+See details below for the usage of `pruned_ev`
 
-<details><summary>output section</summary>
+<details><summary>Output section</summary>
 <p>
 
 ```python
@@ -278,37 +286,37 @@ The corrections are collected in `utils/correction.py`.  There are two types of 
 Depends on corrections file type, read differently from its definition. See details in: [correctionlib official](https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/tree/master/examples), or other custom way used in [coffea](https://coffea-hep.readthedocs.io/en/latest/notebooks/applying_corrections.html). This load all the correction information as `evaluator` can be use to extract weight information later
 ```python
 for SF in config[campaign].keys():
-        if SF == "lumiMask":
+        if SF == "DC":
             continue
         ## pileup weight
-        if SF == "PU":
+        if SF == "LUM":
             ## Check whether files in jsonpog-integration exist
             if os.path.exists(
                 f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/LUM/{year}_{campaign}"
             ):
-                correct_map["PU"] = correctionlib.CorrectionSet.from_file(
+                correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/LUM/{year}_{campaign}/puWeights.json.gz"
                 )
             ## Otherwise custom files
             else:
                 _pu_path = f"BTVNanoCommissioning.data.PU.{campaign}"
                 with importlib.resources.path(
-                    _pu_path, config[campaign]["PU"]
+                    _pu_path, config[campaign]["LUM"]
                 ) as filename:
                     if str(filename).endswith(".pkl.gz"):
                         with gzip.open(filename) as fin:
-                            correct_map["PU"] = cloudpickle.load(fin)[
+                            correct_map["LUM"] = cloudpickle.load(fin)[
                                 "2017_pileupweight"
                             ]
                     elif str(filename).endswith(".json.gz"):
-                        correct_map["PU"] = correctionlib.CorrectionSet.from_file(
+                        correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
                             str(filename)
                         )
                     elif str(filename).endswith(".histo.root"):
                         ext = extractor()
                         ext.add_weight_sets([f"* * {filename}"])
                         ext.finalize()
-                        correct_map["PU"] = ext.make_evaluator()
+                        correct_map["LUM"] = ext.make_evaluator()
 
 ```
 3.1 Add weight based correction

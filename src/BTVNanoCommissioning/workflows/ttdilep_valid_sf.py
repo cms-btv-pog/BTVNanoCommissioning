@@ -17,7 +17,10 @@ from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi, PFCand
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writer,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -72,10 +75,18 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
         ## Create histograms
+        objs = ["mu", "ele", "jet0", "jet1"]
         if self.selMod == "ttdilep_sf_2D":
-            output = {} if self.noHist else histogrammer(events, "ttdilep_sf_2D")
-        else:
-            output = {} if self.noHist else histogrammer(events, "ttdilep_sf")
+            object_list.append("MET")
+        output = {}
+        if not self.noHist:
+            output = histogrammer(
+                events.Jet.fields,
+                obj_list=objs,
+                hist_collections=["common", "fourvec", "ttdilep"],
+                njet=2,
+                include_discriminators_2D = True if "2D" in self.selMod else False,
+            )
 
         if shift_name is None:
             if isRealData:
@@ -224,7 +235,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
+            output = histo_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays

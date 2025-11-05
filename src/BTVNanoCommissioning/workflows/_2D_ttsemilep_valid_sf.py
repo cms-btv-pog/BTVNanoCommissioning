@@ -13,7 +13,7 @@ from BTVNanoCommissioning.utils.correction import (
 )
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import histogrammer, histo_writer
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -70,16 +70,29 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
 
+        objs = ["MET", "jet0", "jet1", "jet2", "jet3"]
         if self.selMod == "semittE":
+            objs.append("ele")
+            chn = "ele"
             triggers = ["Ele30_WPTight_Gsf"] # so far only 2024 triggers
-            histname = "2D_e_ttsemilep_sf"
         elif self.selMod == "semittM":
+            objs.append("mu")
+            chn = "mu"
             triggers = ["IsoMu24"] # so far only 2024 triggers
-            histname = "2D_mu_ttsemilep_sf"
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
-        output = {} if self.noHist else histogrammer(events, histname)
+        ## Create histograms
+        output = {}
+        if not self.noHist:
+            output = histogrammer(
+                events.Jet.fields,
+                obj_list=objs,
+                hist_collections=["common", "fourvec", "ttsemilep_2D"],
+                channel=chn,
+                njet=4,
+                include_discriminators_2D=True,
+            )
 
         if shift_name is None:
             if isRealData:
@@ -261,7 +274,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
+            output = histo_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays

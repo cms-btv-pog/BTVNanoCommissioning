@@ -64,7 +64,7 @@ def get_lumi_from_web(year):
             -1
         ]  # Assuming lexicographical sorting works for the dates
         os.system(f"wget {url}/{latest_file}")
-        os.system(f"mv {latest_file} src/BTVNanoCommissioning/data/lumiMasks/.")
+        os.system(f"mv {latest_file} src/BTVNanoCommissioning/data/DC/.")
         return latest_file
     else:
         raise (
@@ -89,7 +89,8 @@ if __name__ == "__main__":
         "-sc",
         "--scheme",
         default="Validation",
-        choices=list(workflows.keys()) + ["Validation", "SF", "default_comissioning"],
+        choices=list(workflows.keys())
+        + ["Validation", "Validation_tt", "SF", "default_comissioning"],
         help="Choose the function for dump luminosity(`lumi`)/failed files(`failed`) into json",
     )
 
@@ -110,6 +111,22 @@ if __name__ == "__main__":
         action="store_true",
         help="Run local debug test with small set of dataset with iterative executor",
     )
+    parser.add_argument(
+        "--limit_MC_Wc",
+        action="store_true",
+        help="Limit MC samples to 100 files regardless of workflow/scheme",
+    )
+    parser.add_argument(
+        "--limit_MC",
+        action="store_true",
+        help="Limit MC samples to 50 files regardless of workflow/scheme",
+    )
+    parser.add_argument(
+        "--validate_workflow",
+        "-vw",
+        action="store_true",
+        help="Run only data and MC samples for the workflow, skip minor MC samples",
+    )
 
     args = parser.parse_args()
     # summarize diffeerent group for study
@@ -118,6 +135,8 @@ if __name__ == "__main__":
         "SF": ["BTA_ttbar", "BTA_addPFMuons"],
         # Use for prompt data MC checks for analysis
         "Validation": ["ttdilep_sf", "ctag_Wc_sf"],
+        "Validation_tt": ["ttdilep_sf"],
+        "Validation_ctag": ["ctag_Wc_sf"],
         # commissioning workflows
         "default_comissioning": [
             "ttdilep_sf",
@@ -129,18 +148,20 @@ if __name__ == "__main__":
         ],
     }
     if args.scheme in workflows.keys():
-        scheme["test"] = [args.scheme]
-        args.scheme = "test"
+        scheme[args.scheme] = [args.scheme]
+        # scheme["test"] = [args.scheme]
+        # args.scheme = "test"
+
     # Check lumiMask exists and replace the Validation
-    input_lumi_json = correction_config[args.campaign]["lumiMask"]
+    input_lumi_json = correction_config[args.campaign]["DC"]
     if args.campaign != "prompt_dataMC" and not os.path.exists(
-        f"src/BTVNanoCommissioning/data/lumiMasks/{input_lumi_json}"
+        f"src/BTVNanoCommissioning/data/DC/{input_lumi_json}"
     ):
-        raise f"src/BTVNanoCommissioning/data/lumiMasks/{input_lumi_json} not exist"
+        raise f"src/BTVNanoCommissioning/data/DC/{input_lumi_json} not exist"
 
     if (
         args.campaign == "prompt_dataMC"
-        and correction_config[args.campaign]["lumiMask"] == "$PROMPT_DATAMC"
+        and correction_config[args.campaign]["DC"] == "$PROMPT_DATAMC"
     ):
         input_lumi_json = get_lumi_from_web(args.year)
         os.system(
@@ -149,6 +170,10 @@ if __name__ == "__main__":
         print(f"======>{input_lumi_json} is used for {args.year}")
 
     for wf in scheme[args.scheme]:
+        if args.validate_workflow:
+            print(
+                f"ℹ️ Running workflow '{wf}' in validation mode (only data and MC samples)"
+            )
         if args.debug:
             print(f"======{wf} in {args.scheme}=====")
         overwrite = "--overwrite" if args.overwrite else ""
@@ -161,11 +186,11 @@ if __name__ == "__main__":
         ):
             if args.debug:
                 print(
-                    f"Creating MC dataset: python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation"
+                    f"Creating MC dataset: python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation --executor futures"
                 )
 
             os.system(
-                f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation"
+                f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation --executor futures"
             )
             if args.debug:
                 os.system(f"ls metadata/{args.campaign}/*.json")
@@ -173,7 +198,10 @@ if __name__ == "__main__":
         ## Run the workflows
         for types in predefined_sample[wf].keys():
 
-            if (types != "data" and types != "MC") and args.scheme == "Validation":
+            if (types != "data" and types != "MC") and (
+                args.scheme == "Validation" or args.validate_workflow
+            ):
+                print(f"⚠️ Skipping minor sample type '{types}' due to validation mode")
                 continue
             print(
                 f"hists_{wf}_{types}_{args.campaign}_{args.year}_{wf}/hists_{wf}_{types}_{args.campaign}_{args.year}_{wf}.coffea"
@@ -195,7 +223,7 @@ if __name__ == "__main__":
                 # Check if dataset needs refreshing because of age
                 if should_refresh_dataset(json_file):
                     print(f"Refreshing dataset: {json_file}")
-                    fetch_cmd = f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation --overwrite "
+                    fetch_cmd = f"python scripts/fetch.py -c {args.campaign} --from_workflow {wf} --DAS_campaign {args.DAS_campaign} --year {args.year} {overwrite} --skipvalidation --overwrite --executor futures"
                     os.system(fetch_cmd)
 
                 runner_config_required = f"python runner.py --wf {wf} --json metadata/{args.campaign}/{types}_{args.campaign}_{args.year}_{wf}.json {overwrite} --campaign {args.campaign} --year {args.year}"
@@ -215,6 +243,9 @@ if __name__ == "__main__":
                         "version",
                         "local",
                         "debug",
+                        "limit_MC",
+                        "limit_MC_Wc",
+                        "validate_workflow",
                     ]:
                         continue
 
@@ -236,10 +267,20 @@ if __name__ == "__main__":
                             runner_config += f" --{key}={value}"
 
                 # Add limit for MC validation if not already present
-                if "Validation" == args.scheme and types == "MC" and not limit_added:
-                    runner_config += " --limit 50"
-                    imit_added = True
-                    print(f"⚠️ Running Validation with 50 files limit for MC")
+                if types == "MC" and not limit_added:
+                    # Apply limit if it's Validation or the limit_MC flag is set
+                    if (
+                        "Validation" == args.scheme
+                        or "Validation_tt" == args.scheme
+                        or args.limit_MC
+                    ):
+                        runner_config += " --limit 50"
+                        limit_added = True
+                        print(f"⚠️ Running with 50 files limit for MC samples")
+                    elif args.limit_MC_Wc:
+                        runner_config += " --limit 100"
+                        limit_added = True
+                        print(f"⚠️ Running with 100 files limit for MC samples")
                 runner_config = runner_config_required + runner_config
                 if args.debug:
                     print(f"run the workflow: {runner_config}")
