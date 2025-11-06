@@ -40,10 +40,13 @@ from BTVNanoCommissioning.utils.correction import (
 # user helper function
 from BTVNanoCommissioning.helpers.func import update, dump_lumi
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.helpers.definitions import disc_list
+from BTVNanoCommissioning.helpers.definitions import get_discriminators
 
 ## load histograms & selctions for this workflow
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import (
+    histogrammer,
+    histo_writter,
+)
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -234,9 +237,15 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             self.model_base = None
         username = os.environ.get("USER")
-        self.out_dir_base = (
-            f"/eos/user/{username[0]}/{username}/btv/phys_btag/sfb-ttkinfit/arrays"
-            + ("_bdt" if self.model_base else "")
+        eos_base = f"/eos/user/{username[0]}/{username}"
+        if os.path.exists(eos_base):
+            base_path = eos_base
+        else:
+            base_path = os.getcwd()
+
+        self.out_dir_base = os.path.join(
+            base_path,
+            "btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else ""),
         )  # noqa
 
         ## Load corrections
@@ -259,7 +268,13 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
 
-        output = {"": None} if self.noHist else histogrammer(events, "sf_ttdilep_kin")
+        output = {"": None}
+        if not self.noHist:
+            output = histogrammer(
+                events.Jet.fields,
+                obj_list=["dilep"],
+                hist_collections=["common", "fourvec", "ttdilep_kin"],
+            )
 
         # TODO: implement proper sum of event weights for variations
         if shift_name is None:
@@ -488,6 +503,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # list of available taggers
         taggers = {}
+        disc_list = get_discriminators()
         for tag in disc_list:
             if tag in ev_jets.fields:
                 taggers[tag] = get_tagger(ev_jets, tag)

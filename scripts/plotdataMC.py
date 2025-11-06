@@ -1,18 +1,18 @@
 import numpy as np
 import argparse, os, arrow, glob, re, sys
-from coffea.util import load
 import matplotlib.pyplot as plt
-from matplotlib.offsetbox import AnchoredText
 import mplhep as hep
 import hist
+from coffea.util import load
+from matplotlib.offsetbox import AnchoredText
 
 plt.style.use(hep.style.ROOT)
+
 from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
 from BTVNanoCommissioning.helpers.definitions import (
-    definitions,
+    get_definitions,
     axes_name,
-    SV_definitions,
 )
 from BTVNanoCommissioning.utils.plot_utils import (
     plotratio,
@@ -24,8 +24,8 @@ from BTVNanoCommissioning.utils.plot_utils import (
     color_map,
 )
 
-bininfo = definitions()
-SV_bininfo = SV_definitions()
+bininfo = get_definitions()
+SV_bininfo = get_definitions(include_definitions=["SV"])
 parser = argparse.ArgumentParser(description="hist plotter for commissioning")
 parser.add_argument("--lumi", required=True, type=float, help="luminosity in /pb")
 parser.add_argument("--com", default="13.6", type=str, help="sqrt(s) in TeV")
@@ -55,7 +55,8 @@ parser.add_argument(
     "-v",
     "--variable",
     type=str,
-    help="variables to plot, splitted by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
+    default="all",
+    help="variables to plot, split by ,. Wildcard option * available as well. Specifying `all` will run through all variables.",
 )
 parser.add_argument(
     "--xlabel",
@@ -139,7 +140,9 @@ collated = {
     key: value for key, value in collated.items() if isinstance(collated[key], dict)
 }
 print(collated.keys())
+
 ### input text settings
+input_txt = "placeholder"
 if "Wc" in args.phase:
     input_txt = "W+c"
     if args.splitOSSS == 1:
@@ -240,13 +243,33 @@ for index, discr in enumerate(var_set):
         SF_axis = allaxis
         noSF_axis = allaxis
     if "syst" in collated["mc"][discr].axes.name:
-        allaxis["syst"] = "nominal"
-        SF_axis = allaxis
-        noSF_axis = allaxis
+        # Get list of available systematics
         systlist = [
-            collated["mc"][discr].axes[0].value(i)
-            for i in range(collated["mc"][discr].axes[0].size)
+            collated["mc"][discr]
+            .axes[collated["mc"][discr].axes.name.index("syst")]
+            .value(i)
+            for i in range(
+                collated["mc"][discr]
+                .axes[collated["mc"][discr].axes.name.index("syst")]
+                .size
+            )
         ]
+        print(f"Available systematics: {systlist}")
+
+        # Choose the appropriate systematic name
+        if "nominal" in systlist:
+            allaxis["syst"] = "nominal"
+        elif "SF" in systlist:  # For ctag_Wc_sf workflow
+            allaxis["syst"] = "SF"
+        elif len(systlist) > 0:
+            # Fallback to first available systematic
+            allaxis["syst"] = systlist[0]
+            print(
+                f"Warning: 'nominal' not found in systematics, using '{systlist[0]}' instead"
+            )
+
+        SF_axis = allaxis.copy()
+        noSF_axis = allaxis.copy()
         if "noSF" in systlist:
             noSF_axis["syst"] = "noSF"
 
@@ -262,6 +285,12 @@ for index, discr in enumerate(var_set):
             collated[s][discr] = rebin_hist(
                 collated[s][discr], collated[s][discr].axes[-1].name, rebin
             )
+
+    # check if plottable, skip otherwise
+    hmc = collated["mc"][discr][allaxis]
+    if len(hmc.axes) > 2:
+        print(f"Skipping {discr}: after selections still has {len(hmc.axes)} axes")
+        continue
 
     ## Rescale noSF & SF to same MC yields
     if (

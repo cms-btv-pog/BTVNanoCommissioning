@@ -15,6 +15,9 @@ from BTVNanoCommissioning.workflows.ttdilep_valid_sf import (
 from BTVNanoCommissioning.workflows.sf_ttdilep_kin import (
     NanoProcessor as TTdilepKinSFProcessor,
 )
+from BTVNanoCommissioning.workflows.sf_ttsemilep_tnp import (
+    NanoProcessor as TTsemilepTnPSFProcessor,
+)
 
 # C-tag
 from BTVNanoCommissioning.workflows.ctag_emdileptt_valid_sf import (
@@ -46,9 +49,9 @@ from BTVNanoCommissioning.workflows.BTA_ttbar_producer import (
     NanoProcessor as BTA_ttbar_processor,
 )  # ttbar -kinFit
 
-# from BTVNanoCommissioning.workflows.example import (
-#     NanoProcessor as ExampleProcessor,
-# )
+from BTVNanoCommissioning.workflows.example import (
+    NanoProcessor as ExampleProcessor,
+)
 
 
 # FIXME - make names more systematic?
@@ -83,6 +86,8 @@ workflows["ectag_ttsemilep_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="semittE"
 )
 
+workflows["sf_ttsemilep_tnp"] = TTsemilepTnPSFProcessor
+
 ##QCD
 workflows["QCD_sf"] = QCDValidProcessor
 workflows["QCD_smu_sf"] = QCDsmuValidProcessor
@@ -105,7 +110,8 @@ workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM
 workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
 
 # Tutorial
-# workflows["example"] = ExampleProcessor
+workflows["example"] = ExampleProcessor
+
 # BTA producers
 workflows["BTA"] = BTA_processor
 workflows["BTA_addPFMuons"] = partial(BTA_processor, addPFMuons=True)

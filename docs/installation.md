@@ -35,7 +35,7 @@ conda/micromamba activate  /eos/home-m/milee/miniforge3/envs/btv_coffea
 git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
 # Once the environment is set up, compile the python package:
 pip install -e .
-pip install -e .[dev, doc] # for developer
+pip install -e .[dev,doc] # for developer
 ```
 
 You can still install additional packages itself by `pip install $PACKAGE`
