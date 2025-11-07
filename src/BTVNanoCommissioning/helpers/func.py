@@ -22,13 +22,22 @@ def campaign_map():
 
     subdirs = [p.name for d in dirs if d.is_dir() for p in d.iterdir() if p.is_dir()]
     dirnames = {}
-    for i in range(len(subdirs)):
-        if "Run3" in subdirs[i]:
-            dirnames[subdirs[i].split("-")[2]] = subdirs[i]
-        elif "Run2" in subdirs[i]:
-            dirnames[subdirs[i].split("-")[1] + "-UL"] = subdirs[i]
+    for subdir in subdirs:
+        if "Run3" in subdir:
+            parts = subdir.split("-")
+            if len(parts) > 2:
+                dirnames[parts[2]] = subdir
+            else:
+                continue
+        elif "Run2" in subdir:
+            parts = subdir.split("-")
+            if len(parts) > 1:
+                dirnames[parts[1] + "-UL"] = subdir
+            else:
+                continue
         else:
-            raise ValueError("Unknown campaign name")
+            # Ignore auxiliary directories that do not follow the Run[23]- naming scheme, e.g. the JER auxiliary files
+            continue
 
     return dirnames
 
