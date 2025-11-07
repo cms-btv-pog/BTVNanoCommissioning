@@ -1134,7 +1134,6 @@ def EGM_shifts(shifts, correct_map, events, isRealData, systematic=False):
                 events_run,
                 ele_etaSC,
                 ele_r9,
-                np.abs(ele_etaSC),
                 ele_pt,
                 ele_seedGain,
             )
