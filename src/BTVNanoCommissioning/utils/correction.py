@@ -1518,10 +1518,6 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                 if "Summer24" not in correct_map["campaign"]
                 else ak.fill_none(ele.superclusterEta, -2.5)
             )
-            # ele_pt_RecoID = ak.fill_none(ele.pt, 20 if "Summer24" in correct_map["campaign"] else 10)
-            # ele_pt_RecoID = np.clip(ele_pt, 20 if "Summer24" in correct_map["campaign"] else 10, 10000)
-            # ele_pt_HLT = ak.fill_none(ele.pt, 25)
-            # ele_pt_HLT = np.clip(ele_pt, 25, 10000)
             masknone = ak.is_none(ele.pt)
             sfs_alle, sfs_alle_up, sfs_alle_down = (
                 np.ones_like(allele[:, 0].pt),
