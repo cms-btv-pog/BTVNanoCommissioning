@@ -205,7 +205,10 @@ correction_config = {
             "ele_ID 2024 Electron-ID-SF": "wp80iso",
         },
         "muonSS": "",
-        "electronSS": ["Scale", "SmearAndSyst"],
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
     },
     "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
 }
