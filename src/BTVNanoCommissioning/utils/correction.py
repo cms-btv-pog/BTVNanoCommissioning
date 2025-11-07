@@ -646,8 +646,8 @@ def JME_shifts(
                     corrFactor = JECflatCorrFactor
                 else:
                     JERsmear_input = get_corr_inputs(j, sf_jersmear)
-                    corrFactor = (
-                        JECflatCorrFactor * sf_jersmear.evaluate(*JERsmear_input)
+                    corrFactor = JECflatCorrFactor * sf_jersmear.evaluate(
+                        *JERsmear_input
                     )
             corrFactor = ak.unflatten(corrFactor, nj)
 
