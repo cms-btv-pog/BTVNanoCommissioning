@@ -77,7 +77,7 @@ class NanoProcessor(processor.ProcessorABC):
         ## Create histograms
         objs = ["mu", "ele", "jet0", "jet1"]
         if self.selMod == "ttdilep_sf_2D":
-            object_list.append("MET")
+            objs.append("MET")
         output = {}
         if not self.noHist:
             output = histogrammer(
