@@ -169,7 +169,9 @@ def load_SF(year, campaign, syst=False):
             ## muon
             _mu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{campaign_map()[campaign]}/latest/muon_Z.json.gz"
             if not os.path.exists(_mu_path):
-                _mu_path = f"src/BTVNanoCommissioning/data/MUO/{campaign}/muon_Z.json.gz"
+                _mu_path = (
+                    f"src/BTVNanoCommissioning/data/MUO/{campaign}/muon_Z.json.gz"
+                )
             if os.path.exists(_mu_path):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(_mu_path)
             ## electron
@@ -178,7 +180,9 @@ def load_SF(year, campaign, syst=False):
                 "electronHlt": "EGM_HLT",
             }.items():
                 _ele_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest/{_ele_file}.json.gz"
-                if not os.path.exists(_ele_path) or (_ele_file == "electron" and campaign == "Summer24"):
+                if not os.path.exists(_ele_path) or (
+                    _ele_file == "electron" and campaign == "Summer24"
+                ):
                     _ele_path = f"src/BTVNanoCommissioning/data/EGM/{campaign}/{_ele_file}.json.gz"
                 if os.path.exists(_ele_path):
                     correct_map[_ele_map] = correctionlib.CorrectionSet.from_file(
@@ -522,7 +526,9 @@ cset_jersmear = (
     correctionlib.CorrectionSet.from_file(
         f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/JER-Smearing/latest/jer_smear.json.gz"
     )
-    if os.path.exists(f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/JER-Smearing/latest/jer_smear.json.gz")
+    if os.path.exists(
+        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/JER-Smearing/latest/jer_smear.json.gz"
+    )
     else {"JERSmear": None}
 )
 sf_jersmear = cset_jersmear["JERSmear"]
@@ -1772,8 +1778,14 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                     # ID SFs
                     else:
                         _ele_map = "EGM"
-                        ele_pt = ak.fill_none(ele.pt, 20 if "Summer24" in correct_map["campaign"] else 10)
-                        ele_pt = np.clip(ele_pt, 20 if "Summer24" in correct_map["campaign"] else 10, 10000)
+                        ele_pt = ak.fill_none(
+                            ele.pt, 20 if "Summer24" in correct_map["campaign"] else 10
+                        )
+                        ele_pt = np.clip(
+                            ele_pt,
+                            20 if "Summer24" in correct_map["campaign"] else 10,
+                            10000,
+                        )
 
                     if "Summer23" in correct_map["campaign"]:
                         sfs = np.where(

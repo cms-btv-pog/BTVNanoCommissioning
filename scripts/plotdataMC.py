@@ -229,7 +229,8 @@ for index, discr in enumerate(var_set):
         tmp = tmp.split("to")
         low_edge = tmp[0]
         up_edge = tmp[1]
-        if up_edge == "10000": up_edge = "inf."
+        if up_edge == "10000":
+            up_edge = "inf."
 
     ## axis info
     allaxis = {}

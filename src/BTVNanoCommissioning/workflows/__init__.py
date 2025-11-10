@@ -52,7 +52,7 @@ from BTVNanoCommissioning.workflows.BTA_producer import (
 )
 from BTVNanoCommissioning.workflows.BTA_ttbar_producer import (
     NanoProcessor as BTA_ttbar_processor,
-) # ttbar - kinFit
+)  # ttbar - kinFit
 
 from BTVNanoCommissioning.workflows.example import (
     NanoProcessor as ExampleProcessor,
@@ -110,13 +110,9 @@ workflows["ctag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="W
 workflows["ctag_Wc_noMuVeto_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="WcM_noMuVeto"
 )
-workflows["2D_mu_Wc_sf"] = partial(
-    CTAGWcTTValidSFProcessor, selectionModifier="WcM_2D"
-)
+workflows["2D_mu_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcM_2D")
 workflows["ectag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcE")
-workflows["2D_e_Wc_sf"] = partial(
-    CTAGWcTTValidSFProcessor, selectionModifier="WcE_2D"
-)
+workflows["2D_e_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcE_2D")
 workflows["ctag_Wc_WP_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="cutbased_WcM"
 )
@@ -127,12 +123,8 @@ workflows["ectag_Wc_WP_sf"] = partial(
 # DY
 workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
 workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
-workflows["2D_mu_DY_sf"] = partial(
-    CTAGDYValidSFProcessor, selectionModifier="DYM_2D"
-)
-workflows["2D_e_DY_sf"] = partial(
-    CTAGDYValidSFProcessor, selectionModifier="DYE_2D"
-)
+workflows["2D_mu_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM_2D")
+workflows["2D_e_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE_2D")
 
 
 # Tutorial

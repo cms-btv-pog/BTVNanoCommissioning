@@ -300,18 +300,20 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         else:
                             flav_to_plot = flav
                             hist_to_plot = sel_jet[histname.replace(f"jet{i}_", "")]
-                            weight_to_plot = weight
+                            weight_to_plots = weight
                             # Needed for 2D_ttsemilep workflows
-                            hist_mask = [False if x is None else True for x in hist_to_plot]
+                            hist_mask = [
+                                False if x is None else True for x in hist_to_plot
+                            ]
                             if ak.any(np.invert(hist_mask)):
                                 flav_to_plot = flav_to_plot[hist_mask]
-                                weight_to_plot = weight_to_plot[hist_mask]
+                                weight_to_plots = weight_to_plots[hist_mask]
                                 hist_to_plot = hist_to_plot[hist_mask]
                             h.fill(
                                 syst,
                                 flatten(flav_to_plot),
                                 flatten(hist_to_plot),
-                                weight=weight_to_plot,
+                                weight=weight_to_plots,
                             )
             # Mu-jets distribution
             elif "lmujet_" in histname:
@@ -458,7 +460,11 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 syst, flatten(pruned_ev.dilep.mass), weight=weight
             )
             if "dilep_ptratio" in histname:
-                output["dilep_ptratio"].fill(syst,flatten(pruned_ev.dilep.pt / pruned_ev.SelJet[:, 0].pt), weight=weight)
+                output["dilep_ptratio"].fill(
+                    syst,
+                    flatten(pruned_ev.dilep.pt / pruned_ev.SelJet[:, 0].pt),
+                    weight=weight,
+                )
 
         if "MET_pt" in output.keys():
             output["MET_pt"].fill(syst, flatten(pruned_ev.MET.pt), weight=weight)

@@ -470,7 +470,7 @@ xsection = [
         "cross_section": "8.173",
         "accuracy": "NNLO",
         "energy": "13.6",
-        "comment": "GenXSecAnalyzer with k-factors from SMP-24-001 (calculated with MATRIX)"
+        "comment": "GenXSecAnalyzer with k-factors from SMP-24-001 (calculated with MATRIX)",
     },
     {
         "id": "65e2af6ac9012c00640bf9e4",
