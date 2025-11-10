@@ -200,28 +200,31 @@ def btag_wp(jets, year, campaign, tagger, borc, wp):
 def calculate_new_discriminators(ith_jets):
     probudg = ith_jets.btagUParTAK4UDG
     SvUDG = ith_jets.btagUParTAK4SvUDG
-    probs = ak.Array(np.where(
-        (SvUDG >= 0.0) & (probudg >= 0.0),
-        SvUDG * probudg / (1.0 - SvUDG), -1.0
-    ))
+    probs = ak.Array(
+        np.where(
+            (SvUDG >= 0.0) & (probudg >= 0.0), SvUDG * probudg / (1.0 - SvUDG), -1.0
+        )
+    )
     CvL = ith_jets.btagUParTAK4CvL
-    probc = ak.Array(np.where(
-        (CvL >= 0.0) & (probs >= 0.0) & (probudg >= 0.0),
-        CvL * (probs + probudg) / (1.0 - CvL), -1.0
-    ))
+    probc = ak.Array(
+        np.where(
+            (CvL >= 0.0) & (probs >= 0.0) & (probudg >= 0.0),
+            CvL * (probs + probudg) / (1.0 - CvL),
+            -1.0,
+        )
+    )
     CvB = ith_jets.btagUParTAK4CvB
-    probbbblepb = ak.Array(np.where(
-        (CvB >= 0.0) & (probc >= 0.0),
-        (1.0 - CvB) * probc / CvB, -1.0
-    ))
-    BvC = ak.Array(np.where(
-        CvB >= 0.0,
-        1.0 - CvB, -1.0
-    ))
-    HFvLF = ak.Array(np.where(
-        (probbbblepb >= 0.0) & (probc >= 0.0) & (probs >= 0.0) & (probudg >= 0.0),
-        (probbbblepb + probc) / (probbbblepb + probc + probs + probudg), -1.0
-    ))
+    probbbblepb = ak.Array(
+        np.where((CvB >= 0.0) & (probc >= 0.0), (1.0 - CvB) * probc / CvB, -1.0)
+    )
+    BvC = ak.Array(np.where(CvB >= 0.0, 1.0 - CvB, -1.0))
+    HFvLF = ak.Array(
+        np.where(
+            (probbbblepb >= 0.0) & (probc >= 0.0) & (probs >= 0.0) & (probudg >= 0.0),
+            (probbbblepb + probc) / (probbbblepb + probc + probs + probudg),
+            -1.0,
+        )
+    )
     return HFvLF, BvC
 
 
@@ -237,9 +240,9 @@ def get_wp_2D(ith_jet_HFvLF_val, ith_jet_BvC_val, year, campaign, tagger):
         if ith_jet_HFvLF_val == -1 or ith_jet_BvC_val == -1:
             return -1.0
         if HFvLF_low == 0:
-            passWP = (ith_jet_HFvLF_val >= HFvLF_low)
+            passWP = ith_jet_HFvLF_val >= HFvLF_low
         else:
-            passWP = (ith_jet_HFvLF_val > HFvLF_low)
+            passWP = ith_jet_HFvLF_val > HFvLF_low
         passWP = passWP & (ith_jet_HFvLF_val <= HFvLF_high)
         if BvC_low == 0:
             passWP = passWP & (ith_jet_BvC_val >= BvC_low)
@@ -250,7 +253,9 @@ def get_wp_2D(ith_jet_HFvLF_val, ith_jet_BvC_val, year, campaign, tagger):
             return WP[tagger]["2D"]["mapping"][wp]
     raise ValueError(
         "Somehow did not find the working point for values HFvLF=",
-        ith_jet_HFvLF_val, "and BvC=", ith_jet_BvC_val
+        ith_jet_HFvLF_val,
+        "and BvC=",
+        ith_jet_BvC_val,
     )
 
 
@@ -479,18 +484,23 @@ btag_wp_dict = {
                 "XT": [0.810, 0.736],
             },
             "2D": {
-                "No": [0.0,   1.0,   0.0,   1.0  ],
-                "L0": [0.0,   0.264, 0.0,   1.0  ], # [HFvLF low, HFvLF high, BvC low, BvC high]
-                "C0": [0.264, 0.448, 0.0,   1.0  ],
-                "C1": [0.448, 0.767, 0.0,   1.0  ],
-                "C2": [0.767, 1.0,   0.028, 0.094],
-                "C3": [0.767, 1.0,   0.01,  0.028],
-                "C4": [0.767, 1.0,   0.0,   0.01 ],
-                "B0": [0.767, 1.0,   0.094, 0.69 ],
-                "B1": [0.767, 1.0,   0.69,  0.918],
-                "B2": [0.767, 1.0,   0.918, 0.978],
-                "B3": [0.767, 1.0,   0.978, 0.994],
-                "B4": [0.767, 1.0,   0.994, 1.0  ],
+                "No": [0.0, 1.0, 0.0, 1.0],
+                "L0": [
+                    0.0,
+                    0.264,
+                    0.0,
+                    1.0,
+                ],  # [HFvLF low, HFvLF high, BvC low, BvC high]
+                "C0": [0.264, 0.448, 0.0, 1.0],
+                "C1": [0.448, 0.767, 0.0, 1.0],
+                "C2": [0.767, 1.0, 0.028, 0.094],
+                "C3": [0.767, 1.0, 0.01, 0.028],
+                "C4": [0.767, 1.0, 0.0, 0.01],
+                "B0": [0.767, 1.0, 0.094, 0.69],
+                "B1": [0.767, 1.0, 0.69, 0.918],
+                "B2": [0.767, 1.0, 0.918, 0.978],
+                "B3": [0.767, 1.0, 0.978, 0.994],
+                "B4": [0.767, 1.0, 0.994, 1.0],
                 "mapping": {
                     "L0": 0,
                     "C0": 1,
@@ -511,7 +521,7 @@ btag_wp_dict = {
                     (70, 90),
                     (90, 120),
                     (120, 10000),
-                ]
+                ],
             },
         },
     },

@@ -161,7 +161,12 @@ def _get_discriminators(axes, **kwargs):
 
     for d in disc_list:
         if include_discriminators_2D:
-            if d not in jet_fields and "BvC" not in d and "HFvLF" not in d and "2D" not in d:
+            if (
+                d not in jet_fields
+                and "BvC" not in d
+                and "HFvLF" not in d
+                and "2D" not in d
+            ):
                 continue
         elif d not in jet_fields:
             continue

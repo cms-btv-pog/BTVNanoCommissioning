@@ -321,12 +321,9 @@ predefined_sample = {
             "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
         ],
     },
-    "2D_e_ttsemilep_sf": { # Sync MC with 2D_ttsemilep_mu_sf
-        "data": [
-            "EGamma0",
-            "EGamma1"
-        ],
-        "MC": [ # FIXME: still missing some MC, also move some to minor_MC category
+    "2D_e_ttsemilep_sf": {  # Sync MC with 2D_ttsemilep_mu_sf
+        "data": ["EGamma0", "EGamma1"],
+        "MC": [  # FIXME: still missing some MC, also move some to minor_MC category
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
@@ -360,12 +357,12 @@ predefined_sample = {
         ],
         "minor_MC": [],
     },
-    "2D_mu_ttsemilep_sf": { # Sync MC with 2D_ttsemilep_e_sf
+    "2D_mu_ttsemilep_sf": {  # Sync MC with 2D_ttsemilep_e_sf
         "data": [
             "Muon0",
             "Muon1",
         ],
-        "MC": [ # FIXME: still missing some MC, also move some to minor_MC category
+        "MC": [  # FIXME: still missing some MC, also move some to minor_MC category
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
