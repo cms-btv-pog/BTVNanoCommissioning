@@ -13,45 +13,19 @@ errband_opts = {
 }
 markers = [".", "o", "^", "s", "+", "x", "D", "*"]
 color_map = {
-    "$t\\bar{t}$": "#008695",
-    "Single top": "#3969ac",
     "VV": "#7f3c8d",
     "Z+jets": "#e68310",
     "W+jets": "#80ba5a",
     "QCD": "#e73f74",
     "QCD($\\mu$)": "#a5aa99",
+    "Single top": "#3969ac",
+    "$t\\bar{t}$": "#008695",
     "udsg": "tab:blue",
     "pu": "tab:orange",
     "c": "tab:green",
     "b": "tab:red",
 }
 sample_mergemap = {
-    # ttbar
-    "$t\\bar{t}$": [
-        "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
-        "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8",
-    ],
-    # single top
-    "Single top": [
-        "TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8",
-        "TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8",
-        "TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8",
-        "TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8",
-        "TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8",
-        # decay
-        "TWminusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
-        "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
-        "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
-        "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
-        "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
-        "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
-    ],
     # diboson
     "VV": [
         "WW_TuneCP5_13p6TeV-pythia8",
@@ -125,6 +99,33 @@ sample_mergemap = {
         "QCD_PT-2400to3200_TuneCP5_13p6TeV_pythia8",
         "QCD_PT-3200_TuneCP5_13p6TeV_pythia8",
         "QCD_PT-3200_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-15to20_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-20to30_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-30to50_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-50to80_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-80to120_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-120to170_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-170to300_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-300to470_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-470to600_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-600to800_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-800to1000_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-1000to1500_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-1500to2000_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-2000to2500_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-2500to3000_TuneCP5_13p6TeV_pythia8",
+        "QCD_Bin-PT-3000_TuneCP5_13p6TeV_pythia8",
+        "QCD-4Jets_Bin-HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "QCD-4Jets_Bin-HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "QCD-4Jets_Bin-HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "QCD-4Jets_Bin-HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "QCD-4Jets_Bin-HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "QCD-4Jets_Bin-HT-600to800_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "QCD-4Jets_Bin-HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "QCD-4Jets_Bin-HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "QCD-4Jets_Bin-HT-1200to1500_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "QCD-4Jets_Bin-HT-1500to2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "QCD-4Jets_Bin-HT-2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
     ],
     # QCD muon enriched
     "QCD($\\mu$)": [
@@ -140,6 +141,32 @@ sample_mergemap = {
         "QCD_PT-600to800_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
         "QCD_PT-800to1000_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
         "QCD_PT-1000_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+    ],
+    # single top
+    "Single top": [
+        "TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8",
+        "TBbarQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8",
+        "TWminus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8",
+        "TbarBQ_t-channel_4FS_CP5_13p6TeV_powheg-madspin-pythia8",
+        "TbarWplus_DR_AtLeastOneLepton_CP5_13p6TeV_powheg-pythia8",
+        # decay
+        "TWminusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+        "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+        "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+        "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+        "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+        "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+    ],
+    # ttbar
+    "$t\\bar{t}$": [
+        "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+        "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8",
     ],
 }
 ### copy functions coffea.hist.plotratio https://github.com/CoffeaTeam/coffea/blob/master/coffea/hist/plot.py to boost-hist

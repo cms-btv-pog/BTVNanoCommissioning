@@ -13,7 +13,7 @@ from BTVNanoCommissioning.utils.correction import (
 )
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
-from BTVNanoCommissioning.utils.histogrammer import histogrammer, histo_writter
+from BTVNanoCommissioning.utils.histogramming.histogrammer import histogrammer, histo_writer
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
@@ -23,7 +23,6 @@ from BTVNanoCommissioning.utils.selection import (
     MET_filters,
     calculate_new_discriminators,
     get_wp_2D,
-    btag_wp_2D,
     btag_wp_dict,
 )
 
@@ -71,16 +70,29 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
 
+        objs = ["MET", "jet0", "jet1", "jet2", "jet3"]
         if self.selMod == "semittE":
-            triggers = ["Ele30_WPTight_Gsf", "Ele28_eta2p1_WPTight_Gsf_HT150"] # so far only 2024 triggers
-            histname = "2D_e_ttsemilep_sf"
+            objs.append("ele")
+            chn = "ele"
+            triggers = ["Ele30_WPTight_Gsf"] # so far only 2024 triggers
         elif self.selMod == "semittM":
+            objs.append("mu")
+            chn = "mu"
             triggers = ["IsoMu24"] # so far only 2024 triggers
-            histname = "2D_mu_ttsemilep_sf"
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
-        output = {} if self.noHist else histogrammer(events, histname)
+        ## Create histograms
+        output = {}
+        if not self.noHist:
+            output = histogrammer(
+                events.Jet.fields,
+                obj_list=objs,
+                hist_collections=["common", "fourvec", "ttsemilep_2D"],
+                channel=chn,
+                njet=4,
+                include_discriminators_2D=True,
+            )
 
         if shift_name is None:
             if isRealData:
@@ -106,7 +118,7 @@ class NanoProcessor(processor.ProcessorABC):
         ## Lepton cuts
         if self.selMod == "semittE":
             event_iso_lep = events.Electron[
-                (events.Electron.pt > 30) & ele_mvatightid(events, self._campaign)
+                (events.Electron.pt > 32) & ele_mvatightid(events, self._campaign)
             ]
         elif self.selMod == "semittM":
             # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
@@ -115,7 +127,7 @@ class NanoProcessor(processor.ProcessorABC):
             ]
             event_soft_mu = events.Muon[
                 (events.Muon.pt > 5)
-                & (abs(events.Muon.eta) < 2.4)
+                & (abs(events.Muon.eta) < 2.5)
                 & (events.Muon.tightId > 0.5)
                 & (events.Muon.pfRelIso04_all > 0.25)
             ]
@@ -148,9 +160,12 @@ class NanoProcessor(processor.ProcessorABC):
         event_jet = ak.pad_none(event_jet, 4, axis=1)
 
         # b-tagged jets requirement
+        WP = btag_wp_dict[self._year + "_" + self._campaign]["UParTAK4"]["2D"]
         btagUParTAK4HFvLF1, btagUParTAK4BvC1 = calculate_new_discriminators(event_jet[:, 0])
         btagUParTAK4HFvLF2, btagUParTAK4BvC2 = calculate_new_discriminators(event_jet[:, 1])
-        req_b_jets = btag_wp_2D(btagUParTAK4HFvLF1, btagUParTAK4BvC1, self._year, self._campaign, "UParTAK4", "B2", "B4") | btag_wp_2D(btagUParTAK4HFvLF2, btagUParTAK4BvC2, self._year, self._campaign, "UParTAK4", "B2", "B4")
+        wp2D_1 = ak.Array([get_wp_2D(btagUParTAK4HFvLF1[i], btagUParTAK4BvC1[i], self._year, self._campaign, "UParTAK4") for i in range(len(btagUParTAK4HFvLF1))])
+        wp2D_2 = ak.Array([get_wp_2D(btagUParTAK4HFvLF2[i], btagUParTAK4BvC2[i], self._year, self._campaign, "UParTAK4") for i in range(len(btagUParTAK4HFvLF2))])
+        req_b_jets = ((wp2D_1 >= WP["mapping"]["B2"]) & (wp2D_1 <= WP["mapping"]["B4"])) | ((wp2D_2 >= WP["mapping"]["B2"]) & (wp2D_2 <= WP["mapping"]["B4"]))
 
         ## Store jet index for PFCands, create mask on the jet index
         jetindx = ak.mask(ak.local_index(events.Jet.pt), jet_sel==True)
@@ -222,18 +237,29 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["MET"] = event_MET[event_level]
         pruned_ev["w_mt"] = event_Wmt[event_level]
 
+        pruned_ev[f"nbjet"] = ak.zeros_like(pruned_ev["SelJet"][:, 0].pt)
+        pruned_ev[f"ncjet"] = ak.zeros_like(pruned_ev["SelJet"][:, 0].pt)
         for i in range(4):
             ith_jets = pruned_ev.SelJet[:, i]
             btagUParTAK4HFvLF, btagUParTAK4BvC = calculate_new_discriminators(ith_jets)
             wp2D = ak.Array([get_wp_2D(btagUParTAK4HFvLF[i], btagUParTAK4BvC[i], self._year, self._campaign, "UParTAK4") for i in range(len(btagUParTAK4HFvLF))])
+            nbjet = np.where(((wp2D >= WP["mapping"]["B2"]) & (wp2D <= WP["mapping"]["B4"])), 1, 0)
+            ncjet = np.where(((wp2D >= WP["mapping"]["C1"]) & (wp2D <= WP["mapping"]["C4"])), 1, 0)
+            if i == 3:
+                nbjet = ak.fill_none(nbjet, 0)
+                ncjet = ak.fill_none(ncjet, 0)
+            pruned_ev[f"nbjet"] = pruned_ev[f"nbjet"] + nbjet
+            pruned_ev[f"ncjet"] = pruned_ev[f"ncjet"] + ncjet
             pruned_ev[f"btagUParTAK4HFvLF_{i}"] = btagUParTAK4HFvLF
             pruned_ev[f"btagUParTAK4BvC_{i}"] = btagUParTAK4BvC
-            pruned_ev[f"btagUParTAK4HFvLFt_{i}"] = ak.Array(np.where(btagUParTAK4HFvLF > 0.0, 1.0 - (1.0 - btagUParTAK4HFvLF)**0.5, -1.0))
-            pruned_ev[f"btagUParTAK4BvCt_{i}"] = ak.Array(np.where(btagUParTAK4BvC > 0.0, 1.0 - (1.0 - btagUParTAK4BvC)**0.5, -1.0))
+            pruned_ev[f"btagUParTAK4HFvLFt_{i}"] = ak.Array(np.where(btagUParTAK4HFvLF >= 0.0, 1.0 - (1.0 - btagUParTAK4HFvLF)**0.5, -1.0))
+            pruned_ev[f"btagUParTAK4BvCt_{i}"] = ak.Array(np.where(btagUParTAK4BvC >= 0.0, 1.0 - (1.0 - btagUParTAK4BvC)**0.5, -1.0))
             pruned_ev[f"btagUParTAK42D_{i}"] = wp2D
-            jet_pt_bins = btag_wp_dict[self._year + "_" + self._campaign]["UParTAK4"]["2D"]["jet_pt_bins"]
+            jet_pt_bins = WP["jet_pt_bins"]
             for jet_pt_bin in jet_pt_bins:
                  pruned_ev[f"btagUParTAK42D_pt{jet_pt_bin[0]}to{jet_pt_bin[1]}_{i}"] = [wp2D[ijet] if pt is not None and jet_pt_bin[0] < pt and pt < jet_pt_bin[1] else None for ijet, pt in enumerate(ith_jets.pt)]
+        pruned_ev.nbjet = ak.values_astype(pruned_ev.nbjet, "int64")
+        pruned_ev.ncjet = ak.values_astype(pruned_ev.ncjet, "int64")
 
         ####################
         #     Output       #
@@ -248,7 +274,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
+            output = histo_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays

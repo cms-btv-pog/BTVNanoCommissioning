@@ -201,25 +201,25 @@ def calculate_new_discriminators(ith_jets):
     probudg = ith_jets.btagUParTAK4UDG
     SvUDG = ith_jets.btagUParTAK4SvUDG
     probs = ak.Array(np.where(
-        (SvUDG > 0.0) & (probudg > 0.0),
+        (SvUDG >= 0.0) & (probudg >= 0.0),
         SvUDG * probudg / (1.0 - SvUDG), -1.0
     ))
     CvL = ith_jets.btagUParTAK4CvL
     probc = ak.Array(np.where(
-        (CvL > 0.0) & (probs > 0.0) & (probudg > 0.0),
+        (CvL >= 0.0) & (probs >= 0.0) & (probudg >= 0.0),
         CvL * (probs + probudg) / (1.0 - CvL), -1.0
     ))
     CvB = ith_jets.btagUParTAK4CvB
     probbbblepb = ak.Array(np.where(
-        (CvB > 0.0) & (probc > 0.0),
+        (CvB >= 0.0) & (probc >= 0.0),
         (1.0 - CvB) * probc / CvB, -1.0
     ))
     BvC = ak.Array(np.where(
-        CvB > 0.0,
+        CvB >= 0.0,
         1.0 - CvB, -1.0
     ))
     HFvLF = ak.Array(np.where(
-        (probbbblepb > 0.0) & (probc > 0.0) & (probs > 0.0) & (probudg > 0.0),
+        (probbbblepb >= 0.0) & (probc >= 0.0) & (probs >= 0.0) & (probudg >= 0.0),
         (probbbblepb + probc) / (probbbblepb + probc + probs + probudg), -1.0
     ))
     return HFvLF, BvC
@@ -252,12 +252,6 @@ def get_wp_2D(ith_jet_HFvLF_val, ith_jet_BvC_val, year, campaign, tagger):
         "Somehow did not find the working point for values HFvLF=",
         ith_jet_HFvLF_val, "and BvC=", ith_jet_BvC_val
     )
-
-
-def btag_wp_2D(ith_jet_HFvLF, ith_jet_BvC, year, campaign, tagger, wp_low, wp_high):
-    WP = wp_dict(year, campaign)
-    jet_wps = ak.Array([get_wp_2D(ith_jet_HFvLF[i], ith_jet_BvC[i], year, campaign, tagger) for i in range(len(ith_jet_HFvLF))])
-    return (jet_wps >= WP[tagger]["2D"]["mapping"][wp_low]) & (jet_wps >= WP[tagger]["2D"]["mapping"][wp_high])
 
 
 btag_wp_dict = {
