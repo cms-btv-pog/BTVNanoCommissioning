@@ -41,6 +41,7 @@ def validate_dataset_structure(fileset):
         "Muon_phi",
         "SV_pt",
     ]
+    optional_met_branches = ["MET_pt", "PuppiMET_pt", "PFMET_pt"]
 
     filtered_fileset = deepcopy(fileset)
     all_files_invalid = True
@@ -70,6 +71,13 @@ def validate_dataset_structure(fileset):
                 if missing:
                     print(
                         f"WARNING: File missing critical branches {missing}: {filename}"
+                    )
+                    continue
+
+                if not any(met in branches for met in optional_met_branches):
+                    print(
+                        "WARNING: File missing MET branch; expected one of "
+                        f"{optional_met_branches}: {filename}"
                     )
                     continue
 

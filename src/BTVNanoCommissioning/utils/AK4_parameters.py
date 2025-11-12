@@ -68,8 +68,8 @@ correction_config = {
         "jetveto": {"Summer22_23Sep2023_RunCD_V1": "jetvetomap"},
         "muonSS": "",
         "electronSS": [
-            "EGMScale_Compound_Ele_2022preEE",
-            "EGMSmearAndSyst_ElePTsplit_2022preEE",
+            "Scale",
+            "SmearAndSyst",
         ],
     },
     "Summer22EE": {
@@ -99,8 +99,8 @@ correction_config = {
         },
         "muonSS": "",
         "electronSS": [
-            "EGMScale_Compound_Ele_2022postEE",
-            "EGMSmearAndSyst_ElePTsplit_2022postEE",
+            "Scale",
+            "SmearAndSyst",
         ],
     },
     "Summer23": {
@@ -128,8 +128,8 @@ correction_config = {
         },
         "muonSS": "",
         "electronSS": [
-            "EGMScale_Compound_Ele_2023preBPIX",
-            "EGMSmearAndSyst_ElePTsplit_2023preBPIX",
+            "Scale",
+            "SmearAndSyst",
         ],
     },
     "Summer23BPix": {
@@ -156,8 +156,8 @@ correction_config = {
         },
         "muonSS": "",
         "electronSS": [
-            "EGMScale_Compound_Ele_2023postBPIX",
-            "EGMSmearAndSyst_ElePTsplit_2023postBPIX",
+            "Scale",
+            "SmearAndSyst",
         ],
     },
     "Summer24": {
