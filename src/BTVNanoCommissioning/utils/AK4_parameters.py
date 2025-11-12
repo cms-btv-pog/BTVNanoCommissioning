@@ -184,10 +184,8 @@ correction_config = {
             "ele_ID 2024 Electron-ID-SF": "wp80iso",
         },
         "muonSS": "",
-        "electronSS": [
-            "Scale",
-            "SmearAndSyst",
-        ],
+        "electronSS": ["EGMScale_Compound_Ele_2024", "EGMSmearAndSyst_ElePTsplit_2024"],
+        "DC": "latest/Cert_Collisions2024_378981_386951_Golden.json",
     },
     "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
 }
