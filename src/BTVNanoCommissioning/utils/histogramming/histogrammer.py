@@ -1,5 +1,6 @@
 import hist as Hist
 import awkward as ak
+import numpy as np
 from BTVNanoCommissioning.helpers.func import flatten
 from .hist_helpers import get_hist_collections, get_axes_collections
 
@@ -271,6 +272,10 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 )
             elif "njet" == histname:
                 output["njet"].fill(syst, pruned_ev.njet, weight=weight)
+            elif "nbjet" == histname:
+                output["nbjet"].fill(syst, pruned_ev.nbjet, weight=weight)
+            elif "ncjet" == histname:
+                output["ncjet"].fill(syst, pruned_ev.ncjet, weight=weight)
             elif "npv" == histname:
                 output["npv"].fill(syst, pruned_ev.PV.npvsGood, weight=weight)
             # Jet kinematics & deltaR between jet and lepton
@@ -293,11 +298,22 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                                 weight=weight,
                             )
                         else:
+                            flav_to_plot = flav
+                            hist_to_plot = sel_jet[histname.replace(f"jet{i}_", "")]
+                            weight_to_plots = weight
+                            # Needed for 2D_ttsemilep workflows
+                            hist_mask = [
+                                False if x is None else True for x in hist_to_plot
+                            ]
+                            if ak.any(np.invert(hist_mask)):
+                                flav_to_plot = flav_to_plot[hist_mask]
+                                weight_to_plots = weight_to_plots[hist_mask]
+                                hist_to_plot = hist_to_plot[hist_mask]
                             h.fill(
                                 syst,
-                                flatten(flav),
-                                flatten(sel_jet[histname.replace(f"jet{i}_", "")]),
-                                weight=weight,
+                                flatten(flav_to_plot),
+                                flatten(hist_to_plot),
+                                weight=weight_to_plots,
                             )
             # Mu-jets distribution
             elif "lmujet_" in histname:
@@ -318,15 +334,34 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 for i in range(nj):
                     if not histname.endswith(str(i)):
                         continue
+                    if (
+                        "BvC" not in histname
+                        and "HFvLF" not in histname
+                        and "2D" not in histname
+                        and histname.replace(f"_{i}", "") not in seljets.fields
+                    ):
+                        continue
                     if nj > 1:
                         flav, seljet = flavs[:, i], seljets[:, i]
                     else:
                         flav, seljet = flavs, seljets
+                    flav_to_plot = flav
+                    if "BvC" in histname or "HFvLF" in histname or "2D" in histname:
+                        discr_to_plot = pruned_ev[histname]
+                    else:
+                        discr_to_plot = seljet[histname.replace(f"_{i}", "")]
+                    weights_to_plot = weights.partial_weight(exclude=exclude_btv)
+                    # Needed for 2D_ttsemilep workflows
+                    discr_mask = [False if x is None else True for x in discr_to_plot]
+                    if ak.any(np.invert(discr_mask)):
+                        flav_to_plot = flav_to_plot[discr_mask]
+                        discr_to_plot = discr_to_plot[discr_mask]
+                        weights_to_plot = weights_to_plot[discr_mask]
                     h.fill(
                         syst=syst,
-                        flav=flav,
-                        discr=seljet[histname.replace(f"_{i}", "")],
-                        weight=weights.partial_weight(exclude=exclude_btv),
+                        flav=flav_to_plot,
+                        discr=discr_to_plot,
+                        weight=weights_to_plot,
                     )
 
         if "dr_poslnegl" in output.keys():
@@ -424,10 +459,19 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             output["dilep_mass"].fill(
                 syst, flatten(pruned_ev.dilep.mass), weight=weight
             )
+            if "dilep_ptratio" in histname:
+                output["dilep_ptratio"].fill(
+                    syst,
+                    flatten(pruned_ev.dilep.pt / pruned_ev.SelJet[:, 0].pt),
+                    weight=weight,
+                )
 
         if "MET_pt" in output.keys():
             output["MET_pt"].fill(syst, flatten(pruned_ev.MET.pt), weight=weight)
             output["MET_phi"].fill(syst, flatten(pruned_ev.MET.phi), weight=weight)
+
+        if "w_mt" in pruned_ev.fields:
+            output["w_mt"].fill(syst, flatten(pruned_ev.w_mt), weight=weight)
 
         # ttbar dilepton kin workflow
         if "kindisc" in output.keys():

@@ -33,7 +33,12 @@ from BTVNanoCommissioning.workflows.ctag_DY_valid_sf import (
     NanoProcessor as CTAGDYValidSFProcessor,
 )
 
-##QCD
+# 2D pseudo-continuous
+from BTVNanoCommissioning.workflows._2D_ttsemilep_valid_sf import (
+    NanoProcessor as _2DTTsemilepValidSFProcessor,
+)
+
+# QCD
 from BTVNanoCommissioning.workflows.QCD_validation import (
     NanoProcessor as QCDValidProcessor,
 )
@@ -41,13 +46,13 @@ from BTVNanoCommissioning.workflows.QCD_soft_mu_validation import (
     NanoProcessor as QCDsmuValidProcessor,
 )
 
-## BTA - for SFs
+# BTA - for SFs
 from BTVNanoCommissioning.workflows.BTA_producer import (
     NanoProcessor as BTA_processor,
 )
 from BTVNanoCommissioning.workflows.BTA_ttbar_producer import (
     NanoProcessor as BTA_ttbar_processor,
-)  # ttbar -kinFit
+)  # ttbar - kinFit
 
 from BTVNanoCommissioning.workflows.example import (
     NanoProcessor as ExampleProcessor,
@@ -60,6 +65,9 @@ workflows["validation"] = ValidationProcessor
 
 # TTBar
 workflows["ttdilep_sf"] = TTdilepValidSFProcessor
+workflows["2D_emu_ttdilep_sf"] = partial(
+    TTdilepValidSFProcessor, selectionModifier="ttdilep_sf_2D"
+)
 workflows["ttsemilep_sf"] = partial(
     TTsemilepValidSFProcessor, selectionModifier="tt_semilep"
 )
@@ -68,7 +76,6 @@ workflows["sf_ttdilep_kin"] = TTdilepKinSFProcessor
 workflows["c_ttsemilep_sf"] = partial(
     TTsemilepValidSFProcessor, selectionModifier="c_tt_semilep"
 )
-
 workflows["emctag_ttdilep_sf"] = CTAGEMDilepttValidSFProcessor
 workflows["ctag_ttdilep_sf"] = partial(
     CTAGDilepttValidSFProcessor, selectionModifier="dilepttM"
@@ -85,10 +92,16 @@ workflows["ctag_ttsemilep_noMuVeto_sf"] = partial(
 workflows["ectag_ttsemilep_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="semittE"
 )
+workflows["2D_e_ttsemilep_sf"] = partial(
+    _2DTTsemilepValidSFProcessor, selectionModifier="semittE"
+)
+workflows["2D_mu_ttsemilep_sf"] = partial(
+    _2DTTsemilepValidSFProcessor, selectionModifier="semittM"
+)
 
 workflows["sf_ttsemilep_tnp"] = TTsemilepTnPSFProcessor
 
-##QCD
+# QCD
 workflows["QCD_sf"] = QCDValidProcessor
 workflows["QCD_smu_sf"] = QCDsmuValidProcessor
 
@@ -97,7 +110,9 @@ workflows["ctag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="W
 workflows["ctag_Wc_noMuVeto_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="WcM_noMuVeto"
 )
+workflows["2D_mu_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcM_2D")
 workflows["ectag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcE")
+workflows["2D_e_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcE_2D")
 workflows["ctag_Wc_WP_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="cutbased_WcM"
 )
@@ -108,6 +123,9 @@ workflows["ectag_Wc_WP_sf"] = partial(
 # DY
 workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
 workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
+workflows["2D_mu_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM_2D")
+workflows["2D_e_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE_2D")
+
 
 # Tutorial
 workflows["example"] = ExampleProcessor

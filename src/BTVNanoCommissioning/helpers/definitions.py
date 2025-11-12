@@ -81,8 +81,22 @@ def get_discriminators():
         "btagRobustParTAK4QG",
         "btagUParTAK4B",
         "btagUParTAK4CvL",
+        "btagUParTAK4UDG",
+        "btagUParTAK4SvUDG",
+        "btagUParTAK4CvL",
         "btagUParTAK4CvB",
+        "btagUParTAK4BvC",
+        "btagUParTAK4BvCt",
         "btagUParTAK4CvNotB",
+        "btagUParTAK4HFvLF",
+        "btagUParTAK4HFvLFt",
+        "btagUParTAK42D",
+        "btagUParTAK42D_pt25to35",
+        "btagUParTAK42D_pt35to50",
+        "btagUParTAK42D_pt50to70",
+        "btagUParTAK42D_pt70to90",
+        "btagUParTAK42D_pt90to120",
+        "btagUParTAK42D_pt120to10000",
         "btagUParTAK4QvG",
         "btagUParTAK4TauVJet",
         ## Negative tagger
@@ -165,16 +179,24 @@ def axes_name(var):
         obj = "soft-$\\mu$"
     elif "mujet" in var:
         obj = "$\\mu$-Jet"
+    elif "njet" in var:
+        obj = "Jet multiplicity"
+    elif "nbjet" in var:
+        obj = "b jet multiplicity"
+    elif "ncjet" in var:
+        obj = "c jet multiplicity"
     elif "jet" in var:
         obj = "Jet"
     elif "w_" in var:
         obj = "W"
     elif "z_" in var:
         obj = "Z"
-    if "pt" in var:
+    if "pt" in var and "2D" not in var:
         unit = " $p_T$ [GeV]"
     elif "mass" in var:
         unit = " mass [GeV]"
+    elif "mt" in var:
+        unit = " $m_T$ [GeV]"
     elif "eta" in var:
         unit = " $\\eta$"
     elif "phi" in var:
@@ -210,12 +232,22 @@ def axes_name(var):
             unit = unit + " CvB"
         elif "CvNotB" in var:
             unit = unit + " CvNotB"
+        elif "BvCt" in var:
+            unit = unit + " BvCt"
+        elif "BvC" in var:
+            unit = unit + " BvC"
         elif "B_b" in var or "ProbB" in var:
             unit = unit + " Prob(b)"
         elif "B_bb" in var:
             unit = unit + " Prob(bb)"
         elif "B_lepb" in var:
             unit = unit + " Prob(lepb)"
+        elif "HFvLFt" in var:
+            unit = unit + " HFvLFt"
+        elif "HFvLF" in var:
+            unit = unit + " HFvLF"
+        elif "2D" in var:
+            unit = unit + " 2D WP"
         elif "QvG" in var or "QG" in var:
             unit = unit + " QvG"
         elif "G" in var:
