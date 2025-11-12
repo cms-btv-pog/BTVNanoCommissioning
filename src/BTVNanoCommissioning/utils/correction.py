@@ -1180,7 +1180,7 @@ def EGM_shifts(shifts, correct_map, events, isRealData, systematic=False):
                 1 + (smear + unc_smear) * random_numbers
             )
             ele_smear_down["pt"] = events.Electron.pt * (
-                1 + (smear - unc_smear) * random_numbers
+                1 + np.maximum(0.0, (smear - unc_smear)) * random_numbers
             )
 
         shifts += [

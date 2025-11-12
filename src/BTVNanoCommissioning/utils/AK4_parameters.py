@@ -209,7 +209,10 @@ correction_config = {
             "ele_Trig 2023PromptD Electron-HLT-SF": "HLT_SF_Ele30_MVAiso80ID",
         },
         "muonSS": "",
-        "electronSS": ["Scale", "SmearAndSyst"],
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
     },
     "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
 }
