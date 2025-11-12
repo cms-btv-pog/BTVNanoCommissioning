@@ -114,6 +114,7 @@ elif "*" in args.input:
     output = {i: load(i) for i in files}
 else:
     output = {args.input: load(args.input)}
+
 sample_list = []
 for f in output.keys():
     sample_list.extend([m for m in output[f].keys()])
@@ -170,6 +171,8 @@ else:
     hist_type = "step"
     label = "Simulation Preliminary"
 nj = 1
+
+input_txt = "placeholder"
 ### input text settings
 if "Wc" in args.phase:
     input_txt = "W+c"
@@ -187,6 +190,7 @@ elif "semilep" in args.phase:
 elif "dilep" in args.phase:
     input_txt = r"t$\bar{t}$ dileptonic"
     nj = 2
+
 if "emctag" in args.phase:
     input_txt = input_txt + " (e$\mu$)"
 elif "ectag" in args.phase:
@@ -441,7 +445,7 @@ for index, discr in enumerate(var_set):
 
         at = AnchoredText(input_txt + "\n" + text, loc=2, frameon=False)
         ax.add_artist(at)
-        hep.mpl_magic(ax=ax, soft_fail=True)
+        hep.mpl_magic(ax=ax)
         if args.log:
             ax.set_yscale("log")
         fig.savefig(
@@ -518,8 +522,8 @@ for index, discr in enumerate(var_set):
             ax.set_yscale("log")
             logext = "_log"
             ax.set_ylim(bottom=0.1)
-            hep.mpl_magic(ax=ax, soft_fail=True)
-        hep.mpl_magic(ax=ax, soft_fail=True)
+            hep.mpl_magic(ax=ax)
+        hep.mpl_magic(ax=ax)
         print(
             "creating:",
             f"plot/{args.phase}_{args.ext}/compare_{args.phase}_inclusive{discr}{logext}{normtext}.png",

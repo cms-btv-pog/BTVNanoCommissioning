@@ -34,6 +34,7 @@ def validate_dataset_structure(fileset):
         "Muon_pt",
         "Electron_pt",
         "PV_npvsGood",
+        # "MET_pt",
         "Jet_eta",
         "Jet_phi",
         "Muon_eta",
@@ -390,7 +391,8 @@ if __name__ == "__main__":
         coffeaoutput = (
             f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
         )
-    os.system(f"mkdir -p {histoutdir}")
+    if not args.noHist:
+        os.system(f"mkdir -p {histoutdir}")
     # load dataset
     with open(args.samplejson) as f:
         sample_dict = json.load(f)

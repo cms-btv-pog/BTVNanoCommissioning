@@ -107,29 +107,8 @@ correction_config = {
         "DC": "Cert_Collisions2023_366442_370790_Golden.json",
         "LUM": "puwei_Summer23.histo.root",
         "JME": {
-            "name": "V1_AK4PFPuppi",
-            "MC": [
-                "Summer23Prompt23_V1_MC_L1FastJet_AK4PFPuppi",
-                "Summer23Prompt23_V1_MC_L2Relative_AK4PFPuppi",
-                "Summer23Prompt23_V1_MC_L2Residual_AK4PFPuppi",
-                "Summer23Prompt23_V1_MC_L3Absolute_AK4PFPuppi",
-                "Summer23Prompt23_V1_MC_UncertaintySources_AK4PFPuppi",
-                "Summer23Prompt23_V1_MC_Uncertainty_AK4PFPuppi",
-                "Summer23Prompt23_JRV1_MC_SF_AK4PFPuppi",
-                "Summer23Prompt23_JRV1_MC_PtResolution_AK4PFPuppi",
-            ],
-            "dataCv123": [
-                "Summer23Prompt23_RunCv123_V1_DATA_L1FastJet_AK4PFPuppi",
-                "Summer23Prompt23_RunCv123_V1_DATA_L2Relative_AK4PFPuppi",
-                "Summer23Prompt23_RunCv123_V1_DATA_L3Absolute_AK4PFPuppi",
-                "Summer23Prompt23_RunCv123_V1_DATA_L2L3Residual_AK4PFPuppi",
-            ],
-            "dataCv4": [
-                "Summer23Prompt23_RunCv4_V1_DATA_L1FastJet_AK4PFPuppi",
-                "Summer23Prompt23_RunCv4_V1_DATA_L2Relative_AK4PFPuppi",
-                "Summer23Prompt23_RunCv4_V1_DATA_L3Absolute_AK4PFPuppi",
-                "Summer23Prompt23_RunCv4_V1_DATA_L2L3Residual_AK4PFPuppi",
-            ],
+            "MC": "Summer23Prompt23_V2 Summer23Prompt23_RunCv1234_JRV1",
+            "Run2023C": "Summer23Prompt23_V2",
         },
         "jetveto": {"Summer23Prompt23_RunC_V1": "jetvetomap"},
         "JPCalib": {
@@ -157,8 +136,8 @@ correction_config = {
         "DC": "Cert_Collisions2023_366442_370790_Golden.json",
         "LUM": "puwei_Summer23BPix.histo.root",
         "JME": {
-            "MC": "Summer23BPixPrompt23_V1 Summer23BPixPrompt23_RunD_JRV1",
-            "Run2023D": "Summer23BPixPrompt23_RunD_V1",
+            "MC": "Summer23BPixPrompt23_V3 Summer23BPixPrompt23_RunD_JRV1",
+            "Run2023D": "Summer23BPixPrompt23_V3",
         },
         "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
@@ -182,8 +161,8 @@ correction_config = {
         ],
     },
     "Summer24": {
-        "DC": "Cert_Collisions2024_378981_386951_Golden.json",
-        "LUM": "PU_weights_Summer24.histo.root",
+        "lumiMask": "Cert_Collisions2024_378981_386951_Golden.json",
+        "PU": None,
         "JME": {
             # TODO: JER are a placeholder for now (July 2025)
             "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1",
@@ -205,10 +184,8 @@ correction_config = {
             "ele_ID 2024 Electron-ID-SF": "wp80iso",
         },
         "muonSS": "",
-        "electronSS": [
-            "Scale",
-            "SmearAndSyst",
-        ],
+        "electronSS": ["EGMScale_Compound_Ele_2024", "EGMSmearAndSyst_ElePTsplit_2024"],
+        "DC": "latest/Cert_Collisions2024_378981_386951_Golden.json",
     },
     "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
 }

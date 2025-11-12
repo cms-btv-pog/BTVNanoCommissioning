@@ -419,8 +419,11 @@ def load_lumi(campaign):
 
     _lumi_path = "BTVNanoCommissioning.data.DC"
     if os.path.exists(
-        f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/config[campaign]["DC"]'
+        f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/{config[campaign]["DC"]}'
     ):
+        print(
+            f'Loading luminosity mask from /cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/{config[campaign]["DC"]}'
+        )
         return LumiMask(
             f"/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/{config[campaign]['DC']}"
         )
@@ -518,21 +521,13 @@ def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
     return input_values
 
 
-cset_jersmear_paths = [
-    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/JER-Smearing/latest/jer_smear.json.gz",
-    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/jer_smear.json.gz",
-]
-for _jersmear_path in cset_jersmear_paths:
-    if os.path.exists(_jersmear_path):
-        cset_jersmear = correctionlib.CorrectionSet.from_file(_jersmear_path)
-        break
-else:
-    warnings.warn(
-        "JER smearing JSON not found in CVMFS. JER smearing corrections will be disabled.",
-        RuntimeWarning,
-        stacklevel=2,
+cset_jersmear = (
+    correctionlib.CorrectionSet.from_file(
+        f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/jer_smear.json.gz"
     )
-    cset_jersmear = {"JERSmear": None}
+    if os.path.exists(f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/jer_smear.json.gz")
+    else {"JERSmear": None}
+)
 sf_jersmear = cset_jersmear["JERSmear"]
 
 
