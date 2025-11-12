@@ -19,7 +19,6 @@ def campaign_map():
         Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/"),
         Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM"),
     ]
-
     subdirs = [p.name for d in dirs if d.is_dir() for p in d.iterdir() if p.is_dir()]
     dirnames = {}
     for i in range(len(subdirs)):
@@ -27,9 +26,10 @@ def campaign_map():
             dirnames[subdirs[i].split("-")[2]] = subdirs[i]
         elif "Run2" in subdirs[i]:
             dirnames[subdirs[i].split("-")[1] + "-UL"] = subdirs[i]
+        elif "Run3" not in subdirs[i] and "Run2" not in subdirs[i]:
+            continue
         else:
             raise ValueError("Unknown campaign name")
-
     return dirnames
 
 
