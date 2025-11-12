@@ -518,13 +518,21 @@ def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
     return input_values
 
 
-cset_jersmear = (
-    correctionlib.CorrectionSet.from_file(
-        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/jer_smear.json.gz"
+cset_jersmear_paths = [
+    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/JER-Smearing/latest/jer_smear.json.gz",
+    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/jer_smear.json.gz",
+]
+for _jersmear_path in cset_jersmear_paths:
+    if os.path.exists(_jersmear_path):
+        cset_jersmear = correctionlib.CorrectionSet.from_file(_jersmear_path)
+        break
+else:
+    warnings.warn(
+        "JER smearing JSON not found in CVMFS. JER smearing corrections will be disabled.",
+        RuntimeWarning,
+        stacklevel=2,
     )
-    if os.path.exists(f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/jer_smear.json.gz")
-    else {"JERSmear": None}
-)
+    cset_jersmear = {"JERSmear": None}
 sf_jersmear = cset_jersmear["JERSmear"]
 
 
@@ -628,8 +636,19 @@ def JME_shifts(
                 JERptres_input = get_corr_inputs(j, JERptres)
                 j["JER"] = JERptres.evaluate(*JERptres_input)
                 j["JERSF"] = JERSF.evaluate(*JERSF_input)
-                JERsmear_input = get_corr_inputs(j, sf_jersmear)
-                corrFactor = JECflatCorrFactor * sf_jersmear.evaluate(*JERsmear_input)
+                if sf_jersmear is None:
+                    warnings.warn(
+                        "JER smearing coefficients unavailable. "
+                        "Proceeding without applying JER smearing.",
+                        RuntimeWarning,
+                        stacklevel=2,
+                    )
+                    corrFactor = JECflatCorrFactor
+                else:
+                    JERsmear_input = get_corr_inputs(j, sf_jersmear)
+                    corrFactor = JECflatCorrFactor * sf_jersmear.evaluate(
+                        *JERsmear_input
+                    )
             corrFactor = ak.unflatten(corrFactor, nj)
 
             jets["pt"] = ak.values_astype(nocorrjet["pt_raw"] * corrFactor, np.float32)
@@ -689,35 +708,45 @@ def JME_shifts(
                         JERSF_input_var = get_corr_inputs(j, JERSF, var)
 
                         ## JER variations
-                        unc_jets[f"JER{var}"] = copy.copy(nocorrjet)
-                        unc_met[f"JER{var}"] = copy.copy(nocorrmet)
-                        j["JERSF"] = JERSF.evaluate(*JERSF_input_var)
-                        JERsmear_input_var = get_corr_inputs(j, sf_jersmear)
+                        if sf_jersmear is None:
+                            warnings.warn(
+                                "Skipping JER smearing variations because the "
+                                "correction file is unavailable.",
+                                RuntimeWarning,
+                                stacklevel=2,
+                            )
+                            unc_jets[f"JER{var}"] = copy.copy(jets)
+                            unc_met[f"JER{var}"] = copy.copy(met)
+                        else:
+                            unc_jets[f"JER{var}"] = copy.copy(nocorrjet)
+                            unc_met[f"JER{var}"] = copy.copy(nocorrmet)
+                            j["JERSF"] = JERSF.evaluate(*JERSF_input_var)
+                            JERsmear_input_var = get_corr_inputs(j, sf_jersmear)
 
-                        unc_jets[f"JER{var}"]["pt"] = jets["pt"] * ak.unflatten(
-                            JECflatCorrFactor
-                            * sf_jersmear.evaluate(*JERsmear_input_var),
-                            nj,
-                        )
-                        unc_jets[f"JER{var}"]["mass"] = jets["mass"] * ak.unflatten(
-                            JECflatCorrFactor
-                            * sf_jersmear.evaluate(*JERsmear_input_var),
-                            nj,
-                        )
-                        unc_met[f"JER{var}"]["pt"] = corrected_polar_met(
-                            nocorrmet.pt,
-                            nocorrmet.phi,
-                            unc_jets[f"JER{var}"]["pt"],
-                            jets.phi,
-                            jets.pt_raw,
-                        ).pt
-                        unc_met[f"JER{var}"]["phi"] = corrected_polar_met(
-                            nocorrmet.pt,
-                            nocorrmet.phi,
-                            unc_jets[f"JER{var}"]["pt"],
-                            jets.phi,
-                            jets.pt_raw,
-                        ).phi
+                            unc_jets[f"JER{var}"]["pt"] = jets["pt"] * ak.unflatten(
+                                JECflatCorrFactor
+                                * sf_jersmear.evaluate(*JERsmear_input_var),
+                                nj,
+                            )
+                            unc_jets[f"JER{var}"]["mass"] = jets["mass"] * ak.unflatten(
+                                JECflatCorrFactor
+                                * sf_jersmear.evaluate(*JERsmear_input_var),
+                                nj,
+                            )
+                            unc_met[f"JER{var}"]["pt"] = corrected_polar_met(
+                                nocorrmet.pt,
+                                nocorrmet.phi,
+                                unc_jets[f"JER{var}"]["pt"],
+                                jets.phi,
+                                jets.pt_raw,
+                            ).pt
+                            unc_met[f"JER{var}"]["phi"] = corrected_polar_met(
+                                nocorrmet.pt,
+                                nocorrmet.phi,
+                                unc_jets[f"JER{var}"]["pt"],
+                                jets.phi,
+                                jets.pt_raw,
+                            ).phi
                     jets["JES_Total"] = ak.zip(
                         {
                             "up": unc_jets["JES_Totalup"],
