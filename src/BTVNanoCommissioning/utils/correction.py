@@ -1,6 +1,9 @@
 import importlib.resources
-import cloudpickle, gzip, contextlib
-import copy, os, re, warnings
+import contextlib
+import copy
+import os
+import re
+import warnings
 
 import numpy as np
 import awkward as ak
@@ -20,12 +23,10 @@ from BTVNanoCommissioning.helpers.MuonScaRe import (
     pt_scale_var,
 )
 from BTVNanoCommissioning.helpers.func import (
-    update,
     _compile_jec_,
     _load_jmefactory,
     campaign_map,
 )
-from BTVNanoCommissioning.helpers.cTagSFReader import getSF
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
 
 
@@ -212,17 +213,20 @@ def load_SF(year, campaign, syst=False):
                 _mu_path = f"BTVNanoCommissioning.data.MUO.{campaign}"
                 ext = extractor()
                 with contextlib.ExitStack() as stack:
-                    inputs, real_paths = [
-                        k
-                        for k in correct_map["MUO_cfg"].keys()
-                        if "histo.json" in correct_map["MUO_cfg"][k]
-                        or "histo.txt" in correct_map["MUO_cfg"][k]
-                        or "histo.root" in correct_map["MUO_cfg"][k]
-                    ], [
-                        stack.enter_context(importlib.resources.path(_mu_path, f))
-                        for f in correct_map["MUO_cfg"].values()
-                        if ".json" in f or ".txt" in f or ".root" in f
-                    ]
+                    inputs, real_paths = (
+                        [
+                            k
+                            for k in correct_map["MUO_cfg"].keys()
+                            if "histo.json" in correct_map["MUO_cfg"][k]
+                            or "histo.txt" in correct_map["MUO_cfg"][k]
+                            or "histo.root" in correct_map["MUO_cfg"][k]
+                        ],
+                        [
+                            stack.enter_context(importlib.resources.path(_mu_path, f))
+                            for f in correct_map["MUO_cfg"].values()
+                            if ".json" in f or ".txt" in f or ".root" in f
+                        ],
+                    )
 
                     inputs = [
                         i.split(" ")[0] + " *" if "_low" in i else i for i in inputs
@@ -253,17 +257,20 @@ def load_SF(year, campaign, syst=False):
                 _ele_path = f"BTVNanoCommissioning.data.EGM.{campaign}"
                 ext = extractor()
                 with contextlib.ExitStack() as stack:
-                    inputs, real_paths = [
-                        k
-                        for k in correct_map["EGM_cfg"].keys()
-                        if "histo.json" in correct_map["EGM_cfg"][k]
-                        or "histo.txt" in correct_map["EGM_cfg"][k]
-                        or "histo.root" in correct_map["EGM_cfg"][k]
-                    ], [
-                        stack.enter_context(importlib.resources.path(_ele_path, f))
-                        for f in correct_map["EGM_cfg"].values()
-                        if "histo.json" in f or ".txt" in f or ".root" in f
-                    ]
+                    inputs, real_paths = (
+                        [
+                            k
+                            for k in correct_map["EGM_cfg"].keys()
+                            if "histo.json" in correct_map["EGM_cfg"][k]
+                            or "histo.txt" in correct_map["EGM_cfg"][k]
+                            or "histo.root" in correct_map["EGM_cfg"][k]
+                        ],
+                        [
+                            stack.enter_context(importlib.resources.path(_ele_path, f))
+                            for f in correct_map["EGM_cfg"].values()
+                            if "histo.json" in f or ".txt" in f or ".root" in f
+                        ],
+                    )
                     ext.add_weight_sets(
                         [
                             f"{paths} {file}"
@@ -426,7 +433,6 @@ def load_lumi(campaign):
         )
     else:
         with importlib.resources.path(_lumi_path, config[campaign]["DC"]) as filename:
-
             return LumiMask(filename)
 
 
@@ -501,7 +507,6 @@ def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
         if "systematic" in inputs.name:
             input_values.append(jersyst)
         else:
-
             input_values.append(
                 np.array(
                     input_dict[
@@ -681,13 +686,11 @@ def JME_shifts(
                         unc_met[f"JES_Total{var}"] = copy.copy(nocorrmet)
 
                         unc_jets[f"JES_Total{var}"]["pt"] = ak.values_astype(
-                            jets["pt"]
-                            * (ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc),
+                            jets["pt"] * (1 + fac * jesunc),
                             np.float32,
                         )
                         unc_jets[f"JES_Total{var}"]["mass"] = ak.values_astype(
-                            jets["mass"]
-                            * (ak.unflatten(JECflatCorrFactor, nj) + fac * jesunc),
+                            jets["mass"] * (1 + fac * jesunc),
                             np.float32,
                         )
                         unc_met[f"JES_Total{var}"]["pt"] = corrected_polar_met(
@@ -722,16 +725,18 @@ def JME_shifts(
                             unc_met[f"JER{var}"] = copy.copy(nocorrmet)
                             j["JERSF"] = JERSF.evaluate(*JERSF_input_var)
                             JERsmear_input_var = get_corr_inputs(j, sf_jersmear)
-
-                            unc_jets[f"JER{var}"]["pt"] = jets["pt"] * ak.unflatten(
-                                JECflatCorrFactor
-                                * sf_jersmear.evaluate(*JERsmear_input_var),
-                                nj,
+                            corrFactor_var = JECflatCorrFactor * sf_jersmear.evaluate(
+                                *JERsmear_input_var
                             )
-                            unc_jets[f"JER{var}"]["mass"] = jets["mass"] * ak.unflatten(
-                                JECflatCorrFactor
-                                * sf_jersmear.evaluate(*JERsmear_input_var),
-                                nj,
+                            corrFactor_var = ak.unflatten(corrFactor_var, nj)
+
+                            unc_jets[f"JER{var}"]["pt"] = ak.values_astype(
+                                nocorrjet["pt_raw"] * corrFactor_var,
+                                np.float32,
+                            )
+                            unc_jets[f"JER{var}"]["mass"] = ak.values_astype(
+                                nocorrjet["mass_raw"] * corrFactor_var,
+                                np.float32,
                             )
                             unc_met[f"JER{var}"]["pt"] = corrected_polar_met(
                                 nocorrmet.pt,
