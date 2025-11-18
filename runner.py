@@ -79,6 +79,13 @@ def validate_dataset_structure(fileset):
                     )
                     continue
 
+                if not any(met in branches for met in optional_met_branches):
+                    print(
+                        "WARNING: File missing MET branch; expected one of "
+                        f"{optional_met_branches}: {filename}"
+                    )
+                    continue
+
                 # Check event count
                 if len(events) < 10:
                     print(
