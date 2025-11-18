@@ -19,7 +19,7 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 ## load histograms & selctions for this workflow
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
-    histo_writter,
+    histo_writer,
 )
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
@@ -27,7 +27,9 @@ from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
     ele_cuttightid,
-    btag_wp,
+    calculate_new_discriminators,
+    get_wp_2D,
+    btag_wp_dict,
 )
 
 
@@ -41,6 +43,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
+        selectionModifier="tt_dilep",
     ):
         self._year = year
         self._campaign = campaign
@@ -50,6 +53,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
+        self.selMod = selectionModifier
         ## Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
 
@@ -71,12 +75,17 @@ class NanoProcessor(processor.ProcessorABC):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
         ## Create histograms
+        objs = ["mu", "ele", "jet0", "jet1"]
+        if self.selMod == "ttdilep_sf_2D":
+            objs.append("MET")
         output = {}
         if not self.noHist:
             output = histogrammer(
                 events.Jet.fields,
-                obj_list=["mu", "ele", "jet0", "jet1"],
+                obj_list=objs,
                 hist_collections=["common", "fourvec", "ttdilep"],
+                njet=2,
+                include_discriminators_2D=True if "2D" in self.selMod else False,
             )
 
         if shift_name is None:
@@ -153,6 +162,18 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = ak.pad_none(jetindx, 2)
         jetindx = jetindx[:, :2]
 
+        ## MET
+        if self.selMod == "ttdilep_sf_2D":
+            event_MET = ak.zip(
+                {
+                    "pt": events.PuppiMET.pt,
+                    "eta": ak.zeros_like(events.PuppiMET.pt),
+                    "phi": events.PuppiMET.phi,
+                    "mass": ak.zeros_like(events.PuppiMET.pt),
+                },
+                with_name="PtEtaPhiMLorentzVector",
+            )
+
         event_level = (
             req_trig & req_lumi & req_muon & req_ele & req_jets & req_opposite_charge
         )
@@ -186,6 +207,59 @@ class NanoProcessor(processor.ProcessorABC):
         if "PFCands" in events.fields:
             pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
 
+        if self.selMod == "ttdilep_sf_2D":
+            nj = 2
+            pruned_ev["MET"] = event_MET[event_level]
+            for i in range(nj):
+                btagUParTAK4HFvLF, btagUParTAK4BvC = calculate_new_discriminators(
+                    pruned_ev.SelJet[:, i]
+                )
+                wp2D = ak.Array(
+                    [
+                        get_wp_2D(
+                            btagUParTAK4HFvLF[i],
+                            btagUParTAK4BvC[i],
+                            self._year,
+                            self._campaign,
+                            "UParTAK4",
+                        )
+                        for i in range(len(btagUParTAK4HFvLF))
+                    ]
+                )
+                pruned_ev[f"btagUParTAK4HFvLF_{i}"] = btagUParTAK4HFvLF
+                pruned_ev[f"btagUParTAK4BvC_{i}"] = btagUParTAK4BvC
+                pruned_ev[f"btagUParTAK4HFvLFt_{i}"] = ak.Array(
+                    np.where(
+                        btagUParTAK4HFvLF > 0.0,
+                        1.0 - (1.0 - btagUParTAK4HFvLF) ** 0.5,
+                        -1.0,
+                    )
+                )
+                pruned_ev[f"btagUParTAK4BvCt_{i}"] = ak.Array(
+                    np.where(
+                        btagUParTAK4BvC > 0.0,
+                        1.0 - (1.0 - btagUParTAK4BvC) ** 0.5,
+                        -1.0,
+                    )
+                )
+                pruned_ev[f"btagUParTAK42D_{i}"] = wp2D
+                jet_pt_bins = btag_wp_dict[self._year + "_" + self._campaign][
+                    "UParTAK4"
+                ]["2D"]["jet_pt_bins"]
+                for jet_pt_bin in jet_pt_bins:
+                    pruned_ev[
+                        f"btagUParTAK42D_pt{jet_pt_bin[0]}to{jet_pt_bin[1]}_{i}"
+                    ] = [
+                        (
+                            wp2D[ijet]
+                            if pt is not None
+                            and jet_pt_bin[0] < pt
+                            and pt < jet_pt_bin[1]
+                            else None
+                        )
+                        for ijet, pt in enumerate(pruned_ev.SelJet[:, i].pt)
+                    ]
+
         ####################
         #     Output       #
         ####################
@@ -199,7 +273,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
+            output = histo_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays

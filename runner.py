@@ -72,6 +72,12 @@ def validate_dataset_structure(fileset):
                         f"WARNING: File missing critical branches {missing}: {filename}"
                     )
                     continue
+                if not any(met in branches for met in optional_met_branches):
+                    print(
+                        "WARNING: File missing MET branch; expected one of "
+                        f"{optional_met_branches}: {filename}"
+                    )
+                    continue
 
                 if not any(met in branches for met in optional_met_branches):
                     print(

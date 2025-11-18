@@ -17,7 +17,7 @@ def campaign_map():
         Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/"),
         Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/"),
         Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/"),
-        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM"),
+        Path("/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/"),
     ]
     subdirs = [p.name for d in dirs if d.is_dir() for p in d.iterdir() if p.is_dir()]
     dirnames = {}

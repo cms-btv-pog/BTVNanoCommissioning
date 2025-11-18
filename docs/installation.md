@@ -20,22 +20,22 @@ NOTE: always make sure that conda, python, and pip point to local micromamba ins
 
 You can simply create the environment through the existing `test_env.yml` under your micromamba environment using micromamba, and activate it
 ```
-micromamba env create -f test_env.yml 
+micromamba env create -f test_env.yml
 
 ```
 ### Setup the framework
 
 ```bash
-# activate enviroment once you have coffea framework 
+# activate enviroment once you have coffea framework
 conda/micromamba activate btv_coffea
 
-conda/micromamba activate  /eos/home-m/milee/miniforge3/envs/btv_coffea
+conda/micromamba activate /eos/home-m/milee/miniforge3/envs/btv_coffea # contains coffea 0.7.22
 
 # only first time, including submodules
-git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git 
+git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git
 # Once the environment is set up, compile the python package:
 pip install -e .
-pip install -e .[dev,doc] # for developer
+pip install -e .[dev,docs] # for developer
 ```
 
 You can still install additional packages itself by `pip install $PACKAGE`
