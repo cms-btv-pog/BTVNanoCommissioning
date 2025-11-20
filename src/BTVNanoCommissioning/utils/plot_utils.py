@@ -20,10 +20,16 @@ color_map = {
     "W+jets": "#80ba5a",
     "QCD": "#e73f74",
     "QCD($\\mu$)": "#a5aa99",
+    "Ph+jets (HT-binned)": "#f2ab6d",
+    "Ph+jets (HT+PTG-binned)": "tab:brown",
     "udsg": "tab:blue",
+    "ud": "tab:blue",
+    "s": "tab:olive",
+    "g": "tab:purple",
     "pu": "tab:orange",
     "c": "tab:green",
     "b": "tab:red",
+    "other": "tab:gray",
 }
 sample_mergemap = {
     # ttbar
@@ -124,6 +130,31 @@ sample_mergemap = {
         "QCD_PT-600to800_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
         "QCD_PT-800to1000_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
         "QCD_PT-1000_MuEnrichedPt5_TuneCP5_13p6TeV_pythia8",
+    ],
+    "Ph+jets (HT-binned)": [
+        "GJ-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_HT-600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+    ],
+    "Ph+jets (HT+PTG-binned)": [
+        "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-40to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-600to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-100to200_HT-1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-100to200_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-100to200_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-100to200_HT-40to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-100to200_HT-600to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-200_HT-1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-200_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-200_HT-40to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "GJ-4Jets_dRGJ-0p25_PTG-200_HT-600to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
     ],
 }
 ### copy functions coffea.hist.plotratio https://github.com/CoffeaTeam/coffea/blob/master/coffea/hist/plot.py to boost-hist
@@ -267,6 +298,7 @@ def plotratio(
     unc="num",
     label=None,
     ext_denom_error=None,
+    density=False,
 ):
     """
     Create a ratio plot, dividing two compatible histograms
@@ -385,9 +417,11 @@ def plotratio(
             sumw_denom[-1] + denom.view(flow=True)["value"][-1],
             sumw2_denom[-1] + denom.view(flow=True)["value"][-1],
         )
-    else:
-        sumw_num, sumw2_num = num.values(), num.variances()
-        sumw_denom, sumw2_denom = denom.values(), denom.variances()
+
+    if density:
+        sumw_num = sumw_num / np.sum(sumw_num)
+        sumw_denom = sumw_denom / np.sum(sumw_denom)
+
     rsumw = sumw_num / sumw_denom
     if unc == "clopper-pearson":
         rsumw_err = np.abs(clopper_pearson_interval(sumw_num, sumw_denom) - rsumw)
@@ -705,6 +739,8 @@ def MCerrorband(
             label=label,
             **fill_opts,
         )
+
+    return ax
 
 
 ## Very nice implementtion from Kenneth Long:

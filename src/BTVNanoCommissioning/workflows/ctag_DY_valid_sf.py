@@ -14,6 +14,7 @@ from BTVNanoCommissioning.utils.correction import (
 
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
+from BTVNanoCommissioning.utils.histogramming.histograms.qgtag import qg_writer
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
     histo_writter,
@@ -71,7 +72,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         isMu = False
         isEle = False
-        if "DYM" in self.selMod:
+        if "DYM" in self.selMod or "QG" in self.selMod:
             triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
             isMu = True
         elif "DYE" in self.selMod:
@@ -83,12 +84,21 @@ class NanoProcessor(processor.ProcessorABC):
         histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
         output = {}
         if not self.noHist:
-            output = histogrammer(
-                jet_fields=events.Jet.fields,
-                obj_list=["posl", "negl", "dilep", "jet0"],
-                hist_collections=["common", "fourvec", "DY"],
-                include_m=isMu,
-            )
+            if "QG" not in self.selMod:
+                output = histogrammer(
+                    jet_fields=events.Jet.fields,
+                    obj_list=["posl", "negl", "dilep", "jet0"],
+                    hist_collections=["common", "fourvec", "DY"],
+                    include_m=isMu,
+                )
+            else:
+                output = histogrammer(
+                    jet_fields=events.Jet.fields,
+                    obj_list=[],
+                    hist_collections=["qgtag"],
+                    axes_collections=["qgtag"],
+                    is_dijet=False,
+                )
 
         if isRealData:
             output["sumw"] = len(events)
@@ -112,11 +122,13 @@ class NanoProcessor(processor.ProcessorABC):
         req_metfilter = MET_filters(events, self._campaign)
 
         # Muon cuts
-        dilep_mu = events.Muon[(events.Muon.pt > 12) & mu_idiso(events, self._campaign)]
+        dilep_mu = events.Muon[
+            ak.any(events.Muon.pt > 20, axis=1) & (events.Muon.pt > 12) & mu_idiso(events, self._campaign)
+        ]
 
         # Electron cuts
         dilep_ele = events.Electron[
-            (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
+            ak.any(events.Electron.pt > 26, axis=1) & (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
         ]
         if isMu:
             thisdilep = dilep_mu
@@ -128,24 +140,20 @@ class NanoProcessor(processor.ProcessorABC):
         # dilepton
         pos_dilep = thisdilep[thisdilep.charge > 0]
         neg_dilep = thisdilep[thisdilep.charge < 0]
+
+        if isMu:
+            req_trg_turnon = (
+                ak.any(pos_dilep.pt > 21, axis=1) | ak.any(neg_dilep.pt > 21, axis=1)
+            )
+        else:
+            req_trg_turnon = True
+
         req_pl = ak.count(pos_dilep.pt, axis=1) >= 1
         req_nl = ak.count(neg_dilep.pt, axis=1) >= 1
         req_dilep_chrg = ak.num(thisdilep.charge) >= 2
         req_otherdilep_chrg = ak.num(otherdilep.charge) == 0
         req_dilep = ak.fill_none(
-            req_pl & req_nl & req_dilep_chrg & req_otherdilep_chrg,
-            False,
-            axis=-1,
-        )
-
-        pl_iso = ak.all(
-            events.Jet.metric_table(pos_dilep) > 0.4, axis=2, mask_identity=True
-        )
-        nl_iso = ak.all(
-            events.Jet.metric_table(neg_dilep) > 0.4, axis=2, mask_identity=True
-        )
-        jet_sel = ak.fill_none(
-            jet_id(events, self._campaign) & pl_iso & nl_iso,
+            req_pl & req_nl & req_dilep_chrg & req_otherdilep_chrg, # & req_trg_turnon,
             False,
             axis=-1,
         )
@@ -165,15 +173,21 @@ class NanoProcessor(processor.ProcessorABC):
         nl_iso = ak.all(
             events.Jet.metric_table(neg_dilep[:, 0]) > 0.4, axis=2, mask_identity=True
         )
-        event_jet = events.Jet[
-            ak.fill_none(
-                jet_id(events, self._campaign) & pl_iso & nl_iso,
-                False,
-                axis=-1,
-            )
-        ]
+
+        if "QG" in self.selMod:
+            jetmask = jet_id(events, self._campaign, max_eta=5.191)
+        else:
+            jetmask = jet_id(events, self._campaign)
+
+        jet_sel = ak.fill_none(
+            pl_iso & nl_iso & jetmask,
+            False,
+            axis=-1,
+        )
+
+        event_jet = events.Jet[jet_sel]
+
         req_jets = ak.count(event_jet.pt, axis=1) >= 1
-        # event_jet = ak.pad_none(event_jet, 1, axis=1)
 
         # store jet index for PFCands, create mask on the jet index
         jetindx = ak.mask(
@@ -183,8 +197,25 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = ak.pad_none(jetindx, 1)
         jetindx = jetindx[:, 0]
 
+        selection = (
+            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets & req_metfilter
+        )
+
+        if "QG" in self.selMod:
+            temp_jet = ak.pad_none(event_jet, 1, axis=1)
+
+            req_lead_jet = ak.fill_none(
+                (
+                    np.abs(temp_jet[:, 0].delta_phi(pos_dilep[:, 0] + neg_dilep[:, 0]))
+                    > 2.7
+                ),
+                False,
+                axis=-1,
+            )
+            selection = selection & req_lead_jet
+
         event_level = ak.fill_none(
-            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets & req_metfilter,
+            selection,
             False,
         )
         if len(events[event_level]) == 0:
@@ -218,7 +249,16 @@ class NanoProcessor(processor.ProcessorABC):
         )
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
-        pruned_ev["SelJet"] = event_jet[event_level]
+        if self.selMod == "QG":
+            pruned_ev["SelJet"] = event_jet[event_level][:, 0]
+            pruned_ev["Tag"] = sz
+            pruned_ev["Tag", "pt"] = pruned_ev.Tag.pt
+            pruned_ev["Tag", "eta"] = pruned_ev.Tag.eta
+            pruned_ev["Tag", "phi"] = pruned_ev.Tag.phi
+            pruned_ev["Tag", "mass"] = pruned_ev.Tag.mass
+        else:
+            pruned_ev["SelJet"] = event_jet[event_level]
+
         if isMu:
             pruned_ev["MuonPlus"] = sposmu
             pruned_ev["MuonMinus"] = snegmu
@@ -243,7 +283,7 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
         pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
-        if "PFCands" in events.fields:
+        if "PFCands" in events.fields and "QG" not in self.selMod:
             pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
 
         ####################
@@ -259,13 +299,55 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
-                pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
-            )
+            if "QG" not in self.selMod:
+                output = histo_writter(
+                    pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
+                )
+            else:
+                output = qg_writer(
+                    pruned_ev,
+                    output,
+                    weights,
+                    systematics,
+                    self.isSyst,
+                    self.SF_map,
+                )
         # Output arrays
         if self.isArray:
+            if "QG" in self.selMod:
+                othersData = [
+                    "SV_*",
+                    "PV_npvs",
+                    "PV_npvsGood",
+                    "Rho_*",
+                    "SoftMuon_dxySig",
+                    "Muon_sip3d",
+                    "run",
+                    "luminosityBlock",
+                ]
+                for trigger in triggers:
+                    othersData.append(f"HLT_{trigger}")
+            else:
+                othersData = [
+                    "PFCands_*",
+                    "MuonJet_*",
+                    "SV_*",
+                    "PV_npvs",
+                    "PV_npvsGood",
+                    "Rho_*",
+                    "SoftMuon_dxySig",
+                    "Muon_sip3d",
+                ]
+
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData
+                self,
+                pruned_ev,
+                events,
+                weights,
+                systematics,
+                dataset,
+                isRealData,
+                othersData=othersData,
             )
 
         return {dataset: output}

@@ -92,6 +92,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
         )
     else:
         jetmask = (events.Jet.pt > min_pt) & (abs(events.Jet.eta) <= max_eta) & (jetid)
+
     return jetmask
 
 

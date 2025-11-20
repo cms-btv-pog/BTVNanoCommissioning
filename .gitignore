@@ -8,6 +8,7 @@
 docs/_build/
 runinfo/
 plot/
+plots*/
 src/BTVNanoCommissioning/version.py
 src/BTVNanoCommissioning.egg-info/
 __pycache__
@@ -18,3 +19,4 @@ dask-worker-space/
 .job_wrapper_failure
 jobs_*
 .success
+arrays*/

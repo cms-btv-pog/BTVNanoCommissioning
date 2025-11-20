@@ -59,6 +59,11 @@ def get_condor_submitter_parser(parser):
         default=None,
         help="If specified, access BTVNanoCommsioning from a remote tarball (downloaded via https), instead of from a transferred sandbox",
     )
+    parser.add_argument(
+        "--max_retries",
+        default=3,
+        help="Maximum number of retries for failed jobs. Failed jobs are forced to another machine.",
+    )
     return parser
 
 
@@ -97,6 +102,7 @@ def get_main_parser():
             "Summer22EE",
             "Summer23",
             "Summer23BPix",
+            "Summer24",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",
@@ -192,6 +198,13 @@ if __name__ == "__main__":
     os.mkdir(job_dir)
     os.mkdir(job_dir + "/log")
 
+    # Create output dir
+    if not os.path.exists(args.outputDir):
+        os.makedirs(args.outputDir)
+        print(f"Output directory created: {args.outputDir}")
+    else:
+        print(f"Output directory already exists: {args.outputDir}")
+
     # Handle voms proxy
     proxy_file = get_proxy_path()
     os.system(f"scp {proxy_file} proxy")
@@ -260,6 +273,15 @@ if __name__ == "__main__":
     with open(os.path.join(job_dir, "jobnum_list.txt"), "w") as f:
         f.write("\n".join([str(i) for i in range(counter)]))
 
+    if args.max_retries > 0:
+        retry_str = f"""
+on_exit_remove      = (ExitBySignal == False) && (ExitCode == 0)
+max_retries         = {args.max_retries}
+requirements        = Machine =!= LastRemoteHost
+        """
+    else:
+        retry_str = ""
+
     ## store the jdl file
     jdl_template = """Universe   = vanilla
 Executable = {executable}
@@ -281,6 +303,8 @@ when_to_transfer_output = ON_EXIT_OR_EVICT
 transfer_input_files    = {transfer_input_files}
 transfer_output_files   = .success
 
+{retry_str}
+
 Queue JOBNUM from {jobnum_file}
 """.format(
         executable=f"{base_dir}/condor_lxplus/execute.sh",
@@ -289,6 +313,7 @@ Queue JOBNUM from {jobnum_file}
         envpath=envpath,
         log_dir=f"{base_dir}/{job_dir}/log",
         transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt",
+        retry_str=retry_str,
         jobnum_file=f"{base_dir}/{job_dir}/jobnum_list.txt",
     )
     with open(os.path.join(job_dir, "submit.jdl"), "w") as f:

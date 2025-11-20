@@ -58,7 +58,9 @@ def array_writer(
                 include=[ind_wei]
             )
         if len(systname) > 1:
-            for syst in systname[1:]:
+            for syst in systname:
+                if syst == "nominal":
+                    continue
                 pruned_event[f"weight_syst_{syst}"] = weights.weight(modifier=syst)
 
     if empty:
