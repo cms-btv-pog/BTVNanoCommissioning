@@ -1316,15 +1316,35 @@ def puwei(nPU, correct_map, weights, syst=False):
                 ),
             )
     else:
+        # Legacy ROOT histos may be keyed as PU/PUup/PUdown instead of LUM/PUup/PUdown
+        if "LUM" in correct_map["LUM"]:
+            central_key = "LUM"
+        elif "PU" in correct_map["LUM"]:
+            central_key = "PU"
+        else:
+            raise KeyError("Pileup central value not found in correct_map['LUM']")
+        if "PUup" in correct_map["LUM"]:
+            up_key = "PUup"
+        elif "LUMup" in correct_map["LUM"]:
+            up_key = "LUMup"
+        else:
+            raise KeyError("Pileup up-variation not found in correct_map['LUM']")
+
+        if "PUdown" in correct_map["LUM"]:
+            down_key = "PUdown"
+        elif "LUMdown" in correct_map["LUM"]:
+            down_key = "LUMdown"
+        else:
+            raise KeyError("Pileup down-variation not found in correct_map['LUM']")
         if syst:
             weights.add(
                 "puweight",
-                correct_map["LUM"]["LUM"](nPU),
-                correct_map["LUM"]["PUup"](nPU),
-                correct_map["LUM"]["PUdown"](nPU),
+                correct_map["LUM"][central_key](nPU),
+                correct_map["LUM"][up_key](nPU),
+                correct_map["LUM"][down_key](nPU),
             )
         else:
-            weights.add("puweight", correct_map["LUM"]["LUM"](nPU))
+            weights.add("puweight", correct_map["LUM"][central_key](nPU))
 
 
 def btagSFs(jet, correct_map, weights, SFtype, syst=False):
