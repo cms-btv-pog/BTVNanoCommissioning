@@ -1005,7 +1005,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             mTW_l_bins = np.linspace(0,200,8)
             neg_log_lambda_bins = np.linspace(9, 30,3)
-            mTW_l_bin = np.digitize(ak.to_numpy(mTW_l_bin), mTW_l_bins)
+            mTW_l_bin = np.digitize(ak.to_numpy(mTW_l), mTW_l_bins)
             neg_log_lambda_bin = np.digitize(ak.to_numpy(neg_log_lambda), neg_log_lambda_bins)
 
             #build kinbin by unfolding 2D binning into 1D for fitting
