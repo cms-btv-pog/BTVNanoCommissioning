@@ -190,7 +190,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         ##### Add some selections
         ## Jet cuts
-        jet_sel = jet_id(events, self._campaign, max_eta=4.7, min_pt=20)
+        jet_sel = jet_id(events, self._campaign, max_eta=5.0, min_pt=20)
 
         if self._year == "2016":
             jet_puid = events.Jet.puId >= 1

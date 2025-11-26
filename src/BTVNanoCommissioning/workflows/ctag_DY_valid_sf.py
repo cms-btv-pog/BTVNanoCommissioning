@@ -175,7 +175,7 @@ class NanoProcessor(processor.ProcessorABC):
         )
 
         if "QG" in self.selMod:
-            jetmask = jet_id(events, self._campaign, max_eta=5.191)
+            jetmask = jet_id(events, self._campaign, max_eta=5.0, min_pt=20.0)
         else:
             jetmask = jet_id(events, self._campaign)
 
