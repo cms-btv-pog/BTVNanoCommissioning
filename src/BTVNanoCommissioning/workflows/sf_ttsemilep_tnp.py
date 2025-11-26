@@ -1,5 +1,5 @@
 import collections
-import numpy as np, awkward as ak
+import uproot, numpy as np, awkward as ak
 import hist as Hist
 from coffea import processor
 
@@ -77,25 +77,83 @@ def solve_nu_pz(px_l, py_l, pz_l, e_l, px_n, py_n, mW=80.4):
     e1 = np.sqrt(px_n**2 + py_n**2 + pz1**2)
     e2 = np.sqrt(px_n**2 + py_n**2 + pz2**2)
     return (pz1, e1), (pz2, e2)
-def gaussian(m, mu = 0, sigma = 1):
 
-    return (1/(sigma*np.sqrt(2*np.pi))) * np.exp(-0.5 * ((m-mu)/sigma)**2)
+# def gaussian(m, mu = 0, sigma = 1):
+
+#     return (1/(sigma*np.sqrt(2*np.pi))) * np.exp(-0.5 * ((m-mu)/sigma)**2)
+
+# def calculate_mass_probability(m_type, masses):
+    
+#     #PLACEHOLDER FIXME assume probabilities as gaussians
+#     #Where are these values from?
+#     mW = 80.4
+#     mT = 172.5
+#     sig_w = 30.0
+#     sig_t = 40.0
+#     if m_type == "W, T":
+#         #FIXME these are not independent masses
+#         return gaussian(masses[0],mu = mW, sigma = sig_w) * gaussian(masses[1], mu = mT, sigma = sig_t)
+#     elif m_type == "T":
+#         return gaussian(masses[0], mu = mT, sigma = sig_t)
+#     else:
+#         raise ExceptionType("Not a valid mass distribution")
+
+# Update P calculation 
+tf = uproot.open("likelihoods_pa.root")
+
+h2 = tf["had_tmwm"]
+x_edges = h2.axis(0).edges()
+y_edges = h2.axis(1).edges()
+z_2d    = h2.values().T 
+
+h1 = tf["had_mnu"]
+nu_edges = h1.axis().edges()
+z_1d    = h1.values()
+
+def centers(edges):
+    return (edges[:-1] + edges[1:]) / 2.
+
+cw  = centers(x_edges)
+ct  = centers(y_edges)
+cnu = centers(nu_edges)
+
+def interp1d(xaxis, zval, x):
+    x = np.asarray(x)
+    i = np.clip(np.searchsorted(xaxis, x, side='right') - 1, 0, len(xaxis)-2)
+    x1, x2 = xaxis[i], xaxis[i+1]
+    z1, z2 = zval[i], zval[i+1]
+    return z1 + (z2 - z1) * (x - x1) / (x2 - x1)
+
+def interp2d(xaxis, yaxis, zgrid, x, y):
+    x = np.asarray(x); y = np.asarray(y)
+    ix = np.clip(np.searchsorted(xaxis, x, side='right') - 1, 0, len(xaxis)-2)
+    iy = np.clip(np.searchsorted(yaxis, y, side='right') - 1, 0, len(yaxis)-2)
+
+    x1, x2 = xaxis[ix], xaxis[ix+1]
+    y1, y2 = yaxis[iy], yaxis[iy+1]
+    z11 = zgrid[ix,   iy]
+    z12 = zgrid[ix,   iy+1]
+    z21 = zgrid[ix+1, iy]
+    z22 = zgrid[ix+1, iy+1]
+
+    t = (x - x1) / (x2 - x1)
+    u = (y - y1) / (y2 - y1)
+    return (1-t)*(1-u)*z11 + t*(1-u)*z12 + (1-t)*u*z21 + t*u*z22
 
 def calculate_mass_probability(m_type, masses):
-    
-    #PLACEHOLDER FIXME assume probabilities as gaussians
-    #Where are these values from?
-    mW = 80.4
-    mT = 172.5
-    sig_w = 30.0
-    sig_t = 40.0
     if m_type == "W, T":
-        #FIXME these are not independent masses
-        return gaussian(masses[0],mu = mW, sigma = sig_w) * gaussian(masses[1], mu = mT, sigma = sig_t)
+        mW_val, mT_val = masses[0], masses[1]
+        mW_val = np.clip(mW_val, cw[0], cw[-1])
+        mT_val = np.clip(mT_val, ct[0], ct[-1])
+        prob = interp2d(cw, ct, z_2d, mW_val, mT_val)
+        return np.maximum(prob, 1e-12)
     elif m_type == "T":
-        return gaussian(masses[0], mu = mT, sigma = sig_t)
+        mTlep_val = np.clip(masses[0], cnu[0], cnu[-1])
+        prob = interp1d(cnu, z_1d, mTlep_val)
+        return np.maximum(prob, 1e-12)
     else:
-        raise ExceptionType("Not a valid mass distribution")
+        raise ValueError("Not a valid mass distribution")
+        
 def ttbar_reco(jets, lepton, met, maxjets=6, mW=80.4, mT=172.5, sig_w=30.0, sig_t=40.0):
     # limit jets
     jets = jets[:, :maxjets]
@@ -324,7 +382,7 @@ class NanoProcessor(processor.ProcessorABC):
         mt_axis = Hist.axis.Regular(30, 0, 300, name="mt", label=" $m_{T}$ [GeV]")
 
         mTW_l_axis = Hist.axis.Regular(40, 0, 200, name="mTW_l", label=r"$m_T(W_l)$")
-        neg_log_lambda_axis = Hist.axis.Regular(40, 9, 30, name="neg_log_lambda", label=r"$-log(\\lambda)$")
+        neg_log_lambda_axis = Hist.axis.Regular(36,11, 20, name="neg_log_lambda", label=r"$-log(\\lambda)$")
 
         #chi2_axis = Hist.axis.Regular(60, 0, 60, name="chi2", label=r"$\chi^2$")
         tpt_axis = Hist.axis.Regular(60, 0, 600, name="pt", label=r"$p_T$ [GeV]")
@@ -337,7 +395,7 @@ class NanoProcessor(processor.ProcessorABC):
         kin_axis = Hist.axis.Regular(24, 0, 24, name="kinbin", label="Bin: $M_T(W_h)$ v. $-log(\\lambda)$")
         ttcat_axis = Hist.axis.StrCategory(["sig", "bkg", "other"], name="tt_cat")
         result_axis = Hist.axis.StrCategory(["pass", "fail"], name="result")
-        ptb_edges = [30.0, 50.0, 80.0, 120.0, 200.0, 400.0, 1000.0]
+        ptb_edges = [30.0, 50.0, 70.0, 100.0, 140.0, 200.0, 300.0] # Update ptbin
         ptb_axis = Hist.axis.Variable(ptb_edges, name="ptb", label="$p_{T}(b)$ [GeV]")
 
         # objects for common kinematics
@@ -941,7 +999,7 @@ class NanoProcessor(processor.ProcessorABC):
 
             # Extract results once
             BH, BL, JA, JB = best["BH"], best["BL"], best["JA"], best["JB"]
-#            nu, tlep, thad, chi2 = best["nu"], best["tlep"], best["thad"], best["chi2"]
+            #nu, tlep, thad, chi2 = best["nu"], best["tlep"], best["thad"], best["chi2"]
             nu, tlep, thad = best["nu"], best["tlep"], best["thad"]
             neg_log_lambda, mTW_l = best["neg_log_lambda"],best["mTW_l"]
 
@@ -1002,14 +1060,18 @@ class NanoProcessor(processor.ProcessorABC):
             #prob_bin = np.clip(np.digitize(q, prob_edges) - 1, 0, len(prob_edges) - 2)
             #NQ = len(prob_edges) - 1
             
+            # Update kinbin definition
+            mTW_l_bins = np.array([0., 40., 80., 200.], dtype=np.double)
+            neg_log_lambda_bins = np.array([11., 12., 13., 14., 15., 16., 17., 18., 20.], dtype=np.double)
 
-            mTW_l_bins = np.linspace(0,200,8)
-            neg_log_lambda_bins = np.linspace(9, 30,3)
-            mTW_l_bin = np.digitize(ak.to_numpy(mTW_l), mTW_l_bins)
-            neg_log_lambda_bin = np.digitize(ak.to_numpy(neg_log_lambda), neg_log_lambda_bins)
-
-            #build kinbin by unfolding 2D binning into 1D for fitting
-            kinbin_full = (mTW_l_bin * 3 + neg_log_lambda_bin).astype(np.int32)
+            neg_log_lambda_bin = np.digitize(ak.to_numpy(neg_log_lambda), neg_log_lambda_bins) -1
+            mTW_l_bin = np.digitize(ak.to_numpy(mTW_l), mTW_l_bins) -1
+            
+            kinbin_full = (mTW_l_bin * 8 + neg_log_lambda_bin).astype(np.int32)
+            
+            # Select events within the kinbin range
+            log_lambda_mask = (neg_log_lambda > 11.0) & (neg_log_lambda < 20.0)
+            mt_mask         = (mTW_l > 0.0) & (mTW_l < 200.0)
 
             # Truth category once
             tt_cat_full = tt_truth_category(BL, BH, is_mc=not isRealData)
@@ -1027,7 +1089,7 @@ class NanoProcessor(processor.ProcessorABC):
                 else:
                     rmask = has_cand & mask_sb_btagL
 
-                rmask_np = ak.to_numpy(ak.fill_none(rmask, False))
+                rmask_np = ak.to_numpy(ak.fill_none(rmask, False)) & log_lambda_mask & mt_mask
                 if not np.any(rmask_np):
                     continue
 
@@ -1092,7 +1154,6 @@ class NanoProcessor(processor.ProcessorABC):
                     pr, np.full(len(pr), rname, dtype="U12"), "tnp_region"
                 )
                 pr = ak.with_field(pr, tt_cat_full[rmask_np], "tt_cat")
-                pr = ak.with_field(pr, ak.Array(kinbin_full[rmask_np]), "kinbin")
 
                 # Write immediately for this region
                 if not self.noHist:
