@@ -214,45 +214,11 @@ class NanoProcessor(processor.ProcessorABC):
             event_jet[:, 2].pt / (0.5 * (event_jet[:, 0] + event_jet[:, 1])).pt < 0.15,
             ak.ones_like(req_jet, dtype=bool),
         )
-        req_bal = event_jet[:, 1].pt / event_jet[:, 0].pt > 0.7
+        req_bal = np.abs(1.0 - event_jet[:, 1].pt / event_jet[:, 0].pt) < 0.3
 
         req_trig = HLT_helper(events, list(triggers.keys()))
-        # req_trig = np.zeros_like(len(events), dtype=bool)
-        # trigbools = {}
-        # for trigger, pt_range in triggers.items():
-            # rmin, rmax = pt_range
-            # if "DiPFJetAve" in self.selectionModifier:
-                # thistrigreq = (
-                    # (HLT_helper(events, [trigger]))
-                    # # Average
-                    # # & (ak.fill_none(0.5 * (event_jet[:, 0].pt + event_jet[:, 1].pt) >= rmin, False))
-                    # # & (ak.fill_none(0.5 * (event_jet[:, 0].pt + event_jet[:, 1].pt) < rmax, False))
-                    # # Minimum
-                    # & (ak.fill_none(event_jet[:, 1].pt >= rmin, False))
-                    # & (ak.fill_none(event_jet[:, 1].pt < rmax, False))
-                # )
-                # trigbools[trigger] = thistrigreq
-                # req_trig = req_trig | thistrigreq
-            # else:
-                # thistrigreq = (
-                    # (HLT_helper(events, [trigger]))
-                    # # & (ak.fill_none(event_jet[:, 0].pt >= rmin, False))
-                    # # & (ak.fill_none(event_jet[:, 0].pt < rmax, False))
-                    # & (event_jet[:, 0].pt >= rmin)
-                    # & (event_jet[:, 0].pt < rmax)
-                # )
-                # trigbools[trigger] = thistrigreq
-                # req_trig = req_trig | thistrigreq
 
         event_level = event_level & req_jet & req_dphi & req_subjet & req_trig & req_bal & req_leadjet
-
-        ## MC only: require gen vertex to be close to reco vertex
-        # if "GenVtx_z" in events.fields:
-            # req_vtx = np.abs(events.GenVtx_z - events.PV_z) < 0.2
-        # else:
-            # req_vtx = ak.ones_like(events.run, dtype=bool)
-
-        # event_level = event_level & req_vtx
 
         ##<==== finish selection
         event_level = ak.fill_none(event_level, False)
@@ -289,9 +255,6 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev.Jet[:, 0],
             pruned_ev.Jet[:, 1],
         )
-        # pruned_ev["RndJet"] = pruned_ev.Jet[
-        # :, np.random.randint(0, 2)#, size=len(pruned_ev))
-        # ]
         pruned_ev["RndJet"] = ak.where(
             np.random.randint(0, 2, size=len(pruned_ev)) == 0,
             pruned_ev.Jet[:, 0],
@@ -314,9 +277,14 @@ class NanoProcessor(processor.ProcessorABC):
                 run_num = "366727_370790"
             elif self._year == "2024":
                 run_num = "378985_386951"
+            elif self._year == "2025":
+                run_num = "391658_398860"
+            else:
+                raise NotImplementedError(
+                    f"Prescale weights not available for data in {self._year}."
+                )
 
             pruned_ev["psweight"] = np.zeros(len(pruned_ev))
-            trglist = sorted(list(triggers.keys()), reverse=True, key=lambda x: triggers[x][0])
             
             for trigger in triggers:
                 psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
