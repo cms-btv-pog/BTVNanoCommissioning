@@ -1920,9 +1920,14 @@ def main(args):
                         print(f"  {i+1}: {d}")
                     campaigns = [d.split("/")[2] for d in dataset]
                     campaign_input = input(
-                        f"{l} is which campaign? [Enter integer corresponding to above list. Use ',' for multiple]: "
+                        f"{l} is which campaign? [Enter integer corresponding to above list. Use ',' for multiple or 'all']: "
                     )
                     camp_idxs = []
+
+                    if campaign_input.strip() == "all":
+                        camp_idxs = list(range(len(campaigns)))
+                        break
+
                     for camp_idx in campaign_input.split(","):
                         try:
                             idx = int(camp_idx) - 1
