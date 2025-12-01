@@ -57,6 +57,7 @@ from BTVNanoCommissioning.workflows.qgtag_photonjet_producer import (
     NanoProcessor as QGtagPhotonjetProcessor,
 )
 
+## Example
 from BTVNanoCommissioning.workflows.example import (
     NanoProcessor as ExampleProcessor,
 )
@@ -117,16 +118,21 @@ workflows["ectag_Wc_WP_sf"] = partial(
 workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
 workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
 workflows["qgtag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="QG")
+workflows["qgtag_DY_lo_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="QG")
+
 
 # QG
 workflows["qgtag_dijet"] = partial(QGtagDijetProcessor, selectionModifier="DiPFJetAve")
-workflows["qgtag_dijet_hf"] = partial(
-    QGtagDijetProcessor, selectionModifier="DiPFJetAve_HF"
-)
+workflows["qgtag_dijet_pt"] = partial(QGtagDijetProcessor, selectionModifier="DiPFJetAve")
+
 workflows["qgtag_dijet_zb"] = partial(QGtagDijetProcessor, selectionModifier="ZB")
-workflows["qgtag_dijet_pfjet500"] = partial(QGtagDijetProcessor, selectionModifier="PFJet500")
+workflows["qgtag_dijet_zb_pt"] = partial(QGtagDijetProcessor, selectionModifier="ZB")
+
 workflows["qgtag_dijet_pfjet"] = partial(QGtagDijetProcessor, selectionModifier="PFJet")
+workflows["qgtag_dijet_pfjet_pt"] = partial(QGtagDijetProcessor, selectionModifier="PFJet")
+
 workflows["qgtag_photonjet"] = QGtagPhotonjetProcessor
+workflows["qgtag_photonjet_sherpa"] = QGtagPhotonjetProcessor
 
 # Tutorial
 workflows["example"] = ExampleProcessor

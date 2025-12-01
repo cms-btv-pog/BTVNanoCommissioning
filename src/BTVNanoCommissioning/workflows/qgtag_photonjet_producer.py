@@ -117,20 +117,25 @@ class NanoProcessor(processor.ProcessorABC):
             triggers = {
                 "Photon20_HoverELoose": [20, 30],
                 "Photon30EB_TightID_TightIso": [30, 50],
-                "Photon50": [50, 75],
-                "Photon75": [75, 90],
-                "Photon90": [90, 110],
+                "Photon50EB_TightID_TightIso": [50, 75],
+                "Photon75EB_TightID_TightIso": [75, 90],
+                "Photon90EB_TightID_TightIso": [90, 110],
                 "Photon110EB_TightID_TightIso": [110, 200],
                 "Photon200": [200, 9999],
             }
-        elif self._year == "2024" or self._year == "2025":
+        elif self._year == "2024":
             triggers = {
+                "Photon20_HoverELoose": [20, 30],
+                "Photon30EB_TightID_TightIso": [30, 50],
+                "Photon50EB_TightID_TightIso": [50, 110],
+                "Photon110EB_TightID_TightIso": [110, 200],
+                "Photon200": [200, 9999],
+            }
+        elif self._year == "2025":
+            triggers = {
+                "Photon20_HoverELoose": [20, 30],
                 "Photon30EB_TightID_TightIso": [30, 40],
-                "Photon40EB_TightID_TightIso": [40, 50],
-                "Photon50EB_TightID_TightIso": [50, 55],
-                "Photon55EB_TightID_TightIso": [55, 75],
-                "Photon75EB_TightID_TightIso": [75, 90],
-                "Photon90EB_TightID_TightIso": [90, 110],
+                "Photon40EB_TightID_TightIso": [40, 110],
                 "Photon110EB_TightID_TightIso": [110, 200],
                 "Photon200": [200, 9999],
             }
@@ -143,11 +148,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         ##### Add some selections
         ## Jet cuts
-        jet_sel = (
-            (events.Jet.pt >= 15)
-            & (abs(events.Jet.eta) < 5.191)
-            & (events.Jet.jetId >= 4)
-        )
+        jet_sel = jet_id(events, self._campaign, max_eta=5.0, min_pt=20.0)
 
         ## Photon cuts
         photon_sel = (
@@ -155,6 +156,7 @@ class NanoProcessor(processor.ProcessorABC):
             & (events.Photon.hoe < 0.02148)
             & (events.Photon.r9 > 0.94)
             & (events.Photon.r9 < 1.0)
+            & (np.abs(events.Photon.eta) < 1.3)
         )
 
         event_ph = ak.mask(events.Photon, photon_sel)
@@ -193,7 +195,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_jet = ak.count(event_jet.pt, axis=1) > 0
         req_dphi = np.abs(event_jet[:, 0].delta_phi(event_ph[:, 0])) > 2.7
-        req_scale = np.abs(1.0 - event_jet[:, 0].pt / event_ph[:, 0].pt) < 0.7
+        req_scale = np.abs(1.0 - event_jet[:, 0].pt / event_ph[:, 0].pt) < 0.3
 
         event_level = event_level & req_jet & req_dphi & req_scale & req_trig
 
@@ -214,7 +216,8 @@ class NanoProcessor(processor.ProcessorABC):
                     self,
                     events[event_level],
                     events,
-                    "nominal",
+                    None,
+                    ["nominal"],
                     dataset,
                     isRealData,
                     empty=True,
@@ -249,6 +252,12 @@ class NanoProcessor(processor.ProcessorABC):
                 run_num = "355374_362760"
             elif self._year == "2023":
                 run_num = "366727_370790"
+            elif self._year == "2024":
+                run_num = "378985_386951"
+            elif self._year == "2025":
+                run_num = "391658_398860"
+            else:
+                raise ValueError(self._year, "is not supported for prescale weights.")
 
             psweight = np.zeros(len(pruned_ev))
             for trigger, trigbool in trigbools.items():

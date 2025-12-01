@@ -116,11 +116,6 @@ class NanoProcessor(processor.ProcessorABC):
                 "ZeroBias": [15, 80],
             }
             ptmin, ptmax = 15, 80
-        elif self.selectionModifier == "PFJet500":
-            triggers = {
-                "PFJet500": [575, 1e7],
-            }
-            ptmin, ptmax = 575, 1e7
         elif self.selectionModifier == "PFJet":
             triggers = {
                 "PFJet40": [60, 86],
@@ -131,14 +126,8 @@ class NanoProcessor(processor.ProcessorABC):
                 "PFJet260": [305, 375],
                 "PFJet320": [375, 460],
                 "PFJet400": [460, 575],
-                # "PFJet450": [470, 530],
                 "PFJet500": [575, 1e7],
-                # "PFJet550": [600, 1e7],
             }
-            # if int(self._year) > 2022:
-                # triggers["PFJet80"] = [110, 140]
-                # triggers["PFJet110"] = [140, 180]
-                # triggers["PFJet140"] = [180, 220]
             ptmin, ptmax = 60, 1e7
         elif self.selectionModifier == "DiPFJetAve":
             # These act on the minimum pT of the two leading jets
@@ -155,20 +144,6 @@ class NanoProcessor(processor.ProcessorABC):
                 "DiPFJetAve500": [500, 1e7],
             }
             ptmin, ptmax = 40, 1e7
-        elif self.selectionModifier == "DiPFJet_HF":
-            triggers = {
-                "DiPFJetAve60_HFJEC": [60, 80],
-                "DiPFJetAve80_HFJEC": [80, 100],
-                "DiPFJetAve100_HFJEC": [100, 160],
-                "DiPFJetAve160_HFJEC": [160, 220],
-                "DiPFJetAve220_HFJEC": [220, 300],
-                "DiPFJetAve300_HFJEC": [300, 1e7],
-            }
-            if int(self._year) > 2022:
-                triggers["DiPFJetAve220_HFJEC"] = [220, 260]
-                triggers["DiPFJetAve260_HFJEC"] = [260, 300]
-                triggers["DiPFJetAve300_HFJEC"] = [300, 1e7]
-            ptmin, ptmax = 60, 1e7
         else:
             raise ValueError(
                 self.selectionModifier, "is not a valid selection modifier."
@@ -257,6 +232,21 @@ class NanoProcessor(processor.ProcessorABC):
         )
         pruned_ev["RndJet"] = ak.where(
             np.random.randint(0, 2, size=len(pruned_ev)) == 0,
+            pruned_ev.Jet[:, 0],
+            pruned_ev.Jet[:, 1],
+        )
+        pruned_ev["LeadJet"] = ak.where(
+            pruned_ev.Jet[:, 0].pt > pruned_ev.Jet[:, 1].pt,
+            pruned_ev.Jet[:, 0],
+            pruned_ev.Jet[:, 1],
+        )
+        pruned_ev["SubleadJet"] = ak.where(
+            pruned_ev.Jet[:, 0].pt < pruned_ev.Jet[:, 1].pt,
+            pruned_ev.Jet[:, 0],
+            pruned_ev.Jet[:, 1],
+        )
+        pruned_ev["SubleadJet"] = ak.where(
+            pruned_ev.Jet[:, 0].pt < pruned_ev.Jet[:, 1].pt,
             pruned_ev.Jet[:, 0],
             pruned_ev.Jet[:, 1],
         )

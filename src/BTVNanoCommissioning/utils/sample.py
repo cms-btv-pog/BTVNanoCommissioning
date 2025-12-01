@@ -43,12 +43,24 @@ predefined_sample = {
         "minor_MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
     },
     "qgtag_DY_sf": {
-        "data": ["DoubleMuon", "Muon", "Muon0", "Muon1"],
+        "data": [
+            "DoubleMuon",
+            "Muon", "Muon0", "Muon1"
+        ],
         "MC": [
+            # NLO
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         ],
-        # "minor_MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
+        "minor_MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
+    },
+    "qgtag_DY_lo_sf": {
+        "data": [
+            "DoubleMuon",
+            "Muon", "Muon0", "Muon1"
+        ],
+        "MC": ["DYto2Mu-4Jets_Bin-MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",],
+        "minor_MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
     },
     "ectag_DY_sf": {
         "data": ["EGamma", "EGamma0", "EGamma1"],
@@ -345,10 +357,79 @@ predefined_sample = {
             "TTto2L2Nu_Par-Hdamp-418_TuneCP5_13p6TeV_powheg-pythia8",
         ],
     },
-    "qgtag_dijet": {
-        "data": ["ZeroBias", "JetMET0", "JetMET1"],
+    "qgtag_dijet_zb": {
+        "data": [
+            "ZeroBias",
+            # 2023 has multiple ZB streams
+            "ZeroBias0", "ZeroBias1", "ZeroBias2", "ZeroBias3", "ZeroBias4",
+            "ZeroBias5", "ZeroBias6", "ZeroBias7", "ZeroBias8", "ZeroBias9",
+            "ZeroBias10", "ZeroBias11", "ZeroBias12", "ZeroBias13", "ZeroBias14",
+            "ZeroBias15", "ZeroBias16", "ZeroBias17", "ZeroBias18", "ZeroBias19",
+        ],
         "MC": [
-            # PT binned
+            # HT binned pre Summer24
+            "QCD-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # HT binned Summer24
+            "QCD-4Jets_Bin-HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        ],
+    },
+    "qgtag_dijet_zb_pt": {
+        "data": [
+        ],
+        "MC": [
+            # PT binned pre Summer24
+            "QCD_PT-15to30_TuneCP5_13p6TeV_pythia8",
+            "QCD_PT-30to50_TuneCP5_13p6TeV_pythia8",
+            "QCD_PT-50to80_TuneCP5_13p6TeV_pythia8",
+            "QCD_PT-80to120_TuneCP5_13p6TeV_pythia8",
+            "QCD_PT-120to170_TuneCP5_13p6TeV_pythia8",
+            "QCD_PT-170to300_TuneCP5_13p6TeV_pythia8",
+            # PT binned Summer24
+            "QCD_Bin-PT-15to30_TuneCP5_13p6TeV_pythia8",
+            "QCD_Bin-PT-30to50_TuneCP5_13p6TeV_pythia8",
+            "QCD_Bin-PT-50to80_TuneCP5_13p6TeV_pythia8",
+            "QCD_Bin-PT-80to120_TuneCP5_13p6TeV_pythia8",
+            "QCD_Bin-PT-120to170_TuneCP5_13p6TeV_pythia8",
+            "QCD_Bin-PT-170to300_TuneCP5_13p6TeV_pythia8",
+        ],
+    },
+    "qgtag_dijet": {
+        "data": ["JetMET0", "JetMET1"],
+        "MC": [
+            # HT binned pre Summer24
+            "QCD-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-600to800_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1200to1500_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1500to2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # HT binned Summer24
+            "QCD-4Jets_Bin-HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-1200to1500_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-1500to2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-600to800_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        ],
+    },
+    "qgtag_dijet_pt": {
+        "data": [],
+        "MC": [
+            # PT binned pre Summer24
             "QCD_PT-15to30_TuneCP5_13p6TeV_pythia8",
             "QCD_PT-30to50_TuneCP5_13p6TeV_pythia8",
             "QCD_PT-50to80_TuneCP5_13p6TeV_pythia8",
@@ -380,34 +461,15 @@ predefined_sample = {
             "QCD_Bin-PT-2000to2500_TuneCP5_13p6TeV_pythia8",
             "QCD_Bin-PT-2500to3000_TuneCP5_13p6TeV_pythia8",
             "QCD_Bin-PT-3000_TuneCP5_13p6TeV_pythia8",
-            # HT binned
-            "QCD-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_HT-600to800_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_HT-1200to1500_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_HT-1500to2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_HT-2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            # HT binned Summer24
-            "QCD-4Jets_Bin-HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_Bin-HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_Bin-HT-1200to1500_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_Bin-HT-1500to2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_Bin-HT-2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_Bin-HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_Bin-HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_Bin-HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_Bin-HT-600to800_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_Bin-HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "QCD-4Jets_Bin-HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         ],
     },
     "qgtag_photonjet": {
-        "data": ["EGamma", "EGamma0", "EGamma1", "EGamma2"],
+        "data": [
+            "EGamma",
+            "EGamma0",
+            "EGamma1",
+            "EGamma2"
+        ],
         "MC": [
             # Summer24
             # PTG 10-100
@@ -428,16 +490,14 @@ predefined_sample = {
             "GJ-4Jets_Bin-HT-400to600-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "GJ-4Jets_Bin-HT-600to1000-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "GJ-4Jets_Bin-HT-1000-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            # Sherpa NLO
-            # "GJ-4Jets-2NLO2LO_Bin-PTG-25_Par-BiasedPTG_TuneSherpaDef_13p6TeV_sherpaMEPS"
             # Summer22/Summer23
             # HT binned
-            "GJ-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "GJ-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "GJ-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "GJ-4Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "GJ-4Jets_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "GJ-4Jets_HT-600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             # HT & PTG binned
             "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-40to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
@@ -455,5 +515,14 @@ predefined_sample = {
             "GJ-4Jets_dRGJ-0p25_PTG-200_HT-600to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "GJ-4Jets_dRGJ-0p25_PTG-200_HT-1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         ],
+    },
+    "qgtag_photonjet_sherpa": {
+        "data": [
+            "EGamma",
+            "EGamma0",
+            "EGamma1",
+            "EGamma2"
+        ],
+        "MC": ["GJ-4Jets-2NLO2LO_Bin-PTG-25_Par-BiasedPTG_TuneSherpaDef_13p6TeV_sherpaMEPS",],
     },
 }
