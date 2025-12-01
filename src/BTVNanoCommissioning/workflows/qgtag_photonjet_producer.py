@@ -148,7 +148,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         ##### Add some selections
         ## Jet cuts
-        jet_sel = jet_id(events, self._campaign, max_eta=5.0, min_pt=20.0)
+        jet_sel = jet_id(events, self._campaign, max_eta=5.0, min_pt=20)
 
         ## Photon cuts
         photon_sel = (
@@ -165,19 +165,14 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_photon = ak.count(event_ph.pt, axis=1) > 0
 
-        req_trig = np.zeros(len(events), dtype="bool")
-        trigbools = {}
-        for trigger, ptrange in triggers.items():
-            ptmin = ptrange[0]
-            ptmax = ptrange[1]
-            # Require *leading photon* to be in the pT range of the trigger
-            thistrigreq = (
-                (HLT_helper(events, [trigger]))
-                & (ak.fill_none(ak.firsts(event_ph.pt) >= ptmin, False))
-                & (ak.fill_none(ak.firsts(event_ph.pt) < ptmax, False))
+        for trg in triggers:
+            events.HLT[trg] = (
+                events.HLT[trg]
+                & ((events.Photon[:, 0].pt >= triggers[trg][0]))
+                & ((events.Photon[:, 0].pt < triggers[trg][1]))
             )
-            trigbools[trigger] = thistrigreq
-            req_trig = (req_trig) | (thistrigreq)
+
+        req_trig = HLT_helper(events, list(triggers.keys()))
 
         if self._year == "2016":
             jet_puid = events.Jet.puId >= 1
@@ -235,7 +230,6 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["Tag", "pt"] = pruned_ev["Tag"].pt
         pruned_ev["Tag", "eta"] = pruned_ev["Tag"].eta
         pruned_ev["Tag", "phi"] = pruned_ev["Tag"].phi
-        pruned_ev["Tag", "mass"] = pruned_ev["Tag"].mass
         pruned_ev["SelJet"] = pruned_ev.Jet[:, 0]
 
         pruned_ev["njet"] = ak.count(pruned_ev.Jet.pt, axis=1)
@@ -259,8 +253,8 @@ class NanoProcessor(processor.ProcessorABC):
             else:
                 raise ValueError(self._year, "is not supported for prescale weights.")
 
-            psweight = np.zeros(len(pruned_ev))
-            for trigger, trigbool in trigbools.items():
+            pruned_ev["psweight"] = np.zeros(len(pruned_ev))
+            for trigger in triggers:
                 psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
                 if not os.path.isfile(psfile):
                     raise NotImplementedError(
@@ -272,8 +266,10 @@ class NanoProcessor(processor.ProcessorABC):
                     f"HLT_{trigger}",
                     ak.values_astype(pruned_ev.luminosityBlock, np.float32),
                 )
-                psweight = ak.where(trigbool[event_level], thispsweight, psweight)
-            weights.add("psweight", psweight)
+                pruned_ev["psweight"] = ak.where(
+                    (pruned_ev.HLT[trigger]) & (pruned_ev["psweight"] == 0), thispsweight, pruned_ev["psweight"]
+                )
+            weights.add("psweight", pruned_ev["psweight"])
 
         # Configure systematics
         if shift_name is None:

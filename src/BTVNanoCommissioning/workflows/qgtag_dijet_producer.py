@@ -113,7 +113,7 @@ class NanoProcessor(processor.ProcessorABC):
         ## HLT
         if self.selectionModifier == "ZB":
             triggers = {
-                "ZeroBias": [15, 80],
+                "ZeroBias": [15, 60],
             }
             ptmin, ptmax = 15, 80
         elif self.selectionModifier == "PFJet":
@@ -151,13 +151,15 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Redefine triggers to match the jet selection
         events.Jet = ak.pad_none(events.Jet, 2)
-        if isRealData:
-            for trg in triggers:
-                events.HLT[trg] = (
-                    events.HLT[trg]
-                    & ((events.Jet[:, 0].pt >= triggers[trg][0]))
-                    & ((events.Jet[:, 0].pt < triggers[trg][1]))
-                )
+
+        for trg in triggers:
+            events.HLT[trg] = (
+                events.HLT[trg]
+                & ((events.Jet[:, 0].pt >= triggers[trg][0]))
+                & ((events.Jet[:, 0].pt < triggers[trg][1]))
+            )
+
+        req_trig = HLT_helper(events, list(triggers.keys()))
 
         req_metfilter = MET_filters(events, self._campaign)
 
@@ -191,7 +193,6 @@ class NanoProcessor(processor.ProcessorABC):
         )
         req_bal = np.abs(1.0 - event_jet[:, 1].pt / event_jet[:, 0].pt) < 0.3
 
-        req_trig = HLT_helper(events, list(triggers.keys()))
 
         event_level = event_level & req_jet & req_dphi & req_subjet & req_trig & req_bal & req_leadjet
 
@@ -275,7 +276,6 @@ class NanoProcessor(processor.ProcessorABC):
                 )
 
             pruned_ev["psweight"] = np.zeros(len(pruned_ev))
-            
             for trigger in triggers:
                 psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
                 if not os.path.isfile(psfile):
