@@ -1,7 +1,8 @@
-import collections, numpy as np, awkward as ak, os
+import numpy as np
+import awkward as ak
+import os
 from coffea import processor
-from coffea.analysis_tools import Weights
-from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi
+from BTVNanoCommissioning.helpers.func import update, dump_lumi
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
     histo_writter,
@@ -67,10 +68,8 @@ class NanoProcessor(processor.ProcessorABC):
                 hist_collections=["common", "fourvec", "QCD"],
             )
 
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            output["sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
