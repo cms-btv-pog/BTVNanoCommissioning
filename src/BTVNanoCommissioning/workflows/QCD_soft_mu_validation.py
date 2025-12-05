@@ -1,8 +1,8 @@
-import collections, numpy as np, awkward as ak
+import numpy as np
+import awkward as ak
 from coffea import processor
-from coffea.analysis_tools import Weights
 from BTVNanoCommissioning.utils.selection import jet_cut
-from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi, PFCand_link
+from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
     histo_writter,
@@ -16,9 +16,6 @@ from BTVNanoCommissioning.utils.correction import (
     common_shifts,
 )
 from BTVNanoCommissioning.utils.selection import (
-    jet_id,
-    mu_idiso,
-    ele_mvatightid,
     softmu_mask,
     HLT_helper,
 )
@@ -75,10 +72,8 @@ class NanoProcessor(processor.ProcessorABC):
                 hist_collections=["common", "fourvec", "QCD_smu"],
             )
 
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            output["sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
