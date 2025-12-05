@@ -1,9 +1,6 @@
 import awkward as ak
 import numpy as np
-import os
-import uproot
 from coffea import processor
-from coffea.analysis_tools import Weights
 
 from BTVNanoCommissioning.utils.correction import (
     load_lumi,
@@ -100,10 +97,8 @@ class NanoProcessor(processor.ProcessorABC):
                     is_dijet=False,
                 )
 
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            output["sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
