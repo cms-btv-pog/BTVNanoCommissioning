@@ -127,11 +127,11 @@ def calculate_mass_probability(m_type, masses):
         mW_val = np.clip(mW_val, cw[0], cw[-1])
         mT_val = np.clip(mT_val, ct[0], ct[-1])
         prob = interp2d(cw, ct, z_2d, mW_val, mT_val)
-        return np.maximum(prob, 1e-12)
+        return np.maximum(prob, 1e-24)
     elif m_type == "T":
         mTlep_val = np.clip(masses[0], cnu[0], cnu[-1])
         prob = interp1d(cnu, z_1d, mTlep_val)
-        return np.maximum(prob, 1e-12)
+        return np.maximum(prob, 1e-24)
     else:
         raise ValueError("Not a valid mass distribution")
         
@@ -348,7 +348,7 @@ class NanoProcessor(processor.ProcessorABC):
         mt_axis = Hist.axis.Regular(30, 0, 300, name="mt", label=" $m_{T}$ [GeV]")
 
         mTW_l_axis = Hist.axis.Regular(40, 0, 200, name="mTW_l", label=r"$m_T(W_l)$")
-        neg_log_lambda_axis = Hist.axis.Regular(36,11, 20, name="neg_log_lambda", label=r"$-log(\\lambda)$")
+        neg_log_lambda_axis = Hist.axis.Regular(48,10, 22, name="neg_log_lambda", label=r"$-log(\\lambda)$")
 
         tpt_axis = Hist.axis.Regular(60, 0, 600, name="pt", label=r"$p_T$ [GeV]")
         dr_axis = Hist.axis.Regular(20, 0, 8, name="dr", label="$\Delta$R")
@@ -358,7 +358,6 @@ class NanoProcessor(processor.ProcessorABC):
         cat_axis = Hist.axis.StrCategory(["had", "lep"], name="cat")
         wp_axis = Hist.axis.StrCategory(["L", "M", "T", "XT", "XXT"], name="wp")
         kin_axis = Hist.axis.Regular(24, 0, 24, name="kinbin", label="Bin: $M_T(W_h)$ v. $-log(\\lambda)$")
-        #ttcat_axis = Hist.axis.StrCategory(["sig", "bkg", "other"], name="tt_cat")
         ttcat_axis = Hist.axis.StrCategory(["data", "sig", "ttbkg", "st", "ew", "qcd"], name="tt_cat")
         result_axis = Hist.axis.StrCategory(["pass", "fail"], name="result")
         ptb_edges = [30.0, 50.0, 70.0, 100.0, 140.0, 200.0, 300.0] # Update ptbin
@@ -823,7 +822,7 @@ class NanoProcessor(processor.ProcessorABC):
             clean_el = ak.where(
                 has_el, ak.all(dr_el > 0.4, axis=-1, mask_identity=True), all_true
             )
-            base_jet_mask = jet_id(ev, self._campaign, max_eta=2.4, min_pt=30)
+            base_jet_mask = jet_id(ev, self._campaign, max_eta=2.4, min_pt=25)
             return ak.fill_none(base_jet_mask & clean_mu & clean_el, False, axis=-1)
 
         # Cutflow helper
@@ -977,10 +976,7 @@ class NanoProcessor(processor.ProcessorABC):
             BH, BL, JA, JB = best["BH"], best["BL"], best["JA"], best["JB"]
             nu, tlep, thad = best["nu"], best["tlep"], best["thad"]
             neg_log_lambda, mTW_l = best["neg_log_lambda"],best["mTW_l"]
-            log_lambda_mask = (neg_log_lambda >11.0) & (neg_log_lambda <20.0)
-
-            mTW_l = np.clip(ak.to_numpy(mTW_l), 0.1, 199.9)
-            neg_log_lambda = np.clip(ak.to_numpy(neg_log_lambda), 11.01, 19.99)
+            log_lambda_mask =  (neg_log_lambda <50.0)
 
             # Compute derived quantities once
             had_tag = ak.fill_none(
@@ -1031,8 +1027,8 @@ class NanoProcessor(processor.ProcessorABC):
             mTW_l_bins = np.array([0., 40., 80., 200.], dtype=np.double)
             neg_log_lambda_bins = np.array([11., 12., 13., 14., 15., 16., 17., 18., 20.], dtype=np.double)
 
-            mTW_l_bin = np.digitize(ak.to_numpy(mTW_l), mTW_l_bins) -1
-            neg_log_lambda_bin = np.digitize(ak.to_numpy(neg_log_lambda), neg_log_lambda_bins) -1
+            mTW_l_bin = np.digitize(ak.to_numpy(np.clip(ak.to_numpy(mTW_l), 0.1, 199.9)), mTW_l_bins) -1
+            neg_log_lambda_bin = np.digitize(ak.to_numpy(np.clip(ak.to_numpy(neg_log_lambda), 11.01, 19.99)), neg_log_lambda_bins) -1
 
             kinbin_full = (mTW_l_bin * 8 + neg_log_lambda_bin).astype(np.int32)
             
