@@ -600,7 +600,7 @@ class NanoProcessor(processor.ProcessorABC):
                     continue
 
                 # b tag discriminants, filled with BTV excluded weights
-                if any(k in histname for k in ("btag", "PNet", "ProbaN")):
+                if any(k in histname.replace(f"{region_prefix}_", " ") for k in ("btag", "PNet", "ProbaN")):
                     # hist names like "<region>_btagDeepFlavB_0"
                     # grab the jet index suffix
                     idx_str = histname.rsplit("_", 1)[-1]
