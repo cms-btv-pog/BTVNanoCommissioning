@@ -27,6 +27,9 @@ from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
     ele_cuttightid,
+    ele_mvatightid,
+    ele_promptmvaid,
+    MET_filters,
     calculate_new_discriminators,
     get_wp_2D,
     btag_wp_dict,
@@ -122,15 +125,20 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Electron cuts
         # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
-        events.Electron = events.Electron[
-            (events.Electron.pt > 30) & ele_cuttightid(events, self._campaign)
-        ]
+        if self.selMod == "ttdilep_sf_2D":
+            events.Electron = events.Electron[
+                (events.Electron.pt > 30) & ele_mvatightid(events, self._campaign)
+            ]
+        else:
+            events.Electron = events.Electron[
+                (events.Electron.pt > 30) & ele_cuttightid(events, self._campaign)
+            ]
         events.Electron = ak.pad_none(events.Electron, 1, axis=1)
         req_ele = ak.count(events.Electron.pt, axis=1) == 1
 
         ## Jet cuts
         jetsel = ak.fill_none(
-            jet_id(events, self._campaign)
+            jet_id(events, self._campaign, min_pt=25)
             & (
                 ak.all(
                     events.Jet.metric_table(events.Muon) > 0.4,
@@ -173,9 +181,10 @@ class NanoProcessor(processor.ProcessorABC):
                 },
                 with_name="PtEtaPhiMLorentzVector",
             )
+        req_metfilter = MET_filters(events, self._campaign)
 
         event_level = (
-            req_trig & req_lumi & req_muon & req_ele & req_jets & req_opposite_charge
+            req_trig & req_lumi & req_muon & req_ele & req_jets & req_opposite_charge & req_metfilter
         )
         event_level = ak.fill_none(event_level, False)
         if len(events[event_level]) == 0:

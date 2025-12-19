@@ -21,6 +21,8 @@ from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
     ele_mvatightid,
+    ele_promptmvaid,
+    mu_promptmvaid,
     MET_filters,
     calculate_new_discriminators,
     get_wp_2D,
@@ -128,9 +130,13 @@ class NanoProcessor(processor.ProcessorABC):
         if isMu:
             thisdilep = dilep_mu
             otherdilep = dilep_ele
+            if "2D" in self.selMod:
+                req_leppt = ak.max(dilep_mu.pt, axis=1, mask_identity=False) > 20
         else:
             thisdilep = dilep_ele
             otherdilep = dilep_mu
+            if "2D" in self.selMod:
+                req_leppt = ak.max(dilep_ele.pt, axis=1, mask_identity=False) > 25
 
         # dilepton
         pos_dilep = thisdilep[thisdilep.charge > 0]
@@ -144,7 +150,9 @@ class NanoProcessor(processor.ProcessorABC):
             False,
             axis=-1,
         )
-
+        if "2D" in self.selMod:
+            req_dilep = req_dilep & req_leppt
+        
         pl_iso = ak.all(
             events.Jet.metric_table(pos_dilep) > 0.4, axis=2, mask_identity=True
         )
@@ -174,7 +182,7 @@ class NanoProcessor(processor.ProcessorABC):
         )
         event_jet = events.Jet[
             ak.fill_none(
-                jet_id(events, self._campaign) & pl_iso & nl_iso,
+                jet_id(events, self._campaign, min_pt=25) & pl_iso & nl_iso,
                 False,
                 axis=-1,
             )

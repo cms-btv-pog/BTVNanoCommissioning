@@ -46,7 +46,7 @@ def get_histograms(axes, **kwargs):
     hists["w_mass"] = Hist.Hist(
         axes["syst"],
         axes["osss"],
-        Hist.axis.Regular(50, 50, 100, name="mass", label=" $m_{\\ell\\nu}$ [GeV]"),
+        Hist.axis.Regular(55, 40, 150, name="mass", label=" $m_{\\ell\\nu}$ [GeV]"),
         Hist.storage.Weight(),
     )
     hists["w_pt"] = Hist.Hist(
@@ -60,6 +60,54 @@ def get_histograms(axes, **kwargs):
         axes["osss"],
         Hist.axis.Regular(50, 0, 360, name="phi", label=" $\\phi_{\\ell\\nu}$ [deg]"),
         Hist.storage.Weight(),
+    )
+    hists["jetw_ptratio"] = Hist.Hist(
+        axes["syst"],
+        axes["flav"],
+        axes["osss"],
+        Hist.axis.Regular(50, 0, 3, name="ratio", label="ratio"),
+        Hist.storage.Weight()
+    )
+    hists["jetl_dphi"] = Hist.Hist(
+        axes["syst"],
+        axes["flav"],
+        axes["osss"],
+        Hist.axis.Regular(50, 0, 4, name="jetl_dphi", label="jetl_dphi"),
+        Hist.storage.Weight()
+    )
+    hists["jetw_dphi"] = Hist.Hist(
+        axes["syst"],
+        axes["flav"],
+        axes["osss"],
+        Hist.axis.Regular(50, 0, 4, name="jetw_dphi", label="jetw_dphi"),
+        Hist.storage.Weight()
+    )
+    hists["jetmet_dphi"] = Hist.Hist(
+        axes["syst"],
+        axes["flav"],
+        axes["osss"],
+        Hist.axis.Regular(50, 0, 4, name="jetmet_dphi", label="jetmet_dphi"),
+        Hist.storage.Weight()
+    )
+    hists["metTrkmet_dphi"] = Hist.Hist(
+        axes["syst"],
+        axes["osss"],
+        Hist.axis.Regular(50, 0, 4, name="metTrkmet_dphi", label="metTrkmet_dphi"),
+        Hist.storage.Weight()
+    )
+    hists["mujet_muneuEF"] = Hist.Hist(
+        axes["syst"],
+        axes["flav"],
+        axes["osss"],
+        Hist.axis.Regular(50, 0, 2, name="muneuEF", label="$\mu_{EF}$"),
+        Hist.storage.Weight()
+    )  
+    hists["mujet_muEF"] = Hist.Hist(
+        axes["syst"],
+        axes["flav"],
+        axes["osss"],
+        Hist.axis.Regular(50, 0, 1, name="muEF", label=" $\mu_{EF}$"),
+        Hist.storage.Weight()
     )
     hists["dr_lmujetsmu"] = Hist.Hist(
         axes["syst"], axes["flav"], axes["osss"], axes["dr_s"], Hist.storage.Weight()

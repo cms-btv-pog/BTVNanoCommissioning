@@ -173,6 +173,9 @@ def axes_name(var):
             unit = "($\\mu$,Jet)"
         elif "SVjet0" in var:
             unit = "(SV,Jet)"
+    elif "dphi" in var:
+        obj = "|$\\Delta\\phi$"
+        
     elif "MET_" in var:
         obj = "MET"
     elif "ele_" in var:
@@ -211,6 +214,14 @@ def axes_name(var):
         unit = " $m_T$ [GeV]"
     elif "eta" in var:
         unit = " $\\eta$"
+    elif "jetmet" in var:
+            unit = "(Jet,MET)|"
+    elif "metTrkmet" in var:
+            unit = "(MET,TrkMET)|"
+    elif "jetw" in var:
+            unit = "(Jet,W)|"
+    elif "jetl" in var:
+            unit = "(Jet,$\\ell_1$)|"
     elif "phi" in var:
         unit = " $\\phi$"
     elif "dxy" in var:
@@ -219,6 +230,10 @@ def axes_name(var):
         unit = " $d_{z}$ [cm]"
     elif "pfRelIso" in var:
         unit = " Rel. Iso"
+    elif "muEF" in var:
+        unit = " muEF"
+    elif "muneuEF" in var:
+        unit = " muEF + neEmEF"
     elif "btag" in var:
         unit = "Jet"
         ## Negative tagger
@@ -316,4 +331,6 @@ def axes_name(var):
             label = "$p_T^{\\ell_2}/p_T^{Jet}$"
         if var == "soft_l_ptratio":
             label = "$p_T^{soft-\\mu}/p_T^{Jet}$"
+        if var == "jetw_ptratio":
+            label = "$p_T^{Jet}/p_T^{W}$"
     return label
