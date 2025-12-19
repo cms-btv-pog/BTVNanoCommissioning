@@ -76,13 +76,13 @@ if len(missing_files) < 1:
     exit()
 else:
     print("Job numbers missing:", missing_files, jobFolder)
+    with open(missingfileloc, "w") as file:
+        for missing_file in missing_files:
+            file.write(str(missing_file) + "\n")
+    print(f"Missing files have been saved to", missingfileloc)
+
 if args.test:
     exit()
-with open(missingfileloc, "w") as file:
-    for missing_file in missing_files:
-        file.write(str(missing_file) + "\n")
-
-print(f"Missing files have been saved to", missingfileloc)
 
 # Update the jdl file if -u option is on
 if args.updateJDL:

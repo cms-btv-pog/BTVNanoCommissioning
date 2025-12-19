@@ -36,14 +36,14 @@ def load_SF(year, campaign, syst=False):
 
     This function reads scale factors from the specified campaign configuration and returns them in a suitable format.
     It handles different types of scale factors, such as pileup weights, and checks for the existence of files in
-    the jsonpog-integration directory or custom files.
+    the CMS analysis corrections metadata directory or custom files.
 
     Example:
     ```python
     ## Initialization, add EGM map from correctionlib
     correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
-                )
+        f"src/BTVNanoCommissioning/data/EGM/{campaign}/electron.json.gz"
+    )
     ## Initialization, add EGM map from custom file by extractor
     ext = extractor()
     ext.add_weight_sets(["eleID EGamma2D {filename}.root"])
@@ -73,8 +73,8 @@ def load_SF(year, campaign, syst=False):
 
         ## pileup weight
         if SF == "LUM":
-            ## Check whether files in jsonpog-integration exist
-            _pu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
+            ## Check whether files exist in CMS analysis corrections
+            _pu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights{'_BCDEFGHI' if 'Summer24' in campaign else ''}.json.gz"
             if os.path.exists(_pu_path):
                 correct_map["LUM"] = correctionlib.CorrectionSet.from_file(_pu_path)
             ## Otherwise custom files
@@ -165,9 +165,7 @@ def load_SF(year, campaign, syst=False):
                 "electronHlt": "EGM_HLT",
             }.items():
                 _ele_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest/{_ele_file}.json.gz"
-                if not os.path.exists(_ele_path) or (
-                    _ele_file == "electron" and campaign == "Summer24"
-                ):
+                if not os.path.exists(_ele_path):
                     _ele_path = f"src/BTVNanoCommissioning/data/EGM/{campaign}/{_ele_file}.json.gz"
                 if os.path.exists(_ele_path):
                     correct_map[_ele_map] = correctionlib.CorrectionSet.from_file(
@@ -190,7 +188,7 @@ def load_SF(year, campaign, syst=False):
                 )
 
             ## check if any custom corrections needed
-            # FIXME: (some low pT muons not supported in jsonpog-integration at the moment)
+            # FIXME: (some low pT muons not supported in CMS analysis corrections at the moment)
             if (
                 "histo.json" in "\t".join(list(config[campaign]["MUO"].values()))
                 or "histo.txt" in "\t".join(list(config[campaign]["MUO"].values()))
@@ -414,10 +412,10 @@ def load_lumi(campaign):
 
     _lumi_path = "BTVNanoCommissioning.data.DC"
     if os.path.exists(
-        f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/config[campaign]["DC"]'
+        f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/latest/{config[campaign]["DC"]}'
     ):
         return LumiMask(
-            f"/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/{config[campaign]['DC']}"
+            f"/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/latest/{config[campaign]['DC']}"
         )
     else:
         with importlib.resources.path(_lumi_path, config[campaign]["DC"]) as filename:
@@ -484,7 +482,7 @@ def jetveto(jets, correct_map):
         )
 
 
-# from https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/blob/master/examples/jercExample.py
+# from https://gitlab.cern.ch/cms-analysis-corrections/JME/examples/-/blob/latest/jercExample.py
 def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
     """
     Helper function for getting values of input variables
@@ -798,6 +796,10 @@ def JME_shifts(
             )
             met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
 
+        # Sort the jets by pt
+        new_jet_idx = ak.argsort(jets.pt, ascending=False)
+        jets = jets[new_jet_idx]
+
         # systematics
         if not isRealData:
             if systematic != False:
@@ -995,7 +997,7 @@ def MUO_shifts(shifts, correct_map, events, isRealData, systematic=False):
     Applies the Run 3 recommended muon scale and smearing corrections.
     Returns the corrected muon objects, including systematics.
     Adapted from this example of muon SS correction usage:
-    https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/blob/master/examples/muoScaleAndSmearingCoffeaExample.py
+    https://gitlab.cern.ch/cms-analysis-corrections/MUO/examples/-/blob/latest/muoScaleAndSmearingCoffeaExample.py
     """
 
     mu = events.Muon
@@ -1127,7 +1129,7 @@ def EGM_shifts(shifts, correct_map, events, isRealData, systematic=False):
     Applies the Run 3 recommended electron scale and smearing corrections.
     Returns the corrected electron objects, including systematics.
     Adapted from this example of electron SS correction usage:
-    https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/blob/master/examples/egmScaleAndSmearingExample.py
+    https://gitlab.cern.ch/cms-analysis-corrections/EGM/examples/-/blob/latest/egmScaleAndSmearingExample.py
     """
 
     ele = events.Electron
@@ -1461,22 +1463,8 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                             jet.btagDeepCvB,
                         ),
                     )
-                elif SFtype == "UParTAK4C":
-                    jet_2DWP = event[f"btagUParTAK42D_{nj}"]  # L0
-                    jet_2DWP = [
-                        0 if wp == -1 else wp for wp in jet_2DWP
-                    ]  # Like replacing Nones
-                    jet_2DWP = [40 if wp == 1 else wp for wp in jet_2DWP]  # C0
-                    jet_2DWP = [41 if wp == 2 else wp for wp in jet_2DWP]  # C1
-                    jet_2DWP = [42 if wp == 3 else wp for wp in jet_2DWP]  # C2
-                    jet_2DWP = [43 if wp == 4 else wp for wp in jet_2DWP]  # C3
-                    jet_2DWP = [44 if wp == 5 else wp for wp in jet_2DWP]  # C4
-                    jet_2DWP = [50 if wp == 6 else wp for wp in jet_2DWP]  # B0
-                    jet_2DWP = [51 if wp == 7 else wp for wp in jet_2DWP]  # B1
-                    jet_2DWP = [52 if wp == 8 else wp for wp in jet_2DWP]  # B2
-                    jet_2DWP = [53 if wp == 9 else wp for wp in jet_2DWP]  # B3
-                    jet_2DWP = [54 if wp == 10 else wp for wp in jet_2DWP]  # B4
-                    jet_2DWP = ak.fill_none(jet_2DWP, 0)
+                elif SFtype == "UParTAK4BC":
+                    jet_2Dbin = ak.fill_none(jet.btagUParTAK42Dbin, 0)
                     jet_eta = ak.fill_none(jet.eta, 0)
                     jet_pt = ak.fill_none(jet.pt, 0)
                     tmp_sfs = np.where(
@@ -1485,7 +1473,7 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                         correct_map["ctag"][correct_map["BTV_cfg"]].evaluate(
                             "central",
                             jet.hadronFlavour,
-                            jet_2DWP,
+                            jet_2Dbin,
                             jet_eta,
                             jet_pt,
                         ),
@@ -1497,7 +1485,7 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                             correct_map["ctag"][correct_map["BTV_cfg"]].evaluate(
                                 f"up_{systlist[i]}",
                                 jet.hadronFlavour,
-                                jet_2DWP,
+                                jet_2Dbin,
                                 jet_eta,
                                 jet_pt,
                             ),
@@ -1508,7 +1496,7 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                             correct_map["ctag"][correct_map["BTV_cfg"]].evaluate(
                                 f"down_{systlist[i]}",
                                 jet.hadronFlavour,
-                                jet_2DWP,
+                                jet_2Dbin,
                                 jet_eta,
                                 jet_pt,
                             ),
@@ -1753,17 +1741,13 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                     else:
                         sfs_low = np.where(
                             (ele.pt < 20.0) & ~masknone,
-                            (
-                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                    sf.split(" ")[1],
-                                    "sf",
-                                    "RecoBelow20",
-                                    ele_etaSC,
-                                    ele_pt_low,
-                                )
-                                if "Summer24" not in correct_map["campaign"]
-                                else 1.0
-                            ),  # TODO: temporary until RecoBelow20 is released for 2024
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1],
+                                "sf",
+                                "RecoBelow20",
+                                ele_etaSC,
+                                ele_pt_low,
+                            ),
                             1.0,
                         )
                         sfs_high = np.where(
@@ -1789,32 +1773,24 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         if syst:
                             sfs_up_low = np.where(
                                 (ele.pt < 20.0) & ~masknone,
-                                (
-                                    correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                        sf.split(" ")[1],
-                                        "sfup",
-                                        "RecoBelow20",
-                                        ele_etaSC,
-                                        ele_pt_low,
-                                    )
-                                    if "Summer24" not in correct_map["campaign"]
-                                    else 0.0
-                                ),  # TODO: temporary until RecoBelow20 is released for 2024
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "RecoBelow20",
+                                    ele_etaSC,
+                                    ele_pt_low,
+                                ),
                                 0.0,
                             )
                             sfs_down_low = np.where(
                                 (ele.pt < 20.0) & ~masknone,
-                                (
-                                    correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                        sf.split(" ")[1],
-                                        "sfdown",
-                                        "RecoBelow20",
-                                        ele_etaSC,
-                                        ele_pt_low,
-                                    )
-                                    if "Summer24" not in correct_map["campaign"]
-                                    else 0.0
-                                ),  # TODO: temporary until RecoBelow20 is released for 2024
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "RecoBelow20",
+                                    ele_etaSC,
+                                    ele_pt_low,
+                                ),
                                 0.0,
                             )
                             sfs_up_high = np.where(
@@ -1876,11 +1852,11 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                     else:
                         _ele_map = "EGM"
                         ele_pt = ak.fill_none(
-                            ele.pt, 20 if "Summer24" in correct_map["campaign"] else 10
+                            ele.pt, 10
                         )
                         ele_pt = np.clip(
                             ele_pt,
-                            20 if "Summer24" in correct_map["campaign"] else 10,
+                            10,
                             10000,
                         )
 
@@ -2187,7 +2163,10 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_the
 def top_pT_sf_formula(pt):
-    return 0.103 * np.exp(-0.0118 * pt) - 0.000134 * pt + 0.973
+    x = np.clip(pt, 0, 2000)
+    # From page 30 of AN v9 https://cms.cern.ch/iCMS/jsp/db_notes/noteInfo.jsp?cmsnoteid=CMS%20AN-2024/019
+    w_13_to_13p6 = 0.991 + 0.000075 * x # Extrapolation of the number below (which was for CoM = 13 TeV) to CoM = 13.6 TeV
+    return (0.103 * np.exp(-0.0118 * x) - 0.000134 * x + 0.973) * w_13_to_13p6
 
 
 def top_pT_reweighting(gen):
@@ -2585,13 +2564,13 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                 syst_wei,
             )
         if "MUO" in SF_map.keys() and "SelMuon" in pruned_ev.fields:
-            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, False)
+            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, True)
         if "EGM" in SF_map.keys() and "SelElectron" in pruned_ev.fields:
             eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, True)
         if (
             "ctag" in SF_map.keys() or "btag" in SF_map.keys()
         ) and "SelJet" in pruned_ev.fields:
-            btagSFs(pruned_ev, SF_map, weights, "UParTAK4C", syst_wei)
+            btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepJetC", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepJetB", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepCSVB", syst_wei)

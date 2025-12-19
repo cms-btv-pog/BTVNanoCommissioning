@@ -286,34 +286,27 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     if f"jet{i}" not in histname:
                         continue
                     if nj == 1:
-                        sel_jet, flav = pruned_ev.SelJet, genflavor
+                        sel_jet, flav, wgt = pruned_ev.SelJet, genflavor, weight
                     else:
-                        sel_jet, flav = pruned_ev.SelJet[:, i], genflavor[:, i]
+                        mask_njets = (ak.count(pruned_ev.SelJet.pt, axis=1) >= (i + 1))
+                        temp_SelJet = pruned_ev.SelJet[mask_njets]
+                        temp_genflavor = genflavor[mask_njets]
+                        temp_weight = weight[mask_njets]
+                        sel_jet, flav, wgt = temp_SelJet[:, i], temp_genflavor[:, i], temp_weight
                     if str(i) in histname:
                         if "dr_mujet" in histname:
                             h.fill(
                                 syst,
                                 flatten(flav),
                                 flatten(sel_jet.delta_r(pruned_ev.SelMuon)),
-                                weight=weight,
+                                weight=wgt,
                             )
                         else:
-                            flav_to_plot = flav
-                            hist_to_plot = sel_jet[histname.replace(f"jet{i}_", "")]
-                            weight_to_plots = weight
-                            # Needed for 2D_ttsemilep workflows
-                            hist_mask = [
-                                False if x is None else True for x in hist_to_plot
-                            ]
-                            if ak.any(np.invert(hist_mask)):
-                                flav_to_plot = flav_to_plot[hist_mask]
-                                weight_to_plots = weight_to_plots[hist_mask]
-                                hist_to_plot = hist_to_plot[hist_mask]
                             h.fill(
                                 syst,
-                                flatten(flav_to_plot),
-                                flatten(hist_to_plot),
-                                weight=weight_to_plots,
+                                flatten(flav),
+                                flatten(sel_jet[histname.replace(f"jet{i}_", "")]),
+                                weight=wgt,
                             )
             # Mu-jets distribution
             elif "lmujet_" in histname:
@@ -334,34 +327,19 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 for i in range(nj):
                     if not histname.endswith(str(i)):
                         continue
-                    if (
-                        "BvC" not in histname
-                        and "HFvLF" not in histname
-                        and "2D" not in histname
-                        and histname.replace(f"_{i}", "") not in seljets.fields
-                    ):
-                        continue
                     if nj > 1:
-                        flav, seljet = flavs[:, i], seljets[:, i]
+                        mask_njets = ak.num(seljets.pt) >= (i + 1)
+                        temp_seljets = seljets[mask_njets]
+                        temp_flavs = flavs[mask_njets]
+                        temp_wgts = weights.partial_weight(exclude=exclude_btv)[mask_njets]
+                        flav, seljet, wgt = temp_flavs[:, i], temp_seljets[:, i], temp_wgts
                     else:
-                        flav, seljet = flavs, seljets
-                    flav_to_plot = flav
-                    if "BvC" in histname or "HFvLF" in histname or "2D" in histname:
-                        discr_to_plot = pruned_ev[histname]
-                    else:
-                        discr_to_plot = seljet[histname.replace(f"_{i}", "")]
-                    weights_to_plot = weights.partial_weight(exclude=exclude_btv)
-                    # Needed for 2D_ttsemilep workflows
-                    discr_mask = [False if x is None else True for x in discr_to_plot]
-                    if ak.any(np.invert(discr_mask)):
-                        flav_to_plot = flav_to_plot[discr_mask]
-                        discr_to_plot = discr_to_plot[discr_mask]
-                        weights_to_plot = weights_to_plot[discr_mask]
+                        flav, seljet, wgt = flavs, seljets, weights.partial_weight(exclude=exclude_btv)
                     h.fill(
                         syst=syst,
-                        flav=flav_to_plot,
-                        discr=discr_to_plot,
-                        weight=weights_to_plot,
+                        flav=flav,
+                        discr=seljet[histname.replace(f"_{i}", "")],
+                        weight=wgt,
                     )
 
         if "dr_poslnegl" in output.keys():

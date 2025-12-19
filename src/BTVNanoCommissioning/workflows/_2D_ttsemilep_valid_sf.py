@@ -26,8 +26,6 @@ from BTVNanoCommissioning.utils.selection import (
     mu_promptmvaid,
     ele_promptmvaid,
     MET_filters,
-    calculate_new_discriminators,
-    get_wp_2D,
     btag_wp_dict,
 )
 
@@ -43,7 +41,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
-        selectionModifier="semittM",
+        selectionModifier="semittE",
     ):
         self._year = year
         self._campaign = campaign
@@ -79,11 +77,11 @@ class NanoProcessor(processor.ProcessorABC):
         if self.selMod == "semittE":
             objs.append("ele")
             chn = "ele"
-            triggers = ["Ele30_WPTight_Gsf"]  # so far only 2024 triggers
+            triggers = ["Ele30_WPTight_Gsf"]
         elif self.selMod == "semittM":
             objs.append("mu")
             chn = "mu"
-            triggers = ["IsoMu24"]  # so far only 2024 triggers
+            triggers = ["IsoMu24"]
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
@@ -96,7 +94,6 @@ class NanoProcessor(processor.ProcessorABC):
                 hist_collections=["common", "fourvec", "ttsemilep_2D"],
                 channel=chn,
                 njet=4,
-                include_discriminators_2D=True,
             )
 
         if shift_name is None:
@@ -127,7 +124,7 @@ class NanoProcessor(processor.ProcessorABC):
             ]
         elif self.selMod == "semittM":
             event_iso_lep = events.Muon[
-                (events.Muon.pt > 30) & mu_promptmvaid(events, self._campaign)
+                (events.Muon.pt > 26) & mu_promptmvaid(events, self._campaign)
             ]
             event_soft_mu = events.Muon[
                 (events.Muon.pt > 5)
@@ -162,49 +159,19 @@ class NanoProcessor(processor.ProcessorABC):
             axis=-1,
         )
         event_jet = events.Jet[jet_sel]
-        req_jets = (ak.num(event_jet.pt) >= 3) & (ak.num(event_jet.pt) <= 4)
-        event_jet = ak.pad_none(event_jet, 4, axis=1)
+        n_jet = ak.count(event_jet.pt, axis=1)
+        # req_jets = (n_jet >= 3) & (n_jet <= 4)
+        req_jets = (n_jet >= 4)
 
         # b-tagged jets requirement
         WP = btag_wp_dict[self._year + "_" + self._campaign]["UParTAK4"]["2D"]
-        btagUParTAK4HFvLF1, btagUParTAK4BvC1 = calculate_new_discriminators(
-            event_jet[:, 0]
-        )
-        btagUParTAK4HFvLF2, btagUParTAK4BvC2 = calculate_new_discriminators(
-            event_jet[:, 1]
-        )
-        wp2D_1 = ak.Array(
-            [
-                get_wp_2D(
-                    btagUParTAK4HFvLF1[i],
-                    btagUParTAK4BvC1[i],
-                    self._year,
-                    self._campaign,
-                    "UParTAK4",
-                )
-                for i in range(len(btagUParTAK4HFvLF1))
-            ]
-        )
-        wp2D_2 = ak.Array(
-            [
-                get_wp_2D(
-                    btagUParTAK4HFvLF2[i],
-                    btagUParTAK4BvC2[i],
-                    self._year,
-                    self._campaign,
-                    "UParTAK4",
-                )
-                for i in range(len(btagUParTAK4HFvLF2))
-            ]
-        )
-        req_b_jets = (
-            (wp2D_1 >= WP["mapping"]["B1"]) & (wp2D_1 <= WP["mapping"]["B4"])
-        ) | ((wp2D_2 >= WP["mapping"]["B1"]) & (wp2D_2 <= WP["mapping"]["B4"]))
-
-        ## Store jet index for PFCands, create mask on the jet index
-        jetindx = ak.mask(ak.local_index(events.Jet.pt), jet_sel == True)
-        jetindx = ak.pad_none(jetindx, 1)
-        jetindx = jetindx[:, 0]
+        mask_bjets = (event_jet.btagUParTAK42Dbin >= WP["b"]["M"])
+        mask_cjets = (event_jet.btagUParTAK42Dbin >= WP["c"]["M"][0]) & (event_jet.btagUParTAK42Dbin <= WP["c"]["M"][1])
+        n_bjets = ak.count(event_jet[mask_bjets].pt, axis=1)
+        n_cjets = ak.count(event_jet[mask_cjets].pt, axis=1)
+        n_hfjets = n_bjets + n_cjets
+        # req_b_jets = (n_bjets >= 1)
+        req_b_jets = (n_bjets >= 1) & (n_hfjets >= 3)
 
         ## Other cuts
 
@@ -218,10 +185,10 @@ class NanoProcessor(processor.ProcessorABC):
             },
             with_name="PtEtaPhiMLorentzVector",
         )
-        req_MET = event_MET.pt > 50
+        req_MET = event_MET.pt > 20.0
         req_metfilter = MET_filters(events, self._campaign)
 
-        ## Cut on tranverse W mass
+        # Cut on tranverse W mass
         # Calculation taken from https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/9f56298727c9c05df49b5701a0e92f8bf43d610e/src/BTVNanoCommissioning/workflows/ctag_Wctt_valid_sf.py#L299-L305
         event_dphi = event_iso_lep[:, 0].phi - events.PuppiMET.phi
         event_dphi = np.where(event_dphi < np.pi, event_dphi + 2 * np.pi, event_dphi)
@@ -235,12 +202,12 @@ class NanoProcessor(processor.ProcessorABC):
             req_lumi
             & req_trig
             & req_lep
-            & req_DYveto
+            # & req_DYveto
             & req_jets
-            & req_b_jets
+            # & req_b_jets
             & req_MET
-            & req_metfilter
-            & req_Wmt,
+            & req_metfilter,
+            # & req_Wmt,
             False,
         )
         if len(events[event_level]) == 0:
@@ -268,66 +235,12 @@ class NanoProcessor(processor.ProcessorABC):
         elif self.selMod == "semittM":
             pruned_ev["SelMuon"] = event_iso_lep[event_level][:, 0]
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
-        if "PFCands" in events.fields:
-            pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
+        b_jet_mask = (event_jet[event_level].btagUParTAK42Dbin >= WP["b"]["M"])
+        c_jet_mask = (event_jet[event_level].btagUParTAK42Dbin >= WP["c"]["M"][0]) & (event_jet[event_level].btagUParTAK42Dbin <= WP["c"]["M"][1])
+        pruned_ev["nbjet"] = ak.count(event_jet[event_level].pt[b_jet_mask], axis=1)
+        pruned_ev["ncjet"] = ak.count(event_jet[event_level].pt[c_jet_mask], axis=1)
         pruned_ev["MET"] = event_MET[event_level]
         pruned_ev["w_mt"] = event_Wmt[event_level]
-
-        pruned_ev[f"nbjet"] = ak.zeros_like(pruned_ev["SelJet"][:, 0].pt)
-        pruned_ev[f"ncjet"] = ak.zeros_like(pruned_ev["SelJet"][:, 0].pt)
-        for i in range(4):
-            ith_jets = pruned_ev.SelJet[:, i]
-            btagUParTAK4HFvLF, btagUParTAK4BvC = calculate_new_discriminators(ith_jets)
-            wp2D = ak.Array(
-                [
-                    get_wp_2D(
-                        btagUParTAK4HFvLF[i],
-                        btagUParTAK4BvC[i],
-                        self._year,
-                        self._campaign,
-                        "UParTAK4",
-                    )
-                    for i in range(len(btagUParTAK4HFvLF))
-                ]
-            )
-            nbjet = np.where(
-                ((wp2D >= WP["mapping"]["B1"]) & (wp2D <= WP["mapping"]["B4"])), 1, 0
-            )
-            ncjet = np.where(
-                ((wp2D >= WP["mapping"]["C1"]) & (wp2D <= WP["mapping"]["C4"])), 1, 0
-            )
-            if i == 3:
-                nbjet = ak.fill_none(nbjet, 0)
-                ncjet = ak.fill_none(ncjet, 0)
-            pruned_ev[f"nbjet"] = pruned_ev[f"nbjet"] + nbjet
-            pruned_ev[f"ncjet"] = pruned_ev[f"ncjet"] + ncjet
-            pruned_ev[f"btagUParTAK4HFvLF_{i}"] = btagUParTAK4HFvLF
-            pruned_ev[f"btagUParTAK4BvC_{i}"] = btagUParTAK4BvC
-            pruned_ev[f"btagUParTAK4HFvLFt_{i}"] = ak.Array(
-                np.where(
-                    btagUParTAK4HFvLF >= 0.0,
-                    1.0 - (1.0 - btagUParTAK4HFvLF) ** 0.5,
-                    -1.0,
-                )
-            )
-            pruned_ev[f"btagUParTAK4BvCt_{i}"] = ak.Array(
-                np.where(
-                    btagUParTAK4BvC >= 0.0, 1.0 - (1.0 - btagUParTAK4BvC) ** 0.5, -1.0
-                )
-            )
-            pruned_ev[f"btagUParTAK42D_{i}"] = wp2D
-            jet_pt_bins = WP["jet_pt_bins"]
-            for jet_pt_bin in jet_pt_bins:
-                pruned_ev[f"btagUParTAK42D_pt{jet_pt_bin[0]}to{jet_pt_bin[1]}_{i}"] = [
-                    (
-                        wp2D[ijet]
-                        if pt is not None and jet_pt_bin[0] < pt and pt < jet_pt_bin[1]
-                        else None
-                    )
-                    for ijet, pt in enumerate(ith_jets.pt)
-                ]
-        pruned_ev.nbjet = ak.values_astype(pruned_ev.nbjet, "int64")
-        pruned_ev.ncjet = ak.values_astype(pruned_ev.ncjet, "int64")
 
         ####################
         #     Output       #

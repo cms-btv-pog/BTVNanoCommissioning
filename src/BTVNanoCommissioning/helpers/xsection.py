@@ -292,7 +292,7 @@ xsection = [
     # },
     {
         "process_name": "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "cross_section": "407.4",
+        "cross_section": "405.62",
         "accuracy": "NNLO",
         "energy": "13.6",
         "comment": "https://twiki.cern.ch/twiki/bin/view/LHCPhysics/TtbarNNLO with PDG 2025 values",
