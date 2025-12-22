@@ -273,21 +273,15 @@ def ttbar_reco(jets, lepton, met, maxjets=6, mW=80.4, mT=172.5, sig_w=30.0, sig_
     }
     return best
 
-def sort_category(best_BL, best_BH, cat_number: int):
-    n = len(best_BL)
+def sort_category(is_sig, cat_number: int):
+    n = len(is_sig)
 
     if cat_number == 0:
         return ak.Array(np.full(n, "data", dtype="U5"))
 
     if cat_number == 1:
-        bl_b = ak.fill_none(
-            ak.values_astype(getattr(best_BL, "hadronFlavour", 0) == 5, bool), False
-        )
-        bh_b = ak.fill_none(
-            ak.values_astype(getattr(best_BH, "hadronFlavour", 0) == 5, bool), False
-        )
-        double_b = ak.to_numpy(bl_b & bh_b)
-        return ak.Array(np.where(double_b, "sig", "ttbkg").astype("U5"))
+        gen_complete_np = ak.to_numpy(ak.fill_none(is_sig, False))
+        return ak.Array(np.where(gen_complete_np, "sig", "ttbkg").astype("U5"))
 
     if cat_number == 2:
         return ak.Array(np.full(n, "st", dtype="U5"))
@@ -775,6 +769,51 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             raise RuntimeError(f"Unknown MC category for dataset '{dataset}'. ")
         
+        # define sig from gen-level
+        if cat_number == 1:
+            genpart = events.GenPart[events.GenPart.hasFlags("isHardProcess")]
+            
+            tops = genpart[genpart.pdgId == 6]
+            antitops = genpart[genpart.pdgId == -6]
+            
+            b_from_top = genpart[
+                (abs(genpart.pdgId) == 5) & 
+                (abs(ak.fill_none(genpart.parent.pdgId, 0)) == 6)
+            ]
+            
+            w_from_top = genpart[
+                (abs(genpart.pdgId) == 24) & 
+                (abs(ak.fill_none(genpart.parent.pdgId, 0)) == 6)
+            ]
+            
+            has_2b = ak.num(b_from_top, axis=1) == 2
+            has_2w = ak.num(w_from_top, axis=1) == 2
+
+            gen_leptons = genpart[
+                (abs(genpart.pdgId) >= 11) & (abs(genpart.pdgId) <= 16) &
+                (abs(ak.fill_none(genpart.parent.pdgId, 0)) == 24)
+            ]
+            gen_quarks_from_w = genpart[
+                (abs(genpart.pdgId) <= 5) & 
+                (abs(ak.fill_none(genpart.parent.pdgId, 0)) == 24)
+            ]
+            
+            n_lep = ak.num(gen_leptons, axis=1)
+            n_q = ak.num(gen_quarks_from_w, axis=1)
+            
+            gen_is_complete = has_2b & ((n_lep >= 1) & (n_lep <= 2)) & (n_q >= 2)
+
+            events = ak.with_field(events, gen_is_complete, "gen_ttbar_is_complete")
+            events = ak.with_field(events, b_from_top, "gen_b_from_top")
+            events = ak.with_field(events, gen_leptons, "gen_leptons")
+            events = ak.with_field(events, gen_quarks_from_w, "gen_quarks_from_w")
+        else:
+            events = ak.with_field(
+                events, 
+                ak.zeros_like(events.run, dtype=bool), 
+                "gen_ttbar_is_complete"
+            )
+            
         output = {} if self.noHist else self.define_histograms(events)
         # print(f"=== process_shift: {dataset}, shift={shift_name}, isData={isRealData}, n={len(events)} ===")
 
@@ -1033,7 +1072,57 @@ class NanoProcessor(processor.ProcessorABC):
             kinbin_full = (mTW_l_bin * 8 + neg_log_lambda_bin).astype(np.int32)
             
             # Truth category once
-            tt_cat_full = sort_category(BL, BH, cat_number)
+            if "gen_ttbar_is_complete" in ev_base.fields:
+                gen_complete = ev_base.gen_ttbar_is_complete
+            else:
+                gen_complete = ak.zeros_like(len(ev_base), dtype=bool)
+
+            if cat_number == 1:
+                gen_complete = ev_base.gen_ttbar_is_complete
+                gen_bs = ev_base.gen_b_from_top
+                gen_leps = ev_base.gen_leptons
+                gen_qs = ev_base.gen_quarks_from_w
+
+                dr = 0.2
+                def get_dr(reco, gen):
+                    return ak.fill_none(reco.delta_r(gen), 99.0)
+                
+                match_blep_A = get_dr(BL, gen_bs[:, 0]) < dr
+
+                match_blep_B = get_dr(BL, gen_bs[:, 1]) < dr
+                
+                gen_charged_lep = gen_leps[abs(gen_leps.pdgId) != 12] 
+                gen_charged_lep = gen_charged_lep[abs(gen_charged_lep.pdgId) != 14]
+                gen_charged_lep = gen_charged_lep[abs(gen_charged_lep.pdgId) != 16]
+
+                match_llep = get_dr(lep_base, gen_charged_lep[:, 0]) < dr
+                
+                dr_ja_q0 = get_dr(JA, gen_qs[:, 0])
+                dr_ja_q1 = get_dr(JA, gen_qs[:, 1])
+                dr_jb_q0 = get_dr(JB, gen_qs[:, 0])
+                dr_jb_q1 = get_dr(JB, gen_qs[:, 1])
+                
+                w_match_1 = (dr_ja_q0 < dr) & (dr_jb_q1 < dr)
+
+                w_match_2 = (dr_ja_q1 < dr) & (dr_jb_q0 < dr)
+                
+                match_whad = w_match_1 | w_match_2
+                
+                match_bhad_A = get_dr(BH, gen_bs[:, 1]) < dr
+
+                match_bhad_B = get_dr(BH, gen_bs[:, 0]) < dr
+
+                scenario_1 = match_blep_A & match_bhad_A & match_llep & match_whad
+
+                scenario_2 = match_blep_B & match_bhad_B & match_llep & match_whad
+                
+                is_correct_kin = scenario_1 | scenario_2
+
+                is_sig = gen_complete & is_correct_kin
+            else:
+                is_sig = ak.Array(np.zeros(len(ev_base), dtype=bool))
+
+            tt_cat_full = sort_category(is_sig, cat_number)
 
             # Now loop over regions and write immediately
             for rname, riso_mode, rtag_btagwp in region_specs:
