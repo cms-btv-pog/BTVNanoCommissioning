@@ -1082,6 +1082,7 @@ class NanoProcessor(processor.ProcessorABC):
                 gen_bs = ev_base.gen_b_from_top
                 gen_leps = ev_base.gen_leptons
                 gen_qs = ev_base.gen_quarks_from_w
+                gen_qs = ak.pad_none(gen_qs, 2, axis=1)
 
                 dr = 0.2
                 def get_dr(reco, gen):
