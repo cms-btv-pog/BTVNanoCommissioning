@@ -786,26 +786,35 @@ class NanoProcessor(processor.ProcessorABC):
                 (abs(ak.fill_none(genpart.parent.pdgId, 0)) == 6)
             ]
             
-            has_2b = ak.num(b_from_top, axis=1) == 2
-            has_2w = ak.num(w_from_top, axis=1) == 2
-
-            gen_leptons = genpart[
-                (abs(genpart.pdgId) >= 11) & (abs(genpart.pdgId) <= 16) &
+            gen_charged_leptons = genpart[
+                ((abs(genpart.pdgId) == 11) | (abs(genpart.pdgId) == 13)) & 
                 (abs(ak.fill_none(genpart.parent.pdgId, 0)) == 24)
             ]
+            
+            gen_neutrinos = genpart[
+                ((abs(genpart.pdgId) == 12) | (abs(genpart.pdgId) == 14)) & 
+                (abs(ak.fill_none(genpart.parent.pdgId, 0)) == 24)
+            ]
+
             gen_quarks_from_w = genpart[
                 (abs(genpart.pdgId) <= 5) & 
                 (abs(ak.fill_none(genpart.parent.pdgId, 0)) == 24)
             ]
             
-            n_lep = ak.num(gen_leptons, axis=1)
-            n_q = ak.num(gen_quarks_from_w, axis=1)
+            has_2b = ak.num(b_from_top, axis=1) == 2
             
-            gen_is_complete = has_2b & ((n_lep >= 1) & (n_lep <= 2)) & (n_q >= 2)
+            n_clep = ak.num(gen_charged_leptons, axis=1)
+            n_nu   = ak.num(gen_neutrinos, axis=1)
+            n_q    = ak.num(gen_quarks_from_w, axis=1)
+           
+            gen_is_complete = has_2b & (n_clep == 1) & (n_nu == 1) & (n_q == 2)
+            
 
             events = ak.with_field(events, gen_is_complete, "gen_ttbar_is_complete")
-            events = ak.with_field(events, b_from_top, "gen_b_from_top")
-            events = ak.with_field(events, gen_leptons, "gen_leptons")
+
+            events = ak.with_field(events, gen_charged_leptons, "gen_lepton") 
+            events = ak.with_field(events, gen_neutrinos, "gen_neutrino")
+            events = ak.with_field(events, b_from_top, "gen_b_from_top") 
             events = ak.with_field(events, gen_quarks_from_w, "gen_quarks_from_w")
         else:
             events = ak.with_field(
@@ -1078,40 +1087,36 @@ class NanoProcessor(processor.ProcessorABC):
                 gen_complete = ak.zeros_like(len(ev_base), dtype=bool)
 
             if cat_number == 1:
-                gen_complete = ev_base.gen_ttbar_is_complete
+
                 gen_bs = ev_base.gen_b_from_top
-                gen_leps = ev_base.gen_leptons
+                gen_charged_lep = ev_base.gen_lepton 
                 gen_qs = ev_base.gen_quarks_from_w
+
+                gen_bs = ak.pad_none(gen_bs, 2, axis=1)
                 gen_qs = ak.pad_none(gen_qs, 2, axis=1)
+                gen_charged_lep = ak.pad_none(gen_charged_lep, 1, axis=1)
 
                 dr = 0.2
                 def get_dr(reco, gen):
                     return ak.fill_none(reco.delta_r(gen), 99.0)
-                
-                match_blep_A = get_dr(BL, gen_bs[:, 0]) < dr
 
+                match_blep_A = get_dr(BL, gen_bs[:, 0]) < dr
                 match_blep_B = get_dr(BL, gen_bs[:, 1]) < dr
                 
-                gen_charged_lep = gen_leps[abs(gen_leps.pdgId) != 12] 
-                gen_charged_lep = gen_charged_lep[abs(gen_charged_lep.pdgId) != 14]
-                gen_charged_lep = gen_charged_lep[abs(gen_charged_lep.pdgId) != 16]
+                match_bhad_A = get_dr(BH, gen_bs[:, 1]) < dr
+                match_bhad_B = get_dr(BH, gen_bs[:, 0]) < dr
 
                 match_llep = get_dr(lep_base, gen_charged_lep[:, 0]) < dr
-                
+
                 dr_ja_q0 = get_dr(JA, gen_qs[:, 0])
                 dr_ja_q1 = get_dr(JA, gen_qs[:, 1])
                 dr_jb_q0 = get_dr(JB, gen_qs[:, 0])
                 dr_jb_q1 = get_dr(JB, gen_qs[:, 1])
-                
-                w_match_1 = (dr_ja_q0 < dr) & (dr_jb_q1 < dr)
 
+                w_match_1 = (dr_ja_q0 < dr) & (dr_jb_q1 < dr)
                 w_match_2 = (dr_ja_q1 < dr) & (dr_jb_q0 < dr)
                 
                 match_whad = w_match_1 | w_match_2
-                
-                match_bhad_A = get_dr(BH, gen_bs[:, 1]) < dr
-
-                match_bhad_B = get_dr(BH, gen_bs[:, 0]) < dr
 
                 scenario_1 = match_blep_A & match_bhad_A & match_llep & match_whad
 
