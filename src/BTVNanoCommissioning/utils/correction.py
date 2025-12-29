@@ -1599,7 +1599,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
     for sf in correct_map["EGM_cfg"].keys():
         ## Only apply SFs for lepton pass HLT filter
-        if not isHLT and "HLT" in sf:
+        if not isHLT and "Trig" in sf:
             continue
         sf_type = sf[: sf.find(" ")]
         for nele in range(ak.num(allele.pt)[0]):
@@ -1846,19 +1846,13 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         type(correct_map["EGM_HLT"])
                     ):
                         _ele_map = "EGM_HLT"
-                        ele_pt = ak.fill_none(ele.pt, 25)
-                        ele_pt = np.clip(ele_pt, 25, 10000)
+                        ele_pt = ak.fill_none(ele.pt, 25.0)
+                        ele_pt = np.clip(ele_pt, 25.0, None)
                     # ID SFs
                     else:
                         _ele_map = "EGM"
-                        ele_pt = ak.fill_none(
-                            ele.pt, 10
-                        )
-                        ele_pt = np.clip(
-                            ele_pt,
-                            10,
-                            10000,
-                        )
+                        ele_pt = ak.fill_none(ele.pt, 10.0)
+                        ele_pt = np.clip(ele_pt, 10.0, None)
 
                     if "Summer23" in correct_map["campaign"]:
                         sfs = np.where(
@@ -1996,7 +1990,7 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
     allmu = mu if mu.ndim > 1 else ak.singletons(mu)
     for sf in correct_map["MUO_cfg"].keys():
         ## Only apply SFs for lepton pass HLT filter
-        if not isHLT and "HLT" in sf:
+        if not isHLT and "Trig" in sf:
             continue
         if "low" in sf:
             continue
@@ -2009,8 +2003,11 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
         for nmu in range(ak.num(allmu.pt)[0]):
             mu = allmu[:, nmu]
             masknone = ak.is_none(mu.pt)
-            mu_pt = np.clip(mu.pt, 15.0, 199.9)
-            mu_eta = np.clip(np.abs(mu.eta), 0.0, 2.4)
+            if "Trig" in sf:
+                mu_pt = np.clip(mu.pt, 26.0, None)
+            else:
+                mu_pt = np.clip(mu.pt, 10.0, None)
+            mu_eta = np.clip(np.abs(mu.eta), 0.0, 2.399999)
             sfs = 1.0
             if "correctionlib" in str(type(correct_map["MUO"])):
                 sfs = np.where(

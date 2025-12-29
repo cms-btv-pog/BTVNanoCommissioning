@@ -22,11 +22,11 @@ from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
     jet_id,
     # mu_idiso,
-    # ele_mvatightid,
     mu_promptmvaid,
+    # ele_mvatightid,
     ele_promptmvaid,
     MET_filters,
-    btag_wp_dict,
+    btag_wp,
 )
 
 
@@ -164,9 +164,8 @@ class NanoProcessor(processor.ProcessorABC):
         req_jets = (n_jet >= 4)
 
         # b-tagged jets requirement
-        WP = btag_wp_dict[self._year + "_" + self._campaign]["UParTAK4"]["2D"]
-        mask_bjets = (event_jet.btagUParTAK42Dbin >= WP["b"]["M"])
-        mask_cjets = (event_jet.btagUParTAK42Dbin >= WP["c"]["M"][0]) & (event_jet.btagUParTAK42Dbin <= WP["c"]["M"][1])
+        mask_bjets = btag_wp(event_jet, self._year, self._campaign, "UParTAK4", "b", "M")
+        mask_cjets = btag_wp(event_jet, self._year, self._campaign, "UParTAK4", "c", "M")
         n_bjets = ak.count(event_jet[mask_bjets].pt, axis=1)
         n_cjets = ak.count(event_jet[mask_cjets].pt, axis=1)
         n_hfjets = n_bjets + n_cjets
@@ -235,8 +234,8 @@ class NanoProcessor(processor.ProcessorABC):
         elif self.selMod == "semittM":
             pruned_ev["SelMuon"] = event_iso_lep[event_level][:, 0]
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
-        b_jet_mask = (event_jet[event_level].btagUParTAK42Dbin >= WP["b"]["M"])
-        c_jet_mask = (event_jet[event_level].btagUParTAK42Dbin >= WP["c"]["M"][0]) & (event_jet[event_level].btagUParTAK42Dbin <= WP["c"]["M"][1])
+        b_jet_mask = btag_wp(event_jet[event_level], self._year, self._campaign, "UParTAK4", "b", "M")
+        c_jet_mask = btag_wp(event_jet[event_level], self._year, self._campaign, "UParTAK4", "c", "M")
         pruned_ev["nbjet"] = ak.count(event_jet[event_level].pt[b_jet_mask], axis=1)
         pruned_ev["ncjet"] = ak.count(event_jet[event_level].pt[c_jet_mask], axis=1)
         pruned_ev["MET"] = event_MET[event_level]
