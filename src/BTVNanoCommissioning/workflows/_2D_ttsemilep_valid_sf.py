@@ -244,6 +244,7 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         #     Output       #
         ####################
+
         # Configure SFs
         weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
         # Configure systematics
