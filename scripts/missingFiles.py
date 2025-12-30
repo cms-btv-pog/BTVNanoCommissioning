@@ -73,7 +73,6 @@ if len(missing_files) < 1:
     print("All histograms in folder, file not being created")
     with open(missingfileloc, "w") as file:
         file.write("")
-    # exit()
 else:
     print("Job numbers missing:", missing_files, jobFolder)
     with open(missingfileloc, "w") as file:
