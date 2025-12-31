@@ -97,6 +97,7 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         #    Selections    #
         ####################
+
         ## Lumimask
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
@@ -207,6 +208,7 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         # Selected objects #
         ####################
+
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
         pruned_ev["SelJet"] = event_jet[event_level][:, :2]
@@ -215,6 +217,7 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["dr_mujet0"] = pruned_ev.Muon.delta_r(pruned_ev.Jet[:, 0])
         pruned_ev["dr_mujet1"] = pruned_ev.Muon.delta_r(pruned_ev.Jet[:, 1])
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
+
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
             pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
@@ -225,6 +228,7 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         #     Output       #
         ####################
+
         # Configure SFs
         weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
         # Configure systematics

@@ -242,7 +242,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     flatten(pruned_ev.SelMuon[histname.replace("mu_", "")]),
                     weight=weight,
                 )
-            # Negatively charged lepton histograms-in DY workflow
+            # Negatively charged lepton histograms in DY workflow
             elif (
                 "negl_" in histname
                 and histname.replace("negl_", "") in pruned_ev.negl.fields
@@ -252,7 +252,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     flatten(pruned_ev.negl[histname.replace("negl_", "")]),
                     weight=weight,
                 )
-            # Posively charged lepton histograms-in DY workflow
+            # Posively charged lepton histograms in DY workflow
             elif (
                 "posl_" in histname
                 and histname.replace("posl_", "") in pruned_ev.posl.fields
@@ -437,12 +437,12 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             output["dilep_mass"].fill(
                 syst, flatten(pruned_ev.dilep.mass), weight=weight
             )
-            if "dilep_ptratio" in histname:
-                output["dilep_ptratio"].fill(
-                    syst,
-                    flatten(pruned_ev.dilep.pt / pruned_ev.SelJet[:, 0].pt),
-                    weight=weight,
-                )
+            output["dilep_ptratio"].fill(
+                syst,
+                genflavor,
+                flatten(pruned_ev.dilep.pt / pruned_ev.SelJet.pt),
+                weight=weight,
+            )
 
         if "MET_pt" in output.keys():
             output["MET_pt"].fill(syst, flatten(pruned_ev.MET.pt), weight=weight)

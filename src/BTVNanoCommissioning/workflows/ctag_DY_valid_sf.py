@@ -21,12 +21,9 @@ from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_idiso,
     ele_mvatightid,
-    ele_promptmvaid,
-    mu_promptmvaid,
+    # ele_promptmvaid,
+    # mu_promptmvaid,
     MET_filters,
-    calculate_new_discriminators,
-    get_wp_2D,
-    btag_wp_dict,
 )
 
 
@@ -98,7 +95,6 @@ class NanoProcessor(processor.ProcessorABC):
                 obj_list=["posl", "negl", "dilep", "jet0"],
                 hist_collections=hists,
                 include_m=isMu,
-                include_discriminators_2D=True if "2D" in self.selMod else False,
             )
 
         if shift_name is None:
@@ -127,6 +123,7 @@ class NanoProcessor(processor.ProcessorABC):
         dilep_ele = events.Electron[
             (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
         ]
+
         if isMu:
             thisdilep = dilep_mu
             otherdilep = dilep_ele
@@ -152,7 +149,7 @@ class NanoProcessor(processor.ProcessorABC):
         )
         if "2D" in self.selMod:
             req_dilep = req_dilep & req_leppt
-        
+
         pl_iso = ak.all(
             events.Jet.metric_table(pos_dilep) > 0.4, axis=2, mask_identity=True
         )
@@ -215,9 +212,11 @@ class NanoProcessor(processor.ProcessorABC):
                     empty=True,
                 )
             return {dataset: output}
+
         ####################
         # Selected objects #
         ####################
+
         sposmu = pos_dilep[event_level][:, 0]
         snegmu = neg_dilep[event_level][:, 0]
         sz = sposmu + snegmu
@@ -231,6 +230,7 @@ class NanoProcessor(processor.ProcessorABC):
                 for b in sposmu.fields
             }
         )
+
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
         pruned_ev["SelJet"] = event_jet[event_level]
@@ -257,66 +257,15 @@ class NanoProcessor(processor.ProcessorABC):
 
         pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
         pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)
-        # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
+
+        # Find the PFCands associate with selected jets, search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
             pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
-
-        if "2D" in self.selMod:
-            pruned_ev["dilep", "ptratio"] = pruned_ev.dilep.pt / sel_jet.pt
-            nj = 1
-            for i in range(nj):
-                btagUParTAK4HFvLF, btagUParTAK4BvC = calculate_new_discriminators(
-                    pruned_ev.SelJet[:, i]
-                )
-                wp2D = ak.Array(
-                    [
-                        get_wp_2D(
-                            btagUParTAK4HFvLF[i],
-                            btagUParTAK4BvC[i],
-                            self._year,
-                            self._campaign,
-                            "UParTAK4",
-                        )
-                        for i in range(len(btagUParTAK4HFvLF))
-                    ]
-                )
-                pruned_ev[f"btagUParTAK4HFvLF_{i}"] = btagUParTAK4HFvLF
-                pruned_ev[f"btagUParTAK4BvC_{i}"] = btagUParTAK4BvC
-                pruned_ev[f"btagUParTAK4HFvLFt_{i}"] = ak.Array(
-                    np.where(
-                        btagUParTAK4HFvLF > 0.0,
-                        1.0 - (1.0 - btagUParTAK4HFvLF) ** 0.5,
-                        -1.0,
-                    )
-                )
-                pruned_ev[f"btagUParTAK4BvCt_{i}"] = ak.Array(
-                    np.where(
-                        btagUParTAK4BvC > 0.0,
-                        1.0 - (1.0 - btagUParTAK4BvC) ** 0.5,
-                        -1.0,
-                    )
-                )
-                pruned_ev[f"btagUParTAK42D_{i}"] = wp2D
-                jet_pt_bins = btag_wp_dict[self._year + "_" + self._campaign][
-                    "UParTAK4"
-                ]["2D"]["jet_pt_bins"]
-                for jet_pt_bin in jet_pt_bins:
-                    pruned_ev[
-                        f"btagUParTAK42D_pt{jet_pt_bin[0]}to{jet_pt_bin[1]}_{i}"
-                    ] = [
-                        (
-                            wp2D[ijet]
-                            if pt is not None
-                            and jet_pt_bin[0] < pt
-                            and pt < jet_pt_bin[1]
-                            else None
-                        )
-                        for ijet, pt in enumerate(pruned_ev.SelJet[:, i].pt)
-                    ]
 
         ####################
         #     Output       #
         ####################
+
         # Configure SFs
         weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
         # Configure systematics

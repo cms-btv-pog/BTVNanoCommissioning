@@ -2523,11 +2523,14 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         weights.add("genweight", pruned_ev.genWeight)
     if "PSWeight" in pruned_ev.fields:
         # PS ISR/FSR weights
-        add_ps_weight(weights, pruned_ev.PSWeight, isSyst)
+        add_ps_weight(weights, pruned_ev.PSWeight, False)
+        # add_ps_weight(weights, pruned_ev.PSWeight, isSyst)
     if "LHEPdfWeight" in pruned_ev.fields:
-        add_pdf_weight(weights, pruned_ev.LHEPdfWeight, isSyst)
+        add_pdf_weight(weights, pruned_ev.LHEPdfWeight, False)
+        # add_pdf_weight(weights, pruned_ev.LHEPdfWeight, isSyst)
     if "LHEScaleWeight" in pruned_ev.fields:
-        add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
+        add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, False)
+        # add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
     if "TT" in pruned_ev.metadata["dataset"]:
         weights.add(
             "ttbar_weight",
@@ -2539,6 +2542,7 @@ def weight_manager(pruned_ev, SF_map, isSyst):
             * 2.0
             + ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
         )
+        '''
         if isSyst != False:
             weights.add(
                 "ttbar_weight",
@@ -2550,9 +2554,11 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                 * 2.0,
                 ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
             )
+        '''
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
-        syst_wei = True if isSyst != False else False
+        syst_wei = False
+        # syst_wei = True if isSyst != False else False
         if "LUM" in SF_map.keys():
             puwei(
                 pruned_ev.Pileup.nTrueInt,

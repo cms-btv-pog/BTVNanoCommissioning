@@ -97,6 +97,12 @@ parser.add_argument(
     default=None,
     help="Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used",
 )
+parser.add_argument(
+    "--syst",
+    type=str,
+    default="nominal",
+    help="MC systematic variation to plot, default is `nominal`",
+)
 
 
 args = parser.parse_args()
@@ -119,6 +125,8 @@ mergemap = {}
 ## create merge map from sample set/data MC
 if not os.path.isdir(f"plot/{args.phase}_{args.ext}/"):
     os.makedirs(f"plot/{args.phase}_{args.ext}/")
+if not os.path.isdir(f"plot/{args.phase}_{args.ext}/{args.syst}"):
+    os.makedirs(f"plot/{args.phase}_{args.ext}/{args.syst}")
 if not any(".coffea" in o for o in output.keys()):
     if "sample" in args.split:
         mergemap = sample_mergemap
@@ -274,6 +282,9 @@ for index, discr in enumerate(var_set):
             )
         ]
         print(f"Available systematics: {systlist}")
+        if args.syst != "nominal" and args.syst not in systlist:
+            print(f"{args.syst} is not an available systematic")
+            sys.exit(1)
 
         # Choose the appropriate systematic name
         if "nominal" in systlist:
@@ -291,6 +302,9 @@ for index, discr in enumerate(var_set):
         noSF_axis = allaxis.copy()
         if "noSF" in systlist:
             noSF_axis["syst"] = "noSF"
+        syst_axis = allaxis.copy()
+        if args.syst != "nominal":
+            syst_axis["syst"] = args.syst
 
     ## rebin config, add xerr
     do_xerr = False
@@ -306,7 +320,7 @@ for index, discr in enumerate(var_set):
             )
 
     # check if plottable, skip otherwise
-    hmc = collated["mc"][discr][allaxis]
+    hmc = collated["mc"][discr][syst_axis]
     if len(hmc.axes) > 2:
         print(f"Skipping {discr}: after selections still has {len(hmc.axes)} axes")
         continue
@@ -509,7 +523,7 @@ for index, discr in enumerate(var_set):
     elif "flav" in collated["mc"][discr].axes.name and args.split != "sample":
         splitflav_stack, labels, color_config = [], [], {}
         color_config["color"], color_config["alpha"] = [], []
-        splitflav_axis = allaxis
+        splitflav_axis = syst_axis
         for sample in collated.keys():
             if sample == "data":
                 continue
@@ -531,6 +545,7 @@ for index, discr in enumerate(var_set):
 
                     color_config["alpha"].append(1.0 - 0.2 * i)
         allaxis["flav"] = sum
+        syst_axis["flav"] = sum
         hep.histplot(
             splitflav_stack,
             stack=True,
@@ -551,17 +566,17 @@ for index, discr in enumerate(var_set):
             xerr=do_xerr,
             flow=args.flow,
         )
-        hmc = collated["mc"][discr][allaxis]
+        hmc = collated["mc"][discr][syst_axis]
         MCerrorband(hmc, ax=ax)
         rax = plotratio(
             collated["data"][discr][allaxis], hmc, ax=rax, flow=args.flow, xerr=do_xerr
         )
     else:
-        hmc = collated["mc"][discr][allaxis]
+        hmc = collated["mc"][discr][syst_axis]
         if "sample" in args.split:
             hep.histplot(
                 [
-                    collated[s][discr][allaxis]
+                    collated[s][discr][syst_axis]
                     for s in collated.keys()
                     if s != "mc" and s != "data"
                 ],
@@ -650,7 +665,7 @@ for index, discr in enumerate(var_set):
 
     rax.autoscale(True, axis="x", tight=True)
     xmin, xmax = autoranger(
-        collated["data"][discr][allaxis] + collated["mc"][discr][allaxis],
+        collated["data"][discr][allaxis] + collated["mc"][discr][syst_axis],
         flow=args.flow,
     )
     if args.xrange is not None:
@@ -682,26 +697,26 @@ for index, discr in enumerate(var_set):
         name += "_log"
         print(
             "creating:",
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         ax.set_yscale("log")
         ax.set_ylim(bottom=0.1)
         hep.mpl_magic(ax=ax)
         fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.pdf"
         )
         fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.png"
         )
     else:
         print(
             "creating:",
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.pdf"
         )
         fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.png"
         )
     plt.close(fig)

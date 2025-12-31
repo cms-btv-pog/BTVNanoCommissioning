@@ -228,7 +228,7 @@ def config_parser(parser):
         default="False",
         type=str,
         choices=["False", "all", "weight_only", "JERC_split", "JP_MC"],
-        help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
+        help="Run with systematics, all, weights_only (no JERC uncertainties included), JERC_split, None",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
     parser.add_argument(
