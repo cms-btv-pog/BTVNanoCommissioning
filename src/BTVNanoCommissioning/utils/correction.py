@@ -2134,7 +2134,7 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
         pdf_unc = np.sqrt(ak.sum(np.square(delta), axis=1))
 
         # alpha_S weights
-        # Eq. 28 of https://arxiv.org/pdf/1510.03865v1.pdf
+        # Eq. 27 of https://arxiv.org/pdf/1510.03865v1.pdf
         as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
 
         # PDF + alpha_S weights
