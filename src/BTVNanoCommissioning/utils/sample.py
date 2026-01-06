@@ -52,13 +52,15 @@ predefined_sample = {
         "MC": [
             "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-            "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8]",
+            "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         ],
         "minor_MC": [
             # TT
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             # Single Top
+            "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
+            "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -80,13 +82,15 @@ predefined_sample = {
         "MC": [
             "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-            "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8]",
+            "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         ],
         "minor_MC": [
             # TT
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             # Single Top
+            "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
+            "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -132,6 +136,8 @@ predefined_sample = {
             # TT
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             # Single Top
+            "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
+            "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -321,11 +327,13 @@ predefined_sample = {
             "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
         ],
     },
-    "2D_e_ttsemilep_sf": {  # Sync MC with 2D_ttsemilep_mu_sf
+    "2D_e_ttsemilep_sf": {
         "data": ["EGamma0", "EGamma1"],
-        "MC": [  # FIXME: still missing some MC, also move some to minor_MC category
+        "MC": [
+            # TT
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+            # Single top
             "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
@@ -336,13 +344,18 @@ predefined_sample = {
             "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+            # W+jets
             "WtoLNu-4Jets_Bin-1J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoLNu-4Jets_Bin-2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoLNu-4Jets_Bin-3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoLNu-4Jets_Bin-4J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # DY
             "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        ],
+        "minor_MC": [
+            # VV
             "WWtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "WWto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "WZtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -351,20 +364,19 @@ predefined_sample = {
             "ZZto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto4L_TuneCP5_13p6TeV_powheg-pythia8",
+            # TT+X
             "TTLL_Bin-MLL-4to50_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TTLL_Bin-MLL-50_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TTZ-ZtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8",
         ],
-        "minor_MC": [],
     },
-    "2D_mu_ttsemilep_sf": {  # Sync MC with 2D_ttsemilep_e_sf
-        "data": [
-            "Muon0",
-            "Muon1",
-        ],
-        "MC": [  # FIXME: still missing some MC, also move some to minor_MC category
+    "2D_mu_ttsemilep_sf": {
+        "data": ["Muon0", "Muon1"],
+        "MC": [
+            # TT
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+            # Single top
             "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
@@ -375,13 +387,18 @@ predefined_sample = {
             "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+            # W+jets
             "WtoLNu-4Jets_Bin-1J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoLNu-4Jets_Bin-2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoLNu-4Jets_Bin-3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoLNu-4Jets_Bin-4J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        ],
+        "minor_MC": [
+            # DY
             "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            # VV
             "WWtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "WWto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "WZtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -390,11 +407,11 @@ predefined_sample = {
             "ZZto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto4L_TuneCP5_13p6TeV_powheg-pythia8",
+            # TT+X
             "TTLL_Bin-MLL-4to50_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TTLL_Bin-MLL-50_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TTZ-ZtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8",
         ],
-        "minor_MC": [],
     },
     "2D_mu_Wc_sf": {
         "data": ["Muon0", "Muon1"],
@@ -408,6 +425,8 @@ predefined_sample = {
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             # Single Top
+            "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
+            "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
@@ -443,6 +462,8 @@ predefined_sample = {
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             # Single Top
+            "TbarBtoLminusNuB-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
+            "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
