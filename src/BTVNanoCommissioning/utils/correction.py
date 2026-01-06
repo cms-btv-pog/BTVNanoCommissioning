@@ -2007,7 +2007,7 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
                 mu_pt = np.clip(mu.pt, 26.0, None)
             else:
                 mu_pt = np.clip(mu.pt, 10.0, None)
-            mu_eta = np.clip(np.abs(mu.eta), 0.0, 2.399999)
+            mu_eta = np.clip(mu.eta, -2.4, 2.399999)
             sfs = 1.0
             if "correctionlib" in str(type(correct_map["MUO"])):
                 sfs = np.where(
@@ -2126,27 +2126,25 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
     up = np.ones(len(weights.weight()))
     down = np.ones(len(weights.weight()))
 
-    # NNPDF31_nnlo_hessian_pdfas
-    # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
-    if pdf_weights is not None and "306000 - 306102" in pdf_weights.__doc__:
+    # NNPDF31_nnlo_as_0118_mc_hessian_pdfas
+    # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_as_0118_mc_hessian_pdfas/NNPDF31_nnlo_as_0118_mc_hessian_pdfas.info
+    if pdf_weights is not None and "325300 - 325402" in pdf_weights.__doc__:
         # Hessian PDF weights
-        # Eq. 21 of https://arxiv.org/pdf/1510.03865v1.pdf
-        arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
-        summed = ak.sum(np.square(arg), axis=1)
-        pdf_unc = np.sqrt((1.0 / 99.0) * summed)
+        delta = pdf_weights[:, 1:-2] - pdf_weights[:, 0]
+        pdf_unc = np.sqrt(ak.sum(np.square(delta), axis=1))
 
         # alpha_S weights
-        # Eq. 27 of same ref
+        # Eq. 28 of https://arxiv.org/pdf/1510.03865v1.pdf
         as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
 
         # PDF + alpha_S weights
         # Eq. 28 of same ref
         pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
+
         if isSyst != False:
             weights.add("PDF_weight", nom, pdf_unc + nom)
             weights.add("aS_weight", nom, as_unc + nom)
             weights.add("PDFaS_weight", nom, pdfas_unc + nom)
-
         else:
             weights.add("PDF_weight", nom)
             weights.add("aS_weight", nom)
@@ -2162,17 +2160,15 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
 def top_pT_sf_formula(pt):
     x = np.clip(pt, 0, 2000)
     # From page 30 of AN v9 https://cms.cern.ch/iCMS/jsp/db_notes/noteInfo.jsp?cmsnoteid=CMS%20AN-2024/019
-    w_13_to_13p6 = 0.991 + 0.000075 * x # Extrapolation of the number below (which was for CoM = 13 TeV) to CoM = 13.6 TeV
+    w_13_to_13p6 = 0.991 + 0.000075 * x  # Extrapolation of the number below (which was for CoM = 13 TeV) to CoM = 13.6 TeV
     return (0.103 * np.exp(-0.0118 * x) - 0.000134 * x + 0.973) * w_13_to_13p6
 
 
 def top_pT_reweighting(gen):
-    #     """
-    #     Apply this SF only to TTbar datasets! Updated to latest suggestion
-    #     Documentation:
-    #         - https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting
-    #         - https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_the
-    #     """
+    # Apply this SF only to TTbar datasets! Updated to latest suggestion
+    # Documentation:
+    #     - https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting
+    #     - https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_the
     top = gen[(gen.pdgId == 6) & gen.hasFlags(["isLastCopy"])]
     anti_top = gen[(gen.pdgId == -6) & gen.hasFlags(["isLastCopy"])]
     return np.sqrt(
@@ -2198,9 +2194,9 @@ def add_ps_weight(weights, ps_weights, isSyst=False):
             down_fsr = ps_weights[:, 3]
             weights.add("UEPS_ISR", nom, up_isr, down_isr)
             weights.add("UEPS_FSR", nom, up_fsr, down_fsr)
-
         else:
             warnings.warn(f"PS weight vector has length {len(ps_weights[0])}")
+            weights.add("UEPS_ISR", nom, nom, nom)
             weights.add("UEPS_FSR", nom, nom, nom)
 
 
@@ -2523,42 +2519,23 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         weights.add("genweight", pruned_ev.genWeight)
     if "PSWeight" in pruned_ev.fields:
         # PS ISR/FSR weights
-        add_ps_weight(weights, pruned_ev.PSWeight, False)
-        # add_ps_weight(weights, pruned_ev.PSWeight, isSyst)
+        add_ps_weight(weights, pruned_ev.PSWeight, isSyst)
     if "LHEPdfWeight" in pruned_ev.fields:
-        add_pdf_weight(weights, pruned_ev.LHEPdfWeight, False)
-        # add_pdf_weight(weights, pruned_ev.LHEPdfWeight, isSyst)
+        add_pdf_weight(weights, pruned_ev.LHEPdfWeight, isSyst)
     if "LHEScaleWeight" in pruned_ev.fields:
-        add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, False)
-        # add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
+        add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
     if "TT" in pruned_ev.metadata["dataset"]:
-        weights.add(
-            "ttbar_weight",
-            top_pT_reweighting(pruned_ev.GenPart),
-            (
-                top_pT_reweighting(pruned_ev.GenPart)
-                - ak.ones_like(top_pT_reweighting(pruned_ev.GenPart))
-            )
-            * 2.0
-            + ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
-        )
-        '''
+        nom = top_pT_reweighting(pruned_ev.GenPart)
+        weights.add("ttbar_weight", nom)
         if isSyst != False:
             weights.add(
                 "ttbar_weight",
-                top_pT_reweighting(pruned_ev.GenPart),
-                (
-                    top_pT_reweighting(pruned_ev.GenPart)
-                    - ak.ones_like(top_pT_reweighting(pruned_ev.GenPart))
-                )
-                * 2.0,
-                ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
+                nom,
+                nom + np.abs(ak.ones_like(nom) - nom),
             )
-        '''
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
-        syst_wei = False
-        # syst_wei = True if isSyst != False else False
+        syst_wei = True if isSyst != False else False
         if "LUM" in SF_map.keys():
             puwei(
                 pruned_ev.Pileup.nTrueInt,
@@ -2573,7 +2550,7 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         if (
             "ctag" in SF_map.keys() or "btag" in SF_map.keys()
         ) and "SelJet" in pruned_ev.fields:
-            btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", syst_wei)
+            btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", False)
             # btagSFs(pruned_ev, SF_map, weights, "DeepJetC", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepJetB", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepCSVB", syst_wei)
