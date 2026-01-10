@@ -188,7 +188,13 @@ class NanoProcessor(processor.ProcessorABC):
         req_metfilter = MET_filters(events, self._campaign)
 
         event_level = (
-            req_trig & req_lumi & req_muon & req_ele & req_jets & req_opposite_charge & req_metfilter
+            req_trig
+            & req_lumi
+            & req_muon
+            & req_ele
+            & req_jets
+            & req_opposite_charge
+            & req_metfilter
         )
         event_level = ak.fill_none(event_level, False)
         if len(events[event_level]) == 0:

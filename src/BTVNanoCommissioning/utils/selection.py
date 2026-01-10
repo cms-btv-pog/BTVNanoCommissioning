@@ -224,7 +224,9 @@ def btag_wp(jets, year, campaign, tagger, borc, wp):
     elif borc == "2Db":
         jet_mask = jets[f"btag{tagger}2Dbin"] >= WP[tagger]["2D"]["b"][wp]
     elif borc == "2Dc":
-        jet_mask = (jets[f"btag{tagger}2Dbin"] >= WP[tagger]["2D"]["c"][wp][0]) & (jets[f"btag{tagger}2Dbin"] <= WP[tagger]["2D"]["c"][wp][1])
+        jet_mask = (jets[f"btag{tagger}2Dbin"] >= WP[tagger]["2D"]["c"][wp][0]) & (
+            jets[f"btag{tagger}2Dbin"] <= WP[tagger]["2D"]["c"][wp][1]
+        )
     else:
         raise ValueError("Invalid flavour!")
     return jet_mask
@@ -457,7 +459,9 @@ btag_wp_dict = {
             "2D": {
                 # "HFvLF": np.array([0.0, 0.264, 0.448, 0.766, 1.0]),
                 "HFvLF": np.array([0.0, 0.264, 0.448, 0.766, 2.0]),
-                "BvC": np.array([0.0, 0.010, 0.028, 0.094, 0.690, 0.918, 0.978, 0.994, 1.0]),
+                "BvC": np.array(
+                    [0.0, 0.010, 0.028, 0.094, 0.690, 0.918, 0.978, 0.994, 1.0]
+                ),
                 "mapping": {  # HFvLF, BvC
                     1: {
                         1: 0,

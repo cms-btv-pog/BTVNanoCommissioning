@@ -214,13 +214,13 @@ def axes_name(var):
     elif "eta" in var:
         unit = " $\\eta$"
     elif "jetmet" in var:
-            unit = "(Jet,MET)|"
+        unit = "(Jet,MET)|"
     elif "metTrkmet" in var:
-            unit = "(MET,TrkMET)|"
+        unit = "(MET,TrkMET)|"
     elif "jetw" in var:
-            unit = "(Jet,W)|"
+        unit = "(Jet,W)|"
     elif "jetl" in var:
-            unit = "(Jet,$\\ell_1$)|"
+        unit = "(Jet,$\\ell_1$)|"
     elif "phi" in var:
         unit = " $\\phi$"
     elif "dxy" in var:

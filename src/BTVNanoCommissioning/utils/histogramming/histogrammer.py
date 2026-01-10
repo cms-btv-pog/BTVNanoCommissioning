@@ -289,11 +289,15 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     if nj == 1:
                         sel_jet, flav, wgt = pruned_ev.SelJet, genflavor, weight
                     else:
-                        mask_njets = (ak.count(pruned_ev.SelJet.pt, axis=1) >= (i + 1))
+                        mask_njets = ak.count(pruned_ev.SelJet.pt, axis=1) >= (i + 1)
                         temp_SelJet = pruned_ev.SelJet[mask_njets]
                         temp_genflavor = genflavor[mask_njets]
                         temp_weight = weight[mask_njets]
-                        sel_jet, flav, wgt = temp_SelJet[:, i], temp_genflavor[:, i], temp_weight
+                        sel_jet, flav, wgt = (
+                            temp_SelJet[:, i],
+                            temp_genflavor[:, i],
+                            temp_weight,
+                        )
                     if str(i) in histname:
                         if "dr_mujet" in histname:
                             h.fill(
@@ -332,10 +336,20 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         mask_njets = ak.num(seljets.pt) >= (i + 1)
                         temp_seljets = seljets[mask_njets]
                         temp_flavs = flavs[mask_njets]
-                        temp_wgts = weights.partial_weight(exclude=exclude_btv)[mask_njets]
-                        flav, seljet, wgt = temp_flavs[:, i], temp_seljets[:, i], temp_wgts
+                        temp_wgts = weights.partial_weight(exclude=exclude_btv)[
+                            mask_njets
+                        ]
+                        flav, seljet, wgt = (
+                            temp_flavs[:, i],
+                            temp_seljets[:, i],
+                            temp_wgts,
+                        )
                     else:
-                        flav, seljet, wgt = flavs, seljets, weights.partial_weight(exclude=exclude_btv)
+                        flav, seljet, wgt = (
+                            flavs,
+                            seljets,
+                            weights.partial_weight(exclude=exclude_btv),
+                        )
                     h.fill(
                         syst=syst,
                         flav=flav,

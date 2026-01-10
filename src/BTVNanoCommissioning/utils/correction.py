@@ -2160,7 +2160,9 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
 def top_pT_sf_formula(pt):
     x = np.clip(pt, 0, 2000)
     # From page 30 of AN v9 https://cms.cern.ch/iCMS/jsp/db_notes/noteInfo.jsp?cmsnoteid=CMS%20AN-2024/019
-    w_13_to_13p6 = 0.991 + 0.000075 * x  # Extrapolation of the number below (which was for CoM = 13 TeV) to CoM = 13.6 TeV
+    w_13_to_13p6 = (
+        0.991 + 0.000075 * x
+    )  # Extrapolation of the number below (which was for CoM = 13 TeV) to CoM = 13.6 TeV
     return (0.103 * np.exp(-0.0118 * x) - 0.000134 * x + 0.973) * w_13_to_13p6
 
 

@@ -392,10 +392,10 @@ if __name__ == "__main__":
         histoutdir = (
             f"{outdirprefix}hists_{args.workflow}_{sample_json.replace('.json', '')}"
         )
-        outdir = f"{outdirprefix}arrays_{args.workflow}_{sample_json.replace('.json', '')}"
-        coffeaoutput = (
-            f"{histoutdir}/hists_{args.workflow}_{sample_json.replace('.json', '')}.coffea"
+        outdir = (
+            f"{outdirprefix}arrays_{args.workflow}_{sample_json.replace('.json', '')}"
         )
+        coffeaoutput = f"{histoutdir}/hists_{args.workflow}_{sample_json.replace('.json', '')}.coffea"
     os.system(f"mkdir -p {histoutdir}")
     # load dataset
     with open(args.samplejson) as f:

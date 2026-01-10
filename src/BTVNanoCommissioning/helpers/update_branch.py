@@ -142,15 +142,17 @@ def missing_branch(events, campaign="2024_Summer24"):
             events.Jet,
             {"btagRobustParTAK4CvNotB": jets.btagRobustParTAK4CvNotB},
         )
-    if not hasattr(events.Jet, "btagUParTAK4BvC") and hasattr(events.Jet, "btagUParTAK4CvB"):
+    if not hasattr(events.Jet, "btagUParTAK4BvC") and hasattr(
+        events.Jet, "btagUParTAK4CvB"
+    ):
         jets = events.Jet
-        '''
+        """
         jets["btagUParTAK4BvC"] = ak.where(
             jets.btagUParTAK4CvB < 0.0,
             -1,
             1.0 - jets.btagUParTAK4CvB,
         )
-        '''
+        """
         jets["btagUParTAK4C"] = ak.where(
             jets.btagUParTAK4CvB < 0.0,
             -1,
@@ -228,9 +230,15 @@ def missing_branch(events, campaign="2024_Summer24"):
             events.Jet,
             {"btagUParTAK4BvC_pt120toinf": jets.btagUParTAK4BvC_pt120toinf},
         )
-    if not hasattr(events.Jet, "btagUParTAK4HFvLF") and hasattr(events.Jet, "btagUParTAK4UDG") and hasattr(events.Jet, "btagUParTAK4SvUDG") and hasattr(events.Jet, "btagUParTAK4CvL") and hasattr(events.Jet, "btagUParTAK4CvB"):
+    if (
+        not hasattr(events.Jet, "btagUParTAK4HFvLF")
+        and hasattr(events.Jet, "btagUParTAK4UDG")
+        and hasattr(events.Jet, "btagUParTAK4SvUDG")
+        and hasattr(events.Jet, "btagUParTAK4CvL")
+        and hasattr(events.Jet, "btagUParTAK4CvB")
+    ):
         jets = events.Jet
-        '''
+        """
         jets["btagUParTAK4S"] = ak.where(
             jets.btagUParTAK4SvUDG < 0.0,
             -1,
@@ -251,7 +259,7 @@ def missing_branch(events, campaign="2024_Summer24"):
             -1,
             (jets.btagUParTAK4B + jets.btagUParTAK4C) / (jets.btagUParTAK4B + jets.btagUParTAK4C + jets.btagUParTAK4S + jets.btagUParTAK4UDG),
         )
-        '''
+        """
         jets["btagUParTAK4C"] = ak.where(
             jets.btagUParTAK4CvB < 0.0,
             -1,
@@ -329,7 +337,11 @@ def missing_branch(events, campaign="2024_Summer24"):
             events.Jet,
             {"btagUParTAK4HFvLF_pt120toinf": jets.btagUParTAK4HFvLF_pt120toinf},
         )
-    if not hasattr(events.Jet, "btagUParTAK42Dbin") and hasattr(events.Jet, "btagUParTAK4HFvLF") and hasattr(events.Jet, "btagUParTAK4BvC"):
+    if (
+        not hasattr(events.Jet, "btagUParTAK42Dbin")
+        and hasattr(events.Jet, "btagUParTAK4HFvLF")
+        and hasattr(events.Jet, "btagUParTAK4BvC")
+    ):
         jets = events.Jet
         jets_pt = ak.flatten(jets.pt)
         hfvlf = ak.flatten(jets.btagUParTAK4HFvLF)
@@ -339,9 +351,13 @@ def missing_branch(events, campaign="2024_Summer24"):
         ibvc = np.digitize(bvc, btag_wp_dict[campaign]["UParTAK4"]["2D"]["BvC"])
         jets["btagUParTAK42Dbin"] = ak.unflatten(
             [
-                -1
-                if hfvlf[i] == -1
-                else btag_wp_dict[campaign]["UParTAK4"]["2D"]["mapping"][ihfvlf[i]][ibvc[i]]
+                (
+                    -1
+                    if hfvlf[i] == -1
+                    else btag_wp_dict[campaign]["UParTAK4"]["2D"]["mapping"][ihfvlf[i]][
+                        ibvc[i]
+                    ]
+                )
                 for i in range(len(ihfvlf))
             ],
             nj,

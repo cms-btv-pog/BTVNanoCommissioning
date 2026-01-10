@@ -167,7 +167,9 @@ def _get_discriminators(axes, **kwargs):
             "Bprob": Hist.axis.Regular(50, 0, 10, name="discr", label=d),
             "Res": Hist.axis.Regular(40, 0, 1, name="discr", label=d),
             "Corr": Hist.axis.Regular(40, 0, 2, name="discr", label=d),
-            "2Dbin": Hist.axis.IntCategory([0, 40, 41, 42, 43, 44, 50, 51, 52, 53, 54], name="discr", label=d),
+            "2Dbin": Hist.axis.IntCategory(
+                [0, 40, 41, 42, 43, 44, 50, 51, 52, 53, 54], name="discr", label=d
+            ),
         }
 
         if c_wf:

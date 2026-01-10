@@ -181,7 +181,7 @@ class NanoProcessor(processor.ProcessorABC):
         event_jet = events.Jet[jet_sel]
         nseljet = ak.count(event_jet.pt, axis=1)
         # req_base_jets = (nseljet >= 1) & (nseljet <= 3)
-        req_jets = (nseljet == 1)
+        req_jets = nseljet == 1
 
         ## Soft Muon cuts
         soft_muon = events.Muon[
@@ -196,7 +196,7 @@ class NanoProcessor(processor.ProcessorABC):
         ]
         req_softmu = ak.count(soft_muon.pt, axis=1) >= 1
         req_softmu_tight = ak.count(soft_muon_tight.pt, axis=1) >= 1
-        req_softmu_pt = ak.count(soft_muon[soft_muon.pt > 5.0].pt, axis=1)  >= 1
+        req_softmu_pt = ak.count(soft_muon[soft_muon.pt > 5.0].pt, axis=1) >= 1
         mujetsel = ak.fill_none(
             (
                 (ak.all(event_jet.metric_table(soft_muon) <= 0.4, axis=2))
@@ -320,7 +320,7 @@ class NanoProcessor(processor.ProcessorABC):
         jetmet_dphi = abs(event_jet_0.delta_phi(MET))
         req_jetmet_dphi = jetmet_dphi > 1.0
         metTrkmet_dphi = abs(MET.delta_phi(events.TrkMET))
-        req_metTrkmet_dphi = (metTrkmet_dphi < 1.0)  # & (metTrkmet_dphi >= 0.5)
+        req_metTrkmet_dphi = metTrkmet_dphi < 1.0  # & (metTrkmet_dphi >= 0.5)
 
         # W cuts
         wmasscut = 40  # before 55
@@ -333,8 +333,8 @@ class NanoProcessor(processor.ProcessorABC):
         Wpt = Wcand.pt
         req_WpT = Wpt > wptcut
         req_mtw = Wmass > wmasscut
-        req_mtw_max120 = (Wmass < 120)
-        req_mtw_min55 = (Wmass > wmasscut_tight)
+        req_mtw_max120 = Wmass < 120
+        req_mtw_min55 = Wmass > wmasscut_tight
         # req for pt ratio of leading jet and W pt
         req_pTratio = (soft_muon[:, 0].pt / event_jet_0.pt) < muonpTratioCut
         jetw_ptratio = event_jet_0.pt / Wpt
@@ -431,7 +431,9 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["SelMuon"] = shmu
         else:
             pruned_ev["SelElectron"] = shmu
-        pruned_ev["MuonJet"] = smuon_jet  # leading selected jet fullfilling all event-level cuts
+        pruned_ev["MuonJet"] = (
+            smuon_jet  # leading selected jet fullfilling all event-level cuts
+        )
         pruned_ev["SoftMuon"] = ssmu
         pruned_ev["OtherJets"] = sotherjets
         pruned_ev["MET_pt"] = smet.pt
@@ -612,7 +614,10 @@ class NanoProcessor(processor.ProcessorABC):
                     )
                 elif "btag" in histname and "Trans" not in histname:
                     for i in range(2):
-                        if not histname.endswith(str(i)) or histname.replace(f"_{i}", "") not in smuon_jet.fields:
+                        if (
+                            not histname.endswith(str(i))
+                            or histname.replace(f"_{i}", "") not in smuon_jet.fields
+                        ):
                             continue
                         h.fill(
                             syst,
@@ -703,13 +708,23 @@ class NanoProcessor(processor.ProcessorABC):
             output["w_pt"].fill(syst, osss, flatten(sw.pt), weight=weight)
             output["w_phi"].fill(syst, osss, flatten(sw.phi), weight=weight)
             output["w_mass"].fill(syst, osss, flatten(sw.mass), weight=weight)
-            output["jetw_dphi"].fill(syst, smflav, osss, flatten(jetw_dphi[event_level]), weight=weight)
-            output["jetw_ptratio"].fill(syst, smflav, osss, flatten(jetw_ptratio[event_level]), weight=weight)
+            output["jetw_dphi"].fill(
+                syst, smflav, osss, flatten(jetw_dphi[event_level]), weight=weight
+            )
+            output["jetw_ptratio"].fill(
+                syst, smflav, osss, flatten(jetw_ptratio[event_level]), weight=weight
+            )
             output["MET_pt"].fill(syst, osss, flatten(smet.pt), weight=weight)
             output["MET_phi"].fill(syst, osss, flatten(smet.phi), weight=weight)
-            output["jetmet_dphi"].fill(syst, smflav, osss, flatten(jetmet_dphi[event_level]), weight=weight)
-            output["metTrkmet_dphi"].fill(syst, osss, flatten(metTrkmet_dphi[event_level]), weight=weight)
-            output["jetl_dphi"].fill(syst, smflav, osss, flatten(jetl_dphi[event_level]), weight=weight)
+            output["jetmet_dphi"].fill(
+                syst, smflav, osss, flatten(jetmet_dphi[event_level]), weight=weight
+            )
+            output["metTrkmet_dphi"].fill(
+                syst, osss, flatten(metTrkmet_dphi[event_level]), weight=weight
+            )
+            output["jetl_dphi"].fill(
+                syst, smflav, osss, flatten(jetl_dphi[event_level]), weight=weight
+            )
 
         #######################
         #  Create root files  #
