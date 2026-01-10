@@ -143,6 +143,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             if syst == "nominal" or syst not in list(weights.variations)
             else weights.weight(modifier=syst)
         )
+        syst = np.full(len(weight), syst)
         # Loop over the histograms
         for histname, h in output.items():
             # Tagger score histograms

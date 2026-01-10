@@ -538,6 +538,7 @@ class NanoProcessor(processor.ProcessorABC):
                 if syst == "nominal" or syst == shift_name
                 else weights.weight(modifier=syst)
             )
+            syst = np.full(len(weight), syst)
             for histname, h in output.items():
                 if (
                     "Deep" in histname
@@ -614,7 +615,7 @@ class NanoProcessor(processor.ProcessorABC):
                         if not histname.endswith(str(i)) or histname.replace(f"_{i}", "") not in smuon_jet.fields:
                             continue
                         h.fill(
-                            syst="noSF",
+                            syst,
                             flav=smflav,
                             osss=osss,
                             discr=np.where(
@@ -652,6 +653,7 @@ class NanoProcessor(processor.ProcessorABC):
             output["njet"].fill(syst, osss, njet, weight=weight)
             # output["nmujet"].fill(syst, osss, nmujet, weight=weight)
             output["nsoftmu"].fill(syst, osss, nsoftmu, weight=weight)
+            output["npv"].fill(syst, osss, pruned_ev.PV.npvsGood, weight=weight)
             output["softlpt"].fill(syst, smflav, osss, ssmu.pt, weight=weight)
             output["hl_ptratio"].fill(
                 syst,

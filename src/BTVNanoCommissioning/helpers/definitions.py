@@ -175,7 +175,6 @@ def axes_name(var):
             unit = "(SV,Jet)"
     elif "dphi" in var:
         obj = "|$\\Delta\\phi$"
-        
     elif "MET_" in var:
         obj = "MET"
     elif "ele_" in var:

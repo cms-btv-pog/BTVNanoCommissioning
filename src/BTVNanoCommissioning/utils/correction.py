@@ -2532,6 +2532,7 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                 "ttbar_weight",
                 nom,
                 nom + np.abs(ak.ones_like(nom) - nom),
+                nom - np.abs(ak.ones_like(nom) - nom),
             )
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
@@ -2544,9 +2545,9 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                 syst_wei,
             )
         if "MUO" in SF_map.keys() and "SelMuon" in pruned_ev.fields:
-            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, True)
+            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, False)
         if "EGM" in SF_map.keys() and "SelElectron" in pruned_ev.fields:
-            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, True)
+            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, False)
         if (
             "ctag" in SF_map.keys() or "btag" in SF_map.keys()
         ) and "SelJet" in pruned_ev.fields:
