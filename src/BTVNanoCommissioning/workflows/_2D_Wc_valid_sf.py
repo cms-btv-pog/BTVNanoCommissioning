@@ -115,10 +115,8 @@ class NanoProcessor(processor.ProcessorABC):
                 campaign=self._campaign,
             )
 
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
+        if shift_name is None:
+            output["sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
