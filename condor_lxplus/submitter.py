@@ -97,6 +97,7 @@ def get_main_parser():
             "Summer22EE",
             "Summer23",
             "Summer23BPix",
+            "Summer24",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",
@@ -270,7 +271,7 @@ Arguments = $(JOBNUM) {base_dir} {outputDir} {envpath}
 request_cpus = 1
 request_memory = 2000
 
-+JobFlavour = "longlunch"
++JobFlavour = "workday"
 
 Log        = {log_dir}/job.log_$(Cluster)
 Output     = {log_dir}/job.out_$(Cluster)-$(Process)
