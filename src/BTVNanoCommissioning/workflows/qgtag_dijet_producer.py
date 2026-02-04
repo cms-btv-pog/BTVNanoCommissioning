@@ -199,6 +199,14 @@ class NanoProcessor(processor.ProcessorABC):
 
         event_level = event_level & req_jet & req_dphi & req_subjet & req_trig & req_bal & req_leadjet
 
+        ## MC only: require gen vertex to be close to reco vertex
+        if "GenVtx_z" in events.fields:
+            req_vtx = np.abs(events.GenVtx_z - events.PV_z) < 0.2
+        else:
+            req_vtx = ak.ones_like(events.run, dtype=bool)
+
+        event_level = event_level & req_vtx
+
         ##<==== finish selection
         event_level = ak.fill_none(event_level, False)
         # Skip empty events -
