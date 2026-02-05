@@ -1,7 +1,6 @@
 import os, sys
 import argparse
 
-
 parser = argparse.ArgumentParser(description="Check for missing hists_N.coffea files.")
 parser.add_argument(
     "--jobName",
