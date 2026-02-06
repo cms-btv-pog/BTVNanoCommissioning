@@ -2019,14 +2019,20 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
                 )
 
                 if syst:
-                    sf_unc = np.where(
+                    sfs_up = np.where(
                         masknone,
-                        0.0,
+                        1.0,
                         correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
-                            mu_eta, mu_pt, "syst"
-                        ),
+                            mu_eta, mu_pt, "systup"
+                        )
                     )
-                    sfs_up, sfs_down = 1.0 + sf_unc, 1.0 - sf_unc
+                    sfs_down = np.where(
+                        masknone,
+                        1.0,
+                        correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
+                            mu_eta, mu_pt, "systdown"
+                        )
+                    )
             else:
                 if "mu" in sf:
                     sfs = np.where(
@@ -2130,11 +2136,12 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
     # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_as_0118_mc_hessian_pdfas/NNPDF31_nnlo_as_0118_mc_hessian_pdfas.info
     if pdf_weights is not None and "325300 - 325402" in pdf_weights.__doc__:
         # Hessian PDF weights
+        # Eq. 20 of https://arxiv.org/pdf/1510.03865v1.pdf
         delta = pdf_weights[:, 1:-2] - pdf_weights[:, 0]
         pdf_unc = np.sqrt(ak.sum(np.square(delta), axis=1))
 
         # alpha_S weights
-        # Eq. 27 of https://arxiv.org/pdf/1510.03865v1.pdf
+        # Eq. 27 of same ref
         as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
 
         # PDF + alpha_S weights
@@ -2142,9 +2149,9 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
         pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
 
         if isSyst != False:
-            weights.add("PDF_weight", nom, pdf_unc + nom)
-            weights.add("aS_weight", nom, as_unc + nom)
-            weights.add("PDFaS_weight", nom, pdfas_unc + nom)
+            weights.add("PDF_weight", nom, pdf_unc + nom, None)
+            weights.add("aS_weight", nom, as_unc + nom, None)
+            weights.add("PDFaS_weight", nom, pdfas_unc + nom, None)
         else:
             weights.add("PDF_weight", nom)
             weights.add("aS_weight", nom)
@@ -2227,14 +2234,14 @@ def add_scalevar_weight(weights, lhe_weights, isSyst=False):
                 weights.add(
                     "scalevar_muR",
                     nom,
-                    lhe_weights[:, 1] / nom,
                     lhe_weights[:, 7] / nom,
+                    lhe_weights[:, 1] / nom,
                 )
                 weights.add(
                     "scalevar_muF",
                     nom,
-                    lhe_weights[:, 3] / nom,
                     lhe_weights[:, 5] / nom,
+                    lhe_weights[:, 3] / nom,
                 )
                 weights.add(
                     "scalevar_muR_muF", nom, lhe_weights[:, 0], lhe_weights[:, 8]
@@ -2534,7 +2541,7 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                 "ttbar_weight",
                 nom,
                 nom + np.abs(ak.ones_like(nom) - nom),
-                nom - np.abs(ak.ones_like(nom) - nom),
+                None,
             )
 
     if "hadronFlavour" in pruned_ev.Jet.fields:

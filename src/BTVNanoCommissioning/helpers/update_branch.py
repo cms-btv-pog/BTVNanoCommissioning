@@ -146,35 +146,15 @@ def missing_branch(events, campaign="2024_Summer24"):
         events.Jet, "btagUParTAK4CvB"
     ):
         jets = events.Jet
-        """
         jets["btagUParTAK4BvC"] = ak.where(
             jets.btagUParTAK4CvB < 0.0,
             -1,
             1.0 - jets.btagUParTAK4CvB,
         )
-        """
-        jets["btagUParTAK4C"] = ak.where(
-            jets.btagUParTAK4CvB < 0.0,
-            -1,
-            jets.btagUParTAK4B * jets.btagUParTAK4CvB / (1.0 - jets.btagUParTAK4CvB),
-        )
-        jets["btagUParTAK4BvC"] = ak.where(
-            jets.btagUParTAK4C < 0.0,
-            -1,
-            jets.btagUParTAK4B / (jets.btagUParTAK4B + jets.btagUParTAK4C),
-        )
         jets["btagUParTAK4BvCt"] = ak.where(
             jets.btagUParTAK4BvC < 0.0,
             -1,
             1.0 - np.sqrt(1.0 - jets.btagUParTAK4BvC),
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4BvC": jets.btagUParTAK4BvC},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4BvCt": jets.btagUParTAK4BvCt},
         )
         jets["btagUParTAK4BvC_pt25to35"] = ak.where(
             (jets.pt < 25.0) | (jets.pt >= 35.0),
@@ -208,27 +188,16 @@ def missing_branch(events, campaign="2024_Summer24"):
         )
         events.Jet = update(
             events.Jet,
-            {"btagUParTAK4BvC_pt25to35": jets.btagUParTAK4BvC_pt25to35},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4BvC_pt35to50": jets.btagUParTAK4BvC_pt35to50},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4BvC_pt50to70": jets.btagUParTAK4BvC_pt50to70},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4BvC_pt70to90": jets.btagUParTAK4BvC_pt70to90},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4BvC_pt90to120": jets.btagUParTAK4BvC_pt90to120},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4BvC_pt120toinf": jets.btagUParTAK4BvC_pt120toinf},
+            {
+                "btagUParTAK4BvC": jets.btagUParTAK4BvC,
+                "btagUParTAK4BvCt": jets.btagUParTAK4BvCt,
+                "btagUParTAK4BvC_pt25to35": jets.btagUParTAK4BvC_pt25to35,
+                "btagUParTAK4BvC_pt35to50": jets.btagUParTAK4BvC_pt35to50,
+                "btagUParTAK4BvC_pt50to70": jets.btagUParTAK4BvC_pt50to70,
+                "btagUParTAK4BvC_pt70to90": jets.btagUParTAK4BvC_pt70to90,
+                "btagUParTAK4BvC_pt90to120": jets.btagUParTAK4BvC_pt90to120,
+                "btagUParTAK4BvC_pt120toinf": jets.btagUParTAK4BvC_pt120toinf,
+            },
         )
     if (
         not hasattr(events.Jet, "btagUParTAK4HFvLF")
@@ -238,7 +207,6 @@ def missing_branch(events, campaign="2024_Summer24"):
         and hasattr(events.Jet, "btagUParTAK4CvB")
     ):
         jets = events.Jet
-        """
         jets["btagUParTAK4S"] = ak.where(
             jets.btagUParTAK4SvUDG < 0.0,
             -1,
@@ -259,29 +227,10 @@ def missing_branch(events, campaign="2024_Summer24"):
             -1,
             (jets.btagUParTAK4B + jets.btagUParTAK4C) / (jets.btagUParTAK4B + jets.btagUParTAK4C + jets.btagUParTAK4S + jets.btagUParTAK4UDG),
         )
-        """
-        jets["btagUParTAK4C"] = ak.where(
-            jets.btagUParTAK4CvB < 0.0,
-            -1,
-            jets.btagUParTAK4B * jets.btagUParTAK4CvB / (1.0 - jets.btagUParTAK4CvB),
-        )
-        jets["btagUParTAK4HFvLF"] = ak.where(
-            jets.btagUParTAK4C < 0.0,
-            -1,
-            jets.btagUParTAK4B + jets.btagUParTAK4C,
-        )
         jets["btagUParTAK4HFvLFt"] = ak.where(
             jets.btagUParTAK4HFvLF < 0.0,
             -1,
             1.0 - np.sqrt(1.0 - jets.btagUParTAK4HFvLF),
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4HFvLF": jets.btagUParTAK4HFvLF},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4HFvLFt": jets.btagUParTAK4HFvLFt},
         )
         jets["btagUParTAK4HFvLF_pt25to35"] = ak.where(
             (jets.pt < 25.0) | (jets.pt >= 35.0),
@@ -315,27 +264,16 @@ def missing_branch(events, campaign="2024_Summer24"):
         )
         events.Jet = update(
             events.Jet,
-            {"btagUParTAK4HFvLF_pt25to35": jets.btagUParTAK4HFvLF_pt25to35},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4HFvLF_pt35to50": jets.btagUParTAK4HFvLF_pt35to50},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4HFvLF_pt50to70": jets.btagUParTAK4HFvLF_pt50to70},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4HFvLF_pt70to90": jets.btagUParTAK4HFvLF_pt70to90},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4HFvLF_pt90to120": jets.btagUParTAK4HFvLF_pt90to120},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK4HFvLF_pt120toinf": jets.btagUParTAK4HFvLF_pt120toinf},
+            {
+                "btagUParTAK4HFvLF": jets.btagUParTAK4HFvLF,
+                "btagUParTAK4HFvLFt": jets.btagUParTAK4HFvLFt,
+                "btagUParTAK4HFvLF_pt25to35": jets.btagUParTAK4HFvLF_pt25to35,
+                "btagUParTAK4HFvLF_pt35to50": jets.btagUParTAK4HFvLF_pt35to50,
+                "btagUParTAK4HFvLF_pt50to70": jets.btagUParTAK4HFvLF_pt50to70,
+                "btagUParTAK4HFvLF_pt70to90": jets.btagUParTAK4HFvLF_pt70to90,
+                "btagUParTAK4HFvLF_pt90to120": jets.btagUParTAK4HFvLF_pt90to120,
+                "btagUParTAK4HFvLF_pt120toinf": jets.btagUParTAK4HFvLF_pt120toinf,
+            },
         )
     if (
         not hasattr(events.Jet, "btagUParTAK42Dbin")
@@ -394,27 +332,15 @@ def missing_branch(events, campaign="2024_Summer24"):
         )
         events.Jet = update(
             events.Jet,
-            {"btagUParTAK42Dbin_pt25to35": jets.btagUParTAK42Dbin_pt25to35},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK42Dbin_pt35to50": jets.btagUParTAK42Dbin_pt35to50},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK42Dbin_pt50to70": jets.btagUParTAK42Dbin_pt50to70},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK42Dbin_pt70to90": jets.btagUParTAK42Dbin_pt70to90},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK42Dbin_pt90to120": jets.btagUParTAK42Dbin_pt90to120},
-        )
-        events.Jet = update(
-            events.Jet,
-            {"btagUParTAK42Dbin_pt120toinf": jets.btagUParTAK42Dbin_pt120toinf},
+            {
+                "btagUParTAK42Dbin": jets.btagUParTAK42Dbin,
+                "btagUParTAK42Dbin_pt25to35": jets.btagUParTAK42Dbin_pt25to35,
+                "btagUParTAK42Dbin_pt35to50": jets.btagUParTAK42Dbin_pt35to50,
+                "btagUParTAK42Dbin_pt50to70": jets.btagUParTAK42Dbin_pt50to70,
+                "btagUParTAK42Dbin_pt70to90": jets.btagUParTAK42Dbin_pt70to90,
+                "btagUParTAK42Dbin_pt90to120": jets.btagUParTAK42Dbin_pt90to120,
+                "btagUParTAK42Dbin_pt120toinf": jets.btagUParTAK42Dbin_pt120toinf,
+            },
         )
     if hasattr(events, "METFixEE2017"):
         events.MET = events.METFixEE2017

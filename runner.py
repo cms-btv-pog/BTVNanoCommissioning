@@ -3,8 +3,10 @@ import sys
 import json
 import argparse
 import time
+from copy import deepcopy
 
 import numpy as np
+import awkward as ak
 
 import uproot
 from coffea.util import load, save
@@ -26,7 +28,6 @@ def validate_dataset_structure(fileset):
     """Check dataset files and return a filtered fileset with only valid files."""
     import uproot
     import logging
-    from copy import deepcopy
 
     # Critical branches that must be present
     required_branches = [
@@ -157,6 +158,36 @@ def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
             for file in files:
                 file_path = os.path.join(root, file)
                 tar.add(file_path, arcname=os.path.relpath(file_path, source_dir))
+
+
+def get_event_weights(sample_dict, output):
+    for sample in sample_dict:
+        isRealData = ("data" in sample) or ("Run" in sample) or ("Double" in sample)
+        if isRealData:
+            genEventCount = 0
+        else:
+            genEventSumw = 0.0
+            LHEScaleSumw = np.full(9, 0.0)
+            LHEPdfSumw = np.full(103, 0.0)
+            PSSumw = np.full(4, 0.0)
+        for fname in sample_dict[sample]:
+            with uproot.open(fname) as root_file:
+                if isRealData:
+                    genEventCount += len(root_file["Events"]["event"].array())
+                else:
+                    temp_genEventSumw = root_file["Runs"]["genEventSumw"].array()[0]
+                    genEventSumw += temp_genEventSumw
+                    LHEScaleSumw += ak.to_numpy(deepcopy(root_file["Runs"]["LHEScaleSumw"].array()[0])) * temp_genEventSumw
+                    LHEPdfSumw += ak.to_numpy(deepcopy(root_file["Runs"]["LHEPdfSumw"].array()[0])) * temp_genEventSumw
+                    PSSumw += ak.to_numpy(deepcopy(root_file["Runs"]["PSSumw"].array()[0])) * temp_genEventSumw
+        if isRealData:
+            output[sample]["sumw"] = genEventCount
+        else:
+            output[sample]["sumw"] = genEventSumw
+            output[sample]["LHEScaleSumw"] = list(LHEScaleSumw)
+            output[sample]["LHEPdfSumw"] = list(LHEPdfSumw)
+            output[sample]["PSSumw"] = list(PSSumw)
+    return output
 
 
 def get_condor_submitter_parser(parser):
@@ -1123,6 +1154,7 @@ if __name__ == "__main__":
                             maxchunks=args.max,
                         )
                         if args.noHist == False:
+                            output = get_event_weights(splitted, output)
                             save(
                                 output,
                                 coffeaoutput.replace(
@@ -1131,6 +1163,7 @@ if __name__ == "__main__":
                             )
     if not "lxplus" in args.executor:
         if args.noHist == False:
+            output = get_event_weights(sample_dict, output)
             save(output, coffeaoutput)
     if args.noHist == False:
         # print(output)

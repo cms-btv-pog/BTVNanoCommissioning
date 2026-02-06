@@ -42,8 +42,44 @@ def scaleSumW(output, lumi):
             scaled[sample]["sumw"] = merged_output[sample]["sumw"]
             if isinstance(h_obj, hist.Hist):
                 h = copy.deepcopy(h_obj)
+                h_scalevar_muFUp = copy.deepcopy(h_obj)
+                h_scalevar_muFDown = copy.deepcopy(h_obj)
+                h_scalevar_muRUp = copy.deepcopy(h_obj)
+                h_scalevar_muRDown = copy.deepcopy(h_obj)
+                h_PS_ISRUp = copy.deepcopy(h_obj)
+                h_PS_ISRDown = copy.deepcopy(h_obj)
+                h_PS_FSRUp = copy.deepcopy(h_obj)
+                h_PS_FSRDown = copy.deepcopy(h_obj)
+                h_PDF_weightUp = copy.deepcopy(h_obj)
+                h_PDF_weightDown = copy.deepcopy(h_obj)
+                h_aS_weightUp = copy.deepcopy(h_obj)
+                h_aS_weightDown = copy.deepcopy(h_obj)
+
                 if sample in xs_dict.keys():
+                    scaled[sample]["LHEScaleSumw"] = merged_output[sample]["LHEScaleSumw"]
+                    scaled[sample]["LHEPdfSumw"] = merged_output[sample]["LHEPdfSumw"]
+                    scaled[sample]["PSSumw"] = merged_output[sample]["PSSumw"]
+
+                    ############################################################################################
+                    # WARNING: THIS IS WRONG
+                    delta = scaled[sample]["LHEPdfSumw"][1:-2] - scaled[sample]["LHEPdfSumw"][0]
+                    pdfWeightSumw = np.sqrt(np.sum(np.square(delta)))
+                    aSWeightSumw = 0.5 * (scaled[sample]["LHEPdfSumw"][102] - scaled[sample]["LHEPdfSumw"][101])
+                    ############################################################################################
+
                     h = h * xs_dict[sample] * lumi / merged_output[sample]["sumw"]
+                    h_scalevar_muFUp = h_scalevar_muFUp * xs_dict[sample] * lumi / merged_output[sample]["LHEScaleSumw"][5]
+                    h_scalevar_muFDown = h_scalevar_muFDown * xs_dict[sample] * lumi / merged_output[sample]["LHEScaleSumw"][3]
+                    h_scalevar_muRUp = h_scalevar_muRUp * xs_dict[sample] * lumi / merged_output[sample]["LHEScaleSumw"][7]
+                    h_scalevar_muRDown = h_scalevar_muRDown * xs_dict[sample] * lumi / merged_output[sample]["LHEScaleSumw"][1]
+                    h_PS_ISRUp = h_PS_ISRUp * xs_dict[sample] * lumi / merged_output[sample]["PSSumw"][0]
+                    h_PS_ISRDown = h_PS_ISRDown * xs_dict[sample] * lumi / merged_output[sample]["PSSumw"][2]
+                    h_PS_FSRUp = h_PS_FSRUp * xs_dict[sample] * lumi / merged_output[sample]["PSSumw"][1]
+                    h_PS_FSRDown = h_PS_FSRDown * xs_dict[sample] * lumi / merged_output[sample]["PSSumw"][3]
+                    h_PDF_weightUp = h_PDF_weightUp * xs_dict[sample] * lumi / (merged_output[sample]["sumw"] + pdfWeightSumw)
+                    h_PDF_weightDown = h_PDF_weightDown * xs_dict[sample] * lumi / (merged_output[sample]["sumw"] - pdfWeightSumw)
+                    h_aS_weightUp = h_aS_weightUp * xs_dict[sample] * lumi / (merged_output[sample]["sumw"] + aSWeightSumw)
+                    h_aS_weightDown = h_aS_weightDown * xs_dict[sample] * lumi / (merged_output[sample]["sumw"] - aSWeightSumw)
                 else:
                     if ("data" in sample) or ("Run" in sample) or ("Double" in sample):
                         h = h
@@ -54,6 +90,19 @@ def scaleSumW(output, lumi):
                         )
 
                 scaled[sample][key] = h
+                if sample in xs_dict.keys():
+                    scaled[sample][f"{key}_scalevar_muFUp"] = h_scalevar_muFUp
+                    scaled[sample][f"{key}_scalevar_muFDown"] = h_scalevar_muFDown
+                    scaled[sample][f"{key}_scalevar_muRUp"] = h_scalevar_muRUp
+                    scaled[sample][f"{key}_scalevar_muRDown"] = h_scalevar_muRDown
+                    scaled[sample][f"{key}_PS_ISRUp"] = h_PS_ISRUp
+                    scaled[sample][f"{key}_PS_ISRDown"] = h_PS_ISRDown
+                    scaled[sample][f"{key}_PS_FSRUp"] = h_PS_FSRUp
+                    scaled[sample][f"{key}_PS_FSRDown"] = h_PS_FSRDown
+                    scaled[sample][f"{key}_PDF_weightUp"] = h_PDF_weightUp
+                    scaled[sample][f"{key}_PDF_weightDown"] = h_PDF_weightDown
+                    scaled[sample][f"{key}_aS_weightUp"] = h_aS_weightUp
+                    scaled[sample][f"{key}_aS_weightDown"] = h_aS_weightDown
     return scaled
 
 

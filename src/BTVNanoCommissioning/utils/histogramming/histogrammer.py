@@ -277,6 +277,14 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 output["nbjet"].fill(syst, pruned_ev.nbjet, weight=weight)
             elif "ncjet" == histname:
                 output["ncjet"].fill(syst, pruned_ev.ncjet, weight=weight)
+            elif "top_pt" == histname and "TT" in pruned_ev.metadata["dataset"]:
+                top_mask = (pruned_ev.GenPart.pdgId == 6) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
+                top_pt = pruned_ev.GenPart[top_mask][:, 0].pt
+                output["top_pt"].fill(syst, top_pt, weight=weight)
+            elif "antitop_pt" == histname and "TT" in pruned_ev.metadata["dataset"]:
+                antitop_mask = (pruned_ev.GenPart.pdgId == -6) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
+                antitop_pt = pruned_ev.GenPart[antitop_mask][:, 0].pt
+                output["antitop_pt"].fill(syst, antitop_pt, weight=weight)
             elif "npv" == histname:
                 output["npv"].fill(syst, pruned_ev.PV.npvsGood, weight=weight)
             # Jet kinematics & deltaR between jet and lepton
@@ -336,9 +344,10 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         mask_njets = ak.num(seljets.pt) >= (i + 1)
                         temp_seljets = seljets[mask_njets]
                         temp_flavs = flavs[mask_njets]
-                        temp_wgts = weights.partial_weight(exclude=exclude_btv)[
-                            mask_njets
-                        ]
+                        temp_wgts = weight[mask_njets]
+                        # temp_wgts = weights.partial_weight(exclude=exclude_btv)[
+                        #     mask_njets
+                        # ]
                         flav, seljet, wgt = (
                             temp_flavs[:, i],
                             temp_seljets[:, i],
@@ -348,7 +357,8 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         flav, seljet, wgt = (
                             flavs,
                             seljets,
-                            weights.partial_weight(exclude=exclude_btv),
+                            weight,
+                            # weights.partial_weight(exclude=exclude_btv),
                         )
                     h.fill(
                         syst=syst,

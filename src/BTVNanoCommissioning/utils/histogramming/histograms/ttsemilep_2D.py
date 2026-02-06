@@ -17,4 +17,11 @@ def get_histograms(axes, **kwargs):
     )
     hists[f"{channel}_dz"] = Hist.Hist(axes["syst"], axes["dz"], Hist.storage.Weight())
 
+    hists["top_pt"] = Hist.Hist(
+        axes["syst"], axes["jpt"], Hist.storage.Weight()
+    )
+    hists["antitop_pt"] = Hist.Hist(
+        axes["syst"], axes["jpt"], Hist.storage.Weight()
+    )
+
     return hists

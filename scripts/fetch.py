@@ -1882,7 +1882,7 @@ def main(args):
     elif os.path.exists(args.output) and args.overwrite == False:
         raise Exception(f"{args.output} exists")
 
-    ## If you only provide dataset from the dataset name(DAS) or do from_workflow
+    ## If you only provide dataset from the dataset name (DAS) or do from_workflow
     if args.from_dataset or args.from_workflow is not None:
         if args.from_dataset:
             f = open(args.input)

@@ -173,4 +173,11 @@ def get_histograms(axes, **kwargs):
                             Hist.storage.Weight(),
                         )
 
+    hists["top_pt"] = Hist.Hist(
+        axes["syst"], axes["osss"], axes["jpt"], Hist.storage.Weight()
+    )
+    hists["antitop_pt"] = Hist.Hist(
+        axes["syst"], axes["osss"], axes["jpt"], Hist.storage.Weight()
+    )
+
     return hists

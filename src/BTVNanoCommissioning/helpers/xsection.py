@@ -61,6 +61,27 @@ xsection = [
         "comments": "SMP-22-017",
     },
     {
+        "process_name": "DYto2E-4Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "cross_section": "5733.3",
+        "accuracy": "LO",
+        "energy": "13.6",
+        "comment": "GenXSAnalyzer",
+    },
+    {
+        "process_name": "DYto2Mu-4Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "cross_section": "5836.7",
+        "accuracy": "LO",
+        "energy": "13.6",
+        "comment": "GenXSAnalyzer",
+    },
+    {
+        "process_name": "DYto2Tau-4Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "cross_section": "5793.3",
+        "accuracy": "LO",
+        "energy": "13.6",
+        "comment": "GenXSAnalyzer",
+    },
+    {
         "process_name": "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         "cross_section": "2124.08",
         "accuracy": "NNLO QCD + NLO EW",
@@ -307,6 +328,20 @@ xsection = [
         "equivalent_lumi": "1.292",
         "fraction_negative_weight": "0.003854",
         "comments": "Automatically computed",
+    },
+    {
+        "process_name": "TTLNu-1Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "0.238",
+        "accuracy": "NLO",
+        "energy": "13.6",
+        "comment": "GenXSecAnalyzer",
+    },
+    {
+        "process_name": "TTW-WtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8",
+        "cross_section": "0.4686",
+        "accuracy": "NLO",
+        "energy": "13.6",
+        "comment": "GenXSecAnalyzer",
     },
     {
         "process_name": "TTLL_Bin-MLL-4to50_TuneCP5_13p6TeV_amcatnlo-pythia8",
