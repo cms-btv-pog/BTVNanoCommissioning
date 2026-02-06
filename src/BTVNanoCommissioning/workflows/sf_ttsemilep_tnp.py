@@ -80,12 +80,10 @@ def solve_nu_pz(px_l, py_l, pz_l, e_l, px_n, py_n, mW=80.4):
     return (pz1, e1), (pz2, e2)
 
 # Update P calculation 
+#tf = uproot.open("/afs/cern.ch/user/j/jafan/work/public/sfb-tttnp/BTVNanoCommissioning/likelihoods_pas.root")
 tf = uproot.open("likelihoods_pa.root")
 
-h2 = tf["had_tmwm"]
-x_edges = h2.axis(0).edges()
-y_edges = h2.axis(1).edges()
-z_2d    = h2.values().T 
+h2 = tf["had_tmwm"] x_edges = h2.axis(0).edges() y_edges = h2.axis(1).edges() z_2d = h2.values().T
 
 h1 = tf["had_mnu"]
 nu_edges = h1.axis().edges()
@@ -999,7 +997,7 @@ class NanoProcessor(processor.ProcessorABC):
             nb_M = ak.sum(ak.fill_none(bmask_M, False), axis=1)
 
             mask_central = nb_M >= 1
-            mask_sb_btagM = (nb_M == 0) & (nb_L >= 1)
+            mask_sb_btagM = (nb_L >= 1)
             mask_sb_btagL = nb_L == 0
 
             # MET 4-vector
@@ -1046,6 +1044,28 @@ class NanoProcessor(processor.ProcessorABC):
                     tagger=self.tag_tagger,
                     borc="b",
                     wp="M",
+                ),
+                False,
+            )
+            had_tag_L = ak.fill_none(
+                btag_wp(
+                    BH,
+                    self._year,
+                    self._campaign,
+                    tagger=self.tag_tagger,
+                    borc="b",
+                    wp="L",
+                ),
+                False,
+            )
+            lep_tag_L = ak.fill_none(
+                btag_wp(
+                    BL,
+                    self._year,
+                    self._campaign,
+                    tagger=self.tag_tagger,
+                    borc="b",
+                    wp="L",
                 ),
                 False,
             )
@@ -1148,13 +1168,14 @@ class NanoProcessor(processor.ProcessorABC):
                     continue
 
                 # TnP fills
+                #FIXME hack for region fix...
                 require_tag = rname == "central"
                 ones = ak.ones_like(had_pt_ok, dtype=bool)
                 tnp_had_fill = ak.to_numpy(
-                    had_pt_ok & (lep_tag if require_tag else ones)
+                    had_pt_ok & (lep_tag if require_tag else (lep_tag_L & (~lep_tag)))
                 )[rmask_np]
                 tnp_lep_fill = ak.to_numpy(
-                    lep_pt_ok & (had_tag if require_tag else ones)
+                    lep_pt_ok & (had_tag if require_tag else (had_tag_L & (~had_tag)))
                 )[rmask_np]
                 tnp_had_pt = ak.to_numpy(BH.pt)[rmask_np]
                 tnp_lep_pt = ak.to_numpy(BL.pt)[rmask_np]
