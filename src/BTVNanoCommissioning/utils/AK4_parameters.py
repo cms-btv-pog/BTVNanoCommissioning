@@ -183,17 +183,17 @@ correction_config = {
     },
     "Summer24": {
         "DC": "Cert_Collisions2024_378981_386951_Golden.json",
-        "LUM": "PU_weights_Summer24.histo.root",
+        "LUM": "puWeights_BCDEFGHI.json.gz",
         "JME": {
-            # TODO: JER are a placeholder for now (July 2025)
-            "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1",
-            "Run2024C": "Summer24Prompt24_V1",
-            "Run2024D": "Summer24Prompt24_V1",
-            "Run2024E": "Summer24Prompt24_V1",
-            "Run2024F": "Summer24Prompt24_V1",
-            "Run2024G": "Summer24Prompt24_V1",
-            "Run2024H": "Summer24Prompt24_V1",
-            "Run2024I": "Summer24Prompt24_V1",
+            # TODO: JER are a placeholder for now (December 2025)
+            "MC": "Summer24Prompt24_V2 Summer23BPixPrompt23_RunD_JRV1",
+            "Run2024C": "Summer24Prompt24_V2",
+            "Run2024D": "Summer24Prompt24_V2",
+            "Run2024E": "Summer24Prompt24_V2",
+            "Run2024F": "Summer24Prompt24_V2",
+            "Run2024G": "Summer24Prompt24_V2",
+            "Run2024H": "Summer24Prompt24_V2",
+            "Run2024I": "Summer24Prompt24_V2",
         },
         "jetveto": {"Summer24Prompt24_RunBCDEFGHI_V1": "jetvetomap"},
         "MUO": {
@@ -209,6 +209,34 @@ correction_config = {
             "Scale",
             "SmearAndSyst",
         ],
+    },
+    "Winter25": {
+        "DC": "Cert_Collisions2025_391658_398860_Golden.json",
+        # "LUM": "puWeights_BCDEFGHI.json.gz",
+        "JME": {
+            # TODO: JER are a placeholder for now (December 2025)
+            "MC": "Winter25Prompt25_V2 Summer23BPixPrompt23_RunD_JRV1",
+            "Run2025B": "Winter25Prompt25_V2",
+            "Run2025C": "Winter25Prompt25_V2",
+            "Run2025D": "Winter25Prompt25_V2",
+            "Run2025E": "Winter25Prompt25_V2",
+            "Run2025F": "Winter25Prompt25_V2",
+            "Run2025G": "Winter25Prompt25_V2",
+        },
+        "jetveto": {"Winter25Prompt25_RunCDE_V1": "jetvetomap"},
+        # "MUO": {
+        #     "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+        #     "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        # },
+        # "EGM": {
+        #     "ele_Reco 2024 Electron-ID-SF": "",
+        #     "ele_ID 2024 Electron-ID-SF": "wp80iso",
+        # },
+        # "muonSS": "",
+        # "electronSS": [
+        #     "Scale",
+        #     "SmearAndSyst",
+        # ],
     },
     "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
 }
