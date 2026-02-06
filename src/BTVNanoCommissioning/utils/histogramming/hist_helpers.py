@@ -4,6 +4,7 @@ from .histograms.common import get_histograms as common_hists
 from .histograms.ctag_ttdilep import get_histograms as ctag_ttdilep_hists
 from .histograms.ctag_ttsemilep import get_histograms as ctag_ttsemilep_hists
 from .histograms.dy import get_histograms as dy_hists
+from .histograms.dy_sfl import get_histograms as dy_sfl_hists
 from .histograms.example import get_histograms as example_hists
 from .histograms.fourvec import get_histograms as fourvec_hists
 from .histograms.ttdilep_kin import get_histograms as ttdilep_kin_hists
@@ -39,7 +40,6 @@ def get_axes_collections(
 
 
 def get_hist_collections(axes: dict, hist_collections: list, **kwargs):
-
     available_collections = {
         "example": example_hists,
         "common": common_hists,
@@ -49,6 +49,7 @@ def get_hist_collections(axes: dict, hist_collections: list, **kwargs):
         "ctag_ttdilep": ctag_ttdilep_hists,
         "ctag_ttsemilep": ctag_ttsemilep_hists,
         "DY": dy_hists,
+        "DY_sfl": dy_sfl_hists,
         "ttdilep_kin": ttdilep_kin_hists,
         "ttdilep": ttdilep_hists,
         "ttsemilep": ttsemilep_hists,
