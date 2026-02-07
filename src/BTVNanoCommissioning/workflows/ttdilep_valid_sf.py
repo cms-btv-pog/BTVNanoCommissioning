@@ -1,6 +1,5 @@
 import collections, awkward as ak, numpy as np
 import os
-import uproot
 from coffea import processor
 from coffea.analysis_tools import Weights
 
@@ -64,7 +63,7 @@ class NanoProcessor(processor.ProcessorABC):
 
     ## Apply corrections on momentum/mass on MET, Jet, Muon
     def process(self, events):
-        events = missing_branch(events)
+        events = missing_branch(events, f"{self._year}_{self._campaign}")
         vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
@@ -89,10 +88,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         if shift_name is None:
-            if isRealData:
-                output["sumw"] = len(events)
-            else:
-                output["sumw"] = ak.sum(events.genWeight)
+            output["other_sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
 
         ####################
         #    Selections    #

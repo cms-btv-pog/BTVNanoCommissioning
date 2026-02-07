@@ -43,7 +43,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 ),
             ),
         )
-    elif campaign in ["Winter24", "Summer24"]:
+    elif campaign in ["Winter24", "Summer24", "Prompt25"]:
         # NanoV13 & NanoV14 & NanoV15
         barrel = (
             (events.Jet.neHEF < 0.99)
@@ -100,7 +100,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
 def ele_cuttightid(events, campaign):
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign
+        if "Summer24" not in campaign and "Prompt25" not in campaign
         else events.Electron.superclusterEta
     )
     elemask = (
@@ -112,7 +112,7 @@ def ele_cuttightid(events, campaign):
 def ele_mvatightid(events, campaign):
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign
+        if "Summer24" not in campaign and "Prompt25" not in campaign
         else events.Electron.superclusterEta
     )
     elemask = (
@@ -125,12 +125,12 @@ def ele_promptmvaid(events, campaign):
     # https://indico.cern.ch/event/1575017/contributions/6635248/attachments/3115862/5524310/EGammaAug08.pdf
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign
+        if "Summer24" not in campaign and "Prompt25" not in campaign
         else events.Electron.superclusterEta
     )
     elemask = (
         (abs(ele_etaSC) < 1.4442) | ((abs(ele_etaSC) > 1.566) & (abs(ele_etaSC) < 2.5))
-    ) & (events.Electron.promptMVA >= 0.9 if "Summer24" in campaign else 0.3)
+    ) & (events.Electron.promptMVA >= 0.9 if "Summer24" in campaign or "Prompt25" in campaign else 0.3)
     return elemask
 
 
@@ -457,10 +457,9 @@ btag_wp_dict = {
                 "XT": [0.810, 0.736],
             },
             "2D": {
-                # "HFvLF": np.array([0.0, 0.264, 0.448, 0.766, 1.0]),
-                "HFvLF": np.array([0.0, 0.264, 0.448, 0.766, 2.0]),
+                "HFvLF": np.array([0.0, 0.250, 0.454, 0.810, 1.0]),
                 "BvC": np.array(
-                    [0.0, 0.010, 0.028, 0.094, 0.690, 0.918, 0.978, 0.994, 1.0]
+                    [0.0, 0.006, 0.016, 0.056, 0.760, 0.944, 0.984, 0.994, 1.0]
                 ),
                 "mapping": {  # HFvLF, BvC
                     1: {
@@ -526,6 +525,8 @@ btag_wp_dict = {
         },
     },
 }
+btag_wp_dict["2025_Summer24"] = btag_wp_dict["2024_Summer24"]
+btag_wp_dict["2025_Prompt25"] = btag_wp_dict["2024_Summer24"]
 
 
 import os, correctionlib
@@ -761,6 +762,26 @@ met_filters = {
         ],
     },
     "Summer24": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+    },
+    "Prompt25": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",

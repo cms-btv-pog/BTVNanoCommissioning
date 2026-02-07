@@ -1,6 +1,5 @@
 import os
 import collections, awkward as ak, numpy as np
-import uproot
 from coffea import processor
 from coffea.analysis_tools import Weights
 
@@ -55,7 +54,7 @@ class NanoProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
-        events = missing_branch(events)
+        events = missing_branch(events, f"{self._year}_{self._campaign}")
         vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
@@ -116,7 +115,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         if shift_name is None:
-            output["sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
+            output["other_sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
@@ -626,7 +625,8 @@ class NanoProcessor(processor.ProcessorABC):
                                 -2,
                                 smuon_jet[histname.replace(f"_{i}", "")],
                             ),
-                            weight=weights.partial_weight(exclude=exclude_btv),
+                            weight=weight,
+                            # weight=weights.partial_weight(exclude=exclude_btv),
                         )
                         if not isRealData and "btag" in self.SF_map.keys():
                             h.fill(
@@ -657,6 +657,13 @@ class NanoProcessor(processor.ProcessorABC):
             # output["nmujet"].fill(syst, osss, nmujet, weight=weight)
             output["nsoftmu"].fill(syst, osss, nsoftmu, weight=weight)
             output["npv"].fill(syst, osss, pruned_ev.PV.npvsGood, weight=weight)
+            if "TT" in pruned_ev.metadata["dataset"]:
+                top_mask = (pruned_ev.GenPart.pdgId == 6) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
+                top_pt = pruned_ev.GenPart[top_mask][:, 0].pt
+                output["top_pt"].fill(syst, osss, top_pt, weight=weight)
+                antitop_mask = (pruned_ev.GenPart.pdgId == -6) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
+                antitop_pt = pruned_ev.GenPart[antitop_mask][:, 0].pt
+                output["antitop_pt"].fill(syst, osss, antitop_pt, weight=weight)
             output["softlpt"].fill(syst, smflav, osss, ssmu.pt, weight=weight)
             output["hl_ptratio"].fill(
                 syst,

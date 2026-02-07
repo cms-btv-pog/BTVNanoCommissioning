@@ -56,7 +56,7 @@ class NanoProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
-        events = missing_branch(events)
+        events = missing_branch(events, f"{self._year}_{self._campaign}")
         vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
@@ -98,7 +98,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         if shift_name is None:
-            output["sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
+            output["other_sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
