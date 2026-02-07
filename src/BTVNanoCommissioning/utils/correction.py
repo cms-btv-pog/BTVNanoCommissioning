@@ -2112,7 +2112,11 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
 
     # NNPDF31_nnlo_hessian_pdfas
     # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
-    if pdf_weights is not None and "306000 - 306102" in pdf_weights.__doc__:
+    #FIXME
+    if pdf_weights is not None and (
+    "306000 - 306102" in (pdf_weights.__doc__ or "") or 
+    "325300 - 325402" in (pdf_weights.__doc__ or "")
+):
         # Hessian PDF weights
         # Eq. 21 of https://arxiv.org/pdf/1510.03865v1.pdf
         arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
@@ -2528,8 +2532,8 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                     top_pT_reweighting(pruned_ev.GenPart)
                     - ak.ones_like(top_pT_reweighting(pruned_ev.GenPart))
                 )
-                * 2.0,
-                ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
+                * 2.0
+                + ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
             )
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
