@@ -95,10 +95,10 @@ def scaleSumW(output, lumi):
                     scaled[sample][f"{key}_scalevar_muFDown"] = h_scalevar_muFDown
                     scaled[sample][f"{key}_scalevar_muRUp"] = h_scalevar_muRUp
                     scaled[sample][f"{key}_scalevar_muRDown"] = h_scalevar_muRDown
-                    scaled[sample][f"{key}_PS_ISRUp"] = h_PS_ISRUp
-                    scaled[sample][f"{key}_PS_ISRDown"] = h_PS_ISRDown
-                    scaled[sample][f"{key}_PS_FSRUp"] = h_PS_FSRUp
-                    scaled[sample][f"{key}_PS_FSRDown"] = h_PS_FSRDown
+                    scaled[sample][f"{key}_UEPS_ISRUp"] = h_PS_ISRUp
+                    scaled[sample][f"{key}_UEPS_ISRDown"] = h_PS_ISRDown
+                    scaled[sample][f"{key}_UEPS_FSRUp"] = h_PS_FSRUp
+                    scaled[sample][f"{key}_UEPS_FSRDown"] = h_PS_FSRDown
                     scaled[sample][f"{key}_PDF_weightUp"] = h_PDF_weightUp
                     scaled[sample][f"{key}_PDF_weightDown"] = h_PDF_weightDown
                     scaled[sample][f"{key}_aS_weightUp"] = h_aS_weightUp
