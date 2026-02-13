@@ -83,7 +83,10 @@ def solve_nu_pz(px_l, py_l, pz_l, e_l, px_n, py_n, mW=80.4):
 #tf = uproot.open("/afs/cern.ch/user/j/jafan/work/public/sfb-tttnp/BTVNanoCommissioning/likelihoods_pas.root")
 tf = uproot.open("likelihoods_pa.root")
 
-h2 = tf["had_tmwm"] x_edges = h2.axis(0).edges() y_edges = h2.axis(1).edges() z_2d = h2.values().T
+h2 = tf["had_tmwm"]
+x_edges = h2.axis(0).edges()
+y_edges = h2.axis(1).edges()
+z_2d = h2.values().T
 
 h1 = tf["had_mnu"]
 nu_edges = h1.axis().edges()
@@ -298,7 +301,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=10000,
-        selectionModifier="mu",  # "mu" or "el"
+        selectionModifier ="el",  # "mu" or "el"
         tag_tagger="UParTAK4",
     ):
         self._year = year
