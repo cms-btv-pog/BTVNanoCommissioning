@@ -97,7 +97,6 @@ def get_main_parser():
             "Summer22EE",
             "Summer23",
             "Summer23BPix",
-            "Summer24",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",
@@ -271,14 +270,13 @@ Arguments = $(JOBNUM) {base_dir} {outputDir} {envpath}
 request_cpus = 1
 request_memory = 2000
 
-+JobFlavour = "tomorrow"
++JobFlavour = "longlunch"
 
 Log        = {log_dir}/job.log_$(Cluster)
 Output     = {log_dir}/job.out_$(Cluster)-$(Process)
 Error      = {log_dir}/job.err_$(Cluster)-$(Process)
 
-max_retries             = 6
-periodic_release        = True
+max_retries             = 5
 should_transfer_files   = YES
 when_to_transfer_output = ON_EXIT_OR_EVICT
 transfer_input_files    = {transfer_input_files}

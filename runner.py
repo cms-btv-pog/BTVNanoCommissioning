@@ -162,6 +162,8 @@ def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
 
 def get_event_weights(sample_dict, output):
     for sample in sample_dict:
+        if sample not in output.keys():
+            output[sample] = {}
         isRealData = ("data" in sample) or ("Run" in sample) or ("Double" in sample)
         if isRealData:
             genEventCount = 0
@@ -558,6 +560,10 @@ if __name__ == "__main__":
             raise Exception(f"Directory {outdir} exists")
         else:
             os.system(f"mkdir -p {outdir}")
+
+    # Get event weights
+    evt_weights_output = {}
+    get_event_weights(sample_dict, evt_weights_output)
 
     if args.executor not in ["futures", "iterative", "dask/lpc", "dask/casa"]:
         """
@@ -1139,6 +1145,9 @@ if __name__ == "__main__":
                             and sindex > int(args.index.split(",")[2])
                         ):
                             break
+                        # Get splitted event weights
+                        evt_weights_output = {}
+                        get_event_weights(splitted, evt_weights_output)
                         output = processor.run_uproot_job(
                             splitted,
                             treename="Events",
@@ -1153,8 +1162,10 @@ if __name__ == "__main__":
                             chunksize=args.chunk,
                             maxchunks=args.max,
                         )
+                        for sample in evt_weights_output.keys():
+                            for key in evt_weights_output[sample].keys():
+                                output[sample][key] = evt_weights_output[sample][key]
                         if args.noHist == False:
-                            output = get_event_weights(splitted, output)
                             save(
                                 output,
                                 coffeaoutput.replace(
@@ -1162,8 +1173,10 @@ if __name__ == "__main__":
                                 ),
                             )
     if not "lxplus" in args.executor:
+        for sample in evt_weights_output.keys():
+            for key in evt_weights_output[sample].keys():
+                output[sample][key] = evt_weights_output[sample][key]
         if args.noHist == False:
-            output = get_event_weights(sample_dict, output)
             save(output, coffeaoutput)
     if args.noHist == False:
         # print(output)
