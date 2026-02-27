@@ -70,7 +70,7 @@ class NanoProcessor(processor.ProcessorABC):
         isEle = False
         ### selections from Spandan
         if "WcM" in self.selMod or "semittM" in self.selMod:
-            triggers = ["IsoMu27", "IsoMu24"]
+            triggers = ["IsoMu24"]
             isMu = True
             dxySigcut = 1.0
             muNeEmSum = 0.7
@@ -85,7 +85,7 @@ class NanoProcessor(processor.ProcessorABC):
             isolepdz, isolepdxy, isolepsip3d = 0.01, 0.002, 2.0
         elif "WcE" in self.selMod or "semittE" in self.selMod:
             # TODO: check other trigger?
-            triggers = ["Ele32_WPTight_Gsf_L1DoubleEG"]
+            triggers = ["Ele30_WPTight_Gsf"]
             isEle = True
             dxySigcut = 0.0
             muNeEmSum = 1.0

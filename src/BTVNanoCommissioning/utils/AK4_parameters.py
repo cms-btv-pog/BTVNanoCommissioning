@@ -202,7 +202,7 @@ correction_config = {
             # "mu_Iso": "NUM_promptMVA_WP64ID_DEN_TightID",
             # TODO: need to derive trigger SFs with prompt MVA?
             # E.g. NUM_IsoMu24_DEN_CutBasedIdTight_and_promptMVA_WP64ID
-            # "mu_Trig": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
+            "mu_Trig": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
         },
         "EGM": {
             "ele_Reco 2024Prompt Electron-ID-SF": "",
@@ -210,7 +210,7 @@ correction_config = {
             # "ele_ID 2024Prompt Electron-ID-SF": "PromptMVA-Tight",
             # TODO: need to derive trigger SFs with prompt MVA?
             # E.g. HLT_SF_Ele30_PromptMVA-Tight
-            # "ele_Trig 2024Prompt Electron-HLT-SF": "HLT_SF_Ele30_MVAiso80ID",
+            "ele_Trig 2024Prompt Electron-HLT-SF": "HLT_SF_Ele30_MVAiso80ID",
         },
         "muonSS": "",
         "electronSS": [
@@ -221,6 +221,10 @@ correction_config = {
     },
     "Prompt25": {
         "DC": "Cert_Collisions2025_391658_398903_Golden.json",
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
     },
     "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
 }
