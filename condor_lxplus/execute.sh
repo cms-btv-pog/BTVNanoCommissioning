@@ -15,6 +15,7 @@ cd $COMMDIR
 export X509_USER_PROXY=$COMMDIR/proxy
 voms-proxy-info
 
+export PYTHONPATH=$COMMDIR/src/
 export PATH="$4:$PATH" 
 
 # Build the sample json given the job id
@@ -49,4 +50,3 @@ echo "Now launching: python runner.py $OPTS"
 python runner.py $OPTS
 
 touch $WORKDIR/.success
-
