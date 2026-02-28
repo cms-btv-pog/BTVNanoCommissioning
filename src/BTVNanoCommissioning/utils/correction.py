@@ -334,6 +334,7 @@ def load_SF(year, campaign, syst=False):
 
         ## JME corrections
         elif SF == "JME":
+            print("{campaign_map()[campaign]}")
             if "name" in config[campaign]["JME"].keys():
                 if not os.path.exists(
                     f"src/BTVNanoCommissioning/data/JME/{campaign_map()[campaign]}/latest/jec_compiled_{config[campaign]['JME']['name']}.pkl.gz"
@@ -628,7 +629,10 @@ def JME_shifts(
             j, nj = ak.flatten(nocorrjet), ak.num(nocorrjet)
 
             # JEC
+            #FIXME
+            jecname = jecname.replace("V1","V2")
             JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
+
             JEC_input = get_corr_inputs(j, JECcorr)
             JECflatCorrFactor = JECcorr.evaluate(*JEC_input)
 
