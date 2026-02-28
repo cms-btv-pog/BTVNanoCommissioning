@@ -21,7 +21,30 @@ Example of a cross section dictionary:
 """
 
 xsection = [
-##FIXME TAKEN FROM XSDB REMOVE UNNECESSARY
+    {
+        "id": "68d111a8f8a546d59c3d82c6",
+        "process_name": "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "2.244e+03",
+        "total_uncertainty": "9.799e+00",
+        "DAS": "/DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v4/MINIAODSIM",
+        "energy": "13.6"
+    },
+    {
+        "id": "68d111abf8a546d59c3d82d4",
+        "process_name": "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "2.240e+03",
+        "total_uncertainty": "9.767e+00",
+        "DAS": "/DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v6/MINIAODSIM",
+        "energy": "13.6"
+    },
+    {
+        "id": "694595da9cde30a6324b5ce1",
+        "process_name": "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "2.219e+03",
+        "total_uncertainty": "9.756e+00",
+        "DAS": "/DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v7/MINIAODSIM",
+        "energy": "13.6"
+    },
     {
         "id": "6973598a7058498453f52696",
         "process_name": "DYto2E-2Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
@@ -203,6 +226,38 @@ xsection = [
         "comments": "Automatically computed"
     },
     {
+        "id": "68d111d6f8a546d59c3d8587",
+        "process_name": "TBbarQto2Q-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+        "cross_section": 77.26,
+        "total_uncertainty": 0.2169,
+        "DAS": "/TBbarQto2Q-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
+        "energy": "13.6"
+    },
+    {
+        "id": "68d111d6f8a546d59c3d858a",
+        "process_name": "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+        "cross_section": 38.6,
+        "total_uncertainty": 0.1084,
+        "DAS": "/TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
+        "energy": "13.6"
+    },
+    {
+        "id": "68d111dff8a546d59c3d85fc",
+        "process_name": "TbarBQto2Q-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+        "cross_section": 46.73,
+        "total_uncertainty": 0.1176,
+        "DAS": "/TbarBQto2Q-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
+        "energy": "13.6"
+    },
+    {
+        "id": "68d111dff8a546d59c3d85ff",
+        "process_name": "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+        "cross_section": 23.34,
+        "total_uncertainty": 0.05875,
+        "DAS": "/TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
+        "energy": "13.6"
+    },
+    {
         "id": "67652996aa4eaa004802270e",
         "process_name": "TbarQtoLNu-t-channel_TuneCP5_13p6TeV_powheg-pythia8",
         "cross_section": 78.56,
@@ -230,9 +285,6 @@ xsection = [
         "comments": "Automatically computed"
     },
 
-
-
-#END FIXME
     {
         "process_name": "DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
         "cross_section": "19317.5",
