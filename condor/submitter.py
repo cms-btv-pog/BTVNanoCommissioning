@@ -231,7 +231,7 @@ Log        = {log_dir}/job.log_$(Cluster)
 Output     = {log_dir}/job.out_$(Cluster)-$(Process)
 Error      = {log_dir}/job.err_$(Cluster)-$(Process)
 
-max_retries             = 6
+max_retries             = 10
 periodic_release        = True
 should_transfer_files   = YES
 when_to_transfer_output = ON_EXIT_OR_EVICT
