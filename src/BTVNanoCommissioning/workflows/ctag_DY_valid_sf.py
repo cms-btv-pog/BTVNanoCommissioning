@@ -150,7 +150,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         dilep_mass = pos_dilep[:, 0] + neg_dilep[:, 0]
         req_dilepmass = (
-            (dilep_mass.mass > 81) & (dilep_mass.mass < 101) & (dilep_mass.pt > 15)
+            (dilep_mass.mass > 61) & (dilep_mass.mass < 121) & (dilep_mass.pt > 15)
         )
 
         # Jet cuts
@@ -260,7 +260,7 @@ class NanoProcessor(processor.ProcessorABC):
         # Output arrays
         if self.isArray:
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData
+                self, pruned_ev, events, weights, systematics, dataset, isRealData, schema="CFM", # doOnly=["SelJet","njet","PuppiMET"]
             )
 
         return {dataset: output}

@@ -124,16 +124,21 @@ class NanoProcessor(processor.ProcessorABC):
         req_trig = HLT_helper(events, triggers)
 
         ## Lepton cuts
+        # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
+        iso_mu = events.Muon[
+            (events.Muon.pt > 30) & mu_idiso(events, self._campaign)
+        ]
+        iso_ele = events.Electron[
+            (events.Electron.pt > 34) & ele_mvatightid(events, self._campaign)
+        ]
         if isMu:
-            # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
-            iso_lep = events.Muon[
-                (events.Muon.pt > 30) & mu_idiso(events, self._campaign)
-            ]
+            iso_lep = iso_mu  
+            iso_otherflav = iso_ele        
         elif isEle:
-            iso_lep = events.Electron[
-                (events.Electron.pt > 34) & ele_mvatightid(events, self._campaign)
-            ]
-        req_lep = ak.count(iso_lep.pt, axis=1) == 1
+            iso_lep = iso_ele
+            iso_otherflav = iso_mu   
+
+        req_lep = (ak.count(iso_lep.pt, axis=1) == 1) & (ak.count(iso_otherflav.pt, axis=1) == 0)
         jet_sel = ak.fill_none(
             jet_id(events, self._campaign)
             & (ak.all(events.Jet.metric_table(iso_lep) > 0.5, axis=2)),
@@ -343,13 +348,11 @@ class NanoProcessor(processor.ProcessorABC):
         sz = shmu + ssmu
         sw = shmu + smet
 
-        osss = 1
-        ossswrite = shmu.charge * ssmu.charge * -1
+        osss = shmu.charge * ssmu.charge * -1       # Actual osss calculation
         smuon_jet_passc = {}
         c_algos = []
         c_wps = []
         if "cutbased_Wc" in self.selMod:
-            osss = shmu.charge * ssmu.charge * -1
             c_algos = btag_wp_dict[self._year + "_" + self._campaign].keys()
             for c_algo in c_algos:
                 smuon_jet_passc[c_algo] = {}
@@ -369,9 +372,9 @@ class NanoProcessor(processor.ProcessorABC):
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
         pruned_ev["SelJet"] = sjets
-        if self.selMod.endswith("M"):
+        if isMu:
             pruned_ev["SelMuon"] = shmu
-        else:
+        elif isEle:
             pruned_ev["SelElectron"] = shmu
         pruned_ev["MuonJet"] = smuon_jet
         pruned_ev["SoftMuon"] = ssmu
@@ -379,7 +382,7 @@ class NanoProcessor(processor.ProcessorABC):
         if "Wc" in self.selMod:
             pruned_ev["osss"] = osss
         else:
-            pruned_ev["osss"] = ossswrite
+            pruned_ev["osss"] = 1.
         pruned_ev["njet"] = njet
         pruned_ev["W_transmass"] = wm
         pruned_ev["W_pt"] = wp
@@ -627,7 +630,7 @@ class NanoProcessor(processor.ProcessorABC):
         #######################
         if self.isArray:
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData
+                self, pruned_ev, events, weights, systematics, dataset, isRealData, doOnly=["SelJet","njet","PuppiMET","dilep_mass","SoftMuon_dxySig","MuonJet_muneuEF","soft_l_ptratio","osss"]
             )
 
         return {dataset: output}
