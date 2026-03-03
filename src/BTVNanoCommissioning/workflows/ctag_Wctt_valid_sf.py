@@ -125,20 +125,20 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Lepton cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
-        iso_mu = events.Muon[
-            (events.Muon.pt > 30) & mu_idiso(events, self._campaign)
-        ]
+        iso_mu = events.Muon[(events.Muon.pt > 30) & mu_idiso(events, self._campaign)]
         iso_ele = events.Electron[
             (events.Electron.pt > 34) & ele_mvatightid(events, self._campaign)
         ]
         if isMu:
-            iso_lep = iso_mu  
-            iso_otherflav = iso_ele        
+            iso_lep = iso_mu
+            iso_otherflav = iso_ele
         elif isEle:
             iso_lep = iso_ele
-            iso_otherflav = iso_mu   
+            iso_otherflav = iso_mu
 
-        req_lep = (ak.count(iso_lep.pt, axis=1) == 1) & (ak.count(iso_otherflav.pt, axis=1) == 0)
+        req_lep = (ak.count(iso_lep.pt, axis=1) == 1) & (
+            ak.count(iso_otherflav.pt, axis=1) == 0
+        )
         jet_sel = ak.fill_none(
             jet_id(events, self._campaign)
             & (ak.all(events.Jet.metric_table(iso_lep) > 0.5, axis=2)),
@@ -348,7 +348,7 @@ class NanoProcessor(processor.ProcessorABC):
         sz = shmu + ssmu
         sw = shmu + smet
 
-        osss = shmu.charge * ssmu.charge * -1       # Actual osss calculation
+        osss = shmu.charge * ssmu.charge * -1  # Actual osss calculation
         smuon_jet_passc = {}
         c_algos = []
         c_wps = []
@@ -382,7 +382,7 @@ class NanoProcessor(processor.ProcessorABC):
         if "Wc" in self.selMod:
             pruned_ev["osss"] = osss
         else:
-            pruned_ev["osss"] = 1.
+            pruned_ev["osss"] = 1.0
         pruned_ev["njet"] = njet
         pruned_ev["W_transmass"] = wm
         pruned_ev["W_pt"] = wp
@@ -630,7 +630,23 @@ class NanoProcessor(processor.ProcessorABC):
         #######################
         if self.isArray:
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData, doOnly=["SelJet","njet","PuppiMET","dilep_mass","SoftMuon_dxySig","MuonJet_muneuEF","soft_l_ptratio","osss"]
+                self,
+                pruned_ev,
+                events,
+                weights,
+                systematics,
+                dataset,
+                isRealData,
+                doOnly=[
+                    "SelJet",
+                    "njet",
+                    "PuppiMET",
+                    "dilep_mass",
+                    "SoftMuon_dxySig",
+                    "MuonJet_muneuEF",
+                    "soft_l_ptratio",
+                    "osss",
+                ],
             )
 
         return {dataset: output}

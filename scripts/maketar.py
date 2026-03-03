@@ -1,6 +1,7 @@
 import os
 import tarfile
 
+
 def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
     with tarfile.open(output_filename, "w:gz") as tar:
         for root, dirs, files in os.walk(source_dir):
@@ -15,7 +16,7 @@ def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
 base_dir = "."
 jobdirs = [d for d in os.listdir(base_dir) if d.startswith("jobs_")]
 make_tarfile(
-     "BTVNanoCommissioning.tar.gz",
-     base_dir,
-     exclude_dirs=["jsonpog-integration", "BTVNanoCommissioning.egg-info"] + jobdirs,
+    "BTVNanoCommissioning.tar.gz",
+    base_dir,
+    exclude_dirs=["jsonpog-integration", "BTVNanoCommissioning.egg-info"] + jobdirs,
 )

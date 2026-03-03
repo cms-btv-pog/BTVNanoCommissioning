@@ -49,10 +49,10 @@ with alive_bar(len(numlist), title="Checking jobs") as bar:
         arraylist = glob(f"{outdir}/arrays_hists_{n}/*/*/*.root")
         for rootfile in arraylist:
             filesize = os.path.getsize(rootfile)
-            if filesize < 10*1024:                      # Files smaller than 10 kB are likely zombies
+            if filesize < 10 * 1024:  # Files smaller than 10 kB are likely zombies
                 print(f"[red]Job {n}[/] has at least one zombie root output file.")
                 toresubmit.append(n)
-                break                
+                break
         bar()
 
 if len(toresubmit) == 0:

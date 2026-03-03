@@ -84,7 +84,7 @@ def load_SF(year, campaign, syst=False):
             ):
                 correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
-                 )
+                )
             ## Otherwise custom files
             else:
                 _pu_path = f"BTVNanoCommissioning.data.LUM.{campaign}"
@@ -1574,7 +1574,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
     for sf in correct_map["EGM_cfg"].keys():
         # if sf.split(" ")[1] == "2024":
         #     sf = sf.replace("2024", "2024Prompt")
-            
+
         ## Only apply SFs for lepton pass HLT filter
         if not isHLT and "HLT" in sf:
             continue
@@ -1960,10 +1960,11 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
         sfname = sf.split(" ")[0]
         if syst:
-            weights.add(sfname, 
+            weights.add(
+                sfname,
                 ak.ravel(sfs_alle),
                 ak.ravel(sfs_alle_up),
-                ak.ravel(sfs_alle_down)
+                ak.ravel(sfs_alle_down),
             )
         else:
             weights.add(sfname, sfs_alle)

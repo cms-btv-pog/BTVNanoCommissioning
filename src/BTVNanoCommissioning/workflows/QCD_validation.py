@@ -213,7 +213,9 @@ class NanoProcessor(processor.ProcessorABC):
             elif self._year == "2024":
                 run_num = "378985_386951"
             else:
-                raise ValueError(f"Prescales for year {self._year} have not been defined!")
+                raise ValueError(
+                    f"Prescales for year {self._year} have not been defined!"
+                )
 
             # if 369869 in pruned_ev.run: continue
             psweight = np.zeros(len(pruned_ev))
@@ -265,7 +267,7 @@ class NanoProcessor(processor.ProcessorABC):
                 dataset,
                 isRealData,
                 kinOnly=[],
-                doOnly=["SelJet","njet","PuppiMET"]
+                doOnly=["SelJet", "njet", "PuppiMET"],
             )
 
         return {dataset: output}

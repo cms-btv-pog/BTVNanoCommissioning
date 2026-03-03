@@ -67,7 +67,7 @@ def get_main_parser():
         "--samples",
         "--json",
         dest="samplejson",
-        nargs='+',
+        nargs="+",
         default="dummy_samples.json",
         help="JSON file containing dataset and file locations (default: %(default)s)",
     )
@@ -174,7 +174,8 @@ if __name__ == "__main__":
             make_tarfile(
                 "BTVNanoCommissioning.tar.gz",
                 base_dir,
-                exclude_dirs=["jsonpog-integration", "BTVNanoCommissioning.egg-info"] + jobdirs,
+                exclude_dirs=["jsonpog-integration", "BTVNanoCommissioning.egg-info"]
+                + jobdirs,
             )
 
     # Create job dir
@@ -196,11 +197,11 @@ if __name__ == "__main__":
         json.dump(vars(args), json_file, indent=4)
 
     ## split the sample json
-    if isinstance(args.samplejson,str):
+    if isinstance(args.samplejson, str):
         samplejson = [args.samplejson]
     else:
         samplejson = args.samplejson
-    sample_dict = {}    
+    sample_dict = {}
     for js in samplejson:
         with open(js) as f:
             sample_dict.update(json.load(f))

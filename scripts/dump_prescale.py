@@ -15,7 +15,13 @@ parser.add_argument(
     default="src/BTVNanoCommissioning/data/DC/Cert_Collisions2022_355100_362760_Golden.json",
     help="lumimask to generate prescale weights",
 )
-parser.add_argument("-H", "--HLT", default=None, type=str, help="Which HLT is used; comma separated for multiple; do not add the 'HLT_' prefix")
+parser.add_argument(
+    "-H",
+    "--HLT",
+    default=None,
+    type=str,
+    help="Which HLT is used; comma separated for multiple; do not add the 'HLT_' prefix",
+)
 parser.add_argument("-v", "--verbose", action="store_true", help="debugging")
 parser.add_argument("-t", "--test", action="store_true", help="test with only 5 runs")
 parser.add_argument("-f", "--force", action="store_true", help="recreate .csv")
@@ -115,11 +121,13 @@ def build_runs(ps, allruns, HLT_paths, verbose=False):
         if int(run) in runs_np:
             continue
         index = np.abs(runs_np - int(run)).argmin()
-        closest_run= runs_np[index]
-        new_row = ps.loc[ps['# run'] == closest_run].iloc[0].copy()
-        new_row['# run'] = int(run)
+        closest_run = runs_np[index]
+        new_row = ps.loc[ps["# run"] == closest_run].iloc[0].copy()
+        new_row["# run"] = int(run)
         ps = pd.concat([ps, new_row.to_frame().T], ignore_index=True)
-        print(f"[WARNING] Could not find info for Run #{run}! Replacing with info from closest run, #{closest_run}.")
+        print(
+            f"[WARNING] Could not find info for Run #{run}! Replacing with info from closest run, #{closest_run}."
+        )
 
     runs = sorted(ps["# run"].unique())
     if verbose:

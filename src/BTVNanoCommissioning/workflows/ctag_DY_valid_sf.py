@@ -260,7 +260,14 @@ class NanoProcessor(processor.ProcessorABC):
         # Output arrays
         if self.isArray:
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData, schema="CFM", # doOnly=["SelJet","njet","PuppiMET"]
+                self,
+                pruned_ev,
+                events,
+                weights,
+                systematics,
+                dataset,
+                isRealData,
+                schema="CFM",  # doOnly=["SelJet","njet","PuppiMET"]
             )
 
         return {dataset: output}

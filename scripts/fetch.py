@@ -1877,7 +1877,8 @@ def main(args):
     if args.from_workflow:
         for sample in predefined_sample[args.from_workflow].keys():
             if args.doOnly is not None:
-                if sample != args.doOnly: continue
+                if sample != args.doOnly:
+                    continue
             if (
                 os.path.exists(
                     f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json"
@@ -1899,7 +1900,8 @@ def main(args):
             lines = []
             for sample in predefined_sample[args.from_workflow].keys():
                 if args.doOnly is not None:
-                    if sample != args.doOnly: continue
+                    if sample != args.doOnly:
+                        continue
                 lines += predefined_sample[args.from_workflow][sample]
             args.input = args.from_workflow + "_predef"
             campaign_list = args.DAS_campaign.split(",")
@@ -2091,7 +2093,8 @@ def main(args):
         os.system(f"mkdir -p metadata/{args.campaign}/")
         for sample in predefined_sample[args.from_workflow].keys():
             if args.doOnly is not None:
-                if sample != args.doOnly: continue
+                if sample != args.doOnly:
+                    continue
             reduced_fdict = {}
             for dataset in fdict.keys():
                 for s in predefined_sample[args.from_workflow][sample]:

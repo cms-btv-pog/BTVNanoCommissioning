@@ -8,18 +8,18 @@ predefined_sample = {
             "QCD_*PT-50to80_TuneCP5_13p6TeV_pythia8",
             "QCD_*PT-80to120_TuneCP5_13p6TeV_pythia8",
             "QCD_*PT-120to170_TuneCP5_13p6TeV_pythia8",
-            "QCD_*PT-170to300_TuneCP5_13p6TeV_pythia8"
+            "QCD_*PT-170to300_TuneCP5_13p6TeV_pythia8",
         ],  # Split MC into parts to overcome to 4000 file limit, important for 2024
         "MC_Set2": [
             "QCD_*PT-300to470_TuneCP5_13p6TeV_pythia8",
             "QCD_*PT-470to600_TuneCP5_13p6TeV_pythia8",
             "QCD_*PT-600to800_TuneCP5_13p6TeV_pythia8",
             "QCD_*PT-800to1000_TuneCP5_13p6TeV_pythia8",
-            "QCD_*PT-1000to1400_TuneCP5_13p6TeV_pythia8",            
-            "QCD_*PT-1400to1800_TuneCP5_13p6TeV_pythia8",   
+            "QCD_*PT-1000to1400_TuneCP5_13p6TeV_pythia8",
+            "QCD_*PT-1400to1800_TuneCP5_13p6TeV_pythia8",
             "QCD_*PT-1800to2400_TuneCP5_13p6TeV_pythia8",
             "QCD_*PT-2400to3200_TuneCP5_13p6TeV_pythia8",
-            "QCD_*PT-3200_TuneCP5_13p6TeV_pythia8"
+            "QCD_*PT-3200_TuneCP5_13p6TeV_pythia8",
         ],
         "MC_Set3": [
             # 2024
@@ -53,17 +53,17 @@ predefined_sample = {
         "data": ["DoubleMuon", "Muon", "Muon0", "Muon1"],
         "MC": [
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-            "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8"
+            "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         ],
         "MC_LO": [
             "DYto2L-4Jets_MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "DYto2Mu-4Jets_Bin-MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8"
+            "DYto2Mu-4Jets_Bin-MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         ],
         "minor_MC": [
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "WW_TuneCP5_13p6TeV_pythia8",
             "WZ_TuneCP5_13p6TeV_pythia8",
-            "ZZ_TuneCP5_13p6TeV_pythia8"
+            "ZZ_TuneCP5_13p6TeV_pythia8",
         ],
     },
     "ectag_DY_sf": {
@@ -80,7 +80,7 @@ predefined_sample = {
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "WW_TuneCP5_13p6TeV_pythia8",
             "WZ_TuneCP5_13p6TeV_pythia8",
-            "ZZ_TuneCP5_13p6TeV_pythia8"
+            "ZZ_TuneCP5_13p6TeV_pythia8",
         ],
     },
     "emctag_ttdilep_sf": {
@@ -186,12 +186,12 @@ predefined_sample = {
             "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             # 2024
             "WtoMuNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "DYto2Mu_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8"
+            "DYto2Mu_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
         ],
         "MC_NLO": [
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-            "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",            
+            "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         ],
         "MC_LO": [
             "DYto2L-4Jets_MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
@@ -221,12 +221,12 @@ predefined_sample = {
             "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             # 2024
             "WtoENu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "DYto2E_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8"
+            "DYto2E_Bin-MLL-10to50_TuneCP5_13p6TeV_powheg-pythia8",
         ],
         "MC_NLO": [
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-            "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",            
+            "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         ],
         "MC_LO": [
             "DYto2L-4Jets_MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
@@ -235,7 +235,7 @@ predefined_sample = {
         "minor_MC": [
             "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
-            "WW_TuneCP5_13p6TeV_pythia8",            
+            "WW_TuneCP5_13p6TeV_pythia8",
             "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "WZ_TuneCP5_13p6TeV_pythia8",
@@ -259,11 +259,11 @@ predefined_sample = {
             "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             # 2024
-            "WtoMuNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8"
+            "WtoMuNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         ],
         "MC_NLO": [
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-            "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8"
+            "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         ],
         "MC_LO": [
             "DYto2L-4Jets_MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
@@ -280,7 +280,7 @@ predefined_sample = {
             "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             # 2024
             "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
-            "TWminustoLNu2Q-DS_TuneCP5_13p6TeV_powheg-pythia8"
+            "TWminustoLNu2Q-DS_TuneCP5_13p6TeV_powheg-pythia8",
         ],
     },
     "ectag_Wc_sf": {
@@ -302,11 +302,11 @@ predefined_sample = {
             # "WtoLNu-4Jets_Bin-2J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             # "WtoLNu-4Jets_Bin-3J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             # "WtoLNu-4Jets_Bin-4J_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-            "WtoENu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",            
+            "WtoENu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         ],
         "MC_NLO": [
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-            "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8"
+            "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         ],
         "MC_LO": [
             "DYto2L-4Jets_MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
@@ -323,7 +323,7 @@ predefined_sample = {
             "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             # 2024
             "TBbartoLplusNuBbar-s-channel-4FS_TuneCP5_13p6TeV_amcatnlo-pythia8",
-            "TWminustoLNu2Q-DS_TuneCP5_13p6TeV_powheg-pythia8"
+            "TWminustoLNu2Q-DS_TuneCP5_13p6TeV_powheg-pythia8",
         ],
     },
     "BTA": {
