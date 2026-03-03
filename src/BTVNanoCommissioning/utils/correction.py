@@ -2533,16 +2533,20 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         add_pdf_weight(weights, pruned_ev.LHEPdfWeight, isSyst)
     if "LHEScaleWeight" in pruned_ev.fields:
         add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
+
     if "TT" in pruned_ev.metadata["dataset"]:
         nom = top_pT_reweighting(pruned_ev.GenPart)
+    else:
+        nom = ak.ones_like(weights.weight())
+    if isSyst != False:
+        weights.add(
+            "ttbar_weight",
+            nom,
+            nom + np.abs(ak.ones_like(nom) - nom),
+            None,
+        )
+    else:
         weights.add("ttbar_weight", nom)
-        if isSyst != False:
-            weights.add(
-                "ttbar_weight",
-                nom,
-                nom + np.abs(ak.ones_like(nom) - nom),
-                None,
-            )
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
         syst_wei = True if isSyst != False else False
