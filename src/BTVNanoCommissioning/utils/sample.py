@@ -372,7 +372,7 @@ predefined_sample = {
             # TT+X
             "TTLNu-1Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "TTW-WtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8",
-            # "TTNuNu_TuneCP5_13p6TeV_amcatnlo-pythia8",
+            "TTNuNu_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TTLL_Bin-MLL-4to50_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TTLL_Bin-MLL-50_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TTZ-ZtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8",
@@ -423,7 +423,7 @@ predefined_sample = {
             # TT+X
             "TTLNu-1Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "TTW-WtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8",
-            # "TTNuNu_TuneCP5_13p6TeV_amcatnlo-pythia8",
+            "TTNuNu_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TTLL_Bin-MLL-4to50_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TTLL_Bin-MLL-50_TuneCP5_13p6TeV_amcatnlo-pythia8",
             "TTZ-ZtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8",
