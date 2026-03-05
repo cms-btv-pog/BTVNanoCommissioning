@@ -57,7 +57,7 @@ def get_condor_submitter_parser(parser):
     parser.add_argument(
         "--remoteRepo",
         default=None,
-        help="If specified, access BTVNanoCommsioning from a remote tarball (downloaded via https), instead of from a transferred sandbox",
+        help="If specified, access BTVNanoCommissioning from a remote tarball (downloaded via https), instead of from a transferred sandbox",
     )
     return parser
 

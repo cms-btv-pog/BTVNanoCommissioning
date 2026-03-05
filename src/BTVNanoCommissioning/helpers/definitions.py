@@ -86,17 +86,29 @@ def get_discriminators():
         "btagUParTAK4CvL",
         "btagUParTAK4CvB",
         "btagUParTAK4BvC",
+        "btagUParTAK4BvC_pt25to35",
+        "btagUParTAK4BvC_pt35to50",
+        "btagUParTAK4BvC_pt50to70",
+        "btagUParTAK4BvC_pt70to90",
+        "btagUParTAK4BvC_pt90to120",
+        "btagUParTAK4BvC_pt120toinf",
         "btagUParTAK4BvCt",
         "btagUParTAK4CvNotB",
         "btagUParTAK4HFvLF",
+        "btagUParTAK4HFvLF_pt25to35",
+        "btagUParTAK4HFvLF_pt35to50",
+        "btagUParTAK4HFvLF_pt50to70",
+        "btagUParTAK4HFvLF_pt70to90",
+        "btagUParTAK4HFvLF_pt90to120",
+        "btagUParTAK4HFvLF_pt120toinf",
         "btagUParTAK4HFvLFt",
-        "btagUParTAK42D",
-        "btagUParTAK42D_pt25to35",
-        "btagUParTAK42D_pt35to50",
-        "btagUParTAK42D_pt50to70",
-        "btagUParTAK42D_pt70to90",
-        "btagUParTAK42D_pt90to120",
-        "btagUParTAK42D_pt120to10000",
+        "btagUParTAK42Dbin",
+        "btagUParTAK42Dbin_pt25to35",
+        "btagUParTAK42Dbin_pt35to50",
+        "btagUParTAK42Dbin_pt50to70",
+        "btagUParTAK42Dbin_pt70to90",
+        "btagUParTAK42Dbin_pt90to120",
+        "btagUParTAK42Dbin_pt120toinf",
         "btagUParTAK4QvG",
         "btagUParTAK4TauVJet",
         ## Negative tagger
@@ -161,6 +173,8 @@ def axes_name(var):
             unit = "($\\mu$,Jet)"
         elif "SVjet0" in var:
             unit = "(SV,Jet)"
+    elif "dphi" in var:
+        obj = "|$\\Delta\\phi$"
     elif "MET_" in var:
         obj = "MET"
     elif "ele_" in var:
@@ -199,6 +213,14 @@ def axes_name(var):
         unit = " $m_T$ [GeV]"
     elif "eta" in var:
         unit = " $\\eta$"
+    elif "jetmet" in var:
+        unit = "(Jet,MET)|"
+    elif "metTrkmet" in var:
+        unit = "(MET,TrkMET)|"
+    elif "jetw" in var:
+        unit = "(Jet,W)|"
+    elif "jetl" in var:
+        unit = "(Jet,$\\ell_1$)|"
     elif "phi" in var:
         unit = " $\\phi$"
     elif "dxy" in var:
@@ -207,6 +229,10 @@ def axes_name(var):
         unit = " $d_{z}$ [cm]"
     elif "pfRelIso" in var:
         unit = " Rel. Iso"
+    elif "muEF" in var:
+        unit = " muEF"
+    elif "muneuEF" in var:
+        unit = " muEF + neEmEF"
     elif "btag" in var:
         unit = "Jet"
         ## Negative tagger
@@ -233,7 +259,7 @@ def axes_name(var):
         elif "CvNotB" in var:
             unit = unit + " CvNotB"
         elif "BvCt" in var:
-            unit = unit + " BvCt"
+            unit = unit + " 1 - $\\sqrt{1 - \\text{BvC}}$"
         elif "BvC" in var:
             unit = unit + " BvC"
         elif "B_b" in var or "ProbB" in var:
@@ -243,11 +269,11 @@ def axes_name(var):
         elif "B_lepb" in var:
             unit = unit + " Prob(lepb)"
         elif "HFvLFt" in var:
-            unit = unit + " HFvLFt"
+            unit = unit + " 1 - $\\sqrt{1 - \\text{HFvLF}}$"
         elif "HFvLF" in var:
             unit = unit + " HFvLF"
         elif "2D" in var:
-            unit = unit + " 2D WP"
+            unit = unit + " 2D tagging bin"
         elif "QvG" in var or "QG" in var:
             unit = unit + " QvG"
         elif "G" in var:
@@ -304,4 +330,6 @@ def axes_name(var):
             label = "$p_T^{\\ell_2}/p_T^{Jet}$"
         if var == "soft_l_ptratio":
             label = "$p_T^{soft-\\mu}/p_T^{Jet}$"
+        if var == "jetw_ptratio":
+            label = "$p_T^{Jet}/p_T^{W}$"
     return label

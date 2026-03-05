@@ -49,4 +49,3 @@ echo "Now launching: python runner.py $OPTS"
 python runner.py $OPTS
 
 touch $WORKDIR/.success
-

@@ -37,6 +37,9 @@ from BTVNanoCommissioning.workflows.ctag_DY_valid_sf import (
 from BTVNanoCommissioning.workflows._2D_ttsemilep_valid_sf import (
     NanoProcessor as _2DTTsemilepValidSFProcessor,
 )
+from BTVNanoCommissioning.workflows._2D_Wc_valid_sf import (
+    NanoProcessor as _2DWcValidSFProcessor,
+)
 
 # QCD
 from BTVNanoCommissioning.workflows.QCD_validation import (
@@ -58,6 +61,10 @@ from BTVNanoCommissioning.workflows.example import (
     NanoProcessor as ExampleProcessor,
 )
 
+## SFl DY+Jets
+from BTVNanoCommissioning.workflows.DY_sfl import (
+    NanoProcessor as NegTagDYValidSFProcessor,
+)
 
 # FIXME - make names more systematic?
 workflows = {}
@@ -110,9 +117,9 @@ workflows["ctag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="W
 workflows["ctag_Wc_noMuVeto_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="WcM_noMuVeto"
 )
-workflows["2D_mu_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcM_2D")
+workflows["2D_mu_Wc_sf"] = partial(_2DWcValidSFProcessor, selectionModifier="WcM_2D")
 workflows["ectag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcE")
-workflows["2D_e_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcE_2D")
+workflows["2D_e_Wc_sf"] = partial(_2DWcValidSFProcessor, selectionModifier="WcE_2D")
 workflows["ctag_Wc_WP_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="cutbased_WcM"
 )
@@ -125,6 +132,11 @@ workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM
 workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
 workflows["2D_mu_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM_2D")
 workflows["2D_e_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE_2D")
+
+
+# DY light jet SF with negative tag method
+workflows["DY_sfl"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYM")
+workflows["eDY_sfl"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYE")
 
 
 # Tutorial

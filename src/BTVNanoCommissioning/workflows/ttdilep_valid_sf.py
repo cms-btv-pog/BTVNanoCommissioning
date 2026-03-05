@@ -1,6 +1,5 @@
 import collections, awkward as ak, numpy as np
 import os
-import uproot
 from coffea import processor
 from coffea.analysis_tools import Weights
 
@@ -26,10 +25,11 @@ from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
     jet_id,
     mu_idiso,
+    mu_promptmvaid,
     ele_cuttightid,
-    calculate_new_discriminators,
-    get_wp_2D,
-    btag_wp_dict,
+    # ele_mvatightid,
+    ele_promptmvaid,
+    MET_filters,
 )
 
 
@@ -63,7 +63,7 @@ class NanoProcessor(processor.ProcessorABC):
 
     ## Apply corrections on momentum/mass on MET, Jet, Muon
     def process(self, events):
-        events = missing_branch(events)
+        events = missing_branch(events, f"{self._year}_{self._campaign}")
         vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
@@ -85,17 +85,17 @@ class NanoProcessor(processor.ProcessorABC):
                 obj_list=objs,
                 hist_collections=["common", "fourvec", "ttdilep"],
                 njet=2,
-                include_discriminators_2D=True if "2D" in self.selMod else False,
             )
 
         if shift_name is None:
-            if isRealData:
-                output["sumw"] = len(events)
-            else:
-                output["sumw"] = ak.sum(events.genWeight)
+            output["other_sumw"] = (
+                len(events) if isRealData else ak.sum(events.genWeight)
+            )
+
         ####################
         #    Selections    #
         ####################
+
         ## Lumimask
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
@@ -114,23 +114,33 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Muon cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
-        events.Muon = events.Muon[
-            (events.Muon.pt > 30) & mu_idiso(events, self._campaign)
-        ]
+        if self.selMod == "ttdilep_sf_2D":
+            events.Muon = events.Muon[
+                (events.Muon.pt > 26) & mu_promptmvaid(events, self._campaign)
+            ]
+        else:
+            events.Muon = events.Muon[
+                (events.Muon.pt > 25) & mu_idiso(events, self._campaign)
+            ]
         events.Muon = ak.pad_none(events.Muon, 1, axis=1)
         req_muon = ak.count(events.Muon.pt, axis=1) == 1
 
         ## Electron cuts
         # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
-        events.Electron = events.Electron[
-            (events.Electron.pt > 30) & ele_cuttightid(events, self._campaign)
-        ]
+        if self.selMod == "ttdilep_sf_2D":
+            events.Electron = events.Electron[
+                (events.Electron.pt > 25) & ele_promptmvaid(events, self._campaign)
+            ]
+        else:
+            events.Electron = events.Electron[
+                (events.Electron.pt > 30) & ele_cuttightid(events, self._campaign)
+            ]
         events.Electron = ak.pad_none(events.Electron, 1, axis=1)
         req_ele = ak.count(events.Electron.pt, axis=1) == 1
 
         ## Jet cuts
         jetsel = ak.fill_none(
-            jet_id(events, self._campaign)
+            jet_id(events, self._campaign, min_pt=25)
             & (
                 ak.all(
                     events.Jet.metric_table(events.Muon) > 0.4,
@@ -173,9 +183,16 @@ class NanoProcessor(processor.ProcessorABC):
                 },
                 with_name="PtEtaPhiMLorentzVector",
             )
+        req_metfilter = MET_filters(events, self._campaign)
 
         event_level = (
-            req_trig & req_lumi & req_muon & req_ele & req_jets & req_opposite_charge
+            req_trig
+            & req_lumi
+            & req_muon
+            & req_ele
+            & req_jets
+            & req_opposite_charge
+            & req_metfilter
         )
         event_level = ak.fill_none(event_level, False)
         if len(events[event_level]) == 0:
@@ -195,6 +212,7 @@ class NanoProcessor(processor.ProcessorABC):
         ####################
         # Selected objects #
         ####################
+
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
         pruned_ev["SelJet"] = event_jet[event_level][:, :2]
@@ -203,66 +221,18 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["dr_mujet0"] = pruned_ev.Muon.delta_r(pruned_ev.Jet[:, 0])
         pruned_ev["dr_mujet1"] = pruned_ev.Muon.delta_r(pruned_ev.Jet[:, 1])
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
+
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
             pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
 
         if self.selMod == "ttdilep_sf_2D":
-            nj = 2
             pruned_ev["MET"] = event_MET[event_level]
-            for i in range(nj):
-                btagUParTAK4HFvLF, btagUParTAK4BvC = calculate_new_discriminators(
-                    pruned_ev.SelJet[:, i]
-                )
-                wp2D = ak.Array(
-                    [
-                        get_wp_2D(
-                            btagUParTAK4HFvLF[i],
-                            btagUParTAK4BvC[i],
-                            self._year,
-                            self._campaign,
-                            "UParTAK4",
-                        )
-                        for i in range(len(btagUParTAK4HFvLF))
-                    ]
-                )
-                pruned_ev[f"btagUParTAK4HFvLF_{i}"] = btagUParTAK4HFvLF
-                pruned_ev[f"btagUParTAK4BvC_{i}"] = btagUParTAK4BvC
-                pruned_ev[f"btagUParTAK4HFvLFt_{i}"] = ak.Array(
-                    np.where(
-                        btagUParTAK4HFvLF > 0.0,
-                        1.0 - (1.0 - btagUParTAK4HFvLF) ** 0.5,
-                        -1.0,
-                    )
-                )
-                pruned_ev[f"btagUParTAK4BvCt_{i}"] = ak.Array(
-                    np.where(
-                        btagUParTAK4BvC > 0.0,
-                        1.0 - (1.0 - btagUParTAK4BvC) ** 0.5,
-                        -1.0,
-                    )
-                )
-                pruned_ev[f"btagUParTAK42D_{i}"] = wp2D
-                jet_pt_bins = btag_wp_dict[self._year + "_" + self._campaign][
-                    "UParTAK4"
-                ]["2D"]["jet_pt_bins"]
-                for jet_pt_bin in jet_pt_bins:
-                    pruned_ev[
-                        f"btagUParTAK42D_pt{jet_pt_bin[0]}to{jet_pt_bin[1]}_{i}"
-                    ] = [
-                        (
-                            wp2D[ijet]
-                            if pt is not None
-                            and jet_pt_bin[0] < pt
-                            and pt < jet_pt_bin[1]
-                            else None
-                        )
-                        for ijet, pt in enumerate(pruned_ev.SelJet[:, i].pt)
-                    ]
 
         ####################
         #     Output       #
         ####################
+
         # Configure SFs
         weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
         # Configure systematics

@@ -1,7 +1,6 @@
 import os, sys
 import argparse
 
-
 parser = argparse.ArgumentParser(description="Check for missing hists_N.coffea files.")
 parser.add_argument(
     "--jobName",
@@ -71,16 +70,17 @@ missingfileloc = jobFolder + missingfilename
 # Save the list of missing files to missing_files.txt
 if len(missing_files) < 1:
     print("All histograms in folder, file not being created")
-    exit()
+    with open(missingfileloc, "w") as file:
+        file.write("")
 else:
     print("Job numbers missing:", missing_files, jobFolder)
+    with open(missingfileloc, "w") as file:
+        for missing_file in missing_files:
+            file.write(str(missing_file) + "\n")
+    print(f"Missing files have been saved to", missingfileloc)
+
 if args.test:
     exit()
-with open(missingfileloc, "w") as file:
-    for missing_file in missing_files:
-        file.write(str(missing_file) + "\n")
-
-print(f"Missing files have been saved to ", missingfileloc)
 
 # Update the jdl file if -u option is on
 if args.updateJDL:

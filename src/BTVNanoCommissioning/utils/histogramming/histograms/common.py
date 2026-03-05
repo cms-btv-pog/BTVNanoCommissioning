@@ -147,7 +147,6 @@ def _get_discriminators(axes, **kwargs):
         )
 
     include_osss = kwargs.get("include_osss", False)
-    include_discriminators_2D = kwargs.get("include_discriminators_2D", False)
     njet = kwargs.get("njet", 1)
     c_wf = kwargs.get("c_wf", False)
 
@@ -160,15 +159,7 @@ def _get_discriminators(axes, **kwargs):
         common_axes.append(axes["osss"])
 
     for d in disc_list:
-        if include_discriminators_2D:
-            if (
-                d not in jet_fields
-                and "BvC" not in d
-                and "HFvLF" not in d
-                and "2D" not in d
-            ):
-                continue
-        elif d not in jet_fields:
+        if d not in jet_fields:
             continue
 
         disc_axes = {
@@ -176,20 +167,22 @@ def _get_discriminators(axes, **kwargs):
             "Bprob": Hist.axis.Regular(50, 0, 10, name="discr", label=d),
             "Res": Hist.axis.Regular(40, 0, 1, name="discr", label=d),
             "Corr": Hist.axis.Regular(40, 0, 2, name="discr", label=d),
-            "2DWP": Hist.axis.Regular(11, 0, 11, name="discr", label=d),
+            "2Dbin": Hist.axis.IntCategory(
+                [0, 40, 41, 42, 43, 44, 50, 51, 52, 53, 54], name="discr", label=d
+            ),
         }
 
         if c_wf:
-            if ("btag" in d and "2D" not in d) or "ProbaN" == d:
+            if ("btag" in d and "2Dbin" not in d) or "ProbaN" == d:
                 hists[d] = Hist.Hist(
                     *common_axes,
                     disc_axes["btag"],
                     Hist.storage.Weight(),
                 )
-            elif "2D" in d:
+            elif "2Dbin" in d:
                 hists[d] = Hist.Hist(
                     *common_axes,
-                    disc_axes["2DWP"],
+                    disc_axes["2Dbin"],
                     Hist.storage.Weight(),
                 )
             elif "Bprob" in d:
@@ -212,16 +205,16 @@ def _get_discriminators(axes, **kwargs):
                 )
 
         for i in range(njet):
-            if ("btag" in d and "2D" not in d) or "ProbaN" == d:
+            if ("btag" in d and "2Dbin" not in d) or "ProbaN" == d:
                 hists[f"{d}_{i}"] = Hist.Hist(
                     *common_axes,
                     disc_axes["btag"],
                     Hist.storage.Weight(),
                 )
-            elif "2D" in d:
+            elif "2Dbin" in d:
                 hists[f"{d}_{i}"] = Hist.Hist(
                     *common_axes,
-                    disc_axes["2DWP"],
+                    disc_axes["2Dbin"],
                     Hist.storage.Weight(),
                 )
             elif "Bprob" in d:

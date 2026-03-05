@@ -13,18 +13,20 @@ errband_opts = {
 }
 markers = [".", "o", "^", "s", "+", "x", "D", "*"]
 color_map = {
-    "VV": "#7f3c8d",
-    "Z+jets": "#e68310",
-    "W+jets": "#80ba5a",
-    "QCD": "#e73f74",
-    "QCD($\\mu$)": "#a5aa99",
-    "Single top": "#3969ac",
-    "$t\\bar{t}$": "#008695",
-    "tt+X": "#bd1f01",
-    "udsg": "tab:blue",
-    "pu": "tab:orange",
-    "c": "tab:green",
-    "b": "tab:red",
+    # https://cms-analysis.docs.cern.ch/guidelines/plotting/colors/
+    "$t\\bar{t}$": "#86c8dd",
+    "Single top": "#578dff",
+    "tt+X": "#1845fb",
+    "VV": "#c91f16",
+    "W+jets": "#c849a9",
+    "Z+jets": "#ff5e02",
+    "QCD": "#adad7d",
+    "QCD($\\mu$)": "#656364",
+    # https://btvweb.web.cern.ch/artworks/BTV_colorpalette/Palette.png
+    "udsg": "#15a3ef",  # blue
+    "pu": "#717581",  # grey
+    "c": "#ed1e02",  # red
+    "b": "#fcb302",  # yellow
 }
 sample_mergemap = {
     # diboson
@@ -41,6 +43,8 @@ sample_mergemap = {
         "ZZto4L_TuneCP5_13p6TeV_powheg-pythia8",
         "ZZto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
         "WZtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
+        "WZToLNu2B-1Jets-4FS_TuneCP5_13p6TeV-amcatnloFXFX-madspin-pythia8",
+        "WZToL3Nu-1Jets-4FS_TuneCP5_13p6TeV-amcatnloFXFX-madspin-pythia8",
         "WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
         "WZto3LNu_TuneCP5_13p6TeV_powheg-pythia8",
         "WWto4Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -52,6 +56,9 @@ sample_mergemap = {
         "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         "DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
         "DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
+        "DYto2E-4Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "DYto2Mu-4Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        "DYto2Tau-4Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
@@ -172,6 +179,9 @@ sample_mergemap = {
         "TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8",
     ],
     "tt+X": [
+        "TTLNu-1Jets_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "TTW-WtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8",
+        "TTNuNu_TuneCP5_13p6TeV_amcatnlo-pythia8",
         "TTLL_Bin-MLL-4to50_TuneCP5_13p6TeV_amcatnlo-pythia8",
         "TTLL_Bin-MLL-50_TuneCP5_13p6TeV_amcatnlo-pythia8",
         "TTZ-ZtoQQ-1Jets_TuneCP5_13p6TeV_amcatnloFXFXold-pythia8",

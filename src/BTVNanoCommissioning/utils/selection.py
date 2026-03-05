@@ -1,5 +1,6 @@
 import awkward as ak
 import numpy as np
+from BTVNanoCommissioning.helpers.func import campaign_map
 
 
 def HLT_helper(events, triggers):
@@ -42,7 +43,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 ),
             ),
         )
-    elif campaign in ["Winter24", "Summer24"]:
+    elif campaign in ["Winter24", "Summer24", "Prompt25"]:
         # NanoV13 & NanoV14 & NanoV15
         barrel = (
             (events.Jet.neHEF < 0.99)
@@ -99,7 +100,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
 def ele_cuttightid(events, campaign):
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign
+        if "Summer24" not in campaign and "Prompt25" not in campaign
         else events.Electron.superclusterEta
     )
     elemask = (
@@ -111,7 +112,7 @@ def ele_cuttightid(events, campaign):
 def ele_mvatightid(events, campaign):
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign
+        if "Summer24" not in campaign and "Prompt25" not in campaign
         else events.Electron.superclusterEta
     )
     elemask = (
@@ -124,12 +125,16 @@ def ele_promptmvaid(events, campaign):
     # https://indico.cern.ch/event/1575017/contributions/6635248/attachments/3115862/5524310/EGammaAug08.pdf
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign
+        if "Summer24" not in campaign and "Prompt25" not in campaign
         else events.Electron.superclusterEta
     )
     elemask = (
         (abs(ele_etaSC) < 1.4442) | ((abs(ele_etaSC) > 1.566) & (abs(ele_etaSC) < 2.5))
-    ) & (events.Electron.promptMVA >= 0.9 if "Summer24" in campaign else 0.3)
+    ) & (
+        events.Electron.promptMVA >= 0.9
+        if "Summer24" in campaign or "Prompt25" in campaign
+        else 0.3
+    )
     return elemask
 
 
@@ -216,73 +221,19 @@ def btag_wp(jets, year, campaign, tagger, borc, wp):
     WP = wp_dict(year, campaign)
     if borc == "b":
         jet_mask = jets[f"btag{tagger}B"] > WP[tagger]["b"][wp]
-    else:
+    elif borc == "c":
         jet_mask = (jets[f"btag{tagger}CvB"] > WP[tagger]["c"][wp][1]) & (
             jets[f"btag{tagger}CvL"] > WP[tagger]["c"][wp][0]
         )
+    elif borc == "2Db":
+        jet_mask = jets[f"btag{tagger}2Dbin"] >= WP[tagger]["2D"]["b"][wp]
+    elif borc == "2Dc":
+        jet_mask = (jets[f"btag{tagger}2Dbin"] >= WP[tagger]["2D"]["c"][wp][0]) & (
+            jets[f"btag{tagger}2Dbin"] <= WP[tagger]["2D"]["c"][wp][1]
+        )
+    else:
+        raise ValueError("Invalid flavour!")
     return jet_mask
-
-
-def calculate_new_discriminators(ith_jets, tagger="UParTAK4"):
-    probudg = ith_jets[f"btag{tagger}UDG"]
-    SvUDG = ith_jets[f"btag{tagger}SvUDG"]
-    probs = ak.Array(
-        np.where(
-            (SvUDG >= 0.0) & (probudg >= 0.0), SvUDG * probudg / (1.0 - SvUDG), -1.0
-        )
-    )
-    CvL = ith_jets[f"btag{tagger}CvL"]
-    probc = ak.Array(
-        np.where(
-            (CvL >= 0.0) & (probs >= 0.0) & (probudg >= 0.0),
-            CvL * (probs + probudg) / (1.0 - CvL),
-            -1.0,
-        )
-    )
-    CvB = ith_jets[f"btag{tagger}CvB"]
-    probbbblepb = ak.Array(
-        np.where((CvB >= 0.0) & (probc >= 0.0), (1.0 - CvB) * probc / CvB, -1.0)
-    )
-    BvC = ak.Array(np.where(CvB >= 0.0, 1.0 - CvB, -1.0))
-    HFvLF = ak.Array(
-        np.where(
-            (probbbblepb >= 0.0) & (probc >= 0.0) & (probs >= 0.0) & (probudg >= 0.0),
-            (probbbblepb + probc) / (probbbblepb + probc + probs + probudg),
-            -1.0,
-        )
-    )
-    return HFvLF, BvC
-
-
-def get_wp_2D(ith_jet_HFvLF_val, ith_jet_BvC_val, year, campaign, tagger):
-    WP = wp_dict(year, campaign)
-    for wp in WP[tagger]["2D"]["mapping"].keys():
-        HFvLF_low = WP[tagger]["2D"][wp][0]
-        HFvLF_high = WP[tagger]["2D"][wp][1]
-        BvC_low = WP[tagger]["2D"][wp][2]
-        BvC_high = WP[tagger]["2D"][wp][3]
-        if ith_jet_HFvLF_val is None or ith_jet_BvC_val is None:
-            return None
-        if ith_jet_HFvLF_val == -1 or ith_jet_BvC_val == -1:
-            return -1.0
-        if HFvLF_low == 0:
-            passWP = ith_jet_HFvLF_val >= HFvLF_low
-        else:
-            passWP = ith_jet_HFvLF_val > HFvLF_low
-        passWP = passWP & (ith_jet_HFvLF_val <= HFvLF_high)
-        if BvC_low == 0:
-            passWP = passWP & (ith_jet_BvC_val >= BvC_low)
-        else:
-            passWP = passWP & (ith_jet_BvC_val > BvC_low)
-        passWP = passWP & (ith_jet_BvC_val <= BvC_high)
-        if passWP:
-            return WP[tagger]["2D"]["mapping"][wp]
-    raise ValueError(
-        "Somehow did not find the working point for values HFvLF=",
-        ith_jet_HFvLF_val,
-        "and BvC=",
-        ith_jet_BvC_val,
-    )
 
 
 btag_wp_dict = {
@@ -510,35 +461,61 @@ btag_wp_dict = {
                 "XT": [0.810, 0.736],
             },
             "2D": {
-                "No": [0.0, 1.0, 0.0, 1.0],
-                "L0": [
-                    0.0,
-                    0.264,
-                    0.0,
-                    1.0,
-                ],  # [HFvLF low, HFvLF high, BvC low, BvC high]
-                "C0": [0.264, 0.448, 0.000, 1.000],
-                "C1": [0.448, 0.766, 0.000, 1.000],
-                "C2": [0.766, 1.000, 0.028, 0.094],
-                "C3": [0.766, 1.000, 0.010, 0.028],
-                "C4": [0.766, 1.000, 0.000, 0.010],
-                "B0": [0.766, 1.000, 0.094, 0.690],
-                "B1": [0.766, 1.000, 0.690, 0.918],
-                "B2": [0.766, 1.000, 0.918, 0.978],
-                "B3": [0.766, 1.000, 0.978, 0.994],
-                "B4": [0.766, 1.000, 0.994, 1.000],
-                "mapping": {
-                    "L0": 0,
-                    "C0": 1,
-                    "C1": 2,
-                    "C2": 3,
-                    "C3": 4,
-                    "C4": 5,
-                    "B0": 6,
-                    "B1": 7,
-                    "B2": 8,
-                    "B3": 9,
-                    "B4": 10,
+                "HFvLF": np.array([0.0, 0.250, 0.454, 0.810, 1.0]),
+                "BvC": np.array(
+                    [0.0, 0.006, 0.016, 0.056, 0.760, 0.944, 0.984, 0.994, 1.0]
+                ),
+                "mapping": {  # HFvLF, BvC
+                    1: {
+                        1: 0,
+                        2: 0,
+                        3: 0,
+                        4: 0,
+                        5: 0,
+                        6: 0,
+                        7: 0,
+                        8: 0,
+                    },
+                    2: {
+                        1: 40,
+                        2: 40,
+                        3: 40,
+                        4: 40,
+                        5: 40,
+                        6: 40,
+                        7: 40,
+                        8: 40,
+                    },
+                    3: {
+                        1: 41,
+                        2: 41,
+                        3: 41,
+                        4: 41,
+                        5: 41,
+                        6: 41,
+                        7: 41,
+                        8: 41,
+                    },
+                    4: {
+                        1: 44,
+                        2: 43,
+                        3: 42,
+                        4: 50,
+                        5: 51,
+                        6: 52,
+                        7: 53,
+                        8: 54,
+                    },
+                },
+                "b": {
+                    "L": 50,
+                    "M": 51,
+                    "T": 52,
+                },
+                "c": {
+                    "L": [40, 44],
+                    "M": [41, 44],
+                    "T": [42, 44],
                 },
                 "jet_pt_bins": [
                     (25, 35),
@@ -552,6 +529,8 @@ btag_wp_dict = {
         },
     },
 }
+btag_wp_dict["2025_Summer24"] = btag_wp_dict["2024_Summer24"]
+btag_wp_dict["2025_Prompt25"] = btag_wp_dict["2024_Summer24"]
 
 
 import os, correctionlib
@@ -576,13 +555,13 @@ def wp_dict(year, campaign):
 
     wps_dict = {}
     if os.path.exists(
-        f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{year}_{campaign}"
+        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{campaign_map()[campaign]}/latest/"
     ):
         btag = correctionlib.CorrectionSet.from_file(
-            f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{year}_{campaign}/btagging.json.gz"
+            f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{campaign_map()[campaign]}/latest/btagging.json.gz"
         )
         ctag = correctionlib.CorrectionSet.from_file(
-            f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{year}_{campaign}/ctagging.json.gz"
+            f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{campaign_map()[campaign]}/latest/ctagging.json.gz"
         )
         tagger_list = [i for i in list(btag.keys()) if "wp_values" in i]
 
@@ -787,6 +766,26 @@ met_filters = {
         ],
     },
     "Summer24": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+    },
+    "Prompt25": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",
