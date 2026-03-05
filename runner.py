@@ -179,9 +179,22 @@ def get_event_weights(sample_dict, output):
                 else:
                     temp_genEventSumw = root_file["Runs"]["genEventSumw"].array()[0]
                     genEventSumw += temp_genEventSumw
-                    LHEScaleSumw += ak.to_numpy(deepcopy(root_file["Runs"]["LHEScaleSumw"].array()[0])) * temp_genEventSumw
-                    LHEPdfSumw += ak.to_numpy(deepcopy(root_file["Runs"]["LHEPdfSumw"].array()[0])) * temp_genEventSumw
-                    PSSumw += ak.to_numpy(deepcopy(root_file["Runs"]["PSSumw"].array()[0])) * temp_genEventSumw
+                    LHEScaleSumw += (
+                        ak.to_numpy(
+                            deepcopy(root_file["Runs"]["LHEScaleSumw"].array()[0])
+                        )
+                        * temp_genEventSumw
+                    )
+                    LHEPdfSumw += (
+                        ak.to_numpy(
+                            deepcopy(root_file["Runs"]["LHEPdfSumw"].array()[0])
+                        )
+                        * temp_genEventSumw
+                    )
+                    PSSumw += (
+                        ak.to_numpy(deepcopy(root_file["Runs"]["PSSumw"].array()[0]))
+                        * temp_genEventSumw
+                    )
         if isRealData:
             output[sample]["sumw"] = genEventCount
         else:

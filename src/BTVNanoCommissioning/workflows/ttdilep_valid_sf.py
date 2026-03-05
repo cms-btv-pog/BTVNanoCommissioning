@@ -88,7 +88,9 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         if shift_name is None:
-            output["other_sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
+            output["other_sumw"] = (
+                len(events) if isRealData else ak.sum(events.genWeight)
+            )
 
         ####################
         #    Selections    #

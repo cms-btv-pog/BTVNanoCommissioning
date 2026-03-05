@@ -284,11 +284,15 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             elif "ncjet" == histname:
                 output["ncjet"].fill(syst, pruned_ev.ncjet, weight=weight)
             elif "top_pt" == histname and "TT" in pruned_ev.metadata["dataset"]:
-                top_mask = (pruned_ev.GenPart.pdgId == 6) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
+                top_mask = (pruned_ev.GenPart.pdgId == 6) & pruned_ev.GenPart.hasFlags(
+                    ["isLastCopy"]
+                )
                 top_pt = pruned_ev.GenPart[top_mask][:, 0].pt
                 output["top_pt"].fill(syst, top_pt, weight=weight)
             elif "antitop_pt" == histname and "TT" in pruned_ev.metadata["dataset"]:
-                antitop_mask = (pruned_ev.GenPart.pdgId == -6) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
+                antitop_mask = (
+                    pruned_ev.GenPart.pdgId == -6
+                ) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
                 antitop_pt = pruned_ev.GenPart[antitop_mask][:, 0].pt
                 output["antitop_pt"].fill(syst, antitop_pt, weight=weight)
             elif "npv" == histname:

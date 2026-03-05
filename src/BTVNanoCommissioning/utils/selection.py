@@ -130,7 +130,11 @@ def ele_promptmvaid(events, campaign):
     )
     elemask = (
         (abs(ele_etaSC) < 1.4442) | ((abs(ele_etaSC) > 1.566) & (abs(ele_etaSC) < 2.5))
-    ) & (events.Electron.promptMVA >= 0.9 if "Summer24" in campaign or "Prompt25" in campaign else 0.3)
+    ) & (
+        events.Electron.promptMVA >= 0.9
+        if "Summer24" in campaign or "Prompt25" in campaign
+        else 0.3
+    )
     return elemask
 
 

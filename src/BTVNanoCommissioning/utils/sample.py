@@ -106,6 +106,7 @@ predefined_sample = {
             "ZZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZto4L_TuneCP5_13p6TeV_powheg-pythia8",
         ],
+    },
     "DY_sfl": {
         "data": ["DoubleMuon", "Muon", "Muon0", "Muon1"],
         "MC": [

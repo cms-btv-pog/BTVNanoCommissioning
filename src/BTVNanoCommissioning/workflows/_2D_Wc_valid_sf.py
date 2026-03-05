@@ -115,7 +115,9 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         if shift_name is None:
-            output["other_sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
+            output["other_sumw"] = (
+                len(events) if isRealData else ak.sum(events.genWeight)
+            )
 
         ####################
         #    Selections    #
@@ -658,10 +660,14 @@ class NanoProcessor(processor.ProcessorABC):
             output["nsoftmu"].fill(syst, osss, nsoftmu, weight=weight)
             output["npv"].fill(syst, osss, pruned_ev.PV.npvsGood, weight=weight)
             if "TT" in pruned_ev.metadata["dataset"]:
-                top_mask = (pruned_ev.GenPart.pdgId == 6) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
+                top_mask = (pruned_ev.GenPart.pdgId == 6) & pruned_ev.GenPart.hasFlags(
+                    ["isLastCopy"]
+                )
                 top_pt = pruned_ev.GenPart[top_mask][:, 0].pt
                 output["top_pt"].fill(syst, osss, top_pt, weight=weight)
-                antitop_mask = (pruned_ev.GenPart.pdgId == -6) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
+                antitop_mask = (
+                    pruned_ev.GenPart.pdgId == -6
+                ) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
                 antitop_pt = pruned_ev.GenPart[antitop_mask][:, 0].pt
                 output["antitop_pt"].fill(syst, osss, antitop_pt, weight=weight)
             output["softlpt"].fill(syst, smflav, osss, ssmu.pt, weight=weight)

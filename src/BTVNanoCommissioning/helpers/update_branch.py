@@ -210,12 +210,16 @@ def missing_branch(events, campaign="2024_Summer24"):
         jets["btagUParTAK4S"] = ak.where(
             jets.btagUParTAK4SvUDG < 0.0,
             -1,
-            jets.btagUParTAK4SvUDG * jets.btagUParTAK4UDG / (1.0 - jets.btagUParTAK4SvUDG),
+            jets.btagUParTAK4SvUDG
+            * jets.btagUParTAK4UDG
+            / (1.0 - jets.btagUParTAK4SvUDG),
         )
         jets["btagUParTAK4C"] = ak.where(
             jets.btagUParTAK4SvUDG < 0.0,
             -1,
-            jets.btagUParTAK4CvL * (jets.btagUParTAK4S + jets.btagUParTAK4UDG) / (1.0 - jets.btagUParTAK4CvL),
+            jets.btagUParTAK4CvL
+            * (jets.btagUParTAK4S + jets.btagUParTAK4UDG)
+            / (1.0 - jets.btagUParTAK4CvL),
         )
         jets["btagUParTAK4B"] = ak.where(
             jets.btagUParTAK4SvUDG < 0.0,
@@ -225,7 +229,13 @@ def missing_branch(events, campaign="2024_Summer24"):
         jets["btagUParTAK4HFvLF"] = ak.where(
             jets.btagUParTAK4SvUDG < 0.0,
             -1,
-            (jets.btagUParTAK4B + jets.btagUParTAK4C) / (jets.btagUParTAK4B + jets.btagUParTAK4C + jets.btagUParTAK4S + jets.btagUParTAK4UDG),
+            (jets.btagUParTAK4B + jets.btagUParTAK4C)
+            / (
+                jets.btagUParTAK4B
+                + jets.btagUParTAK4C
+                + jets.btagUParTAK4S
+                + jets.btagUParTAK4UDG
+            ),
         )
         jets["btagUParTAK4HFvLFt"] = ak.where(
             jets.btagUParTAK4HFvLF < 0.0,

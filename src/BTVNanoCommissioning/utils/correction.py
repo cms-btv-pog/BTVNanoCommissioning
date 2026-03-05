@@ -2032,14 +2032,14 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
                         1.0,
                         correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
                             mu_eta, mu_pt, "systup"
-                        )
+                        ),
                     )
                     sfs_down = np.where(
                         masknone,
                         1.0,
                         correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
                             mu_eta, mu_pt, "systdown"
-                        )
+                        ),
                     )
             else:
                 if "mu" in sf:
