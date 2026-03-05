@@ -11,7 +11,6 @@ env
 
 WORKDIR=`pwd`
 
-cd $COMMDIR
 export X509_USER_PROXY=$COMMDIR/proxy
 voms-proxy-info
 
