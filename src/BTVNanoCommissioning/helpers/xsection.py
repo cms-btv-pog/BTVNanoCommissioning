@@ -101,6 +101,8 @@ xsection = [
         "accuracy": "NNLO QCD + NLO EW",
         "energy": "13.6",
         "comment": "https://cms-generators.docs.cern.ch/about-cross-sections/higher-order-calculation/fewz/#dy-cross-section-results",
+    },
+    {
         "id": "68d111abf8a546d59c3d82d5",
         "process_name": "DYto2Mu-4Jets_Bin-MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         "status": "new",
