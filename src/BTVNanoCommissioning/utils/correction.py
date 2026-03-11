@@ -76,7 +76,6 @@ def load_SF(year, campaign, syst=False):
             if os.path.exists(
                 f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/"
             ):
-                # try/except because for 2024 there is a different filename (embrace the chaos)
                 try:
                     correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
                         f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
