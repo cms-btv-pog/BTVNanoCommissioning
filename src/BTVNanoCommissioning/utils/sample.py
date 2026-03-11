@@ -48,8 +48,10 @@ predefined_sample = {
         "minor_MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
     },
     "DY_sfl": {
-        "data": ["DoubleMuon", "Muon", "Muon0", "Muon1"],
+        "data": ["DoubleMuon", "SingleMuon", "Muon", "Muon0", "Muon1"],
         "MC": [
+            # "DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8",
+            "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Mu-4Jets_Bin-MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "DYto2E-4Jets_Bin-MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",

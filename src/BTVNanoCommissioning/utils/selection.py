@@ -42,7 +42,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 ),
             ),
         )
-    elif campaign in ["Winter24", "Summer24"]:
+    elif (campaign in ["Winter24", "Summer24"]):
         # NanoV13 & NanoV14 & NanoV15
         barrel = (
             (events.Jet.neHEF < 0.99)
@@ -77,6 +77,79 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
             jetid & (events.Jet.muEF < 0.8) & (events.Jet.chEmEF < 0.8),
             jetid,
         )
+    elif "UL" in campaign:
+        # NanoV15
+        if "2016" in campaign:
+            barrel = (
+                (events.Jet.neHEF < 0.9)
+                & (events.Jet.neEmEF < 0.9)
+                & (events.Jet.chMultiplicity + events.Jet.neMultiplicity > 1)
+                & (events.Jet.chHEF > 0.0)
+                & (events.Jet.chMultiplicity > 0)
+            )
+            t1 = (events.Jet.neHEF < 0.98) & (events.Jet.neEmEF < 0.99)
+            t2 = (events.Jet.neMultiplicity >= 1)
+            endcap = (events.Jet.neMultiplicity >= 2) & (events.Jet.neEmEF < 0.9)
+
+            jetid = ak.where(
+                abs(events.Jet.eta) <= 2.4,
+                barrel,
+                ak.where(
+                    (abs(events.Jet.eta) > 2.4) & (abs(events.Jet.eta) <= 2.7),
+                    t1,
+                    ak.where(
+                        (abs(events.Jet.eta) > 2.7) & (abs(events.Jet.eta) <= 3.0),
+                        t2,
+                        ak.where(
+                            (abs(events.Jet.eta) > 3.0),
+                            endcap,
+                            ak.zeros_like(events.Jet.pt, dtype=bool),
+                        ),
+                    ),
+                ),
+            )
+            jetid = ak.where(
+                np.abs(events.Jet.eta) <= 2.4,
+                jetid & (events.Jet.muEF < 0.8) & (events.Jet.chEmEF < 0.8),
+                jetid,
+            )
+        elif ("2017" in campaign) | ("2018" in campaign):
+            barrel = (
+                (events.Jet.neHEF < 0.9)
+                & (events.Jet.neEmEF < 0.9)
+                & (events.Jet.chMultiplicity + events.Jet.neMultiplicity > 1)
+                & (events.Jet.chHEF > 0.0)
+                & (events.Jet.chMultiplicity > 0)
+            )
+            t1 = (events.Jet.neHEF < 0.90) & (events.Jet.neEmEF < 0.99)
+            t2 = (events.Jet.neHEF < 0.9999)
+            endcap = (events.Jet.neMultiplicity >= 2) & (events.Jet.neEmEF < 0.9)
+
+            jetid = ak.where(
+                abs(events.Jet.eta) <= 2.6,
+                barrel,
+                ak.where(
+                    (abs(events.Jet.eta) > 2.6) & (abs(events.Jet.eta) <= 2.7),
+                    t1,
+                    ak.where(
+                        (abs(events.Jet.eta) > 2.7) & (abs(events.Jet.eta) <= 3.0),
+                        t2,
+                        ak.where(
+                            (abs(events.Jet.eta) > 3.0),
+                            endcap,
+                            ak.zeros_like(events.Jet.pt, dtype=bool),
+                        ),
+                    ),
+                ),
+            )
+            jetid = ak.where(
+                np.abs(events.Jet.eta) <= 2.7,
+                jetid & (events.Jet.muEF < 0.8) & (events.Jet.chEmEF < 0.8),
+                jetid,
+            )
+        else:
+            jetid = events.Jet.jetId >= 5
+
     else:
         jetid = events.Jet.jetId >= 5
 
@@ -198,6 +271,82 @@ def btag_wp(jets, year, campaign, tagger, borc, wp):
 
 
 btag_wp_dict = {
+    "2016_2016preVFP-UL": {
+        "UParTAK4": {
+            "b": {
+                "No": 0.0,
+                "L": 0.0387,
+                "M": 0.1847,
+                "T": 0.5467,
+                "XT": 0.6777,
+                "XXT": 0.9219,
+            },
+            "c": { #placeholder
+                "No": [0.0, 0.0],
+                "L": [0.1, 0.1],  # CvL, then CvB
+                "M": [0.5, 0.5],
+                "T": [0.8, 0.8],
+                "XT": [0.9, 0.9],
+            },
+        },
+    },
+    "2016_2016postVFP-UL": {
+        "UParTAK4": {
+            "b": {
+                "No": 0.0,
+                "L": 0.0400,
+                "M": 0.1898,
+                "T": 0.5538,
+                "XT": 0.6872,
+                "XXT": 0.9353,
+            },
+            "c": { #placeholder
+                "No": [0.0, 0.0],
+                "L": [0.1, 0.1],  # CvL, then CvB
+                "M": [0.5, 0.5],
+                "T": [0.8, 0.8],
+                "XT": [0.9, 0.9],
+            },
+        },
+    },
+    "2017_2017-UL": {
+        "UParTAK4": {
+            "b": {
+                "No": 0.0,
+                "L": 0.0331,
+                "M": 0.1776,
+                "T": 0.5755,
+                "XT": 0.7274,
+                "XXT": 0.9666,
+            },
+            "c": { #placeholder
+                "No": [0.0, 0.0],
+                "L": [0.1, 0.1],  # CvL, then CvB
+                "M": [0.5, 0.5],
+                "T": [0.8, 0.8],
+                "XT": [0.9, 0.9],
+            },
+        },
+    },
+    "2018_2018-UL": { #correct, the format is year_campaign
+        "UParTAK4": {
+            "b": {
+                "No": 0.0,
+                "L": 0.0308,
+                "M": 0.1610,
+                "T": 0.5405,
+                "XT": 0.6992,
+                "XXT": 0.9655,
+            },
+            "c": { #placeholder
+                "No": [0.0, 0.0],
+                "L": [0.1, 0.1],  # CvL, then CvB
+                "M": [0.5, 0.5],
+                "T": [0.8, 0.8],
+                "XT": [0.9, 0.9],
+            },
+        },
+    },
     "2022_Summer22": {
         "DeepFlav": {
             "b": {
@@ -484,7 +633,7 @@ def wp_dict(year, campaign):
 
 
 met_filters = {
-    "2016preVFP_UL": {
+    "2016preVFP-UL": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",
@@ -504,7 +653,7 @@ met_filters = {
             "eeBadScFilter",
         ],
     },
-    "2016postVFP_UL": {
+    "2016postVFP-UL": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",
@@ -526,7 +675,7 @@ met_filters = {
             "eeBadScFilter",
         ],
     },
-    "2017_UL": {
+    "2017-UL": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",
@@ -552,7 +701,7 @@ met_filters = {
             "ecalBadCalibFilter",
         ],
     },
-    "2018_UL": {
+    "2018-UL": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",

@@ -20,23 +20,123 @@ correction_config = {
             "mu_Iso NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta": "RunBCDEF_MuISOSF.histo.root",
         },
     },
-    "2017-UL": {
-        "DC": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.txt",
+    "2016preVFP-UL": {
+        "DC": "Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt",
         "LUM": None,
-        "JME": "jec_compiled.pkl.gz",
-        "BTV": {"deepCSV": "shape", "deepJet": "shape"},
-        "EGM": {
-            "ele_ID 2017 UL-Electron-ID-SF": "wp90iso",
-            "ele_Reco 2017 UL-Electron-ID-SF": "RecoAbove20",
+        "JME": {
+            "MC": "Summer20UL16_V1 Summer20UL16_JRV3",
+            "Run2016F": "Summer20UL16_RunFGH_V1",
+            "Run2016G": "Summer20UL16_RunFGH_V1",
+            "Run2016H": "Summer20UL16_RunFGH_V1",
         },
         "MUO": {
-            "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
-            "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
-            "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
-            "mu_Iso 2017_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
+            "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2016preVFP_UL_ID.histojson",
+            "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2016preVFP_UL_trackerMuon.histo.json",
+        },
+        "EGM": {
+            "ele_Reco 2016 Electron-ID-SF": "",
+            "ele_ID 2016 Electron-ID-SF": "wp80iso",
+        },
+        "muonSS": "",
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        "roccor":  "",
+    },
+    "2016postVFP-UL": {
+        "DC": "Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt",
+        "LUM": None,
+        "JME": {
+            "MC": "Summer20UL16APV_V1 Summer20UL16APV_JRV3",
+            "Run2016B": "Summer20UL16APV_RunBCD_V1",
+            "Run2016C": "Summer20UL16APV_RunBCD_V1",
+            "Run2016D": "Summer20UL16APV_RunBCD_V1",
+            "Run2016E": "Summer20UL16APV_RunEF_V1",
+            "Run2016F": "Summer20UL16APV_RunEF_V1",
+        },
+        "MUO": {
+            "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2016postVFP_UL_ID.histo.json",
+            "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2016postVFP_UL_trackerMuon.histojson",
+        },
+        "EGM": {
+            "ele_Reco 2016 Electron-ID-SF": "",
+            "ele_ID 2016 Electron-ID-SF": "wp80iso",
+        },
+        "muonSS": "",
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        "roccor":  "",
+    },
+    "2017-UL": {
+        "DC": "Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt",
+        "LUM": None,
+        "JME": {
+            "MC": "Summer20UL17_V1 Summer19UL17_JRV3",
+            "Run2017B": "Summer20UL17_RunB_V1",
+            "Run2017C": "Summer20UL17_RunC_V1",
+            "Run2017D": "Summer20UL17_RunD_V1",
+            "Run2017E": "Summer20UL17_RunE_V1",
+            "Run2017F": "Summer20UL17_RunF_V1",
+        },
+        "MUO": {
             "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2017_UL_ID.histo.json",
             "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2017_UL_trackerMuon.histo.json",
         },
+        "EGM": {
+            "ele_Reco 2017 Electron-ID-SF": "",
+            "ele_ID 2017 Electron-ID-SF": "wp80iso",
+        },
+        "muonSS": "",
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        "roccor":  "",
+
+        # "DC": "Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt",
+        # "LUM": None,
+        # "JME": "jec_compiled.pkl.gz",
+        # "BTV": {"deepCSV": "shape", "deepJet": "shape"},
+        # "EGM": {
+        #     "ele_ID 2017 UL-Electron-ID-SF": "wp90iso",
+        #     "ele_Reco 2017 UL-Electron-ID-SF": "RecoAbove20",
+        # },
+        # "MUO": {
+        #     "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
+        #     "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
+        #     "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
+        #     "mu_Iso 2017_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
+        #     "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2017_UL_ID.histo.json",
+        #     "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2017_UL_trackerMuon.histo.json",
+        # },
+    },
+    "2018-UL": {
+        "DC": "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt",
+        "LUM": "puweight_2018_UL.HLTPFJet40.histo",
+        "JME": {
+            "MC": "Summer20UL18_V1 Summer19UL18_JRV2",
+            "Run2018A": "Summer20UL18_RunA_V1",
+            "Run2018B": "Summer20UL18_RunB_V1",
+            "Run2018C": "Summer20UL18_RunC_V1",
+            "Run2018D": "Summer20UL18_RunD_V1",
+        },
+        "MUO": {
+            "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2018_UL_ID.histo.json",
+            "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2018_UL_trackerMuon.histo.json",
+        },
+        "EGM": {
+            "ele_Reco 2018 Electron-ID-SF": "",
+            "ele_ID 2018 Electron-ID-SF": "wp80iso",
+        },
+        "muonSS": "",
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        "roccor":  "",
     },
     "Winter22Run3": {
         "DC": "Cert_Collisions2022_355100_357900_Golden.json",
