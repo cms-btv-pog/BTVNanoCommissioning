@@ -30,8 +30,8 @@ correction_config = {
             "Run2016H": "Summer20UL16_RunFGH_V1",
         },
         "MUO": {
-            "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2016preVFP_UL_ID.histojson",
-            "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2016preVFP_UL_trackerMuon.histo.json",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
         },
         "EGM": {
             "ele_Reco 2016 Electron-ID-SF": "",
@@ -56,8 +56,8 @@ correction_config = {
             "Run2016F": "Summer20UL16APV_RunEF_V1",
         },
         "MUO": {
-            "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2016postVFP_UL_ID.histo.json",
-            "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2016postVFP_UL_trackerMuon.histojson",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
         },
         "EGM": {
             "ele_Reco 2016 Electron-ID-SF": "",
@@ -82,8 +82,8 @@ correction_config = {
             "Run2017F": "Summer20UL17_RunF_V1",
         },
         "MUO": {
-            "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2017_UL_ID.histo.json",
-            "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2017_UL_trackerMuon.histo.json",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
         },
         "EGM": {
             "ele_Reco 2017 Electron-ID-SF": "",
@@ -124,8 +124,8 @@ correction_config = {
             "Run2018D": "Summer20UL18_RunD_V1",
         },
         "MUO": {
-            "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2018_UL_ID.histo.json",
-            "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2018_UL_trackerMuon.histo.json",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
         },
         "EGM": {
             "ele_Reco 2018 Electron-ID-SF": "",
