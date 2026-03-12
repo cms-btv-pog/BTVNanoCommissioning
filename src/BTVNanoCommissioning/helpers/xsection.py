@@ -36,6 +36,13 @@ xsection = [
         "comment": "from TOP-22-012",
     },
     {
+        "process_name": "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
+        "cross_section": "6404",
+        "DAS": "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
+        "energy": "13",
+        "comment": "Automatically Computed",
+    },
+    {
         "id": "64204f0229461764a903bf9b",
         "process_name": "DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
         "cross_section": "19317.5",
