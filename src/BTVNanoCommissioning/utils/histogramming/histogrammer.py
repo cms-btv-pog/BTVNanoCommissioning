@@ -346,17 +346,30 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     nj = 1
                 else:
                     flavs, seljets = genflavor, pruned_ev.SelJet
-                for i in range(nj):
-                    if not histname.endswith(str(i)):
-                        continue
-                    if nj > 1:
-                        flav, seljet = flavs[:, i], seljets[:, i]
-                    else:
-                        flav, seljet = flavs, seljets
+                # Check if histogram name has a trailing jet index suffix
+                has_jet_index = any(
+                    histname.endswith(f"_{i}") for i in range(nj)
+                )
+                if has_jet_index:
+                    for i in range(nj):
+                        if not histname.endswith(str(i)):
+                            continue
+                        if nj > 1:
+                            flav, seljet = flavs[:, i], seljets[:, i]
+                        else:
+                            flav, seljet = flavs, seljets
+                        h.fill(
+                            syst=syst,
+                            flav=flav,
+                            discr=seljet[histname.replace(f"_{i}", "")],
+                            weight=weights.partial_weight(exclude=exclude_btv),
+                        )
+                elif histname in seljets.fields:
+                    # No jet index suffix (nj=1) - fill directly
                     h.fill(
                         syst=syst,
-                        flav=flav,
-                        discr=seljet[histname.replace(f"_{i}", "")],
+                        flav=flavs,
+                        discr=seljets[histname],
                         weight=weights.partial_weight(exclude=exclude_btv),
                     )
 
