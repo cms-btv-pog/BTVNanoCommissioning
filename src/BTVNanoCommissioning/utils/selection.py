@@ -25,8 +25,9 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
     # Implement fix from:
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13p6TeV#nanoAOD_Flags
     # Note: this is only the jetId==6, ie. passJetIdTightLepVeto. Looser selection is not implemented.
-    if campaign in ["Summer22", "Summer22EE", "Summer23", "Summer23BPix"]:
-        # NanoV12
+    has_jetId = hasattr(events.Jet, "jetId")
+    if campaign in ["Summer22", "Summer22EE", "Summer23", "Summer23BPix"] and has_jetId:
+        # NanoV12 (has jetId branch)
         jetid = ak.where(
             abs(events.Jet.eta) <= 2.7,
             (events.Jet.jetId >= 2)
@@ -42,8 +43,9 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 ),
             ),
         )
-    elif campaign in ["Winter24", "Summer24", "Winter25"]:
-        # NanoV13 & NanoV14 & NanoV15
+    elif campaign in ["Summer22", "Summer22EE", "Summer23", "Summer23BPix",
+                       "Winter24", "Summer24", "Winter25"]:
+        # NanoV13+ / NanoV15 reprocessing (no jetId branch, compute from components)
         barrel = (
             (events.Jet.neHEF < 0.99)
             & (events.Jet.neEmEF < 0.9)
