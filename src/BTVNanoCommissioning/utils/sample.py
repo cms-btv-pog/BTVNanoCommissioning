@@ -51,6 +51,7 @@ predefined_sample = {
         "data": ["DoubleMuon", "SingleMuon", "Muon", "Muon0", "Muon1"],
         "MC": [
             # "DYJetsToLL_M-50_TuneCP5_13TeV-madgraphMLM-pythia8",
+            "DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
             "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Mu-4Jets_Bin-MLL-50_TuneCP5_13p6TeV_madgraphMLM-pythia8",
