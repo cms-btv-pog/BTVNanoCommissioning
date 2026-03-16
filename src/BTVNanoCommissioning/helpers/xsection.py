@@ -665,7 +665,7 @@ xsection = [
         "comment": "from TOP-22-012",
     },
     {
-        "process_name": "wZZ_TuneCP5_13p6TeV-pythia8",
+        "process_name": "ZZ_TuneCP5_13p6TeV-pythia8",
         "cross_section": "12.17",
         "DAS": "/ZZ_TuneCP5_13p6TeV-pythia8/Run3Winter22MiniAOD-FlatPU0to70_122X_mcRun3_2021_realistic_v9-v2/NANOAODSIM",
         "energy": "13.6",
