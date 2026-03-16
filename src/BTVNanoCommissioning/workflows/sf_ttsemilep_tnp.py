@@ -29,10 +29,11 @@ from BTVNanoCommissioning.helpers.definitions import get_discriminators, get_def
 
 
 def select_lepton(events, channel, campaign, iso_mode="tight"):
+    eta_cut = 2.5 if ("24" or "25" in campaign) else 2.4
     if channel == "mu":
         tight = (
             (events.Muon.pt > 30)
-            & (abs(events.Muon.eta) < 2.5)
+            & (abs(events.Muon.eta) < eta_cut)
             & mu_idiso(events, campaign)
         )
         if iso_mode == "tight":
@@ -41,7 +42,7 @@ def select_lepton(events, channel, campaign, iso_mode="tight"):
             iso = ak.fill_none(events.Muon.pfRelIso04_all, 999.0)
             loose = (
                 (events.Muon.pt > 30)
-                & (abs(events.Muon.eta) < 2.5)
+                & (abs(events.Muon.eta) < eta_cut)
                 & ak.fill_none(events.Muon.tightId, False)
             )
             mask = loose & (~tight) & (iso > 0.15) & (iso < 0.40)
@@ -50,14 +51,14 @@ def select_lepton(events, channel, campaign, iso_mode="tight"):
     elif channel == "el":
         tight = (
             (events.Electron.pt > 30)
-            & (abs(events.Electron.eta) < 2.5)
+            & (abs(events.Electron.eta) < eta_cut)
             & ele_mvatightid(events, campaign)
         )
         if iso_mode == "tight":
             mask = tight
         elif iso_mode == "sbiso":
             loose = (events.Electron.pt > 30) & (
-                abs(events.Electron.eta) < 2.5)
+                abs(events.Electron.eta) < eta_cut)
             mva = ak.fill_none(
                 getattr(events.Electron, "mvaIso",
                         ak.zeros_like(events.Electron.pt)),
@@ -884,16 +885,17 @@ class NanoProcessor(processor.ProcessorABC):
 
         # MET filters
         req_metf = MET_filters(events, self._campaign)
+        eta_cut = 2.5 if ("24" or "25" in self._campaign) else 2.4
 
         # Loose veto objects
         mu_loose = (
             (events.Muon.pt > 15)
-            & (abs(events.Muon.eta) < 2.5)
+            & (abs(events.Muon.eta) < eta_cut)
             & mu_idiso(events, self._campaign)
         )
         el_loose = (
             (events.Electron.pt > 15)
-            & (abs(events.Electron.eta) < 2.5)
+            & (abs(events.Electron.eta) < eta_cut)
             & ele_mvatightid(events, self._campaign)
         )
 
@@ -912,7 +914,7 @@ class NanoProcessor(processor.ProcessorABC):
                 has_el, ak.all(dr_el > 0.4, axis=-1,
                                mask_identity=True), all_true
             )
-            base_jet_mask = jet_id(ev, self._campaign, max_eta=2.5, min_pt=25)
+            base_jet_mask = jet_id(ev, self._campaign, max_eta=eta_cut, min_pt=25)
             return ak.fill_none(base_jet_mask & clean_mu & clean_el, False, axis=-1)
 
         # Cutflow helper
