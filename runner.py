@@ -40,7 +40,11 @@ def validate_dataset_structure(fileset):
         "Muon_phi",
         "SV_pt",
     ]
-    optional_met_branches = ["MET_pt", "PuppiMET_pt", "PFMET_pt"]
+    optional_met_branches = [
+        "MET_pt", 
+        "PuppiMET_pt", 
+        "PFMET_pt"
+    ]
 
     filtered_fileset = deepcopy(fileset)
     all_files_invalid = True
