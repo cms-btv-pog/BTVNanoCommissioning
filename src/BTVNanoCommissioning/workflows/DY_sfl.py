@@ -24,7 +24,6 @@ from BTVNanoCommissioning.utils.selection import (
     mu_idiso,
 )
 
-
 class NanoProcessor(processor.ProcessorABC):
     def __init__(
         self,
