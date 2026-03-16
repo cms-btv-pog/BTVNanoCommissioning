@@ -86,7 +86,7 @@ def solve_nu_pz(px_l, py_l, pz_l, e_l, px_n, py_n, mW=80.4):
 
 # open histograms of top/W mass distribution used for likelihood calculation
 tf = uproot.open(
-    "/eos/home-j/jafan/BTV_ttbar_semilep_sf/2024/likelihoods_pas.root")
+    "src/BTVNanoCommissioning/helpers/sf_ttsemilep_likelihoods_pas.root")
 
 h2 = tf["had_tmwm"]
 x_edges = h2.axis(0).edges()
@@ -317,7 +317,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=10000,
-        selectionModifier="",  # "mu" or "el"
+        selectionModifier="mu",  # "mu" or "el"
         tag_tagger="UParTAK4",
     ):
         self._year = year
