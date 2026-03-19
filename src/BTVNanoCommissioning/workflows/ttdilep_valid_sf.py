@@ -1,7 +1,5 @@
-import collections, awkward as ak, numpy as np
-import os
+import awkward as ak, numpy as np
 from coffea import processor
-from coffea.analysis_tools import Weights
 
 # functions to load SFs, corrections
 from BTVNanoCommissioning.utils.correction import (
@@ -9,10 +7,11 @@ from BTVNanoCommissioning.utils.correction import (
     load_SF,
     weight_manager,
     common_shifts,
+    reweighting,
 )
 
 # user helper function
-from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi, PFCand_link
+from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
@@ -27,7 +26,6 @@ from BTVNanoCommissioning.utils.selection import (
     mu_idiso,
     mu_promptmvaid,
     ele_cuttightid,
-    # ele_mvatightid,
     ele_promptmvaid,
     MET_filters,
 )
@@ -64,16 +62,18 @@ class NanoProcessor(processor.ProcessorABC):
     ## Apply corrections on momentum/mass on MET, Jet, Muon
     def process(self, events):
         events = missing_branch(events, f"{self._year}_{self._campaign}")
+        sumws = reweighting(events, self.isSyst)
         vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
-            self.process_shift(update(vetoed_events, collections), name)
+            self.process_shift(update(vetoed_events, collections), sumws, name)
             for collections, name in shifts
         )
 
-    def process_shift(self, events, shift_name):
+    def process_shift(self, events, sumws, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
+
         ## Create histograms
         objs = ["mu", "ele", "jet0", "jet1"]
         if self.selMod == "ttdilep_sf_2D":
@@ -88,9 +88,20 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         if shift_name is None:
-            output["other_sumw"] = (
-                len(events) if isRealData else ak.sum(events.genWeight)
-            )
+            output["sumw"] = sumws["sumw"]
+            if not isRealData:
+                output["PDF_sumwUp"] = sumws["PDF_sumwUp"]
+                output["PDF_sumwDown"] = sumws["PDF_sumwDown"]
+                output["aS_sumwUp"] = sumws["aS_sumwUp"]
+                output["aS_sumwDown"] = sumws["aS_sumwDown"]
+                output["muR_sumwUp"] = sumws["muR_sumwUp"]
+                output["muR_sumwDown"] = sumws["muR_sumwDown"]
+                output["muF_sumwUp"] = sumws["muF_sumwUp"]
+                output["muF_sumwDown"] = sumws["muF_sumwDown"]
+                output["ISR_sumwUp"] = sumws["ISR_sumwUp"]
+                output["ISR_sumwDown"] = sumws["ISR_sumwDown"]
+                output["FSR_sumwUp"] = sumws["FSR_sumwUp"]
+                output["FSR_sumwDown"] = sumws["FSR_sumwDown"]
 
         ####################
         #    Selections    #

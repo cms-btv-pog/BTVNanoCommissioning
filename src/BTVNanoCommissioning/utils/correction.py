@@ -1730,11 +1730,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
         sf_type = sf[: sf.find(" ")]
         for nele in range(ak.num(allele.pt)[0]):
             ele = allele[:, nele]
-            ele_etaSC = (
-                ak.fill_none(ele.eta + ele.deltaEtaSC, -2.5)
-                if "Summer24" not in correct_map["campaign"]
-                else ak.fill_none(ele.superclusterEta, -2.5)
-            )
+            ele_etaSC = ak.fill_none(ele.eta + ele.deltaEtaSC, -2.5)
             masknone = ak.is_none(ele.pt)
             sfs_alle, sfs_alle_up, sfs_alle_down = (
                 np.ones_like(allele[:, 0].pt),
@@ -2258,30 +2254,81 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
     up = np.ones(len(weights.weight()))
     down = np.ones(len(weights.weight()))
 
-    # NNPDF31_nnlo_as_0118_mc_hessian_pdfas
-    # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_as_0118_mc_hessian_pdfas/NNPDF31_nnlo_as_0118_mc_hessian_pdfas.info
-    if pdf_weights is not None and "325300 - 325402" in pdf_weights.__doc__:
-        # Hessian PDF weights
-        # Eq. 20 of https://arxiv.org/pdf/1510.03865v1.pdf
-        delta = pdf_weights[:, 1:-2] - pdf_weights[:, 0]
-        pdf_unc = np.sqrt(ak.sum(np.square(delta), axis=1))
+    if pdf_weights is not None:
 
-        # alpha_S weights
-        # Eq. 27 of same ref
-        as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
+        if "306000 - 306102" in pdf_weights.__doc__:
+            # NNPDF31_nnlo_hessian_pdfas
+            # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
 
-        # PDF + alpha_S weights
-        # Eq. 28 of same ref
-        pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
+            # Hessian PDF weights
+            # Eq. 21 of https://arxiv.org/pdf/1510.03865v1.pdf
+            arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
+            summed = ak.sum(np.square(arg), axis=1)
+            pdf_unc = np.sqrt((1.0 / 99.0) * summed)
 
-        if isSyst != False:
-            weights.add("PDF_weight", nom, pdf_unc + nom, None)
-            weights.add("aS_weight", nom, as_unc + nom, None)
-            weights.add("PDFaS_weight", nom, pdfas_unc + nom, None)
-        else:
-            weights.add("PDF_weight", nom)
-            weights.add("aS_weight", nom)
-            weights.add("PDFaS_weight", nom)
+            # alpha_S weights
+            # Eq. 27 of same ref
+            as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
+
+            # PDF + alpha_S weights
+            # Eq. 28 of same ref
+            pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
+
+            if isSyst != False:
+                weights.add("PDF_weight", nom, nom + pdf_unc, None)
+                weights.add("aS_weight", nom, nom + as_unc, None)
+                weights.add("PDFaS_weight", nom, nom + pdfas_unc, None)
+            else:
+                weights.add("PDF_weight", nom)
+                weights.add("aS_weight", nom)
+                weights.add("PDFaS_weight", nom)
+
+        elif "325300 - 325402" in pdf_weights.__doc__:
+            # NNPDF31_nnlo_as_0118_mc_hessian_pdfas
+            # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_as_0118_mc_hessian_pdfas/NNPDF31_nnlo_as_0118_mc_hessian_pdfas.info
+
+            pdf_unc = np.zeros_like(weights.weight(), dtype=np.float64)
+            pdfas_unc = np.zeros_like(weights.weight(), dtype=np.float64)
+            for iPDF in range(1, 103):
+                if iPDF < 101:
+                    pdf_unc = pdf_unc + (pdf_weights[:, iPDF] / pdf_weights[:, 0] - 1.0)**2.0
+                pdfas_unc = pdf_unc + (pdf_weights[:, iPDF] / pdf_weights[:, 0] - 1.0)**2.0
+            pdf_unc = np.sqrt(pdf_unc)
+            pdfas_unc = np.sqrt(pdfas_unc)
+            as_unc_up = pdf_weights[:, 101]
+            as_unc_down = pdf_weights[:, 102]
+
+            if isSyst != False:
+                weights.add("PDF_weight", nom, nom + pdf_unc, nom - pdf_unc)
+                weights.add("aS_weight", nom, as_unc_up, as_unc_down)
+                weights.add("PDFaS_weight", nom, nom + pdfas_unc, nom - pdfas_unc)
+            else:
+                weights.add("PDF_weight", nom)
+                weights.add("aS_weight", nom)
+                weights.add("PDFaS_weight", nom)
+
+        elif "325500 - 325600" in pdf_weights.__doc__:
+            # NNPDF31_nnlo_as_0118_nf_4_mc_hessian
+            # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_as_0118_nf_4_mc_hessian/NNPDF31_nnlo_as_0118_nf_4_mc_hessian.info
+
+            pdf_unc = np.zeros_like(weights.weight(), dtype=np.float64)
+            mean_w = np.mean(pdf_weights, axis=1)
+            for iPDF in range(101):
+                pdf_unc = pdf_unc + ((pdf_weights[:, iPDF] - mean_w)**2.0)
+            pdf_unc = np.sqrt(pdf_unc / (101.0 - 1.0))
+            pdfas_unc = pdf_unc
+            as_unc_up = np.ones_like(weights.weight(), dtype=np.float64)
+            as_unc_down = np.ones_like(weights.weight(), dtype=np.float64)
+
+            if isSyst != False:
+                weights.add("PDF_weight", nom, nom + pdf_unc, nom - pdf_unc)
+                weights.add("aS_weight", nom, as_unc_up, as_unc_down)
+                weights.add("PDFaS_weight", nom, nom + pdfas_unc, nom - pdfas_unc)
+            else:
+                weights.add("PDF_weight", nom)
+                weights.add("aS_weight", nom)
+                weights.add("PDFaS_weight", nom)
+
     else:
         warnings.warn("PDF weights are not available")
         weights.add("aS_weight", nom, up, down)
@@ -2614,13 +2661,13 @@ def common_shifts(self, events):
     if "roccor" in self.SF_map.keys():
         shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
     elif "muonSS" in self.SF_map.keys():
-        shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, False)
+        shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, True)
     else:
         for shift in shifts:
             shift[0]["Muon"] = events.Muon
 
     if "electronSS" in self.SF_map.keys():
-        shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, False)
+        shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, True)
     else:
         for shift in shifts:
             shift[0]["Electron"] = events.Electron
@@ -2664,12 +2711,12 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         nom = top_pT_reweighting(pruned_ev.GenPart)
     else:
         nom = ak.ones_like(weights.weight())
-    if isSyst != False:
+    if isSyst != False and "GenPart" in pruned_ev.fields:
         weights.add(
             "ttbar_weight",
             nom,
             nom + np.abs(ak.ones_like(nom) - nom),
-            None,
+            nom - np.abs(ak.ones_like(nom) - nom),
         )
     else:
         weights.add("ttbar_weight", nom)
@@ -2684,16 +2731,113 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                 syst_wei,
             )
         if "MUO" in SF_map.keys() and "SelMuon" in pruned_ev.fields:
-            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, False)
+            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, True)
         if "EGM" in SF_map.keys() and "SelElectron" in pruned_ev.fields:
-            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, False)
+            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, True)
         if (
             "ctag" in SF_map.keys() or "btag" in SF_map.keys()
         ) and "SelJet" in pruned_ev.fields:
-            btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", False)
+            btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepJetC", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepJetB", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepCSVB", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepCSVC", syst_wei)
 
     return weights
+
+
+def reweighting(events, isSyst):
+
+    sumws = {}
+    if "genWeight" in events.fields:
+
+        # Calculate nominal sumw, including top pt weights
+        if "TT" in events.metadata["dataset"]:
+            genWeight = events.genWeight * top_pT_reweighting(events.GenPart)
+        else:
+            genWeight = events.genWeight
+        sumws["sumw"] = np.sum(np.array(genWeight), dtype=np.float64)
+
+        # Calculate reweighted sumws for theory systematics
+        if isSyst != False:
+            if "LHEPdfWeight" in events.fields:
+                nom = np.ones(len(events))
+
+                if "306000 - 306102" in events.LHEPdfWeight.__doc__:
+                    arg = events.LHEPdfWeight[:, 1:-2] - np.ones((len(events), 100))
+                    summed = ak.sum(np.square(arg), axis=1)
+                    pdf_unc = np.sqrt((1.0 / 99.0) * summed)
+                    as_unc = 0.5 * (events.LHEPdfWeight[:, 102] - events.LHEPdfWeight[:, 101])
+                    pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
+                    PDF_genWeightUp = (nom + pdf_unc) * genWeight
+                    PDF_genWeightDown = 1.0 / (nom + pdf_unc) * genWeight
+                    aS_genWeightUp = (nom + as_unc) * genWeight
+                    aS_genWeightDown = 1.0 / (nom + as_unc) * genWeight
+                    PDFaS_genWeightUp = (nom + pdfas_unc) * genWeight
+                    PDFaS_genWeightDown = 1.0 / (nom + pdfas_unc) * genWeight
+
+                elif "325300 - 325402" in events.LHEPdfWeight.__doc__:  # Run 3 5FS
+                    pdf_unc = np.zeros_like(genWeight, dtype=np.float64)
+                    pdfas_unc = np.zeros_like(genWeight, dtype=np.float64)
+                    for iPDF in range(1, 103):
+                        if iPDF < 101:
+                            pdf_unc = pdf_unc + (events.LHEPdfWeight[:, iPDF] / events.LHEPdfWeight[:, 0] - 1.0)**2.0
+                        pdfas_unc = pdf_unc + (events.LHEPdfWeight[:, iPDF] / events.LHEPdfWeight[:, 0] - 1.0)**2.0
+                    pdf_unc = np.sqrt(pdf_unc)
+                    pdfas_unc = np.sqrt(pdfas_unc)
+                    as_unc_up = events.LHEPdfWeight[:, 101]
+                    as_unc_down = events.LHEPdfWeight[:, 102]
+                    PDF_genWeightUp = (nom + pdf_unc) * genWeight
+                    PDF_genWeightDown = (nom - pdf_unc) * genWeight
+                    aS_genWeightUp = as_unc_up * genWeight
+                    aS_genWeightDown = as_unc_down * genWeight
+                    PDFaS_genWeightUp = (nom + pdfas_unc) * genWeight
+                    PDFaS_genWeightDown = (nom - pdfas_unc) * genWeight
+
+                elif "325500 - 325600" in events.LHEPdfWeight.__doc__:  # Run 3 4FS
+                    pdf_unc = np.zeros_like(genWeight, dtype=np.float64)
+                    mean_w = np.mean(events.LHEPdfWeight, axis=1)
+                    for iPDF in range(101):
+                        pdf_unc = pdf_unc + (events.LHEPdfWeight[:, iPDF] - mean_w)**2.0
+                    pdf_unc = np.sqrt(pdf_unc / (101.0 - 1.0))
+                    pdfas_unc = pdf_unc
+                    as_unc_up = np.ones_like(genWeight, dtype=np.float64)
+                    as_unc_down = np.ones_like(genWeight, dtype=np.float64)
+                    PDF_genWeightUp = (nom + pdf_unc) * genWeight
+                    PDF_genWeightDown = (nom - pdf_unc) * genWeight
+                    aS_genWeightUp = as_unc_up * genWeight
+                    aS_genWeightDown = as_unc_down * genWeight
+                    PDFaS_genWeightUp = (nom + pdfas_unc) * genWeight
+                    PDFaS_genWeightDown = (nom - pdfas_unc) * genWeight
+
+                sumws["PDF_sumwUp"] = np.sum(np.array(PDF_genWeightUp), dtype=np.float64)
+                sumws["PDF_sumwDown"] = np.sum(np.array(PDF_genWeightDown), dtype=np.float64)
+                sumws["aS_sumwUp"] = np.sum(np.array(aS_genWeightUp), dtype=np.float64)
+                sumws["aS_sumwDown"] = np.sum(np.array(aS_genWeightDown), dtype=np.float64)
+                sumws["PDFaS_sumwUp"] = np.sum(np.array(PDFaS_genWeightUp), dtype=np.float64)
+                sumws["PDFaS_sumwDown"] = np.sum(np.array(PDFaS_genWeightDown), dtype=np.float64)
+
+            if "LHEScaleWeight" in events.fields:
+                muR_genWeightUp = (events.LHEScaleWeight[:, 7] / events.LHEScaleWeight[:, 4]) * genWeight
+                muR_genWeightDown = (events.LHEScaleWeight[:, 1] / events.LHEScaleWeight[:, 4]) * genWeight
+                muF_genWeightUp = (events.LHEScaleWeight[:, 5] / events.LHEScaleWeight[:, 4]) * genWeight
+                muF_genWeightDown = (events.LHEScaleWeight[:, 3] / events.LHEScaleWeight[:, 4]) * genWeight
+                sumws["muR_sumwUp"] = np.sum(np.array(muR_genWeightUp), dtype=np.float64)
+                sumws["muR_sumwDown"] = np.sum(np.array(muR_genWeightDown), dtype=np.float64)
+                sumws["muF_sumwUp"] = np.sum(np.array(muF_genWeightUp), dtype=np.float64)
+                sumws["muF_sumwDown"] = np.sum(np.array(muF_genWeightDown), dtype=np.float64)
+
+            if "PSWeight" in events.fields:
+                ISR_genWeightUp = events.PSWeight[:, 0] * genWeight
+                ISR_genWeightDown = events.PSWeight[:, 2] * genWeight
+                FSR_genWeightUp = events.PSWeight[:, 1] * genWeight
+                FSR_genWeightDown = events.PSWeight[:, 3] * genWeight
+                sumws["ISR_sumwUp"] = np.sum(np.array(ISR_genWeightUp), dtype=np.float64)
+                sumws["ISR_sumwDown"] = np.sum(np.array(ISR_genWeightDown), dtype=np.float64)
+                sumws["FSR_sumwUp"] = np.sum(np.array(FSR_genWeightUp), dtype=np.float64)
+                sumws["FSR_sumwDown"] = np.sum(np.array(FSR_genWeightDown), dtype=np.float64)
+
+    else:
+        sumws["sumw"] = len(events)
+
+    return sumws
