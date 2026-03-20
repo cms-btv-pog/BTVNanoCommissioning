@@ -24,10 +24,12 @@ correction_config = {
         "DC": "Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt",
         "LUM": None,
         "JME": {
-            "MC": "Summer20UL16_V1 Summer20UL16_JRV3",
-            "Run2016F": "Summer20UL16_RunFGH_V1",
-            "Run2016G": "Summer20UL16_RunFGH_V1",
-            "Run2016H": "Summer20UL16_RunFGH_V1",
+            "MC": "Summer20UL16APV_V1 Summer20UL16APV_JRV3",
+            "Run2016B": "Summer20UL16APV_RunBCD_V1",
+            "Run2016C": "Summer20UL16APV_RunBCD_V1",
+            "Run2016D": "Summer20UL16APV_RunBCD_V1",
+            "Run2016E": "Summer20UL16APV_RunEF_V1",
+            "Run2016F": "Summer20UL16APV_RunEF_V1",
         },
         "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
@@ -48,12 +50,10 @@ correction_config = {
         "DC": "Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt",
         "LUM": None,
         "JME": {
-            "MC": "Summer20UL16APV_V1 Summer20UL16APV_JRV3",
-            "Run2016B": "Summer20UL16APV_RunBCD_V1",
-            "Run2016C": "Summer20UL16APV_RunBCD_V1",
-            "Run2016D": "Summer20UL16APV_RunBCD_V1",
-            "Run2016E": "Summer20UL16APV_RunEF_V1",
-            "Run2016F": "Summer20UL16APV_RunEF_V1",
+            "MC": "Summer20UL16_V1 Summer20UL16_JRV3",
+            "Run2016F": "Summer20UL16_RunFGH_V1",
+            "Run2016G": "Summer20UL16_RunFGH_V1",
+            "Run2016H": "Summer20UL16_RunFGH_V1",
         },
         "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
