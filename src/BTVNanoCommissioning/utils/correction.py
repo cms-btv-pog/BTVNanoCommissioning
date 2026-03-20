@@ -339,8 +339,8 @@ def load_SF(year, campaign, syst=False):
             # Preliminary JME corrections stored in /afs/cern.ch/user/i/izisopou/public/jme/json_files_ULRun2_PUPPI/
             if campaign in ["2016preVFP-UL", "2016postVFP-UL", "2017-UL", "2018-UL"]:
                 campaign_map_run2v15 = {
-                    "2016preVFP-UL": "Run2Summer20UL16",
-                    "2016postVFP-UL": "Run2Summer20UL16APV",
+                    "2016preVFP-UL": "Run2Summer20UL16APV",
+                    "2016postVFP-UL": "Run2Summer20UL16",
                     "2017-UL": "Run2Summer20UL17",
                     "2018-UL": "Run2Summer20UL18"
                 }
