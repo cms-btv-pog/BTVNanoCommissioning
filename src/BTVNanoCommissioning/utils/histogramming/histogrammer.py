@@ -347,9 +347,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 else:
                     flavs, seljets = genflavor, pruned_ev.SelJet
                 # Check if histogram name has a trailing jet index suffix
-                has_jet_index = any(
-                    histname.endswith(f"_{i}") for i in range(nj)
-                )
+                has_jet_index = any(histname.endswith(f"_{i}") for i in range(nj))
                 if has_jet_index:
                     for i in range(nj):
                         if not histname.endswith(str(i)):

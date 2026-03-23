@@ -233,7 +233,7 @@ if args.DAS_campaign == "auto":
         "Summer23_2023": "Run2023C*Sep2023,Run3Summer23NanoAODv12",
         "Summer23BPix_2023": "Run2023D*Sep2023,Run3Summer23BPixNanoAODv12",
         "Summer24_2024": "Run2024*MINIv6,RunIII2024Summer24NanoAODv15",
-        "Summer25_2025": "Run2024*MINIv6,RunIII2024Summer24NanoAODv15", # not a mistake, one uses 2024 MC for 2025 analysis
+        "Summer25_2025": "Run2024*MINIv6,RunIII2024Summer24NanoAODv15",  # not a mistake, one uses 2024 MC for 2025 analysis
     }
     key = f"{args.campaign}_{args.year}"
     if key in DAS_campaign_map:
@@ -656,7 +656,8 @@ def run_python_xrootd_ping(server, site, timeout=10):
             python_path = python_file.name
 
             # Write a self-contained Python script
-            python_file.write("""
+            python_file.write(
+                """
 import sys
 import os
 import time
@@ -700,7 +701,8 @@ try:
 except Exception as e:
     print(f"ERROR: {str(e)}")
     sys.exit(2)
-""")
+"""
+            )
 
         # Create the bash wrapper script that sets up the environment
         with tempfile.NamedTemporaryFile(

@@ -43,8 +43,15 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 ),
             ),
         )
-    elif campaign in ["Summer22", "Summer22EE", "Summer23", "Summer23BPix",
-                       "Winter24", "Summer24", "Winter25"]:
+    elif campaign in [
+        "Summer22",
+        "Summer22EE",
+        "Summer23",
+        "Summer23BPix",
+        "Winter24",
+        "Summer24",
+        "Winter25",
+    ]:
         # NanoV13+ / NanoV15 reprocessing (no jetId branch, compute from components)
         barrel = (
             (events.Jet.neHEF < 0.99)
