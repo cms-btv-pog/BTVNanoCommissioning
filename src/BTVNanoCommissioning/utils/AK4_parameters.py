@@ -186,14 +186,14 @@ correction_config = {
         "LUM": "PU_weights_Summer24.histo.root",
         "JME": {
             # TODO: JER are a placeholder for now (July 2025)
-            "MC": "Summer24Prompt24_V1 Summer23BPixPrompt23_RunD_JRV1",
-            "Run2024C": "Summer24Prompt24_V1",
-            "Run2024D": "Summer24Prompt24_V1",
-            "Run2024E": "Summer24Prompt24_V1",
-            "Run2024F": "Summer24Prompt24_V1",
-            "Run2024G": "Summer24Prompt24_V1",
-            "Run2024H": "Summer24Prompt24_V1",
-            "Run2024I": "Summer24Prompt24_V1",
+            "MC": "Summer24Prompt24_V2 Summer23BPixPrompt23_RunD_JRV1",
+            "Run2024C": "Summer24Prompt24_V2",
+            "Run2024D": "Summer24Prompt24_V2",
+            "Run2024E": "Summer24Prompt24_V2",
+            "Run2024F": "Summer24Prompt24_V2",
+            "Run2024G": "Summer24Prompt24_V2",
+            "Run2024H": "Summer24Prompt24_V2",
+            "Run2024I": "Summer24Prompt24_V2",
         },
         "jetveto": {"Summer24Prompt24_RunBCDEFGHI_V1": "jetvetomap"},
         "MUO": {

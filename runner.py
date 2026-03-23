@@ -557,11 +557,11 @@ if __name__ == "__main__":
             0
         ]
         condor_extra = [
+            f"export PATH={pathvar}:$PATH",
             f'source {os.environ["HOME"]}/.bashrc',
         ]
         if "brux" in args.executor:
             job_script_prologue.append(f"cd {os.getcwd()}")
-            condor_extra.append(f"export PATH={pathvar}:$PATH")
         else:
             condor_extra.append(f"cd {os.getcwd()}")
 
@@ -580,12 +580,12 @@ if __name__ == "__main__":
                     condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
                 else:
                     condor_extra.append(
-                        f"micromamba activate {os.environ['MAMBA_EXE']}"
+                        f"micromamba activate {os.environ['CONDA_PREFIX']}"
                     )
             elif conda_available:
                 condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
             elif mamba_available:
-                condor_extra.append(f"micromamba activate {os.environ['MAMBA_EXE']}")
+                condor_extra.append(f"micromamba activate {os.environ['CONDA_PREFIX']}")
             else:
                 # Handle the case when neither Conda nor Micromamba is available
                 print(
