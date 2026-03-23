@@ -113,10 +113,11 @@ jobs:
           -certdir /cvmfs/grid.cern.ch/etc/grid-security/certificates/ \
           -vomses $X509_VOMSES \
           --valid 12:00 \
-          --ignorewarn
+          --ignorewarn || true
         
         # Verify proxy was created
-        voms-proxy-info -all
+        voms-proxy-info -all || true
+        test -f /tmp/x509up_u$(id -u)
     
     - name: Install Repo
       run: |
