@@ -2368,7 +2368,8 @@ class JPCalibHandler(object):
 
         # Handle fully-empty track collections: ak.max(...) can return None
         # (e.g. no tracks pass JP selection in a chunk).
-        max_trk_index = int(ak.to_numpy(ak.fill_none(ak.max(trk_index, axis=None), 0)))
+        max_val = ak.max(trk_index, axis=None)
+        max_trk_index = 0 if max_val is None else int(ak.to_numpy(max_val))
         fact_array = ak.concatenate(
             [
                 [1.0],
