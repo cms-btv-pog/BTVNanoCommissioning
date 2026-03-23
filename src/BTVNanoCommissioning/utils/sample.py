@@ -191,6 +191,7 @@ predefined_sample = {
             "TTtoLNu2Q_Fil-HT-500-NJet-9_Par-Hdamp-418_TuneCP5_13p6TeV_powheg-pythia8",
             "TTtoLNu2Q_Fil-HT-500-NJet-9_TuneCP5Up_13p6TeV_powheg-pythia8",
             "TTtoLNu2Q_Fil-HT-500-NJet-9_TuneCP5Down_13p6TeV_powheg-pythia8",
+        ]
     },
     "ctag_ttsemilep_sf": {
         "data": ["Muon", "Muon0", "Muon1"],
