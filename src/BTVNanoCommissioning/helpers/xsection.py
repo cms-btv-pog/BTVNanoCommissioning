@@ -384,6 +384,13 @@ xsection = [
         "comment": "GenXSecAnalyzer",
     },
     {
+        "process_name": "TTNuNu_TuneCP5_13p6TeV_amcatnlo-pythia8",
+        "cross_section": "0.1638",
+        "accuracy": "NLO",
+        "energy": "13.6",
+        "comment": "GenXSecAnalyzer",
+    },
+    {
         "process_name": "TTLL_Bin-MLL-4to50_TuneCP5_13p6TeV_amcatnlo-pythia8",
         "cross_section": "0.03949",
         "accuracy": "NLO",
@@ -564,6 +571,13 @@ xsection = [
         "DAS": "/WZtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv3-124X_mcRun3_2022_realistic_postEE_v1-v2/MINIAODSIM",
         "equivalent_lumi": 62.96,
         "fraction_negative_weight": 0.0002186,
+    },
+    {
+        "process_name": "WZToLNu2B-1Jets-4FS_TuneCP5_13p6TeV_amcatnloFXFX-madspin-pythia8",
+        "cross_section": "2.663",
+        "accuracy": "NLO",
+        "energy": "13.6",
+        "comment": "GenXSecAnalyzer",
     },
     # {
     #     "id": "65e2af6bc9012c00640bf9e6",

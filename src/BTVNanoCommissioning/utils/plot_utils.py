@@ -43,7 +43,7 @@ sample_mergemap = {
         "ZZto4L_TuneCP5_13p6TeV_powheg-pythia8",
         "ZZto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
         "WZtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
-        "WZToLNu2B-1Jets-4FS_TuneCP5_13p6TeV-amcatnloFXFX-madspin-pythia8",
+        "WZToLNu2B-1Jets-4FS_TuneCP5_13p6TeV_amcatnloFXFX-madspin-pythia8",
         "WZToL3Nu-1Jets-4FS_TuneCP5_13p6TeV-amcatnloFXFX-madspin-pythia8",
         "WZto2L2Q_TuneCP5_13p6TeV_powheg-pythia8",
         "WZto3LNu_TuneCP5_13p6TeV_powheg-pythia8",
