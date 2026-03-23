@@ -1,5 +1,6 @@
 import awkward as ak
 import numpy as np
+from BTVNanoCommissioning.helpers.func import campaign_map
 
 
 def HLT_helper(events, triggers):
@@ -42,7 +43,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 ),
             ),
         )
-    elif campaign in ["Winter24", "Summer24"]:
+    elif campaign in ["Winter24", "Summer24", "Prompt25"]:
         # NanoV13 & NanoV14 & NanoV15
         barrel = (
             (events.Jet.neHEF < 0.99)
@@ -99,7 +100,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
 def ele_cuttightid(events, campaign):
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign
+        if "Summer24" not in campaign and "Prompt25" not in campaign
         else events.Electron.superclusterEta
     )
     elemask = (
@@ -111,12 +112,29 @@ def ele_cuttightid(events, campaign):
 def ele_mvatightid(events, campaign):
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign
+        if "Summer24" not in campaign and "Prompt25" not in campaign
         else events.Electron.superclusterEta
     )
     elemask = (
         (abs(ele_etaSC) < 1.4442) | ((abs(ele_etaSC) > 1.566) & (abs(ele_etaSC) < 2.5))
     ) & (events.Electron.mvaIso_WP80 > 0.5)
+    return elemask
+
+
+def ele_promptmvaid(events, campaign):
+    # https://indico.cern.ch/event/1575017/contributions/6635248/attachments/3115862/5524310/EGammaAug08.pdf
+    ele_etaSC = (
+        events.Electron.eta + events.Electron.deltaEtaSC
+        if "Summer24" not in campaign and "Prompt25" not in campaign
+        else events.Electron.superclusterEta
+    )
+    elemask = (
+        (abs(ele_etaSC) < 1.4442) | ((abs(ele_etaSC) > 1.566) & (abs(ele_etaSC) < 2.5))
+    ) & (
+        events.Electron.promptMVA >= 0.9
+        if "Summer24" in campaign or "Prompt25" in campaign
+        else 0.3
+    )
     return elemask
 
 
@@ -137,6 +155,19 @@ def mu_idiso(events, campaign):
         (abs(events.Muon.eta) < 2.4)
         & (events.Muon.tightId > 0.5)
         & (events.Muon.pfRelIso04_all <= 0.15)
+    )
+    return mumask
+
+
+def mu_promptmvaid(events, campaign):
+    # https://muon-wiki.docs.cern.ch/guidelines/recommendations/#prompt-mva-formerly-tth-mva
+    # https://muon-wiki.docs.cern.ch/guidelines/recommendations/#muon-isolation
+    # https://cms-talk.web.cern.ch/t/prompt-mva-sfs-definition/132578
+    # https://indico.cern.ch/event/1351304/contributions/5688794/attachments/2765665/4817340/CarlosVico_Muon_mvaTTH_24nov2023.pdf (slide 5 for WP)
+    mumask = (
+        (abs(events.Muon.eta) < 2.4)
+        & (events.Muon.tightId > 0.5)
+        & (events.Muon.promptMVA > 0.64)
     )
     return mumask
 
@@ -190,10 +221,18 @@ def btag_wp(jets, year, campaign, tagger, borc, wp):
     WP = wp_dict(year, campaign)
     if borc == "b":
         jet_mask = jets[f"btag{tagger}B"] > WP[tagger]["b"][wp]
-    else:
+    elif borc == "c":
         jet_mask = (jets[f"btag{tagger}CvB"] > WP[tagger]["c"][wp][1]) & (
             jets[f"btag{tagger}CvL"] > WP[tagger]["c"][wp][0]
         )
+    elif borc == "2Db":
+        jet_mask = jets[f"btag{tagger}2Dbin"] >= WP[tagger]["2D"]["b"][wp]
+    elif borc == "2Dc":
+        jet_mask = (jets[f"btag{tagger}2Dbin"] >= WP[tagger]["2D"]["c"][wp][0]) & (
+            jets[f"btag{tagger}2Dbin"] <= WP[tagger]["2D"]["c"][wp][1]
+        )
+    else:
+        raise ValueError("Invalid flavour!")
     return jet_mask
 
 
@@ -421,9 +460,77 @@ btag_wp_dict = {
                 "T": [0.650, 0.421],
                 "XT": [0.810, 0.736],
             },
+            "2D": {
+                "HFvLF": np.array([0.0, 0.250, 0.454, 0.810, 1.0]),
+                "BvC": np.array(
+                    [0.0, 0.006, 0.016, 0.056, 0.760, 0.944, 0.984, 0.994, 1.0]
+                ),
+                "mapping": {  # HFvLF, BvC
+                    1: {
+                        1: 0,
+                        2: 0,
+                        3: 0,
+                        4: 0,
+                        5: 0,
+                        6: 0,
+                        7: 0,
+                        8: 0,
+                    },
+                    2: {
+                        1: 40,
+                        2: 40,
+                        3: 40,
+                        4: 40,
+                        5: 40,
+                        6: 40,
+                        7: 40,
+                        8: 40,
+                    },
+                    3: {
+                        1: 41,
+                        2: 41,
+                        3: 41,
+                        4: 41,
+                        5: 41,
+                        6: 41,
+                        7: 41,
+                        8: 41,
+                    },
+                    4: {
+                        1: 44,
+                        2: 43,
+                        3: 42,
+                        4: 50,
+                        5: 51,
+                        6: 52,
+                        7: 53,
+                        8: 54,
+                    },
+                },
+                "b": {
+                    "L": 50,
+                    "M": 51,
+                    "T": 52,
+                },
+                "c": {
+                    "L": [40, 44],
+                    "M": [41, 44],
+                    "T": [42, 44],
+                },
+                "jet_pt_bins": [
+                    (25, 35),
+                    (35, 50),
+                    (50, 70),
+                    (70, 90),
+                    (90, 120),
+                    (120, 10000),
+                ],
+            },
         },
     },
 }
+btag_wp_dict["2025_Summer24"] = btag_wp_dict["2024_Summer24"]
+btag_wp_dict["2025_Prompt25"] = btag_wp_dict["2024_Summer24"]
 
 
 import os, correctionlib
@@ -448,13 +555,13 @@ def wp_dict(year, campaign):
 
     wps_dict = {}
     if os.path.exists(
-        f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{year}_{campaign}"
+        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{campaign_map()[campaign]}/latest/"
     ):
         btag = correctionlib.CorrectionSet.from_file(
-            f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{year}_{campaign}/btagging.json.gz"
+            f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{campaign_map()[campaign]}/latest/btagging.json.gz"
         )
         ctag = correctionlib.CorrectionSet.from_file(
-            f"/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/{year}_{campaign}/ctagging.json.gz"
+            f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{campaign_map()[campaign]}/latest/ctagging.json.gz"
         )
         tagger_list = [i for i in list(btag.keys()) if "wp_values" in i]
 
@@ -659,6 +766,26 @@ met_filters = {
         ],
     },
     "Summer24": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+        ],
+    },
+    "Prompt25": {
         "data": [
             "goodVertices",
             "globalSuperTightHalo2016Filter",

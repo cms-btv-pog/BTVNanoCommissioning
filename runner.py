@@ -3,8 +3,10 @@ import sys
 import json
 import argparse
 import time
+from copy import deepcopy
 
 import numpy as np
+import awkward as ak
 
 import uproot
 from coffea.util import load, save
@@ -26,7 +28,6 @@ def validate_dataset_structure(fileset):
     """Check dataset files and return a filtered fileset with only valid files."""
     import uproot
     import logging
-    from copy import deepcopy
 
     # Critical branches that must be present
     required_branches = [
@@ -70,6 +71,12 @@ def validate_dataset_structure(fileset):
                 if missing:
                     print(
                         f"WARNING: File missing critical branches {missing}: {filename}"
+                    )
+                    continue
+                if not any(met in branches for met in optional_met_branches):
+                    print(
+                        "WARNING: File missing MET branch; expected one of "
+                        f"{optional_met_branches}: {filename}"
                     )
                     continue
 
@@ -137,9 +144,6 @@ def retry_handler(exception, task_record):
 
 
 ## From condor/submitter.py https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/9edb9ed6bb0b28730b8de9e5aa1142ec4fdf74b7/condor/submitter.py
-# create t
-
-
 def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
     import tarfile
 
@@ -222,7 +226,7 @@ def config_parser(parser):
         default="False",
         type=str,
         choices=["False", "all", "weight_only", "JERC_split", "JP_MC"],
-        help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
+        help="Run with systematics, all, weights_only (no JERC uncertainties included), JERC_split, None",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
     parser.add_argument(
@@ -384,12 +388,12 @@ if __name__ == "__main__":
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
         histoutdir = (
-            f"{outdirprefix}hists_{args.workflow}_{sample_json.rstrip('.json')}"
+            f"{outdirprefix}hists_{args.workflow}_{sample_json.replace('.json', '')}"
         )
-        outdir = f"{outdirprefix}arrays_{args.workflow}_{sample_json.rstrip('.json')}"
-        coffeaoutput = (
-            f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
+        outdir = (
+            f"{outdirprefix}arrays_{args.workflow}_{sample_json.replace('.json', '')}"
         )
+        coffeaoutput = f"{histoutdir}/hists_{args.workflow}_{sample_json.replace('.json', '')}.coffea"
     os.system(f"mkdir -p {histoutdir}")
     # load dataset
     with open(args.samplejson) as f:
@@ -645,7 +649,6 @@ if __name__ == "__main__":
                         "BTVNanoCommissioning.tar.gz",
                         base_dir,
                         exclude_dirs=[
-                            "jsonpog-integration",
                             "BTVNanoCommissioning.egg-info",
                         ],
                     )

@@ -221,7 +221,7 @@ def get_xrootd_sites_map():
                                     )
                         else:
                             sites_xrootd_access[site["rse"]] = proc["prefix"]
-        json.dump(sites_xrootd_access, open(".sites_map.json", "w"))
+        json.dump(sites_xrootd_access, open(".sites_map.json", "w"), indent=4)
 
     return json.load(open(".sites_map.json"))
 
@@ -655,7 +655,8 @@ def run_python_xrootd_ping(server, site, timeout=10):
             python_path = python_file.name
 
             # Write a self-contained Python script
-            python_file.write("""
+            python_file.write(
+                """
 import sys
 import os
 import time
@@ -699,7 +700,8 @@ try:
 except Exception as e:
     print(f"ERROR: {str(e)}")
     sys.exit(2)
-""")
+"""
+            )
 
         # Create the bash wrapper script that sets up the environment
         with tempfile.NamedTemporaryFile(
@@ -1880,7 +1882,7 @@ def main(args):
     elif os.path.exists(args.output) and args.overwrite == False:
         raise Exception(f"{args.output} exists")
 
-    ## If you only provide dataset from the dataset name(DAS) or do from_workflow
+    ## If you only provide dataset from the dataset name (DAS) or do from_workflow
     if args.from_dataset or args.from_workflow is not None:
         if args.from_dataset:
             f = open(args.input)

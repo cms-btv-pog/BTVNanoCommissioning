@@ -77,6 +77,7 @@ def get_main_parser():
             "Summer23",
             "Summer23BPix",
             "Summer24",
+            "Prompt25",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",
@@ -156,7 +157,7 @@ if __name__ == "__main__":
             make_tarfile(
                 "BTVNanoCommissioning.tar.gz",
                 base_dir,
-                exclude_dirs=["jsonpog-integration", "BTVNanoCommissioning.egg-info"],
+                exclude_dirs=["BTVNanoCommissioning.egg-info"],
             )
 
     # Create job dir
@@ -230,9 +231,12 @@ Log        = {log_dir}/job.log_$(Cluster)
 Output     = {log_dir}/job.out_$(Cluster)-$(Process)
 Error      = {log_dir}/job.err_$(Cluster)-$(Process)
 
+max_retries             = 10
+periodic_release        = True
 should_transfer_files   = YES
 when_to_transfer_output = ON_EXIT_OR_EVICT
 transfer_input_files    = {transfer_input_files}
+transfer_output_files   = .success
 
 Queue JOBNUM from {jobnum_file}
 """.format(

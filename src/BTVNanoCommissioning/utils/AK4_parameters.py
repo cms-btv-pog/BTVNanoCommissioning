@@ -183,7 +183,7 @@ correction_config = {
     },
     "Summer24": {
         "DC": "Cert_Collisions2024_378981_386951_Golden.json",
-        "LUM": "PU_weights_Summer24.histo.root",
+        "LUM": "",
         "JME": {
             # TODO: JER are a placeholder for now (July 2025)
             "MC": "Summer24Prompt24_V2 Summer23BPixPrompt23_RunD_JRV1",
@@ -198,13 +198,29 @@ correction_config = {
         "jetveto": {"Summer24Prompt24_RunBCDEFGHI_V1": "jetvetomap"},
         "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
-            "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+            # "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+            "mu_Iso": "NUM_promptMVA_WP64ID_DEN_TightID",
+            # TODO: need to derive trigger SFs with prompt MVA?
+            # E.g. NUM_IsoMu24_DEN_CutBasedIdTight_and_promptMVA_WP64ID
+            # "mu_Trig": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
         },
         "EGM": {
-            "ele_Reco 2024 Electron-ID-SF": "",
-            "ele_ID 2024 Electron-ID-SF": "wp80iso",
+            "ele_Reco 2024Prompt Electron-ID-SF": "",
+            # "ele_ID 2024Prompt Electron-ID-SF": "wp80iso",
+            "ele_ID 2024Prompt Electron-ID-SF": "PromptMVA-Tight",
+            # TODO: need to derive trigger SFs with prompt MVA?
+            # E.g. HLT_SF_Ele30_PromptMVA-Tight
+            # "ele_Trig 2024Prompt Electron-HLT-SF": "HLT_SF_Ele30_MVAiso80ID",
         },
         "muonSS": "",
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        # "BTV": ["ctag", "UParTAK4_pseudocontinuous"],
+    },
+    "Prompt25": {
+        "DC": "Cert_Collisions2025_391658_398903_Golden.json",
         "electronSS": [
             "Scale",
             "SmearAndSyst",
