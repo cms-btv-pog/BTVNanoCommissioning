@@ -364,11 +364,15 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         )
                 elif histname in seljets.fields:
                     # No jet index suffix (nj=1) - fill directly
+                    discr = seljets[histname]
+                    flat_discr = flatten(discr)
+                    wgt = weights.partial_weight(exclude=exclude_btv)
+                    temp_syst = np.full(len(flat_discr), syst[0])
                     h.fill(
-                        syst=syst,
-                        flav=flavs,
-                        discr=seljets[histname],
-                        weight=weights.partial_weight(exclude=exclude_btv),
+                        syst=temp_syst,
+                        flav=flatten(flavs),
+                        discr=flat_discr,
+                        weight=flatten(ak.broadcast_arrays(wgt, discr)[0]),
                     )
 
         if "dr_poslnegl" in output.keys():
