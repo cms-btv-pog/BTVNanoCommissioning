@@ -4,7 +4,7 @@ import numpy as np
 import awkward as ak
 
 
-def missing_branch(events, campaign="2024_Summer24"):
+def missing_branch(events, campaign=None):
     """
     Add missing branches or rename branches in the `events` object.
 
@@ -289,6 +289,7 @@ def missing_branch(events, campaign="2024_Summer24"):
         not hasattr(events.Jet, "btagUParTAK42Dbin")
         and hasattr(events.Jet, "btagUParTAK4HFvLF")
         and hasattr(events.Jet, "btagUParTAK4BvC")
+        and campaign is not None
     ):
         jets = events.Jet
         jets_pt = ak.flatten(jets.pt)

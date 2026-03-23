@@ -42,150 +42,105 @@ def scaleSumW(output, lumi):
             scaled[sample]["sumw"] = merged_output[sample]["sumw"]
             if isinstance(h_obj, hist.Hist):
                 h = copy.deepcopy(h_obj)
-                h_scalevar_muFUp = copy.deepcopy(h_obj)
-                h_scalevar_muFDown = copy.deepcopy(h_obj)
-                h_scalevar_muRUp = copy.deepcopy(h_obj)
-                h_scalevar_muRDown = copy.deepcopy(h_obj)
-                h_PS_ISRUp = copy.deepcopy(h_obj)
-                h_PS_ISRDown = copy.deepcopy(h_obj)
-                h_PS_FSRUp = copy.deepcopy(h_obj)
-                h_PS_FSRDown = copy.deepcopy(h_obj)
                 h_PDF_weightUp = copy.deepcopy(h_obj)
                 h_PDF_weightDown = copy.deepcopy(h_obj)
                 h_aS_weightUp = copy.deepcopy(h_obj)
                 h_aS_weightDown = copy.deepcopy(h_obj)
+                h_scalevar_muRUp = copy.deepcopy(h_obj)
+                h_scalevar_muRDown = copy.deepcopy(h_obj)
+                h_scalevar_muFUp = copy.deepcopy(h_obj)
+                h_scalevar_muFDown = copy.deepcopy(h_obj)
+                h_PS_ISRUp = copy.deepcopy(h_obj)
+                h_PS_ISRDown = copy.deepcopy(h_obj)
+                h_PS_FSRUp = copy.deepcopy(h_obj)
+                h_PS_FSRDown = copy.deepcopy(h_obj)
 
                 if sample in xs_dict.keys():
-
-                    nLHEScaleSumw = 9
-                    temp_reshaped_LHEScaleSumw = np.reshape(
-                        merged_output[sample]["LHEScaleSumw"],
-                        (
-                            int(
-                                len(merged_output[sample]["LHEScaleSumw"])
-                                / nLHEScaleSumw
-                            ),
-                            nLHEScaleSumw,
-                        ),
-                    )
-                    reshaped_LHEScaleSumw = []
-                    for i in range(nLHEScaleSumw):
-                        reshaped_LHEScaleSumw.append(
-                            np.sum(temp_reshaped_LHEScaleSumw[:, i])
-                        )
-
-                    nLHEPdfSumw = 103
-                    temp_reshaped_LHEPdfSumw = np.reshape(
-                        merged_output[sample]["LHEPdfSumw"],
-                        (
-                            int(len(merged_output[sample]["LHEPdfSumw"]) / nLHEPdfSumw),
-                            nLHEPdfSumw,
-                        ),
-                    )
-                    reshaped_LHEPdfSumw = []
-                    for i in range(nLHEPdfSumw):
-                        reshaped_LHEPdfSumw.append(
-                            np.sum(temp_reshaped_LHEPdfSumw[:, i])
-                        )
-
-                    nPSSumw = 4
-                    temp_reshaped_PSSumw = np.reshape(
-                        merged_output[sample]["PSSumw"],
-                        (int(len(merged_output[sample]["PSSumw"]) / nPSSumw), nPSSumw),
-                    )
-                    reshaped_PSSumw = []
-                    for i in range(nPSSumw):
-                        reshaped_PSSumw.append(np.sum(temp_reshaped_PSSumw[:, i]))
-
-                    scaled[sample]["LHEScaleSumw"] = reshaped_LHEScaleSumw
-                    scaled[sample]["LHEPdfSumw"] = reshaped_LHEPdfSumw
-                    scaled[sample]["PSSumw"] = reshaped_PSSumw
-
-                    ############################################################################################
-                    # WARNING: THIS IS WRONG
-                    delta = (
-                        scaled[sample]["LHEPdfSumw"][1:-2]
-                        - scaled[sample]["LHEPdfSumw"][0]
-                    )
-                    pdfWeightSumw = np.sqrt(np.sum(np.square(delta)))
-                    aSWeightSumw = 0.5 * (
-                        scaled[sample]["LHEPdfSumw"][102]
-                        - scaled[sample]["LHEPdfSumw"][101]
-                    )
-                    ############################################################################################
+                    scaled[sample]["PDF_sumwUp"] = merged_output[sample]["PDF_sumwUp"]
+                    scaled[sample]["PDF_sumwDown"] = merged_output[sample]["PDF_sumwDown"]
+                    scaled[sample]["aS_sumwUp"] = merged_output[sample]["aS_sumwUp"]
+                    scaled[sample]["aS_sumwDown"] = merged_output[sample]["aS_sumwDown"]
+                    scaled[sample]["muR_sumwUp"] = merged_output[sample]["muR_sumwUp"]
+                    scaled[sample]["muR_sumwDown"] = merged_output[sample]["muR_sumwDown"]
+                    scaled[sample]["muF_sumwUp"] = merged_output[sample]["muF_sumwUp"]
+                    scaled[sample]["muF_sumwDown"] = merged_output[sample]["muF_sumwDown"]
+                    scaled[sample]["ISR_sumwUp"] = merged_output[sample]["ISR_sumwUp"]
+                    scaled[sample]["ISR_sumwDown"] = merged_output[sample]["ISR_sumwDown"]
+                    scaled[sample]["FSR_sumwUp"] = merged_output[sample]["FSR_sumwUp"]
+                    scaled[sample]["FSR_sumwDown"] = merged_output[sample]["FSR_sumwDown"]
 
                     h = h * xs_dict[sample] * lumi / merged_output[sample]["sumw"]
-                    h_scalevar_muFUp = (
-                        h_scalevar_muFUp
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["LHEScaleSumw"][5]
-                    )
-                    h_scalevar_muFDown = (
-                        h_scalevar_muFDown
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["LHEScaleSumw"][3]
-                    )
-                    h_scalevar_muRUp = (
-                        h_scalevar_muRUp
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["LHEScaleSumw"][7]
-                    )
-                    h_scalevar_muRDown = (
-                        h_scalevar_muRDown
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["LHEScaleSumw"][1]
-                    )
-                    h_PS_ISRUp = (
-                        h_PS_ISRUp
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["PSSumw"][0]
-                    )
-                    h_PS_ISRDown = (
-                        h_PS_ISRDown
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["PSSumw"][2]
-                    )
-                    h_PS_FSRUp = (
-                        h_PS_FSRUp
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["PSSumw"][1]
-                    )
-                    h_PS_FSRDown = (
-                        h_PS_FSRDown
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["PSSumw"][3]
-                    )
                     h_PDF_weightUp = (
                         h_PDF_weightUp
                         * xs_dict[sample]
                         * lumi
-                        / (scaled[sample]["sumw"] + pdfWeightSumw)
+                        / scaled[sample]["PDF_sumwUp"]
                     )
                     h_PDF_weightDown = (
                         h_PDF_weightDown
                         * xs_dict[sample]
                         * lumi
-                        / (scaled[sample]["sumw"] - pdfWeightSumw)
+                        / scaled[sample]["PDF_sumwDown"]
                     )
                     h_aS_weightUp = (
                         h_aS_weightUp
                         * xs_dict[sample]
                         * lumi
-                        / (scaled[sample]["sumw"] + aSWeightSumw)
+                        / scaled[sample]["aS_sumwUp"]
                     )
                     h_aS_weightDown = (
                         h_aS_weightDown
                         * xs_dict[sample]
                         * lumi
-                        / (scaled[sample]["sumw"] - aSWeightSumw)
+                        / scaled[sample]["aS_sumwDown"]
+                    )
+                    h_scalevar_muRUp = (
+                        h_scalevar_muRUp
+                        * xs_dict[sample]
+                        * lumi
+                        / scaled[sample]["muR_sumwUp"]
+                    )
+                    h_scalevar_muRDown = (
+                        h_scalevar_muRDown
+                        * xs_dict[sample]
+                        * lumi
+                        / scaled[sample]["muR_sumwDown"]
+                    )
+                    h_scalevar_muFUp = (
+                        h_scalevar_muFUp
+                        * xs_dict[sample]
+                        * lumi
+                        / scaled[sample]["muF_sumwUp"]
+                    )
+                    h_scalevar_muFDown = (
+                        h_scalevar_muFDown
+                        * xs_dict[sample]
+                        * lumi
+                        / scaled[sample]["muF_sumwDown"]
+                    )
+                    h_PS_ISRUp = (
+                        h_PS_ISRUp
+                        * xs_dict[sample]
+                        * lumi
+                        / scaled[sample]["ISR_sumwUp"]
+                    )
+                    h_PS_ISRDown = (
+                        h_PS_ISRDown
+                        * xs_dict[sample]
+                        * lumi
+                        / scaled[sample]["ISR_sumwDown"]
+                    )
+                    h_PS_FSRUp = (
+                        h_PS_FSRUp
+                        * xs_dict[sample]
+                        * lumi
+                        / scaled[sample]["FSR_sumwUp"]
+                    )
+                    h_PS_FSRDown = (
+                        h_PS_FSRDown
+                        * xs_dict[sample]
+                        * lumi
+                        / scaled[sample]["FSR_sumwDown"]
                     )
                 else:
                     if ("data" in sample) or ("Run" in sample) or ("Double" in sample):
@@ -198,18 +153,18 @@ def scaleSumW(output, lumi):
 
                 scaled[sample][key] = h
                 if sample in xs_dict.keys():
-                    scaled[sample][f"{key}_scalevar_muFUp"] = h_scalevar_muFUp
-                    scaled[sample][f"{key}_scalevar_muFDown"] = h_scalevar_muFDown
-                    scaled[sample][f"{key}_scalevar_muRUp"] = h_scalevar_muRUp
-                    scaled[sample][f"{key}_scalevar_muRDown"] = h_scalevar_muRDown
-                    scaled[sample][f"{key}_UEPS_ISRUp"] = h_PS_ISRUp
-                    scaled[sample][f"{key}_UEPS_ISRDown"] = h_PS_ISRDown
-                    scaled[sample][f"{key}_UEPS_FSRUp"] = h_PS_FSRUp
-                    scaled[sample][f"{key}_UEPS_FSRDown"] = h_PS_FSRDown
                     scaled[sample][f"{key}_PDF_weightUp"] = h_PDF_weightUp
                     scaled[sample][f"{key}_PDF_weightDown"] = h_PDF_weightDown
                     scaled[sample][f"{key}_aS_weightUp"] = h_aS_weightUp
                     scaled[sample][f"{key}_aS_weightDown"] = h_aS_weightDown
+                    scaled[sample][f"{key}_scalevar_muRUp"] = h_scalevar_muRUp
+                    scaled[sample][f"{key}_scalevar_muRDown"] = h_scalevar_muRDown
+                    scaled[sample][f"{key}_scalevar_muFUp"] = h_scalevar_muFUp
+                    scaled[sample][f"{key}_scalevar_muFDown"] = h_scalevar_muFDown
+                    scaled[sample][f"{key}_UEPS_ISRUp"] = h_PS_ISRUp
+                    scaled[sample][f"{key}_UEPS_ISRDown"] = h_PS_ISRDown
+                    scaled[sample][f"{key}_UEPS_FSRUp"] = h_PS_FSRUp
+                    scaled[sample][f"{key}_UEPS_FSRDown"] = h_PS_FSRDown
     return scaled
 
 

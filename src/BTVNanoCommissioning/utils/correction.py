@@ -517,14 +517,9 @@ def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
     return input_values
 
 
-cset_jersmear_paths = [
-    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/JER-Smearing/latest/jer_smear.json.gz",
-    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/jer_smear.json.gz",
-]
-for _jersmear_path in cset_jersmear_paths:
-    if os.path.exists(_jersmear_path):
-        cset_jersmear = correctionlib.CorrectionSet.from_file(_jersmear_path)
-        break
+_jersmear_path = "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/JER-Smearing/latest/jer_smear.json.gz"
+if os.path.exists(_jersmear_path):
+    cset_jersmear = correctionlib.CorrectionSet.from_file(_jersmear_path)
 else:
     warnings.warn(
         "JER smearing JSON not found in CVMFS. JER smearing corrections will be disabled.",
@@ -533,6 +528,67 @@ else:
     )
     cset_jersmear = {"JERSmear": None}
 sf_jersmear = cset_jersmear["JERSmear"]
+
+
+def get_JER(
+    correct_map,
+    jername,
+    j,
+    jersyst,
+):
+    """
+    Retrieve JER for each jet pt shift.
+
+    Parameters:
+    correct_map (dict): A dictionary containing correction factors and settings for JER.
+    jername (str): name of the JER
+    j (jets): jet collection
+    """
+
+    JERSF = correct_map["JME"][f"{jername}_ScaleFactor_AK4PFPuppi"]
+    JERSF_input = get_corr_inputs(j, JERSF, jersyst)
+    j["JERSF"] = JERSF.evaluate(*JERSF_input)
+
+    JERptres = correct_map["JME"][f"{jername}_PtResolution_AK4PFPuppi"]
+    JERptres_input = get_corr_inputs(j, JERptres)
+    j["JER"] = JERptres.evaluate(*JERptres_input)
+
+    if sf_jersmear is None:
+        warnings.warn(
+            "JER smearing coefficients unavailable. "
+            "Proceeding without applying JER smearing.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return ak.ones_like(j.pt)
+    else:
+        JERsmear_input = get_corr_inputs(j, sf_jersmear)
+        return sf_jersmear.evaluate(*JERsmear_input)
+
+
+def calc_T1_MET(
+    pt_miss_raw,
+    phi_miss_raw,
+    shifted_jets,
+):
+    """
+    Taken from here: https://cms-jerc.web.cern.ch/Type1MET/
+    """
+
+    MET_x_baseline = pt_miss_raw * np.cos(phi_miss_raw)
+    MET_y_baseline = pt_miss_raw * np.sin(phi_miss_raw)
+    jet_mask = (shifted_jets["pt"] > 15.0) & (shifted_jets["eta"] < 5.2) & (shifted_jets["EmEF"] < 0.9)
+    sel_jet = shifted_jets[jet_mask]
+    jet_pt_L1 = sel_jet["pt_raw"] * (1.0 - sel_jet["muonSubtrFactor"])
+    delta_pt = sel_jet["pt"] - jet_pt_L1
+    MET_x_shifts = delta_pt * np.cos(sel_jet["phi"])
+    MET_y_shifts = delta_pt * np.sin(sel_jet["phi"])
+    MET_x = MET_x_baseline + ak.sum(MET_x_shifts, axis=-1)
+    MET_y = MET_y_baseline + ak.sum(MET_y_shifts, axis=-1)
+    pt_miss_final = np.sqrt(MET_x * MET_x + MET_y * MET_y)
+    phi_miss_final = np.arctan2(MET_y, MET_x)
+
+    return pt_miss_final, phi_miss_final
 
 
 ## JERC
@@ -594,184 +650,247 @@ def JME_shifts(
                     jecname = jecname[0] + "_DATA"
             else:
                 jecname = correct_map["JME_cfg"]["MC"].split(" ")[0] + "_MC"
-                jrname = correct_map["JME_cfg"]["MC"].split(" ")[1] + "_MC"
+                jername = correct_map["JME_cfg"]["MC"].split(" ")[1] + "_MC"
 
-            # store the original jet info
+            ## store the original jet info
             nocorrjet = events.Jet
-            nocorrjet["pt_raw"] = (1 - nocorrjet["rawFactor"]) * nocorrjet["pt"]
-            nocorrjet["mass_raw"] = (1 - nocorrjet["rawFactor"]) * nocorrjet["mass"]
-            nocorrjet["rho"] = ak.broadcast_arrays(
-                events.fixedGridRhoFastjetAll, nocorrjet.pt
-            )[0]
+            nocorrjet["pt_nano"] = ak.values_astype(events.Jet["pt"], np.float32)
+            nocorrjet["mass_nano"] = ak.values_astype(events.Jet["mass"], np.float32)
+            nocorrjet["pt_raw"] = (1 - events.Jet["rawFactor"]) * events.Jet["pt"]
+            nocorrjet["mass_raw"] = (1 - events.Jet["rawFactor"]) * events.Jet["mass"]
+            nocorrjet["EmEF"] = events.Jet["chEmEF"] + events.Jet["neEmEF"]
+            if not isRealData:
+                genjetidx = ak.where(events.Jet.genJetIdx == -1, 0, events.Jet.genJetIdx)
+                nocorrjet["Genpt"] = ak.where(
+                    events.Jet.genJetIdx == -1, -1, events.GenJet[genjetidx].pt
+                )
+            nocorrjet["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, nocorrjet.pt)[0]
             nocorrjet["EventID"] = ak.broadcast_arrays(events.event, nocorrjet.pt)[0]
             nocorrjet["run"] = ak.broadcast_arrays(events.run, nocorrjet.pt)[0]
-            if not isRealData:
-                genjetidx = ak.where(nocorrjet.genJetIdx == -1, 0, nocorrjet.genJetIdx)
-                nocorrjet["Genpt"] = ak.where(
-                    nocorrjet.genJetIdx == -1, -1, events.GenJet[genjetidx].pt
-                )
             jets = copy.copy(nocorrjet)
-            jets["orig_pt"] = ak.values_astype(nocorrjet["pt"], np.float32)
+            jets["pt"] = nocorrjet["pt_raw"]
+            jets["mass"] = nocorrjet["mass_raw"]
+
+            ## build jet collection for type-1 MET correction
+            nocorrt1metjet = copy.copy(events.CorrT1METJet)
+            nocorrt1metjet["pt_raw"] = events.CorrT1METJet["rawPt"]
+            if not isRealData:
+                nocorrt1metjet["Genpt"] = ak.broadcast_arrays(-1, events.CorrT1METJet.rawPt)[0]
+            nocorrt1metjet["rho"] = ak.broadcast_arrays(events.fixedGridRhoFastjetAll, events.CorrT1METJet.rawPt)[0]
+            nocorrt1metjet["EventID"] = ak.broadcast_arrays(events.event, events.CorrT1METJet.rawPt)[0]
+            nocorrt1metjet["run"] = ak.broadcast_arrays(events.run, events.CorrT1METJet.rawPt)[0]
+
+            keys_keep = ["pt_raw", "eta", "phi", "area", "EmEF", "muonSubtrFactor", "Genpt", "rho", "EventID", "run"]
+            t1jets_1 = nocorrjet[[key for key in nocorrjet.fields if key in keys_keep]]
+            t1jets_2 = nocorrt1metjet[[key for key in nocorrt1metjet.fields if key in keys_keep]]
+            t1jets = ak.concatenate([t1jets_1, t1jets_2], axis=1)
+            t1jets["pt"] = t1jets["pt_raw"]
 
             ## flatten jets
-            j, nj = ak.flatten(nocorrjet), ak.num(nocorrjet)
+            j, nj = ak.flatten(jets), ak.num(jets)
+            t1j, nt1j = ak.flatten(t1jets), ak.num(t1jets)
 
-            # JEC
-            JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
-            JEC_input = get_corr_inputs(j, JECcorr)
-            JECflatCorrFactor = JECcorr.evaluate(*JEC_input)
-
-            ## JER
-            if isRealData:
-                # in data only the JEC is applied
-                corrFactor = JECflatCorrFactor
-            else:
-                JERSF = correct_map["JME"][f"{jrname}_ScaleFactor_AK4PFPuppi"]
-                JERptres = correct_map["JME"][f"{jrname}_PtResolution_AK4PFPuppi"]
-                # for MC, correct the jet pT with JEC first
-                j["pt"] = j["pt_raw"] * JECflatCorrFactor
-                j["mass"] = j["mass_raw"] * JECflatCorrFactor
-                JERSF_input = get_corr_inputs(j, JERSF)
-                JERptres_input = get_corr_inputs(j, JERptres)
-                j["JER"] = JERptres.evaluate(*JERptres_input)
-                j["JERSF"] = JERSF.evaluate(*JERSF_input)
-                if sf_jersmear is None:
-                    warnings.warn(
-                        "JER smearing coefficients unavailable. "
-                        "Proceeding without applying JER smearing.",
-                        RuntimeWarning,
-                        stacklevel=2,
-                    )
-                    corrFactor = JECflatCorrFactor
-                else:
-                    JERsmear_input = get_corr_inputs(j, sf_jersmear)
-                    corrFactor = JECflatCorrFactor * sf_jersmear.evaluate(
-                        *JERsmear_input
-                    )
-            corrFactor = ak.unflatten(corrFactor, nj)
-
-            jets["pt"] = ak.values_astype(nocorrjet["pt_raw"] * corrFactor, np.float32)
-            jets["mass"] = ak.values_astype(
-                nocorrjet["mass_raw"] * corrFactor, np.float32
-            )
-
-            # Type-I MET correction, from corrected MET factory
-            # https://github.com/scikit-hep/coffea/blob/master/src/coffea/jetmet_tools/CorrectedMETFactory.py
+            ## store the original met info
             nocorrmet = events.PuppiMET if int(year) > 2020 else events.MET
             met = copy.copy(nocorrmet)
-            metinfo = [nocorrmet.pt, nocorrmet.phi, jets.pt, jets.phi, jets.pt_raw]
-            met["pt"], met["phi"] = (
-                ak.values_astype(corrected_polar_met(*metinfo).pt, np.float32),
-                ak.values_astype(corrected_polar_met(*metinfo).phi, np.float32),
-            )
-            met["orig_pt"], met["orig_phi"] = nocorrmet["pt"], nocorrmet["phi"]
 
-            ## JEC variations
-            if not isRealData and systematic != False:
-                if systematic != "JERC_split":
-                    jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
-                    jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
-                    unc_jets, unc_met = {}, {}
+            ## raw MET
+            pt_miss_raw = events.RawPuppiMET.pt if int(year) > 2020 else events.RawMET.pt
+            phi_miss_raw = events.RawPuppiMET.phi if int(year) > 2020 else events.RawMET.phi
 
-                    for var in ["up", "down"]:
-                        fac = 1.0 if var == "up" else -1.0
-                        ## JES total
-                        unc_jets[f"JES_Total{var}"] = copy.copy(nocorrjet)
-                        unc_met[f"JES_Total{var}"] = copy.copy(nocorrmet)
+            ## JES/JEC
+            JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
+            JEC_input = get_corr_inputs(j, JECcorr)
+            JEC_input_t1 = get_corr_inputs(t1j, JECcorr)
 
-                        unc_jets[f"JES_Total{var}"]["pt"] = ak.values_astype(
-                            jets["pt"] * (1 + fac * jesunc),
-                            np.float32,
-                        )
-                        unc_jets[f"JES_Total{var}"]["mass"] = ak.values_astype(
-                            jets["mass"] * (1 + fac * jesunc),
-                            np.float32,
-                        )
-                        unc_met[f"JES_Total{var}"]["pt"] = corrected_polar_met(
-                            nocorrmet.pt,
-                            nocorrmet.phi,
-                            unc_jets[f"JES_Total{var}"]["pt"],
-                            jets.phi,
-                            jets.pt_raw,
-                        ).pt
-                        unc_met[f"JES_Total{var}"]["phi"] = corrected_polar_met(
-                            nocorrmet.pt,
-                            nocorrmet.phi,
-                            unc_jets[f"JES_Total{var}"]["pt"],
-                            jets.phi,
-                            jets.pt_raw,
-                        ).phi
+            # JES/JEC recipe for 2024 (slide 26)
+            # https://indico.cern.ch/event/1602054/timetable/?view=standard_inline_minutes#12-jet-performance-in-run-3
+            if year == "2024":
+                tmp_pt = JEC_input[2]
+                tmp_pt = np.clip(tmp_pt, 30, None)
+                JEC_input[2] = tmp_pt
+                tmp_pt_t1 = JEC_input_t1[2]
+                tmp_pt_t1 = np.clip(tmp_pt_t1, 30, None)
+                JEC_input_t1[2] = tmp_pt_t1
 
-                        JERSF_input_var = get_corr_inputs(j, JERSF, var)
+            JECflatCorrFactor = JECcorr.evaluate(*JEC_input)
+            j["pt_JECnom"] = j["pt"] * JECflatCorrFactor
+            j["mass_JECnom"] = j["mass"] * JECflatCorrFactor
 
-                        ## JER variations
-                        if sf_jersmear is None:
-                            warnings.warn(
-                                "Skipping JER smearing variations because the "
-                                "correction file is unavailable.",
-                                RuntimeWarning,
-                                stacklevel=2,
+            JECflatCorrFactor_t1 = JECcorr.evaluate(*JEC_input_t1)
+            t1j["pt_JECnom"] = t1j["pt"] * JECflatCorrFactor_t1
+
+            ## JER (MC only)
+            if isRealData:
+                jets["pt"] = ak.unflatten(j["pt_JECnom"], nj)
+                jets["mass"] = ak.unflatten(j["mass_JECnom"], nj)
+                t1jets["pt"] = ak.unflatten(t1j["pt_JECnom"], nt1j)
+                met_pt, met_phi = calc_T1_MET(pt_miss_raw, phi_miss_raw, t1jets)
+                met["pt"] = met_pt
+                met["phi"] = met_phi
+            else:
+                ## apply nominal JER to nominal JES/JEC
+                j["pt"] = j["pt_JECnom"]
+                j["mass"] = j["mass_JECnom"]
+                jer_smear_nom = get_JER(correct_map, jername, j, "nom")
+                j["pt_JECnom_JERnom"] = j["pt_JECnom"] * jer_smear_nom
+                j["mass_JECnom_JERnom"] = j["mass_JECnom"] * jer_smear_nom
+                jets["pt"] = ak.unflatten(j["pt_JECnom_JERnom"], nj)
+                jets["mass"] = ak.unflatten(j["mass_JECnom_JERnom"], nj)
+
+                t1j["pt"] = t1j["pt_JECnom"]
+                jer_smear_nom_t1 = get_JER(correct_map, jername, t1j, "nom")
+                t1j["pt_JECnom_JERnom"] = t1j["pt_JECnom"] * jer_smear_nom_t1
+                t1jets["pt"] = ak.unflatten(t1j["pt_JECnom_JERnom"], nt1j)
+                met_pt, met_phi = calc_T1_MET(pt_miss_raw, phi_miss_raw, t1jets)
+                met["pt"] = met_pt
+                met["phi"] = met_phi
+
+                ## JES/JEC & JER systematics
+                if systematic != False:
+                    if systematic != "JERC_split":
+
+                        jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
+                        jesunc = jesuncmap.evaluate(j.eta, j.pt_JECnom)
+                        jesunc_t1 = jesuncmap.evaluate(t1j.eta, t1j.pt_JECnom)
+
+                        unc_jets, unc_met = {}, {}
+
+                        for var in ["up", "down"]:
+                            fac = 1.0 if var == "up" else -1.0
+
+                            ## apply shift up/down to JES/JEC
+                            j[f"pt_JEC{var}"] = ak.values_astype(
+                                j["pt_JECnom"] * (1 + fac * jesunc),
+                                np.float32,
                             )
-                            unc_jets[f"JER{var}"] = copy.copy(jets)
-                            unc_met[f"JER{var}"] = copy.copy(met)
-                        else:
+                            j[f"mass_JEC{var}"] = ak.values_astype(
+                                j["mass_JECnom"] * (1 + fac * jesunc),
+                                np.float32,
+                            )
+                            t1j[f"pt_JEC{var}"] = ak.values_astype(
+                                t1j["pt_JECnom"] * (1 + fac * jesunc_t1),
+                                np.float32,
+                            )
+
+                            ## apply nominal JER to up/down JES/JEC
+                            j["pt"] = j[f"pt_JEC{var}"]
+                            j["mass"] = j[f"mass_JEC{var}"]
+                            jer_smear_nom = get_JER(correct_map, jername, j, "nom")
+                            j[f"pt_JEC{var}_JERnom"] = ak.values_astype(
+                                j[f"pt_JEC{var}"] * jer_smear_nom,
+                                np.float32,
+                            )
+                            j[f"mass_JEC{var}_JERnom"] = ak.values_astype(
+                                j[f"mass_JEC{var}"] * jer_smear_nom,
+                                np.float32,
+                            )
+                            t1j["pt"] = t1j[f"pt_JEC{var}"]
+                            jer_smear_nom_t1 = get_JER(correct_map, jername, t1j, "nom")
+                            t1j[f"pt_JEC{var}_JERnom"] = ak.values_astype(
+                                t1j[f"pt_JEC{var}"] * jer_smear_nom_t1,
+                                np.float32,
+                            )
+                            t1j["pt"] = t1j[f"pt_JEC{var}_JERnom"]
+                            met_pt_JECvar_JERnom, met_phi_JECvar_JERnom = calc_T1_MET(
+                                pt_miss_raw,
+                                phi_miss_raw,
+                                ak.unflatten(t1j, nt1j),
+                            )
+
+                            ## apply up/down JER to nominal JES/JEC
+                            j["pt"] = j["pt_JECnom"]
+                            j["mass"] = j["mass_JECnom"]
+                            jer_smear_var = get_JER(correct_map, jername, j, var)
+                            j[f"pt_JECnom_JER{var}"] = ak.values_astype(
+                                j["pt_JECnom"] * jer_smear_var,
+                                np.float32,
+                            )
+                            j[f"mass_JECnom_JER{var}"] = ak.values_astype(
+                                j["mass_JECnom"] * jer_smear_var,
+                                np.float32,
+                            )
+                            t1j["pt"] = t1j["pt_JECnom"]
+                            jer_smear_var_t1 = get_JER(correct_map, jername, t1j, var)
+                            t1j[f"pt_JECnom_JER{var}"] = ak.values_astype(
+                                t1j["pt_JECnom"] * jer_smear_var_t1,
+                                np.float32,
+                            )
+                            t1j["pt"] = t1j[f"pt_JECnom_JER{var}"]
+                            met_pt_JECnom_JERvar, met_phi_JECnom_JERvar = calc_T1_MET(
+                                pt_miss_raw,
+                                phi_miss_raw,
+                                ak.unflatten(t1j, nt1j),
+                            )
+
+                            ## JES/JEC total uncertainty
+                            unc_jets[f"JES_Total{var}"] = copy.copy(nocorrjet)
+                            unc_jets[f"JES_Total{var}"]["pt"] = ak.values_astype(
+                                ak.unflatten(j[f"pt_JEC{var}_JERnom"], nj),
+                                np.float32,
+                            )
+                            unc_jets[f"JES_Total{var}"]["mass"] = ak.values_astype(
+                                ak.unflatten(j[f"mass_JEC{var}_JERnom"], nj),
+                                np.float32,
+                            )
+
+                            unc_met[f"JES_Total{var}"] = copy.copy(nocorrmet)
+                            unc_met[f"JES_Total{var}"]["pt"] = ak.values_astype(
+                                met_pt_JECvar_JERnom,
+                                np.float32,
+                            )
+                            unc_met[f"JES_Total{var}"]["phi"] = ak.values_astype(
+                                met_phi_JECvar_JERnom,
+                                np.float32,
+                            )
+
+                            ## JER uncertainty
                             unc_jets[f"JER{var}"] = copy.copy(nocorrjet)
-                            unc_met[f"JER{var}"] = copy.copy(nocorrmet)
-                            j["JERSF"] = JERSF.evaluate(*JERSF_input_var)
-                            JERsmear_input_var = get_corr_inputs(j, sf_jersmear)
-                            corrFactor_var = JECflatCorrFactor * sf_jersmear.evaluate(
-                                *JERsmear_input_var
-                            )
-                            corrFactor_var = ak.unflatten(corrFactor_var, nj)
-
                             unc_jets[f"JER{var}"]["pt"] = ak.values_astype(
-                                nocorrjet["pt_raw"] * corrFactor_var,
+                                ak.unflatten(j[f"pt_JECnom_JER{var}"], nj),
                                 np.float32,
                             )
                             unc_jets[f"JER{var}"]["mass"] = ak.values_astype(
-                                nocorrjet["mass_raw"] * corrFactor_var,
+                                ak.unflatten(j[f"mass_JECnom_JER{var}"], nj),
                                 np.float32,
                             )
-                            unc_met[f"JER{var}"]["pt"] = corrected_polar_met(
-                                nocorrmet.pt,
-                                nocorrmet.phi,
-                                unc_jets[f"JER{var}"]["pt"],
-                                jets.phi,
-                                jets.pt_raw,
-                            ).pt
-                            unc_met[f"JER{var}"]["phi"] = corrected_polar_met(
-                                nocorrmet.pt,
-                                nocorrmet.phi,
-                                unc_jets[f"JER{var}"]["pt"],
-                                jets.phi,
-                                jets.pt_raw,
-                            ).phi
-                    jets["JES_Total"] = ak.zip(
-                        {
-                            "up": unc_jets["JES_Totalup"],
-                            "down": unc_jets["JES_Totaldown"],
-                        }
-                    )
-                    jets["JER"] = ak.zip(
-                        {
-                            "up": unc_jets["JERup"],
-                            "down": unc_jets["JERdown"],
-                        }
-                    )
-                    met["JES_Total"] = ak.zip(
-                        {
-                            "up": unc_met["JES_Totalup"],
-                            "down": unc_met["JES_Totaldown"],
-                        }
-                    )
-                    met["JER"] = ak.zip(
-                        {
-                            "up": unc_met["JERup"],
-                            "down": unc_met["JERdown"],
-                        }
-                    )
-                else:
-                    raise NotImplementedError
+
+                            unc_met[f"JER{var}"] = copy.copy(nocorrmet)
+                            unc_met[f"JER{var}"]["pt"] = ak.values_astype(
+                                met_pt_JECnom_JERvar,
+                                np.float32,
+                            )
+                            unc_met[f"JER{var}"]["phi"] = ak.values_astype(
+                                met_phi_JECnom_JERvar,
+                                np.float32,
+                            )
+
+                        jets["JES_Total"] = ak.zip(
+                            {
+                                "up": unc_jets["JES_Totalup"],
+                                "down": unc_jets["JES_Totaldown"],
+                            }
+                        )
+                        jets["JER"] = ak.zip(
+                            {
+                                "up": unc_jets["JERup"],
+                                "down": unc_jets["JERdown"],
+                            }
+                        )
+                        met["JES_Total"] = ak.zip(
+                            {
+                                "up": unc_met["JES_Totalup"],
+                                "down": unc_met["JES_Totaldown"],
+                            }
+                        )
+                        met["JER"] = ak.zip(
+                            {
+                                "up": unc_met["JERup"],
+                                "down": unc_met["JERdown"],
+                            }
+                        )
+                    else:
+                        raise NotImplementedError
 
         else:
             if isRealData:
@@ -809,81 +928,80 @@ def JME_shifts(
         jets = jets[new_jet_idx]
 
         # systematics
-        if not isRealData:
-            if systematic != False:
-                if systematic == "split":
-                    for jes in met.fields:
-                        if "JES" not in jes or "Total" in jes:
-                            continue
-                        shifts += [
-                            (
-                                {
-                                    "Jet": jets[jes]["up"],
-                                    "MET": met[jes]["up"],
-                                },
-                                f"{jes}Up",
-                            ),
-                            (
-                                {
-                                    "Jet": jets[jes]["down"],
-                                    "MET": met[jes]["down"],
-                                },
-                                f"{jes}Down",
-                            ),
-                        ]
+        if not isRealData and systematic != False:
+            if systematic == "split":
+                for jes in met.fields:
+                    if "JES" not in jes or "Total" in jes:
+                        continue
+                    shifts += [
+                        (
+                            {
+                                "Jet": jets[jes]["up"],
+                                "MET": met[jes]["up"],
+                            },
+                            f"{jes}Up",
+                        ),
+                        (
+                            {
+                                "Jet": jets[jes]["down"],
+                                "MET": met[jes]["down"],
+                            },
+                            f"{jes}Down",
+                        ),
+                    ]
 
-                else:
-                    if "JES_Total" in jets.fields:
-                        shifts += [
-                            (
-                                {
-                                    "Jet": jets.JES_Total.up,
-                                    "MET": met.JES_Total.up,
-                                },
-                                "JESUp",
-                            ),
-                            (
-                                {
-                                    "Jet": jets.JES_Total.down,
-                                    "MET": met.JES_Total.down,
-                                },
-                                "JESDown",
-                            ),
-                        ]
-                    if "MET_UnclusteredEnergy" in met.fields:
-                        shifts += [
-                            (
-                                {
-                                    "Jet": jets,
-                                    "MET": met.MET_UnclusteredEnergy.up,
-                                },
-                                "UESUp",
-                            ),
-                            (
-                                {
-                                    "Jet": jets,
-                                    "MET": met.MET_UnclusteredEnergy.down,
-                                },
-                                "UESDown",
-                            ),
-                        ]
-                    if "JER" in jets.fields:
-                        shifts += [
-                            (
-                                {
-                                    "Jet": jets.JER.up,
-                                    "MET": met.JER.up,
-                                },
-                                "JERUp",
-                            ),
-                            (
-                                {
-                                    "Jet": jets.JER.down,
-                                    "MET": met.JER.down,
-                                },
-                                "JERDown",
-                            ),
-                        ]
+            else:
+                if "JES_Total" in jets.fields:
+                    shifts += [
+                        (
+                            {
+                                "Jet": jets.JES_Total.up,
+                                "MET": met.JES_Total.up,
+                            },
+                            "JESUp",
+                        ),
+                        (
+                            {
+                                "Jet": jets.JES_Total.down,
+                                "MET": met.JES_Total.down,
+                            },
+                            "JESDown",
+                        ),
+                    ]
+                if "MET_UnclusteredEnergy" in met.fields:
+                    shifts += [
+                        (
+                            {
+                                "Jet": jets,
+                                "MET": met.MET_UnclusteredEnergy.up,
+                            },
+                            "UESUp",
+                        ),
+                        (
+                            {
+                                "Jet": jets,
+                                "MET": met.MET_UnclusteredEnergy.down,
+                            },
+                            "UESDown",
+                        ),
+                    ]
+                if "JER" in jets.fields:
+                    shifts += [
+                        (
+                            {
+                                "Jet": jets.JER.up,
+                                "MET": met.JER.up,
+                            },
+                            "JERUp",
+                        ),
+                        (
+                            {
+                                "Jet": jets.JER.down,
+                                "MET": met.JER.down,
+                            },
+                            "JERDown",
+                        ),
+                    ]
 
     else:
         met = events.PuppiMET
@@ -1612,11 +1730,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
         sf_type = sf[: sf.find(" ")]
         for nele in range(ak.num(allele.pt)[0]):
             ele = allele[:, nele]
-            ele_etaSC = (
-                ak.fill_none(ele.eta + ele.deltaEtaSC, -2.5)
-                if "Summer24" not in correct_map["campaign"]
-                else ak.fill_none(ele.superclusterEta, -2.5)
-            )
+            ele_etaSC = ak.fill_none(ele.eta + ele.deltaEtaSC, -2.5)
             masknone = ak.is_none(ele.pt)
             sfs_alle, sfs_alle_up, sfs_alle_down = (
                 np.ones_like(allele[:, 0].pt),
@@ -2140,30 +2254,81 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
     up = np.ones(len(weights.weight()))
     down = np.ones(len(weights.weight()))
 
-    # NNPDF31_nnlo_as_0118_mc_hessian_pdfas
-    # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_as_0118_mc_hessian_pdfas/NNPDF31_nnlo_as_0118_mc_hessian_pdfas.info
-    if pdf_weights is not None and "325300 - 325402" in pdf_weights.__doc__:
-        # Hessian PDF weights
-        # Eq. 20 of https://arxiv.org/pdf/1510.03865v1.pdf
-        delta = pdf_weights[:, 1:-2] - pdf_weights[:, 0]
-        pdf_unc = np.sqrt(ak.sum(np.square(delta), axis=1))
+    if pdf_weights is not None:
 
-        # alpha_S weights
-        # Eq. 27 of same ref
-        as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
+        if "306000 - 306102" in pdf_weights.__doc__:
+            # NNPDF31_nnlo_hessian_pdfas
+            # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
 
-        # PDF + alpha_S weights
-        # Eq. 28 of same ref
-        pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
+            # Hessian PDF weights
+            # Eq. 21 of https://arxiv.org/pdf/1510.03865v1.pdf
+            arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
+            summed = ak.sum(np.square(arg), axis=1)
+            pdf_unc = np.sqrt((1.0 / 99.0) * summed)
 
-        if isSyst != False:
-            weights.add("PDF_weight", nom, pdf_unc + nom, None)
-            weights.add("aS_weight", nom, as_unc + nom, None)
-            weights.add("PDFaS_weight", nom, pdfas_unc + nom, None)
-        else:
-            weights.add("PDF_weight", nom)
-            weights.add("aS_weight", nom)
-            weights.add("PDFaS_weight", nom)
+            # alpha_S weights
+            # Eq. 27 of same ref
+            as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
+
+            # PDF + alpha_S weights
+            # Eq. 28 of same ref
+            pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
+
+            if isSyst != False:
+                weights.add("PDF_weight", nom, nom + pdf_unc, None)
+                weights.add("aS_weight", nom, nom + as_unc, None)
+                weights.add("PDFaS_weight", nom, nom + pdfas_unc, None)
+            else:
+                weights.add("PDF_weight", nom)
+                weights.add("aS_weight", nom)
+                weights.add("PDFaS_weight", nom)
+
+        elif "325300 - 325402" in pdf_weights.__doc__:
+            # NNPDF31_nnlo_as_0118_mc_hessian_pdfas
+            # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_as_0118_mc_hessian_pdfas/NNPDF31_nnlo_as_0118_mc_hessian_pdfas.info
+
+            pdf_unc = np.zeros_like(weights.weight(), dtype=np.float64)
+            pdfas_unc = np.zeros_like(weights.weight(), dtype=np.float64)
+            for iPDF in range(1, 103):
+                if iPDF < 101:
+                    pdf_unc = pdf_unc + (pdf_weights[:, iPDF] / pdf_weights[:, 0] - 1.0)**2.0
+                pdfas_unc = pdf_unc + (pdf_weights[:, iPDF] / pdf_weights[:, 0] - 1.0)**2.0
+            pdf_unc = np.sqrt(pdf_unc)
+            pdfas_unc = np.sqrt(pdfas_unc)
+            as_unc_up = pdf_weights[:, 101]
+            as_unc_down = pdf_weights[:, 102]
+
+            if isSyst != False:
+                weights.add("PDF_weight", nom, nom + pdf_unc, nom - pdf_unc)
+                weights.add("aS_weight", nom, as_unc_up, as_unc_down)
+                weights.add("PDFaS_weight", nom, nom + pdfas_unc, nom - pdfas_unc)
+            else:
+                weights.add("PDF_weight", nom)
+                weights.add("aS_weight", nom)
+                weights.add("PDFaS_weight", nom)
+
+        elif "325500 - 325600" in pdf_weights.__doc__:
+            # NNPDF31_nnlo_as_0118_nf_4_mc_hessian
+            # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_as_0118_nf_4_mc_hessian/NNPDF31_nnlo_as_0118_nf_4_mc_hessian.info
+
+            pdf_unc = np.zeros_like(weights.weight(), dtype=np.float64)
+            mean_w = np.mean(pdf_weights, axis=1)
+            for iPDF in range(101):
+                pdf_unc = pdf_unc + ((pdf_weights[:, iPDF] - mean_w)**2.0)
+            pdf_unc = np.sqrt(pdf_unc / (101.0 - 1.0))
+            pdfas_unc = pdf_unc
+            as_unc_up = np.ones_like(weights.weight(), dtype=np.float64)
+            as_unc_down = np.ones_like(weights.weight(), dtype=np.float64)
+
+            if isSyst != False:
+                weights.add("PDF_weight", nom, nom + pdf_unc, nom - pdf_unc)
+                weights.add("aS_weight", nom, as_unc_up, as_unc_down)
+                weights.add("PDFaS_weight", nom, nom + pdfas_unc, nom - pdfas_unc)
+            else:
+                weights.add("PDF_weight", nom)
+                weights.add("aS_weight", nom)
+                weights.add("PDFaS_weight", nom)
+
     else:
         warnings.warn("PDF weights are not available")
         weights.add("aS_weight", nom, up, down)
@@ -2496,13 +2661,13 @@ def common_shifts(self, events):
     if "roccor" in self.SF_map.keys():
         shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
     elif "muonSS" in self.SF_map.keys():
-        shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, False)
+        shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, True)
     else:
         for shift in shifts:
             shift[0]["Muon"] = events.Muon
 
     if "electronSS" in self.SF_map.keys():
-        shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, False)
+        shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, True)
     else:
         for shift in shifts:
             shift[0]["Electron"] = events.Electron
@@ -2546,12 +2711,12 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         nom = top_pT_reweighting(pruned_ev.GenPart)
     else:
         nom = ak.ones_like(weights.weight())
-    if isSyst != False:
+    if isSyst != False and "GenPart" in pruned_ev.fields:
         weights.add(
             "ttbar_weight",
             nom,
             nom + np.abs(ak.ones_like(nom) - nom),
-            None,
+            nom - np.abs(ak.ones_like(nom) - nom),
         )
     else:
         weights.add("ttbar_weight", nom)
@@ -2566,16 +2731,113 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                 syst_wei,
             )
         if "MUO" in SF_map.keys() and "SelMuon" in pruned_ev.fields:
-            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, False)
+            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, True)
         if "EGM" in SF_map.keys() and "SelElectron" in pruned_ev.fields:
-            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, False)
+            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, True)
         if (
             "ctag" in SF_map.keys() or "btag" in SF_map.keys()
         ) and "SelJet" in pruned_ev.fields:
-            btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", False)
+            btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepJetC", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepJetB", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepCSVB", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepCSVC", syst_wei)
 
     return weights
+
+
+def reweighting(events, isSyst):
+
+    sumws = {}
+    if "genWeight" in events.fields:
+
+        # Calculate nominal sumw, including top pt weights
+        if "TT" in events.metadata["dataset"]:
+            genWeight = events.genWeight * top_pT_reweighting(events.GenPart)
+        else:
+            genWeight = events.genWeight
+        sumws["sumw"] = np.sum(np.array(genWeight), dtype=np.float64)
+
+        # Calculate reweighted sumws for theory systematics
+        if isSyst != False:
+            if "LHEPdfWeight" in events.fields:
+                nom = np.ones(len(events))
+
+                if "306000 - 306102" in events.LHEPdfWeight.__doc__:
+                    arg = events.LHEPdfWeight[:, 1:-2] - np.ones((len(events), 100))
+                    summed = ak.sum(np.square(arg), axis=1)
+                    pdf_unc = np.sqrt((1.0 / 99.0) * summed)
+                    as_unc = 0.5 * (events.LHEPdfWeight[:, 102] - events.LHEPdfWeight[:, 101])
+                    pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
+                    PDF_genWeightUp = (nom + pdf_unc) * genWeight
+                    PDF_genWeightDown = 1.0 / (nom + pdf_unc) * genWeight
+                    aS_genWeightUp = (nom + as_unc) * genWeight
+                    aS_genWeightDown = 1.0 / (nom + as_unc) * genWeight
+                    PDFaS_genWeightUp = (nom + pdfas_unc) * genWeight
+                    PDFaS_genWeightDown = 1.0 / (nom + pdfas_unc) * genWeight
+
+                elif "325300 - 325402" in events.LHEPdfWeight.__doc__:  # Run 3 5FS
+                    pdf_unc = np.zeros_like(genWeight, dtype=np.float64)
+                    pdfas_unc = np.zeros_like(genWeight, dtype=np.float64)
+                    for iPDF in range(1, 103):
+                        if iPDF < 101:
+                            pdf_unc = pdf_unc + (events.LHEPdfWeight[:, iPDF] / events.LHEPdfWeight[:, 0] - 1.0)**2.0
+                        pdfas_unc = pdf_unc + (events.LHEPdfWeight[:, iPDF] / events.LHEPdfWeight[:, 0] - 1.0)**2.0
+                    pdf_unc = np.sqrt(pdf_unc)
+                    pdfas_unc = np.sqrt(pdfas_unc)
+                    as_unc_up = events.LHEPdfWeight[:, 101]
+                    as_unc_down = events.LHEPdfWeight[:, 102]
+                    PDF_genWeightUp = (nom + pdf_unc) * genWeight
+                    PDF_genWeightDown = (nom - pdf_unc) * genWeight
+                    aS_genWeightUp = as_unc_up * genWeight
+                    aS_genWeightDown = as_unc_down * genWeight
+                    PDFaS_genWeightUp = (nom + pdfas_unc) * genWeight
+                    PDFaS_genWeightDown = (nom - pdfas_unc) * genWeight
+
+                elif "325500 - 325600" in events.LHEPdfWeight.__doc__:  # Run 3 4FS
+                    pdf_unc = np.zeros_like(genWeight, dtype=np.float64)
+                    mean_w = np.mean(events.LHEPdfWeight, axis=1)
+                    for iPDF in range(101):
+                        pdf_unc = pdf_unc + (events.LHEPdfWeight[:, iPDF] - mean_w)**2.0
+                    pdf_unc = np.sqrt(pdf_unc / (101.0 - 1.0))
+                    pdfas_unc = pdf_unc
+                    as_unc_up = np.ones_like(genWeight, dtype=np.float64)
+                    as_unc_down = np.ones_like(genWeight, dtype=np.float64)
+                    PDF_genWeightUp = (nom + pdf_unc) * genWeight
+                    PDF_genWeightDown = (nom - pdf_unc) * genWeight
+                    aS_genWeightUp = as_unc_up * genWeight
+                    aS_genWeightDown = as_unc_down * genWeight
+                    PDFaS_genWeightUp = (nom + pdfas_unc) * genWeight
+                    PDFaS_genWeightDown = (nom - pdfas_unc) * genWeight
+
+                sumws["PDF_sumwUp"] = np.sum(np.array(PDF_genWeightUp), dtype=np.float64)
+                sumws["PDF_sumwDown"] = np.sum(np.array(PDF_genWeightDown), dtype=np.float64)
+                sumws["aS_sumwUp"] = np.sum(np.array(aS_genWeightUp), dtype=np.float64)
+                sumws["aS_sumwDown"] = np.sum(np.array(aS_genWeightDown), dtype=np.float64)
+                sumws["PDFaS_sumwUp"] = np.sum(np.array(PDFaS_genWeightUp), dtype=np.float64)
+                sumws["PDFaS_sumwDown"] = np.sum(np.array(PDFaS_genWeightDown), dtype=np.float64)
+
+            if "LHEScaleWeight" in events.fields:
+                muR_genWeightUp = (events.LHEScaleWeight[:, 7] / events.LHEScaleWeight[:, 4]) * genWeight
+                muR_genWeightDown = (events.LHEScaleWeight[:, 1] / events.LHEScaleWeight[:, 4]) * genWeight
+                muF_genWeightUp = (events.LHEScaleWeight[:, 5] / events.LHEScaleWeight[:, 4]) * genWeight
+                muF_genWeightDown = (events.LHEScaleWeight[:, 3] / events.LHEScaleWeight[:, 4]) * genWeight
+                sumws["muR_sumwUp"] = np.sum(np.array(muR_genWeightUp), dtype=np.float64)
+                sumws["muR_sumwDown"] = np.sum(np.array(muR_genWeightDown), dtype=np.float64)
+                sumws["muF_sumwUp"] = np.sum(np.array(muF_genWeightUp), dtype=np.float64)
+                sumws["muF_sumwDown"] = np.sum(np.array(muF_genWeightDown), dtype=np.float64)
+
+            if "PSWeight" in events.fields:
+                ISR_genWeightUp = events.PSWeight[:, 0] * genWeight
+                ISR_genWeightDown = events.PSWeight[:, 2] * genWeight
+                FSR_genWeightUp = events.PSWeight[:, 1] * genWeight
+                FSR_genWeightDown = events.PSWeight[:, 3] * genWeight
+                sumws["ISR_sumwUp"] = np.sum(np.array(ISR_genWeightUp), dtype=np.float64)
+                sumws["ISR_sumwDown"] = np.sum(np.array(ISR_genWeightDown), dtype=np.float64)
+                sumws["FSR_sumwUp"] = np.sum(np.array(FSR_genWeightUp), dtype=np.float64)
+                sumws["FSR_sumwDown"] = np.sum(np.array(FSR_genWeightDown), dtype=np.float64)
+
+    else:
+        sumws["sumw"] = len(events)
+
+    return sumws
