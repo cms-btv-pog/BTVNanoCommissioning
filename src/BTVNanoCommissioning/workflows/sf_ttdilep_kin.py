@@ -242,12 +242,10 @@ class NanoProcessor(processor.ProcessorABC):
             base_path = eos_base
         else:
             base_path = os.getcwd()
-        base_path = "/data/dust/user/pgadow/"
         self.out_dir_base = os.path.join(
             base_path,
             "btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else ""),
         )  # noqa
-
 
         ## Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
