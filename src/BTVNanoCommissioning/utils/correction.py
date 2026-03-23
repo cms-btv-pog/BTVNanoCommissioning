@@ -2365,10 +2365,14 @@ class JPCalibHandler(object):
 
         # now calculating Σ_tr{0..N-1} ((-logΠ)^tr / tr!)
         trk_index = ak.local_index(proba)
+
+        # Handle fully-empty track collections: ak.max(...) can return None
+        # (e.g. no tracks pass JP selection in a chunk).
+        max_trk_index = int(ak.to_numpy(ak.fill_none(ak.max(trk_index, axis=None), 0)))
         fact_array = ak.concatenate(
             [
                 [1.0],
-                np.arange(1, max(5, ak.max(trk_index) + 1), dtype=np.float64).cumprod(),
+                np.arange(1, max(5, max_trk_index + 1), dtype=np.float64).cumprod(),
             ]
         )  # construct a factorial array
         trk_index_fl, _layouts = self.flatten(trk_index)
