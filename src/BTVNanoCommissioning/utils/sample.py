@@ -355,4 +355,121 @@ predefined_sample = {
             "TTto2L2Nu_Par-Hdamp-418_TuneCP5_13p6TeV_powheg-pythia8",
         ],
     },
+    "QG_DY": {
+        "data": [
+            "DoubleMuon",
+            "Muon", "Muon0", "Muon1", "Muon2", "Muon3"
+        ],
+        "MC": [
+            # NLO
+            "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+            "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        ],
+        "minor_MC": ["TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8"],
+    },
+    "QG_zerobias": {
+        "data": [
+            "ZeroBias",
+            # There can be multiple ZeroBias streams
+            "ZeroBias0", "ZeroBias1", "ZeroBias2", "ZeroBias3", "ZeroBias4",
+            "ZeroBias5", "ZeroBias6", "ZeroBias7", "ZeroBias8", "ZeroBias9",
+            "ZeroBias10", "ZeroBias11", "ZeroBias12", "ZeroBias13", "ZeroBias14",
+            "ZeroBias15", "ZeroBias16", "ZeroBias17", "ZeroBias18", "ZeroBias19",
+        ],
+        "MC": [
+            # HT binned pre Summer24
+            "QCD-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # HT binned Summer24
+            "QCD-4Jets_Bin-HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        ],
+    },
+    "QG_dijet": {
+        "data": ["JetMET0", "JetMET1"],
+        "MC": [
+            # HT binned pre Summer24
+            "QCD-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-600to800_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1200to1500_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1500to2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # HT binned Summer24
+            "QCD-4Jets_Bin-HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-1200to1500_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-1500to2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-600to800_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        ],
+    },
+    "QG_photonjet": {
+        "data": [
+            "EGamma",
+            "EGamma0",
+            "EGamma1",
+            "EGamma2",
+            "EGamma3", # 2026 added new EGamma streams
+            "EGamma4",
+            "EGamma5",
+        ],
+        "MC": [
+            # Summer24
+            # PTG 10-100
+            "GJ-4Jets_Bin-HT-40to100-PTG-10to100_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-100to200-PTG-10to100_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-200to400-PTG-10to100_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-400to600-PTG-10to100_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-600to1000-PTG-10to100_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-1000-PTG-10to100_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # PTG 100-200
+            "GJ-4Jets_Bin-HT-40to200-PTG-100to200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-200to400-PTG-100to200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-400to600-PTG-100to200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-600to1000-PTG-100to200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-1000-PTG-100to200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # PTG 200
+            "GJ-4Jets_Bin-HT-40to400-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-400to600-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-600to1000-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_Bin-HT-1000-PTG-200_Par-dRGJ-0p25_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # Summer22/Summer23
+            # HT binned
+            # "GJ-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # "GJ-4Jets_HT-600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # HT & PTG binned
+            "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-40to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-600to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-10to100_HT-1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-100to200_HT-40to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-100to200_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-100to200_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-100to200_HT-600to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-100to200_HT-1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-200_HT-40to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-200_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-200_HT-600to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "GJ-4Jets_dRGJ-0p25_PTG-200_HT-1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        ],
+    }
 }
