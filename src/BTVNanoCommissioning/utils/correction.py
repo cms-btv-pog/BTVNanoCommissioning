@@ -74,16 +74,17 @@ def load_SF(year, campaign, syst=False):
         if SF == "LUM":
             ## Check whether files in jsonpog-integration exist
             if os.path.exists(
-                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/"
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
             ):
-                try:
-                    correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
-                        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
-                    )
-                except FileNotFoundError:
-                    correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
-                        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
-                    )
+                correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
+                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
+                )
+            elif os.path.exists(
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
+            ):
+                correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
+                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
+                )
             ## Otherwise custom files
             else:
                 _pu_path = f"BTVNanoCommissioning.data.LUM.{campaign}"
@@ -182,7 +183,7 @@ def load_SF(year, campaign, syst=False):
                 "electron": "EGM",
                 "electronHlt": "EGM_HLT",
             }.items():
-                _ele_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest//{_ele_file}.json.gz"
+                _ele_path = f"dafs/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest//{_ele_file}.json.gz"
                 if not os.path.exists(_ele_path):
                     _ele_path = f"src/BTVNanoCommissioning/data/EGM/{campaign_map()[campaign]}/latest//{_ele_file}.json.gz"
                 if os.path.exists(_ele_path):
@@ -1571,6 +1572,9 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
     allele = ele if ele.ndim > 1 else ak.singletons(ele)
 
     for sf in correct_map["EGM_cfg"].keys():
+        # if sf.split(" ")[1] == "2024":
+        #     sf = sf.replace("2024", "2024Prompt")
+
         ## Only apply SFs for lepton pass HLT filter
         if not isHLT and "HLT" in sf:
             continue
@@ -1723,10 +1727,8 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoBelow20",
                                     ele_etaSC,
                                     ele_pt_low,
-                                )
-                                if "Summer24" not in correct_map["campaign"]
-                                else 1.0
-                            ),  # TODO: temporary until RecoBelow20 is released for 2024
+                                ),
+                            ),
                             1.0,
                         )
                         sfs_high = np.where(
@@ -1760,9 +1762,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                         ele_etaSC,
                                         ele_pt_low,
                                     )
-                                    if "Summer24" not in correct_map["campaign"]
-                                    else 0.0
-                                ),  # TODO: temporary until RecoBelow20 is released for 2024
+                                ),
                                 0.0,
                             )
                             sfs_down_low = np.where(
@@ -1775,9 +1775,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                         ele_etaSC,
                                         ele_pt_low,
                                     )
-                                    if "Summer24" not in correct_map["campaign"]
-                                    else 0.0
-                                ),  # TODO: temporary until RecoBelow20 is released for 2024
+                                ),
                                 0.0,
                             )
                             sfs_up_high = np.where(
@@ -1962,7 +1960,12 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
         sfname = sf.split(" ")[0]
         if syst:
-            weights.add(sfname, sfs_alle, sfs_alle_up, sfs_alle_down)
+            weights.add(
+                sfname,
+                ak.ravel(sfs_alle),
+                ak.ravel(sfs_alle_up),
+                ak.ravel(sfs_alle_down),
+            )
         else:
             weights.add(sfname, sfs_alle)
 
