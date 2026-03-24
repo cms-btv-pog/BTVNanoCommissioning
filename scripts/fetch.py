@@ -133,6 +133,12 @@ parser.add_argument(
     default=4,
     help="Number of workers to use for futures executor",
 )
+parser.add_argument(
+    "--doOnly",
+    type=str,
+    default=None,
+    help="Do only Data or MC",
+)
 
 args = parser.parse_args()
 
@@ -1870,6 +1876,9 @@ def main(args):
 
     if args.from_workflow:
         for sample in predefined_sample[args.from_workflow].keys():
+            if args.doOnly is not None:
+                if sample != args.doOnly:
+                    continue
             if (
                 os.path.exists(
                     f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json"
@@ -1890,6 +1899,9 @@ def main(args):
         else:
             lines = []
             for sample in predefined_sample[args.from_workflow].keys():
+                if args.doOnly is not None:
+                    if sample != args.doOnly:
+                        continue
                 lines += predefined_sample[args.from_workflow][sample]
             args.input = args.from_workflow + "_predef"
             campaign_list = args.DAS_campaign.split(",")
@@ -1935,7 +1947,9 @@ def main(args):
                             camp_idxs.append(idx)
                         except:
                             print(f"{camp_idx} is not a valid input. Try again!\n")
-                            continue
+                            cont = True
+                    if cont:
+                        continue
                     break
 
                 dataset = []
@@ -2076,12 +2090,19 @@ def main(args):
     if args.from_workflow:
         os.system(f"mkdir -p metadata/{args.campaign}/")
         for sample in predefined_sample[args.from_workflow].keys():
+            if args.doOnly is not None:
+                if sample != args.doOnly:
+                    continue
             reduced_fdict = {}
             for dataset in fdict.keys():
                 for s in predefined_sample[args.from_workflow][sample]:
-
-                    if s in dataset:
-                        reduced_fdict[dataset] = fdict[dataset]
+                    if "*" in s:
+                        parts = s.split("*")
+                        if all([p in dataset for p in parts]):
+                            reduced_fdict[dataset] = fdict[dataset]
+                    else:
+                        if s in dataset:
+                            reduced_fdict[dataset] = fdict[dataset]
 
             with open(
                 f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json",

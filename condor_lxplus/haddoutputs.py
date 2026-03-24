@@ -17,7 +17,7 @@ for syst in systlist:
     newoutdir = f"{outputdir}/hadd/{syst}"
     os.system("mkdir -p " + newoutdir)
     for samp in samplist:
-        cmd = f"hadd {newoutdir}/{samp}.root {outputdir}/arrays_*/{syst}/{samp}/*.root"
+        cmd = f"hadd -v 0 {newoutdir}/{samp}.root {outputdir}/arrays_*/{syst}/{samp}/*.root"
         cmdlist.append(cmd)
 
 if len(cmdlist) == 0:

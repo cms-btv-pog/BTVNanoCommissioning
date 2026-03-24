@@ -427,7 +427,7 @@ if __name__ == "__main__":
             coffeaoutput = coffeaoutput.replace(".coffea", f"_{key}.coffea")
         elif "*" in args.only:  # wildcard for datasets
             _new_dict = {}
-            print("Will only proces the following datasets:")
+            print("Will only process the following datasets:")
             for k, v in sample_dict.items():
                 if args.only.replace("*", "") in k:
                     print("    ", k)

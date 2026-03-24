@@ -3,6 +3,52 @@ import numpy as np
 import awkward as ak
 import os, uproot
 
+arraySchema = {
+    "CFM": [
+        "SelJet_btag",
+        "SelJet_pt",
+        "SelJet_muEF",
+        "SelJet_chEmEF",
+        "SelJet_chHEF",
+        "SelJet_chMultiplicity",
+        "SelJet_electronIdx1",
+        "SelJet_hfEmEF",
+        "SelJet_hfHEF",
+        "SelJet_muonIdx1",
+        "SelJet_nConstituents",
+        "SelJet_nMuons",
+        "SelJet_nElectrons",
+        "SelJet_nSVs",
+        "SelJet_neEmEF",
+        "SelJet_neHEF",
+        "SelJet_neMultiplicity",
+        "SelJet_puIdDisc",
+        "SelJet_rawFactor",
+        "SelJet_eta",
+        "SelJet_phi",
+        "SelJet_mass",
+        "SelJet_hadronFlavour",
+        "SelJet_partonFlavour",
+        "njet",
+        "PuppiMET_pt",
+        "PuppiMET_phi",
+        "PV_npvs",
+        "PV_npvsGood",
+        "dilep_mass",
+        "dilep_pt",
+        "dilep_eta",
+        "dilep_phi",
+        "SoftMuon_dxySig",
+        "MuonJet_muneuEF",
+        "soft_l_ptratio",
+        "osss",
+        "W_transmass",
+        "W_pt",
+        "Pileup_nTrueInt",
+        "Pileup_nPU",
+    ]
+}
+
 
 def array_writer(
     processor_class,  # the NanoProcessor class ("self")
@@ -48,6 +94,8 @@ def array_writer(
         "SoftMuon_dxySig",
         "Muon_sip3d",
     ],  # other fields, for Data and MC
+    doOnly=None,
+    schema=None,
     othersMC=["Pileup_nTrueInt", "Pileup_nPU"],  # other fields, for MC only
     empty=False,
 ):
@@ -66,6 +114,15 @@ def array_writer(
     if empty:
         print("WARNING: No events selected. Writing blank file.")
         out_branch = []
+    elif doOnly is not None:
+        if "weight" not in doOnly:
+            doOnly.extend([b for b in pruned_event.fields if "weight" in b])
+        out_branch = np.array(doOnly)
+        if not isRealData:
+            out_branch = np.append(out_branch, othersMC)
+    elif schema is not None:
+        netout = arraySchema[schema] + [b for b in pruned_event.fields if "weight" in b]
+        out_branch = np.array(netout)
     else:
         # Get only the variables that were added newly
         out_branch = np.setdiff1d(
