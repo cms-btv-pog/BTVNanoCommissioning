@@ -7,14 +7,15 @@ axes = {
     "pflav": hist.axis.IntCategory([0, 1, 2, 3, 4, 5], name="flav", label="Genflavour"),
     "syst": hist.axis.StrCategory([], name="syst", growth=True),
     "pt": hist.axis.Variable(
-        np.geomspace(15, 2000, 90), name="pt", label=" $p_{T}$ [GeV]"
+        np.geomspace(20, 6800, 50), name="pt", label=" $p_{T}$ [GeV]"
     ),
     "jpt": hist.axis.Regular(300, 0, 3000, name="pt", label=" $p_{T}$ [GeV]"),
     "softlpt": hist.axis.Regular(25, 0, 25, name="pt", label=" $p_{T}$ [GeV]"),
     "mass": hist.axis.Regular(50, 0, 300, name="mass", label=" mass [GeV]"),
     "bdt": hist.axis.Regular(50, 0, 1, name="bdt", label=" BDT discriminant"),
     # "eta": hist.axis.Regular(40, -5.13, 5.13, name="eta", label=" $\eta$"),
-    "eta": hist.axis.Regular(20, 0, 5.13, name="eta", label=" $|\eta|$"),
+    # "eta": hist.axis.Regular(20, 0, 5.13, name="eta", label=" $|\eta|$"),
+    "eta": hist.axis.Regular(20, -5.0, 5.0, name="eta", label=" $\eta$"),
     "phi": hist.axis.Regular(30, -3, 3, name="phi", label="$\phi$"),
     "mt": hist.axis.Regular(30, 0, 300, name="mt", label=" $m_{T}$ [GeV]"),
     "iso": hist.axis.Regular(30, 0, 0.05, name="pfRelIso03_all", label="Rel. Iso"),
