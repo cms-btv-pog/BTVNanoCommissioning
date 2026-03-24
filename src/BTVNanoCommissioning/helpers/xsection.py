@@ -27,7 +27,7 @@ xsection = [
         "cross_section": "2.244e+03",
         "total_uncertainty": "9.799e+00",
         "DAS": "/DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v4/MINIAODSIM",
-        "energy": "13.6"
+        "energy": "13.6",
     },
     {
         "id": "68d111abf8a546d59c3d82d4",
@@ -35,7 +35,7 @@ xsection = [
         "cross_section": "2.240e+03",
         "total_uncertainty": "9.767e+00",
         "DAS": "/DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v6/MINIAODSIM",
-        "energy": "13.6"
+        "energy": "13.6",
     },
     {
         "id": "694595da9cde30a6324b5ce1",
@@ -43,7 +43,7 @@ xsection = [
         "cross_section": "2.219e+03",
         "total_uncertainty": "9.756e+00",
         "DAS": "/DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v7/MINIAODSIM",
-        "energy": "13.6"
+        "energy": "13.6",
     },
     {
         "id": "6973598a7058498453f52696",
@@ -52,7 +52,7 @@ xsection = [
         "total_uncertainty": 24.8,
         "DAS": "/DYto2E-2Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "6973598a7058498453f5269a",
@@ -61,7 +61,7 @@ xsection = [
         "total_uncertainty": 24.84,
         "DAS": "/DYto2Mu-2Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "6973598a7058498453f5269b",
@@ -70,7 +70,7 @@ xsection = [
         "total_uncertainty": 24.7,
         "DAS": "/DYto2Tau-2Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c608efd6414c1d88538e8",
@@ -79,7 +79,7 @@ xsection = [
         "total_uncertainty": "0.003969",
         "DAS": "/QCD_Bin-PT-1000_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c6655fd6414c1d88538e9",
@@ -88,7 +88,7 @@ xsection = [
         "total_uncertainty": "9502.0",
         "DAS": "/QCD_Bin-PT-15to20_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c6acffd6414c1d88538ed",
@@ -97,7 +97,7 @@ xsection = [
         "total_uncertainty": "8497.0",
         "DAS": "/QCD_Bin-PT-20to30_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c6e00fd6414c1d88538ef",
@@ -106,7 +106,7 @@ xsection = [
         "total_uncertainty": "4593.0",
         "DAS": "/QCD_Bin-PT-30to50_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c6e7bfd6414c1d88538f1",
@@ -115,7 +115,7 @@ xsection = [
         "total_uncertainty": "1276.0",
         "DAS": "/QCD_Bin-PT-50to80_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c6eecfd6414c1d88538f3",
@@ -124,7 +124,7 @@ xsection = [
         "total_uncertainty": "299.4",
         "DAS": "/QCD_Bin-PT-80to120_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c7104fd6414c1d88538f5",
@@ -133,7 +133,7 @@ xsection = [
         "total_uncertainty": "71.7",
         "DAS": "/QCD_Bin-PT-120to170_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c72ebfd6414c1d88538f7",
@@ -142,7 +142,7 @@ xsection = [
         "total_uncertainty": "23.8",
         "DAS": "/QCD_Bin-PT-170to300_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c736bfd6414c1d88538f9",
@@ -151,7 +151,7 @@ xsection = [
         "total_uncertainty": "2.13",
         "DAS": "/QCD_Bin-PT-300to470_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c73bffd6414c1d88538fb",
@@ -160,7 +160,7 @@ xsection = [
         "total_uncertainty": "0.2042",
         "DAS": "/QCD_Bin-PT-470to600_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c742ffd6414c1d88538fd",
@@ -169,7 +169,7 @@ xsection = [
         "total_uncertainty": "0.06407",
         "DAS": "/QCD_Bin-PT-600to800_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c781dfd6414c1d88538ff",
@@ -178,7 +178,7 @@ xsection = [
         "total_uncertainty": "0.01164",
         "DAS": "/QCD_Bin-PT-800to1000_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "685c78b3fd6414c1d8853901",
@@ -187,7 +187,7 @@ xsection = [
         "total_uncertainty": "0.003969",
         "DAS": "/QCD_Bin-PT-1000_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "68d11209f8a546d59c3d88df",
@@ -196,7 +196,7 @@ xsection = [
         "total_uncertainty": 131.1,
         "DAS": "/WtoENu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "68d11209f8a546d59c3d88ef",
@@ -205,7 +205,7 @@ xsection = [
         "total_uncertainty": 131.1,
         "DAS": "/WtoMuNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "68d1120af8a546d59c3d88f3",
@@ -214,7 +214,7 @@ xsection = [
         "total_uncertainty": 131.3,
         "DAS": "/WtoTauNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8/RunIII2024Summer24MiniAOD-140X_mcRun3_2024_realistic_v26-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "6765296caa4eaa0048022685",
@@ -223,7 +223,7 @@ xsection = [
         "total_uncertainty": 0.07514,
         "DAS": "/TQbartoLNu-t-channel_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "68d111d6f8a546d59c3d8587",
@@ -231,7 +231,7 @@ xsection = [
         "cross_section": 77.26,
         "total_uncertainty": 0.2169,
         "DAS": "/TBbarQto2Q-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
-        "energy": "13.6"
+        "energy": "13.6",
     },
     {
         "id": "68d111d6f8a546d59c3d858a",
@@ -239,7 +239,7 @@ xsection = [
         "cross_section": 38.6,
         "total_uncertainty": 0.1084,
         "DAS": "/TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
-        "energy": "13.6"
+        "energy": "13.6",
     },
     {
         "id": "68d111dff8a546d59c3d85fc",
@@ -247,7 +247,7 @@ xsection = [
         "cross_section": 46.73,
         "total_uncertainty": 0.1176,
         "DAS": "/TbarBQto2Q-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
-        "energy": "13.6"
+        "energy": "13.6",
     },
     {
         "id": "68d111dff8a546d59c3d85ff",
@@ -255,7 +255,7 @@ xsection = [
         "cross_section": 23.34,
         "total_uncertainty": 0.05875,
         "DAS": "/TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
-        "energy": "13.6"
+        "energy": "13.6",
     },
     {
         "id": "67652996aa4eaa004802270e",
@@ -264,7 +264,7 @@ xsection = [
         "total_uncertainty": 0.04092,
         "DAS": "/TbarQtoLNu-t-channel_TuneCP5_13p6TeV_powheg-pythia8/Run3Summer22EEMiniAODv4-130X_mcRun3_2022_realistic_postEE_v6-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "697681287058498453f52ffd",
@@ -273,7 +273,7 @@ xsection = [
         "total_uncertainty": 0.0008349,
         "DAS": "/TbarBtoLNu-s-channel_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
     {
         "id": "697681577058498453f53449",
@@ -282,9 +282,8 @@ xsection = [
         "total_uncertainty": 0.001483,
         "DAS": "/TBbartoLNu-s-channel_TuneCP5_13p6TeV_powheg-pythia8/RunIII2024Summer24MiniAODv6-150X_mcRun3_2024_realistic_v2-v2/MINIAODSIM",
         "energy": "13.6",
-        "comments": "Automatically computed"
+        "comments": "Automatically computed",
     },
-
     {
         "process_name": "DYJetsToLL_M-10to50_TuneCP5_13p6TeV-madgraphMLM-pythia8",
         "cross_section": "19317.5",

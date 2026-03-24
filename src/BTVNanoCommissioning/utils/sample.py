@@ -142,7 +142,6 @@ predefined_sample = {
             "DYto2Mu-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Tau-2Jets_Bin-MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "DYto2Tau-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
-
             "QCD_Bin-PT-30to50_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8",
             "QCD_Bin-PT-50to80_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8",
             "QCD_Bin-PT-80to120_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8",
@@ -153,11 +152,9 @@ predefined_sample = {
             "QCD_Bin-PT-600to800_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8",
             "QCD_Bin-PT-800to1000_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8",
             "QCD_Bin-PT-1000_Fil-MuEnriched_TuneCP5_13p6TeV_pythia8",
-
             "WtoENu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoMuNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "WtoTauNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
-
             "TWminustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -166,11 +163,9 @@ predefined_sample = {
             "TBbartoLNu-s-channel_TuneCP5_13p6TeV_powheg-pythia8",
             "TbarBQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
             "TBbarQtoLNu-t-channel-4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
-
             "ZZ_TuneCP5_13p6TeV_pythia8",
             "WW_TuneCP5_13p6TeV_pythia8",
             "WZ_TuneCP5_13p6TeV_pythia8",
-
             "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
@@ -191,7 +186,7 @@ predefined_sample = {
             "TTtoLNu2Q_Fil-HT-500-NJet-9_Par-Hdamp-418_TuneCP5_13p6TeV_powheg-pythia8",
             "TTtoLNu2Q_Fil-HT-500-NJet-9_TuneCP5Up_13p6TeV_powheg-pythia8",
             "TTtoLNu2Q_Fil-HT-500-NJet-9_TuneCP5Down_13p6TeV_powheg-pythia8",
-        ]
+        ],
     },
     "ctag_ttsemilep_sf": {
         "data": ["Muon", "Muon0", "Muon1"],
