@@ -2108,7 +2108,6 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
 
     # NNPDF31_nnlo_hessian_pdfas
     # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
-    #FIXME
     if pdf_weights is not None and (
     "306000 - 306102" in (pdf_weights.__doc__ or "") or 
     "325300 - 325402" in (pdf_weights.__doc__ or "")
