@@ -356,10 +356,7 @@ predefined_sample = {
         ],
     },
     "QG_DY": {
-        "data": [
-            "DoubleMuon",
-            "Muon", "Muon0", "Muon1", "Muon2", "Muon3"
-        ],
+        "data": ["DoubleMuon", "Muon", "Muon0", "Muon1", "Muon2", "Muon3"],
         "MC": [
             # NLO
             "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
@@ -371,10 +368,26 @@ predefined_sample = {
         "data": [
             "ZeroBias",
             # There can be multiple ZeroBias streams
-            "ZeroBias0", "ZeroBias1", "ZeroBias2", "ZeroBias3", "ZeroBias4",
-            "ZeroBias5", "ZeroBias6", "ZeroBias7", "ZeroBias8", "ZeroBias9",
-            "ZeroBias10", "ZeroBias11", "ZeroBias12", "ZeroBias13", "ZeroBias14",
-            "ZeroBias15", "ZeroBias16", "ZeroBias17", "ZeroBias18", "ZeroBias19",
+            "ZeroBias0",
+            "ZeroBias1",
+            "ZeroBias2",
+            "ZeroBias3",
+            "ZeroBias4",
+            "ZeroBias5",
+            "ZeroBias6",
+            "ZeroBias7",
+            "ZeroBias8",
+            "ZeroBias9",
+            "ZeroBias10",
+            "ZeroBias11",
+            "ZeroBias12",
+            "ZeroBias13",
+            "ZeroBias14",
+            "ZeroBias15",
+            "ZeroBias16",
+            "ZeroBias17",
+            "ZeroBias18",
+            "ZeroBias19",
         ],
         "MC": [
             # HT binned pre Summer24
@@ -422,7 +435,7 @@ predefined_sample = {
             "EGamma0",
             "EGamma1",
             "EGamma2",
-            "EGamma3", # 2026 added new EGamma streams
+            "EGamma3",  # 2026 added new EGamma streams
             "EGamma4",
             "EGamma5",
         ],
@@ -471,5 +484,5 @@ predefined_sample = {
             "GJ-4Jets_dRGJ-0p25_PTG-200_HT-600to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "GJ-4Jets_dRGJ-0p25_PTG-200_HT-1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         ],
-    }
+    },
 }
