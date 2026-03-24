@@ -88,11 +88,16 @@ You have the option to run the framework through "standalone condor jobs", bypas
 This utility is currently adapted for the lxplus and cmsconnect condor systems. To generate jobs for launching, replace `python runner.py` with `python condor/submitter.py`, append the existing arguments, and add the following arguments in addition:
 
  - `--jobName`: Specify the desired condor job name. A dedicated folder will be generated, including all submission-related files.
- - `--outputXrootdDir`: Indicate the XRootD directory's path (starting with `root://`) where the produced .coffea (and .root) files from each worker node will be transferred to.
- - `--condorFileSize`: Define the number of files to process per condor job (default is 50). The input file list will be divided based on this count.
+ - `--jobqueue`: Indicate the condor@lxplus JobFlavour. Default is "tomorrow".
+ - `-n` `--condorFileSize`: Define the number of files to process per condor job (default is 50). The input file list will be divided based on this count.
  - `--remoteRepo` (optional, but recommended): Specify the path and branch of the remote repository to download the BTVNanoCommissioning repository. If not specified, the local directory will be packed and transferred as the condor input, potentially leading to higher loads for condor transfers. Use the format e.g. `--remoteRepo 'https://github.com/cms-btv-pog/BTVNanoCommissioning.git -b master'`.
 
-After executing the command, a new folder will be created, preparing the submission. Follow the on-screen instructions and utilize `condor_submit ...` to submit the jdl file. The output will be transferred to the designated XRootD destination.
+After executing the command, a new job folder will be created and the jobs will be submitted to condor.
+
+Example command:
+```bash
+python condor/submitter.py --workflow ctag_DY_sf --json metadata/Summer24/MC_Summer24_2024_ctag_DY_sf.json --campaign Summer24 --year 2024 --isArray --isSyst all --skipbadfiles --jobName condor_DYMu_MC --outputDir /eos/user/u/user/2024/DYmu_MC -n 20 --jobqueue workday
+```
 
 ::: {admonition} Frequent issues for standalone condor jobs submission
 
@@ -108,6 +113,7 @@ After executing the command, a new folder will be created, preparing the submiss
   <summary>A lighter version that works *only* on lxplus</summary>
 
    The jobs submitted by this script rely on eos/afs being mounted on the condor nodes.
+   **This is good for processing a few hundred files only.** Larger submissions are likely to make afs unstable.  
 
    - It does not create a new installation of conda/mamba and instead uses a preinstalled conda env (you can replace this with your own conda/mamba path in the PATH variable, if needed).
    - It does not create a tarball of the BTVNanoComm code either, simply `cd`s to the working directory in eos/afs.
@@ -117,7 +123,7 @@ After executing the command, a new folder will be created, preparing the submiss
    ```
    voms-proxy-init --voms cms --valid 192:00
    conda activate btv_coffea   # Or conda activate /eos/home-m/milee/miniforge3/envs/btv_coffea
-   python condor_lxplus/submitter.py --workflow ctag_DY_sf --json fetched_list.json --campaign Summer22 --year 2022 --isArray --skipbadfiles --jobName condor_1 --outputDir /preferably/eos/output/directory --submit
+   python condor_lxplus/submitter.py --workflow ctag_DY_sf --json fetched_list.json --campaign Summer22 --year 2022 --isArray --isSyst all --skipbadfiles --jobName condor_1 --outputDir /preferably/eos/output/directory --submit
    ```
 
    **Check outputs**
@@ -138,7 +144,7 @@ After executing the command, a new folder will be created, preparing the submiss
    - Proxy handling works even if condor's native `user_proxy` method fails.
 
    **Cons**
-   - Relies on eos/afs mount, hence jobs will fail to run on condor nodes where the mount is unstable. **You may need to keep releasing jobs in that case.**
+   - Relies on eos/afs mount, hence jobs will fail to run on condor nodes where the mount is unstable or when afs is overloaded. **You may need to keep releasing jobs in that case.**
    - Will not work where eos is not mounted, e.g. on CMSConnect nodes.
 
 </details>
