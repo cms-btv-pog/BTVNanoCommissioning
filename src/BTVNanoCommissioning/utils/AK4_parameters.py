@@ -265,7 +265,7 @@ correction_config = {
     },
     "Winter25": {
         "DC": "Cert_Collisions2025_391658_398860_Golden.json",
-        # "LUM": "puWeights_BCDEFGHI.json.gz",
+        "LUM": "puWeights2025.json.gz",
         "JME": {
             # TODO: JER are a placeholder for now (December 2025)
             "MC": "Winter25Prompt25_V2 Summer23BPixPrompt23_RunD_JRV1",
