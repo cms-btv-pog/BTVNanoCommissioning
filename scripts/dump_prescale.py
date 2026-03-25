@@ -1,4 +1,4 @@
-import json, os, argparse, pandas
+import json, os, argparse, pandas, io, subprocess, numpy
 import correctionlib.schemav2 as cs
 from BTVNanoCommissioning.helpers.BTA_helper import BTA_HLT
 from concurrent.futures import ThreadPoolExecutor
@@ -18,53 +18,100 @@ parser.add_argument(
 parser.add_argument(
     "-H",
     "--HLT",
-    default=None,
+    default=BTA_HLT,
     type=str,
-    help="Which HLT is used; comma separated for multiple; do not add the 'HLT_' prefix",
+    help="Which HLT is used; comma separated for multiple.",
 )
 parser.add_argument("-v", "--verbose", action="store_true", help="debugging")
 parser.add_argument("-t", "--test", action="store_true", help="test with only 5 runs")
 parser.add_argument("-f", "--force", action="store_true", help="recreate .csv")
+parser.add_argument(
+    "-i", "--ignore_csv_output", action="store_true", help="Ignore writing the .csv"
+)
+parser.add_argument(
+    "-n",
+    "--nthreads",
+    default=None,
+    type=int,
+    help="Number of threads for parallel run processing (default: auto)",
+)
 
 ### NOTICE The scripts only works on lxplus...
 
 
-def process_run(ir_run):
-    ir, run = ir_run
-    tmpfile = f".tmp_{ir}.csv"
-    os.system(
-        f"singularity -s exec --env PYTHONPATH=/home/bril/.local/lib/python3.10/site-packages "
-        f"/cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cloud/brilws-docker:latest "
-        f"brilcalc trg --prescale --hltpath 'HLT_{HLT}_v*' -r {run} --output-style csv &>{tmpfile}"
+def process_run(run_input):
+    run, trg = run_input
+
+    bc_alias = "singularity -s exec  --env PYTHONPATH=/home/bril/.local/lib/python3.10/site-packages /cvmfs/unpacked.cern.ch/gitlab-registry.cern.ch/cms-cloud/brilws-docker:latest brilcalc"
+    brilcall = [
+        f"{bc_alias} trg -r {run} --prescale --hltpath HLT_{trg}_v* --output-style csv"
+    ]
+
+    command = subprocess.run(
+        brilcall,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        shell=True,
+        executable="/bin/bash",
     )
-    return pandas.read_csv(tmpfile)
+
+    if command.returncode != 0:
+        print(f"Error: {command.stderr}")
+        print(
+            "Check that you have sourced brilcalc with the command `source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env`"
+        )
+        return None
+
+    csv_output = command.stdout
+    df = pandas.read_csv(
+        io.StringIO(csv_output),
+        usecols=["cmsls", "totprescval", "# run", "hltpath/prescval"],
+        dtype={
+            "cmsls": numpy.int32,
+            "totprescval": numpy.float64,
+            "# run": numpy.int32,
+            "hltpath/prescval": str,
+        },
+    )
+
+    return df
 
 
-def get_prescale(HLT, lumimask, verbose=False, test=False, force=False):
-    # os.system("source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env")
+def get_prescale(
+    HLT,
+    lumimask,
+    verbose=False,
+    test=False,
+    force=False,
+    ignore_csv_output=False,
+    nthreads=None,
+):
     prescales = pandas.DataFrame()
     runs = json.load(open(lumimask))
     runs = list(runs.keys())
     if test:
-        runs = runs[: min(len(runs), 100)]
+        runs = runs[: min(len(runs), 10)]
 
-    outcsv = f"src/BTVNanoCommissioning/data/Prescales/HLTinfo_{HLT}_run{runs[0]}_{runs[-1]}.csv"
+    outcsv = f"src/BTVNanoCommissioning/data/Prescales/HLTinfo_{HLT}_run{min(runs)}_{max(runs)}.csv"
     if force or not os.path.exists(outcsv):
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=nthreads) as executor:
             dfs = list(
-                tqdm(executor.map(process_run, enumerate(runs)), total=len(runs))
+                tqdm(
+                    executor.map(process_run, [(run, HLT) for run in runs]),
+                    total=len(runs),
+                )
             )
 
         prescales = pandas.concat(dfs, ignore_index=True)
-        # prescales= prescales[prescales['totprescval']!=0]
-        prescales.to_csv(outcsv)
-        os.system(f"rm -rf .tmp_*.csv")
+        if not ignore_csv_output:
+            prescales.to_csv(outcsv)
 
         if verbose:
             print("prescales :", prescales)
     else:
         prescales = pandas.read_csv(outcsv)
-    return runs, prescales
+    return prescales
 
 
 ### code from Hsin-Wei: https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/f2a5db0e325c9b26d220089a49ddb8f73682f846/prescales.ipynb
@@ -85,7 +132,7 @@ def build_lumibins(ps, verbose=False):
     ##### to sort as bin edges properly, starting lumi sections need to be stored as floats
     if verbose:
         print("Path: ", ps["hltpath/prescval"], ps["totprescval"])
-    edges = sorted(set(ps["cmsls"].astype(float)))
+    edges = sorted(set(ps["cmsls"]))
     if len(edges) == 1:
         return get_ps(ps)
     elif len(edges) > 1:
@@ -114,22 +161,22 @@ def build_lumibins(ps, verbose=False):
         )
 
 
-def build_runs(ps, allruns, HLT_paths, verbose=False):
-    runs = sorted(ps["# run"].unique())
-    runs_np = np.array(runs).astype(int)
-    for run in allruns:
-        if int(run) in runs_np:
+def build_runs(ps, all_runs, HLT_paths, verbose=False):
+    df = ps
+    runs_np = np.array(sorted(df["# run"].unique())).astype(int)
+    for run in all_runs:
+        if run in runs_np:
             continue
         index = np.abs(runs_np - int(run)).argmin()
         closest_run = runs_np[index]
-        new_row = ps.loc[ps["# run"] == closest_run].iloc[0].copy()
+        new_row = df.loc[df["# run"] == closest_run].iloc[0].copy()
         new_row["# run"] = int(run)
-        ps = pd.concat([ps, new_row.to_frame().T], ignore_index=True)
+        df = pd.concat([df, new_row.to_frame().T], ignore_index=True)
         print(
             f"[WARNING] Could not find info for Run #{run}! Replacing with info from closest run, #{closest_run}."
         )
 
-    runs = sorted(ps["# run"].unique())
+    runs = sorted(df["# run"].unique())
     if verbose:
         print("Selected ", len(runs), ": ", runs)
     return cs.Category.model_validate(
@@ -139,7 +186,7 @@ def build_runs(ps, allruns, HLT_paths, verbose=False):
             "content": [
                 {
                     "key": int(run),
-                    "value": build_paths(ps[ps["# run"] == run], HLT_paths, verbose),
+                    "value": build_paths(df[df["# run"] == run], HLT_paths, verbose),
                 }
                 for run in runs
             ],
@@ -168,22 +215,33 @@ def build_paths(ps, HLT_paths, verbose=False):
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    if args.HLT is None:
-        args.HLT = BTA_HLT
+    if "," in args.HLT:
+        args.HLT = args.HLT.split(",")
     else:
-        if "," in args.HLT:
-            args.HLT = args.HLT.split(",")
-        else:
-            args.HLT = [args.HLT]
+        args.HLT = [args.HLT]
 
     os.system(
         "source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; which brilcalc"
     )
 
+    # Get all_runs from the lumimask
+    with open(args.lumimask) as f:
+        lumimask_data = json.load(f)
+    runs_in_mask = set([int(run) for run in lumimask_data.keys()])
+    print(f"Total runs in lumimask: {len(runs_in_mask)}")
+
     for HLT in args.HLT:
+        if HLT.startswith("HLT_"):
+            HLT = HLT[4:]
         print("HLT : ", HLT)
-        runs, ps_csvData = get_prescale(
-            HLT, args.lumimask, args.verbose, args.test, args.force
+        ps_csvData = get_prescale(
+            HLT,
+            args.lumimask,
+            args.verbose,
+            args.test,
+            args.force,
+            args.ignore_csv_output,
+            args.nthreads,
         )
         psCorr = cs.Correction.model_validate(
             {
@@ -195,7 +253,9 @@ if __name__ == "__main__":
                     {"name": "lumi", "type": "real"},
                 ],
                 "output": {"name": "weight", "type": "real"},
-                "data": build_runs(ps_csvData, runs, "HLT_" + HLT, args.verbose),
+                "data": build_runs(
+                    ps_csvData, runs_in_mask, "HLT_" + HLT, args.verbose
+                ),
             }
         )
         cset = cs.CorrectionSet(
@@ -203,14 +263,9 @@ if __name__ == "__main__":
             corrections=[psCorr],
             description=f"prescales for HLT_{HLT}",
         )
-        runs = json.load(open(args.lumimask))
-
-        runs = list(runs.keys())
-        dumpfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{HLT}_run{runs[0]}_{runs[-1]}.json"
+        dumpfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{HLT}_run{min(runs_in_mask)}_{max(runs_in_mask)}.json"
         with open(
             dumpfile,
             "w",
         ) as f:
             f.write(cset.model_dump_json(exclude_unset=True))
-
-        print(f"Dumped prescales in {dumpfile}.")
