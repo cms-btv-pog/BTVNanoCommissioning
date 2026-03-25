@@ -5,6 +5,8 @@ import time
 import argparse
 from rich import print
 from BTVNanoCommissioning.utils.xrootdtools import get_xrootd_sites_map, find_other_file
+from glob import glob
+from alive_progress import alive_bar
 
 parser = argparse.ArgumentParser()
 parser.add_argument("job_dir", type=str, help="Input string")
@@ -20,6 +22,16 @@ sitemap = get_xrootd_sites_map()
 jobdir = args.job_dir
 updatexrootd = args.update_xrootd
 
+uid = os.getuid()
+homedir = os.getenv("HOME")
+expected_value = f"{homedir}/x509up_u{uid}"
+current_value = os.getenv("X509_USER_PROXY")
+if current_value != expected_value:
+    print("[red][b]X509_USER_PROXY is NOT set correctly.[/][/]")
+    print(f"Please run the following command in your shell:")
+    print(f"export X509_USER_PROXY=$HOME/x509up_u`id -u`")
+    sys.exit(1)
+
 numlist = [i.strip() for i in open(f"{jobdir}/jobnum_list.txt", "r").readlines()]
 
 with open(f"{jobdir}/arguments.json") as f:
@@ -27,10 +39,21 @@ with open(f"{jobdir}/arguments.json") as f:
 outdir = args["outputDir"]
 
 toresubmit = []
-for n in numlist:
-    outfile = f"{outdir}/hists_{n}/hists_{n}.coffea"
-    if not os.path.isfile(outfile):
-        toresubmit.append(n)
+
+with alive_bar(len(numlist), title="Checking jobs") as bar:
+    for n in numlist:
+        outfile = f"{outdir}/hists_{n}/hists_{n}.coffea"
+        if not os.path.isfile(outfile):
+            print(f"[red]Job {n}[/] does not have an output histogram file.")
+            toresubmit.append(n)
+        arraylist = glob(f"{outdir}/arrays_hists_{n}/*/*/*.root")
+        for rootfile in arraylist:
+            filesize = os.path.getsize(rootfile)
+            if filesize < 10 * 1024:  # Files smaller than 10 kB are likely zombies
+                print(f"[red]Job {n}[/] has at least one zombie root output file.")
+                toresubmit.append(n)
+                break
+        bar()
 
 if len(toresubmit) == 0:
     print("[green][b]All jobs complete. Nothing to resubmit![/][/]\n")
