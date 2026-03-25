@@ -267,29 +267,43 @@ correction_config = {
         "DC": "Cert_Collisions2025_391658_398860_Golden.json",
         "LUM": "puWeights2025.json.gz",
         "JME": {
-            # TODO: JER are a placeholder for now (December 2025)
-            "MC": "Winter25Prompt25_V2 Summer23BPixPrompt23_RunD_JRV1",
-            "Run2025B": "Winter25Prompt25_V2",
-            "Run2025C": "Winter25Prompt25_V2",
-            "Run2025D": "Winter25Prompt25_V2",
-            "Run2025E": "Winter25Prompt25_V2",
-            "Run2025F": "Winter25Prompt25_V2",
-            "Run2025G": "Winter25Prompt25_V2",
+            # MC: use Summer24 MC truth JECs from the Summer24 CVMFS era
+            # JER: placeholder from Summer23BPix until dedicated 2025 JER is derived.
+            "MC": "Summer24Prompt24_V2 Summer23BPixPrompt23_RunD_JRV1",
+            # Data L2L3Residual corrections (Winter25Prompt25_V3)
+            "Run2025C": "Winter25Prompt25_V3",
+            "Run2025D": "Winter25Prompt25_V3",
+            "Run2025E": "Winter25Prompt25_V3",
+            "Run2025F": "Winter25Prompt25_V3",
+            "Run2025G": "Winter25Prompt25_V3",
         },
-        "jetveto": {"Winter25Prompt25_RunCDE_V1": "jetvetomap"},
-        # "MUO": {
-        #     "mu_ID": "NUM_TightID_DEN_TrackerMuons",
-        #     "mu_Iso": "NUM_TightPFIso_DEN_TightID",
-        # },
-        # "EGM": {
-        #     "ele_Reco 2024 Electron-ID-SF": "",
-        #     "ele_ID 2024 Electron-ID-SF": "wp80iso",
-        # },
-        # "muonSS": "",
-        # "electronSS": [
-        #     "Scale",
-        #     "SmearAndSyst",
-        # ],
+        "jetveto": {"Winter25Prompt25_RunCDEFG_V1": "jetvetomap"},
+        # Lepton SFs: reuse 2024 SFs from Run3-24CDEReprocessingFGHIPrompt-Summer24
+        "MUO": {
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        },
+        "EGM": {
+            "ele_Reco 2024 Electron-ID-SF": "",
+            "ele_ID 2024 Electron-ID-SF": "wp80iso",
+        },
+        # Muon scale & smearing: reuse 2024 from Run3-24CDE...Summer24
+        "muonSS": "",
+        # Electron scale & smearing: use 2025 SaS from Run3-25Prompt-Summer24
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        # Per-POG CVMFS path overrides.
+        # JME_MC: MC truth JECs must come from the Summer24 era (L2Relative differs).
+        # MUO/EGM/electronSS: no Winter25-specific SFs yet, reuse Summer24.
+        "cvmfs_override": {
+            "JME_MC": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
+            "MUO": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
+            "muonSS": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
+            "EGM": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
+            "electronSS": "Run3-25Prompt-Summer24-NanoAODv15",
+        },
     },
     "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
 }
