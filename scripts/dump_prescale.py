@@ -14,12 +14,16 @@ parser.add_argument(
     default="src/BTVNanoCommissioning/data/DC/Cert_Collisions2022_355100_362760_Golden.json",
     help="lumimask to generate prescale weights",
 )
-parser.add_argument("-H", "--HLT", default=None, type=str, help="Which HLT is used")
+parser.add_argument("-H", "--HLT", default=None, type=str, help="Which HLT path(s) to use. If multiple, separate with comma e.g. `--HLT Mu50,Mu60`")
 parser.add_argument("-v", "--verbose", action="store_true", help="debugging")
 parser.add_argument("-t", "--test", action="store_true", help="test with only 5 runs")
 parser.add_argument("-f", "--force", action="store_true", help="recreate .csv")
 parser.add_argument(
     "-i", "--ignore_csv_output", action="store_true", help="Ignore writing the .csv"
+)
+parser.add_argument(
+    "-n", "--nthreads", default=None, type=int,
+    help="Number of threads for parallel run processing (default: auto)",
 )
 
 ### NOTICE The scripts only works on lxplus...
@@ -44,6 +48,7 @@ def process_run(run_input):
 
     if command.returncode != 0:
         print(f"Error: {command.stderr}")
+        print("Check that you have sourced brilcalc with the command `source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env`")
         return None
 
     csv_output = command.stdout
@@ -62,7 +67,7 @@ def process_run(run_input):
 
 
 def get_prescale(
-    HLT, lumimask, verbose=False, test=False, force=False, ignore_csv_output=False
+    HLT, lumimask, verbose=False, test=False, force=False, ignore_csv_output=False, nthreads=None
 ):
     # os.system("source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env")
     prescales = pandas.DataFrame()
@@ -73,7 +78,7 @@ def get_prescale(
 
     outcsv = f"src/BTVNanoCommissioning/data/Prescales/HLTinfo_{HLT}_run{runs[0]}_{runs[-1]}.csv"
     if force or not os.path.exists(outcsv):
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=nthreads) as executor:
             dfs = list(
                 tqdm(
                     executor.map(process_run, [(run, HLT) for run in runs]),
@@ -192,6 +197,8 @@ if __name__ == "__main__":
     )
 
     for HLT in args.HLT:
+        if HLT.startswith("HLT_"):
+            HLT = HLT[4:]
         print("HLT : ", HLT)
         ps_csvData = get_prescale(
             HLT,
@@ -200,6 +207,7 @@ if __name__ == "__main__":
             args.test,
             args.force,
             args.ignore_csv_output,
+            args.nthreads,
         )
         psCorr = cs.Correction.parse_obj(
             {
