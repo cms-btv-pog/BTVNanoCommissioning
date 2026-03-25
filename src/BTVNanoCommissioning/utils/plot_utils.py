@@ -33,6 +33,10 @@ sample_mergemap = {
         "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
         "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
         "TTTo2J1L1Nu_CP5_13p6TeV_powheg-pythia8",
+        # Run 2 (13 TeV)
+        "TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8",
+        "TTToHadronic_TuneCP5_13TeV-powheg-pythia8",
+        "TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8",
     ],
     # single top
     "Single top": [
@@ -50,6 +54,12 @@ sample_mergemap = {
         "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
         "TBbarQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
         "TbarBQ_t-channel_4FS_TuneCP5_13p6TeV_powheg-madspin-pythia8",
+        # Run 2 (13 TeV)
+        "ST_tW_top_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8",
+        "ST_tW_antitop_5f_inclusiveDecays_TuneCP5_13TeV-powheg-pythia8",
+        "ST_t-channel_top_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",
+        "ST_t-channel_antitop_4f_InclusiveDecays_TuneCP5_13TeV-powheg-madspin-pythia8",
+        "ST_s-channel_4f_leptonDecays_TuneCP5_13TeV-amcatnlo-pythia8",
         "TBbartoLNu-s-channel_TuneCP5_13p6TeV_powheg-pythia8",
         "TbarBtoLNu-s-channel_TuneCP5_13p6TeV_powheg-pythia8",
     ],

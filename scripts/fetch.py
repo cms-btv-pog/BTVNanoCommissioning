@@ -239,6 +239,7 @@ if args.DAS_campaign == "auto":
         "Summer23_2023": "Run2023C*Sep2023,Run3Summer23NanoAODv12",
         "Summer23BPix_2023": "Run2023D*Sep2023,Run3Summer23BPixNanoAODv12",
         "Summer24_2024": "Run2024*MINIv6,RunIII2024Summer24NanoAODv15",
+        "Summer25_2025": "Run2024*MINIv6,RunIII2024Summer24NanoAODv15",  # not a mistake, one uses 2024 MC for 2025 analysis
     }
     key = f"{args.campaign}_{args.year}"
     if key in DAS_campaign_map:
