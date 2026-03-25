@@ -74,10 +74,16 @@ def load_SF(year, campaign, syst=False):
         if SF == "LUM":
             ## Check whether files in jsonpog-integration exist
             if os.path.exists(
-                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/"
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
             ):
                 correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
+                )
+            elif os.path.exists(
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
+            ):
+                correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
+                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
                 )
             ## Otherwise custom files
             else:
@@ -177,7 +183,7 @@ def load_SF(year, campaign, syst=False):
                 "electron": "EGM",
                 "electronHlt": "EGM_HLT",
             }.items():
-                _ele_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest//{_ele_file}.json.gz"
+                _ele_path = f"dafs/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest//{_ele_file}.json.gz"
                 if not os.path.exists(_ele_path):
                     _ele_path = f"src/BTVNanoCommissioning/data/EGM/{campaign_map()[campaign]}/latest//{_ele_file}.json.gz"
                 if os.path.exists(_ele_path):
@@ -345,6 +351,27 @@ def load_SF(year, campaign, syst=False):
                     campaign,
                     f"jec_compiled_{config[campaign]['JME']['name']}.pkl.gz",
                 )
+            elif "JME_path" in config[campaign] and os.path.exists(
+                config[campaign]["JME_path"]
+            ):
+                # Custom JME path (e.g. preliminary Puppi JEC for Run 2 NanoAODv15)
+                correct_map["JME"] = correctionlib.CorrectionSet.from_file(
+                    config[campaign]["JME_path"]
+                )
+                correct_map["JME_cfg"] = config[campaign]["JME"]
+                for dataset in correct_map["JME_cfg"].keys():
+                    if (
+                        np.all(
+                            np.char.find(
+                                np.array(list(correct_map["JME"].keys())),
+                                correct_map["JME_cfg"][dataset],
+                            )
+                        )
+                        == -1
+                    ):
+                        raise (
+                            f"{dataset} has no JEC map : {correct_map['JME_cfg'][dataset]} available"
+                        )
             elif os.path.exists(
                 f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{campaign_map()[campaign]}/latest/jet_jerc.json.gz"
             ):
@@ -619,11 +646,13 @@ def JME_shifts(
             jets = copy.copy(nocorrjet)
             jets["orig_pt"] = ak.values_astype(nocorrjet["pt"], np.float32)
 
+            jetType = "AK4PFPuppi"
+
             ## flatten jets
             j, nj = ak.flatten(nocorrjet), ak.num(nocorrjet)
 
             # JEC
-            JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
+            JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_{jetType}"]
             JEC_input = get_corr_inputs(j, JECcorr)
             JECflatCorrFactor = JECcorr.evaluate(*JEC_input)
 
@@ -632,8 +661,8 @@ def JME_shifts(
                 # in data only the JEC is applied
                 corrFactor = JECflatCorrFactor
             else:
-                JERSF = correct_map["JME"][f"{jrname}_ScaleFactor_AK4PFPuppi"]
-                JERptres = correct_map["JME"][f"{jrname}_PtResolution_AK4PFPuppi"]
+                JERSF = correct_map["JME"][f"{jrname}_ScaleFactor_{jetType}"]
+                JERptres = correct_map["JME"][f"{jrname}_PtResolution_{jetType}"]
                 # for MC, correct the jet pT with JEC first
                 j["pt"] = j["pt_raw"] * JECflatCorrFactor
                 j["mass"] = j["mass_raw"] * JECflatCorrFactor
@@ -663,7 +692,8 @@ def JME_shifts(
 
             # Type-I MET correction, from corrected MET factory
             # https://github.com/scikit-hep/coffea/blob/master/src/coffea/jetmet_tools/CorrectedMETFactory.py
-            nocorrmet = events.PuppiMET if int(year) > 2020 else events.MET
+            # NanoAODv15 (Run 2 and Run 3) uses PuppiMET; older NanoAOD used MET
+            nocorrmet = events.PuppiMET if hasattr(events, "PuppiMET") else events.MET
             met = copy.copy(nocorrmet)
             metinfo = [nocorrmet.pt, nocorrmet.phi, jets.pt, jets.phi, jets.pt_raw]
             met["pt"], met["phi"] = (
@@ -675,7 +705,7 @@ def JME_shifts(
             ## JEC variations
             if not isRealData and systematic != False:
                 if systematic != "JERC_split":
-                    jesuncmap = correct_map["JME"][f"{jecname}_Total_AK4PFPuppi"]
+                    jesuncmap = correct_map["JME"][f"{jecname}_Total_{jetType}"]
                     jesunc = ak.unflatten(jesuncmap.evaluate(j.eta, j.pt), nj)
                     unc_jets, unc_met = {}, {}
 
@@ -1566,6 +1596,9 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
     allele = ele if ele.ndim > 1 else ak.singletons(ele)
 
     for sf in correct_map["EGM_cfg"].keys():
+        # if sf.split(" ")[1] == "2024":
+        #     sf = sf.replace("2024", "2024Prompt")
+
         ## Only apply SFs for lepton pass HLT filter
         if not isHLT and "HLT" in sf:
             continue
@@ -1718,10 +1751,8 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                     "RecoBelow20",
                                     ele_etaSC,
                                     ele_pt_low,
-                                )
-                                if "Summer24" not in correct_map["campaign"]
-                                else 1.0
-                            ),  # TODO: temporary until RecoBelow20 is released for 2024
+                                ),
+                            ),
                             1.0,
                         )
                         sfs_high = np.where(
@@ -1755,9 +1786,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                         ele_etaSC,
                                         ele_pt_low,
                                     )
-                                    if "Summer24" not in correct_map["campaign"]
-                                    else 0.0
-                                ),  # TODO: temporary until RecoBelow20 is released for 2024
+                                ),
                                 0.0,
                             )
                             sfs_down_low = np.where(
@@ -1770,9 +1799,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                         ele_etaSC,
                                         ele_pt_low,
                                     )
-                                    if "Summer24" not in correct_map["campaign"]
-                                    else 0.0
-                                ),  # TODO: temporary until RecoBelow20 is released for 2024
+                                ),
                                 0.0,
                             )
                             sfs_up_high = np.where(
@@ -1957,7 +1984,12 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
         sfname = sf.split(" ")[0]
         if syst:
-            weights.add(sfname, sfs_alle, sfs_alle_up, sfs_alle_down)
+            weights.add(
+                sfname,
+                ak.ravel(sfs_alle),
+                ak.ravel(sfs_alle_up),
+                ak.ravel(sfs_alle_down),
+            )
         else:
             weights.add(sfname, sfs_alle)
 
@@ -2103,7 +2135,10 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
 
     # NNPDF31_nnlo_hessian_pdfas
     # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
-    if pdf_weights is not None and "306000 - 306102" in pdf_weights.__doc__:
+    if pdf_weights is not None and (
+        "306000 - 306102" in (pdf_weights.__doc__ or "")
+        or "325300 - 325402" in (pdf_weights.__doc__ or "")
+    ):
         # Hessian PDF weights
         # Eq. 21 of https://arxiv.org/pdf/1510.03865v1.pdf
         arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
@@ -2336,10 +2371,15 @@ class JPCalibHandler(object):
 
         # now calculating Σ_tr{0..N-1} ((-logΠ)^tr / tr!)
         trk_index = ak.local_index(proba)
+
+        # Handle fully-empty track collections: ak.max(...) can return None
+        # (e.g. no tracks pass JP selection in a chunk).
+        max_val = ak.max(trk_index, axis=None)
+        max_trk_index = 0 if max_val is None else int(ak.to_numpy(max_val))
         fact_array = ak.concatenate(
             [
                 [1.0],
-                np.arange(1, max(5, ak.max(trk_index) + 1), dtype=np.float64).cumprod(),
+                np.arange(1, max(5, max_trk_index + 1), dtype=np.float64).cumprod(),
             ]
         )  # construct a factorial array
         trk_index_fl, _layouts = self.flatten(trk_index)
@@ -2429,24 +2469,23 @@ def common_shifts(self, events):
             syst_JERC,
         )
     else:
-        ## Using PFMET
-        if int(self._year) < 2020:
-            shifts = [
-                (
-                    {
-                        "Jet": events.Jet,
-                        "MET": events.MET,
-                    },
-                    None,
-                )
-            ]
-        ## Using PuppiMET
-        else:
+        ## Use PuppiMET if available (NanoAODv15), otherwise fall back to PFMET
+        if hasattr(events, "PuppiMET"):
             shifts = [
                 (
                     {
                         "Jet": events.Jet,
                         "MET": events.PuppiMET,
+                    },
+                    None,
+                )
+            ]
+        else:
+            shifts = [
+                (
+                    {
+                        "Jet": events.Jet,
+                        "MET": events.MET,
                     },
                     None,
                 )
@@ -2519,8 +2558,8 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                     top_pT_reweighting(pruned_ev.GenPart)
                     - ak.ones_like(top_pT_reweighting(pruned_ev.GenPart))
                 )
-                * 2.0,
-                ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
+                * 2.0
+                + ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
             )
 
     if "hadronFlavour" in pruned_ev.Jet.fields:

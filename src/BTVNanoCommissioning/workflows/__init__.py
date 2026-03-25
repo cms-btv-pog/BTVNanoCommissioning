@@ -53,6 +53,10 @@ from BTVNanoCommissioning.workflows.example import (
     NanoProcessor as ExampleProcessor,
 )
 
+## SFl DY+Jets
+from BTVNanoCommissioning.workflows.DY_sfl import (
+    NanoProcessor as NegTagDYValidSFProcessor,
+)
 
 # FIXME - make names more systematic?
 workflows = {}
@@ -108,6 +112,11 @@ workflows["ectag_Wc_WP_sf"] = partial(
 # DY
 workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
 workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
+
+# DY light jet SF with negative tag method
+workflows["DY_sfl"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYM")
+workflows["eDY_sfl"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYE")
+
 
 # Tutorial
 workflows["example"] = ExampleProcessor

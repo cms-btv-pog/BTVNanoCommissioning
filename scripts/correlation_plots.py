@@ -13,7 +13,6 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from BTVNanoCommissioning.helpers.definitions import get_definitions, get_discriminators
 
-
 # Suppress the specific FutureWarning from uproot
 warnings.filterwarnings("ignore", category=FutureWarning, module="uproot")
 

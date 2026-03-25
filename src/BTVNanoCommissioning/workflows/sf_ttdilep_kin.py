@@ -242,7 +242,6 @@ class NanoProcessor(processor.ProcessorABC):
             base_path = eos_base
         else:
             base_path = os.getcwd()
-
         self.out_dir_base = os.path.join(
             base_path,
             "btv/phys_btag/sfb-ttkinfit/arrays" + ("_bdt" if self.model_base else ""),

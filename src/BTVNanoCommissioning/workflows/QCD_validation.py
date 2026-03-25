@@ -210,6 +210,12 @@ class NanoProcessor(processor.ProcessorABC):
                 run_num = "355374_362760"
             elif self._year == "2023":
                 run_num = "366727_370790"
+            elif self._year == "2024":
+                run_num = "378985_386951"
+            else:
+                raise ValueError(
+                    f"Prescales for year {self._year} have not been defined!"
+                )
 
             # if 369869 in pruned_ev.run: continue
             psweight = np.zeros(len(pruned_ev))
@@ -217,7 +223,7 @@ class NanoProcessor(processor.ProcessorABC):
                 psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
                 if not os.path.isfile(psfile):
                     raise NotImplementedError(
-                        f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py`."
+                        f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py -l <path-to-lumi-mask> -H {','.join(triggers.keys())}`."
                     )
                 pseval = correctionlib.CorrectionSet.from_file(psfile)
                 thispsweight = pseval["prescaleWeight"].evaluate(
@@ -261,6 +267,7 @@ class NanoProcessor(processor.ProcessorABC):
                 dataset,
                 isRealData,
                 kinOnly=[],
+                doOnly=["SelJet", "njet", "PuppiMET"],
             )
 
         return {dataset: output}

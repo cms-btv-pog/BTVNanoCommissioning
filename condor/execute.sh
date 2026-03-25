@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash -x
 
 JOBID=$1
 
@@ -24,7 +24,14 @@ export HOME=`pwd`
 echo "Setting up mamba environment"
 if [[ ${ARGS[remoteRepo]} != "" ]]; then
     echo "remoteRepo is set to ${ARGS[remoteRepo]}"
-    wget -L micro.mamba.pm/install.sh
+    for i in {1..10}; do
+        wget -L micro.mamba.pm/install.sh
+        if [ $? -eq 0 ]; then
+            break
+        fi
+	echo "Failed attempt #"$i" to download mamba installer. Will retry."
+        sleep 30
+    done
     chmod +x install.sh
     ## FIXME parsing arguments does not work. will use defaults in install.sh instead, see https://github.com/mamba-org/micromamba-releases/blob/main/install.sh 
     ## Tried solutions listed in https://stackoverflow.com/questions/14392525/passing-arguments-to-an-interactive-program-non-interactively

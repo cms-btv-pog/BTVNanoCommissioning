@@ -22,11 +22,14 @@ def validate(file):
         return file
 
 
-def validate_dataset_structure(fileset):
+def validate_dataset_structure(fileset, max_files_per_sample=None):
     """Check dataset files and return a filtered fileset with only valid files."""
     import uproot
     import logging
     from copy import deepcopy
+
+    if max_files_per_sample is not None and max_files_per_sample <= 0:
+        max_files_per_sample = None
 
     # Critical branches that must be present
     required_branches = [
@@ -43,14 +46,24 @@ def validate_dataset_structure(fileset):
     optional_met_branches = ["MET_pt", "PuppiMET_pt", "PFMET_pt"]
 
     filtered_fileset = deepcopy(fileset)
-    all_files_invalid = True
+
+    if max_files_per_sample is not None:
+        print(
+            f"Fast validation enabled: checking at most {max_files_per_sample} file(s) per sample."
+        )
 
     # Check each sample in the fileset
     for sample_name, files in fileset.items():
-        valid_files = []
+        # In fast mode start by assuming all files are valid and only drop the ones we check and find broken.
+        fast_mode = max_files_per_sample is not None
+        valid_files = list(files) if fast_mode else []
+
+        files_to_check = files
+        if fast_mode:
+            files_to_check = files[:max_files_per_sample]
 
         # Check each file in the sample
-        for filename in files:
+        for filename in files_to_check:
             try:
                 # print(f"Validating file: {filename}")
                 file = uproot.open(filename)
@@ -88,12 +101,14 @@ def validate_dataset_structure(fileset):
                     continue
 
                 # File passed all checks
-                valid_files.append(filename)
-                all_files_invalid = False
+                if not fast_mode:
+                    valid_files.append(filename)
                 # print(f"File validation successful: {filename}")
 
             except Exception as e:
                 print(f"ERROR validating file: {filename}, {e}")
+                if fast_mode and filename in valid_files:
+                    valid_files.remove(filename)
                 continue
 
         # Update the filtered fileset with valid files
@@ -104,7 +119,7 @@ def validate_dataset_structure(fileset):
             del filtered_fileset[sample_name]
 
     # Summary
-    if all_files_invalid:
+    if len(filtered_fileset) == 0:
         print("WARNING: All files in dataset failed validation!")
         return None
     else:
@@ -341,6 +356,18 @@ def debug_parser(parser):
         "--only", type=str, default=None, help="Only process specific dataset or file"
     )
     parser.add_argument(
+        "--skip-structure-validation",
+        action="store_true",
+        help="Skip the pre-flight branch/event checks on the sample list.",
+    )
+    parser.add_argument(
+        "--validate-files-per-sample",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Only inspect the first N files per sample during pre-flight validation (default: all).",
+    )
+    parser.add_argument(
         "--limit",
         type=int,
         default=None,
@@ -426,7 +453,7 @@ if __name__ == "__main__":
             coffeaoutput = coffeaoutput.replace(".coffea", f"_{key}.coffea")
         elif "*" in args.only:  # wildcard for datasets
             _new_dict = {}
-            print("Will only proces the following datasets:")
+            print("Will only process the following datasets:")
             for k, v in sample_dict.items():
                 if args.only.replace("*", "") in k:
                     print("    ", k)
@@ -493,7 +520,13 @@ if __name__ == "__main__":
         args.chunk,
     )
 
-    filtered_sample_dict = validate_dataset_structure(sample_dict)
+    if args.skip_structure_validation:
+        print("Skipping dataset structure validation (--skip-structure-validation).")
+        filtered_sample_dict = sample_dict
+    else:
+        filtered_sample_dict = validate_dataset_structure(
+            sample_dict, args.validate_files_per_sample
+        )
 
     if filtered_sample_dict is None:
         print(f"Creating empty output file for incompatible dataset: {args.samplejson}")
@@ -557,11 +590,11 @@ if __name__ == "__main__":
             0
         ]
         condor_extra = [
+            f"export PATH={pathvar}:$PATH",
             f'source {os.environ["HOME"]}/.bashrc',
         ]
         if "brux" in args.executor:
             job_script_prologue.append(f"cd {os.getcwd()}")
-            condor_extra.append(f"export PATH={pathvar}:$PATH")
         else:
             condor_extra.append(f"cd {os.getcwd()}")
 
@@ -580,12 +613,12 @@ if __name__ == "__main__":
                     condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
                 else:
                     condor_extra.append(
-                        f"micromamba activate {os.environ['MAMBA_EXE']}"
+                        f"micromamba activate {os.environ['CONDA_PREFIX']}"
                     )
             elif conda_available:
                 condor_extra.append(f'conda activate {os.environ["CONDA_PREFIX"]}')
             elif mamba_available:
-                condor_extra.append(f"micromamba activate {os.environ['MAMBA_EXE']}")
+                condor_extra.append(f"micromamba activate {os.environ['CONDA_PREFIX']}")
             else:
                 # Handle the case when neither Conda nor Micromamba is available
                 print(
