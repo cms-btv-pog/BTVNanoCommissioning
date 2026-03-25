@@ -29,7 +29,10 @@ parser.add_argument(
     "-i", "--ignore_csv_output", action="store_true", help="Ignore writing the .csv"
 )
 parser.add_argument(
-    "-n", "--nthreads", default=None, type=int,
+    "-n",
+    "--nthreads",
+    default=None,
+    type=int,
     help="Number of threads for parallel run processing (default: auto)",
 )
 
@@ -55,7 +58,9 @@ def process_run(run_input):
 
     if command.returncode != 0:
         print(f"Error: {command.stderr}")
-        print("Check that you have sourced brilcalc with the command `source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env`")
+        print(
+            "Check that you have sourced brilcalc with the command `source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env`"
+        )
         return None
 
     csv_output = command.stdout
@@ -74,7 +79,13 @@ def process_run(run_input):
 
 
 def get_prescale(
-    HLT, lumimask, verbose=False, test=False, force=False, ignore_csv_output=False, nthreads=None
+    HLT,
+    lumimask,
+    verbose=False,
+    test=False,
+    force=False,
+    ignore_csv_output=False,
+    nthreads=None,
 ):
     # os.system("source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env")
     prescales = pandas.DataFrame()
