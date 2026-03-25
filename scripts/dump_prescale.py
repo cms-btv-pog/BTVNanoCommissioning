@@ -3,6 +3,7 @@ import correctionlib.schemav2 as cs
 from BTVNanoCommissioning.helpers.BTA_helper import BTA_HLT
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
+import numpy as np, pandas as pd
 
 ### NOTICE The scripts only works on lxplus...
 
@@ -14,7 +15,13 @@ parser.add_argument(
     default="src/BTVNanoCommissioning/data/DC/Cert_Collisions2022_355100_362760_Golden.json",
     help="lumimask to generate prescale weights",
 )
-parser.add_argument("-H", "--HLT", default=None, type=str, help="Which HLT path(s) to use. If multiple, separate with comma e.g. `--HLT Mu50,Mu60`")
+parser.add_argument(
+    "-H",
+    "--HLT",
+    default=None,
+    type=str,
+    help="Which HLT is used; comma separated for multiple; do not add the 'HLT_' prefix",
+)
 parser.add_argument("-v", "--verbose", action="store_true", help="debugging")
 parser.add_argument("-t", "--test", action="store_true", help="test with only 5 runs")
 parser.add_argument("-f", "--force", action="store_true", help="recreate .csv")
@@ -74,7 +81,7 @@ def get_prescale(
     runs = json.load(open(lumimask))
     runs = list(runs.keys())
     if test:
-        runs = runs[: min(len(runs), 5)]
+        runs = runs[: min(len(runs), 100)]
 
     outcsv = f"src/BTVNanoCommissioning/data/Prescales/HLTinfo_{HLT}_run{runs[0]}_{runs[-1]}.csv"
     if force or not os.path.exists(outcsv):
@@ -94,7 +101,7 @@ def get_prescale(
             print("prescales :", prescales)
     else:
         prescales = pandas.read_csv(outcsv)
-    return prescales
+    return runs, prescales
 
 
 ### code from Hsin-Wei: https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/f2a5db0e325c9b26d220089a49ddb8f73682f846/prescales.ipynb
@@ -133,7 +140,7 @@ def build_lumibins(ps, verbose=False):
         ]
         if verbose:
             print("Prescales: ", content)
-        return cs.Binning.parse_obj(
+        return cs.Binning.model_validate(
             {
                 "nodetype": "binning",
                 "input": "lumi",
@@ -144,11 +151,25 @@ def build_lumibins(ps, verbose=False):
         )
 
 
-def build_runs(ps, HLT_paths, verbose=False):
+def build_runs(ps, allruns, HLT_paths, verbose=False):
+    runs = sorted(ps["# run"].unique())
+    runs_np = np.array(runs).astype(int)
+    for run in allruns:
+        if int(run) in runs_np:
+            continue
+        index = np.abs(runs_np - int(run)).argmin()
+        closest_run = runs_np[index]
+        new_row = ps.loc[ps["# run"] == closest_run].iloc[0].copy()
+        new_row["# run"] = int(run)
+        ps = pd.concat([ps, new_row.to_frame().T], ignore_index=True)
+        print(
+            f"[WARNING] Could not find info for Run #{run}! Replacing with info from closest run, #{closest_run}."
+        )
+
     runs = sorted(ps["# run"].unique())
     if verbose:
         print("Selected ", len(runs), ": ", runs)
-    return cs.Category.parse_obj(
+    return cs.Category.model_validate(
         {
             "nodetype": "category",
             "input": "run",
@@ -170,7 +191,7 @@ def build_paths(ps, HLT_paths, verbose=False):
     paths = [HLT_paths]
     if verbose:
         print("Type of path key: ", type(paths[0]), paths)
-    return cs.Category.parse_obj(
+    return cs.Category.model_validate(
         {
             "nodetype": "category",
             "input": "path",
@@ -209,7 +230,7 @@ if __name__ == "__main__":
             args.ignore_csv_output,
             args.nthreads,
         )
-        psCorr = cs.Correction.parse_obj(
+        psCorr = cs.Correction.model_validate(
             {
                 "version": 2,
                 "name": "prescaleWeight",
@@ -219,7 +240,7 @@ if __name__ == "__main__":
                     {"name": "lumi", "type": "real"},
                 ],
                 "output": {"name": "weight", "type": "real"},
-                "data": build_runs(ps_csvData, "HLT_" + HLT, args.verbose),
+                "data": build_runs(ps_csvData, runs, "HLT_" + HLT, args.verbose),
             }
         )
         cset = cs.CorrectionSet(
@@ -230,8 +251,9 @@ if __name__ == "__main__":
         runs = json.load(open(args.lumimask))
 
         runs = list(runs.keys())
+        dumpfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{HLT}_run{runs[0]}_{runs[-1]}.json"
         with open(
-            f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{HLT}_run{runs[0]}_{runs[-1]}.json",
+            dumpfile,
             "w",
         ) as f:
             f.write(cset.json(exclude_unset=True))

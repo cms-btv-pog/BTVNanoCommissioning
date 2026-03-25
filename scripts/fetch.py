@@ -133,6 +133,12 @@ parser.add_argument(
     default=4,
     help="Number of workers to use for futures executor",
 )
+parser.add_argument(
+    "--doOnly",
+    type=str,
+    default=None,
+    help="Do only Data or MC",
+)
 
 args = parser.parse_args()
 
@@ -233,6 +239,7 @@ if args.DAS_campaign == "auto":
         "Summer23_2023": "Run2023C*Sep2023,Run3Summer23NanoAODv12",
         "Summer23BPix_2023": "Run2023D*Sep2023,Run3Summer23BPixNanoAODv12",
         "Summer24_2024": "Run2024*MINIv6,RunIII2024Summer24NanoAODv15",
+        "Summer25_2025": "Run2024*MINIv6,RunIII2024Summer24NanoAODv15",  # not a mistake, one uses 2024 MC for 2025 analysis
     }
     key = f"{args.campaign}_{args.year}"
     if key in DAS_campaign_map:
@@ -1870,6 +1877,9 @@ def main(args):
 
     if args.from_workflow:
         for sample in predefined_sample[args.from_workflow].keys():
+            if args.doOnly is not None:
+                if sample != args.doOnly:
+                    continue
             if (
                 os.path.exists(
                     f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json"
@@ -1890,6 +1900,9 @@ def main(args):
         else:
             lines = []
             for sample in predefined_sample[args.from_workflow].keys():
+                if args.doOnly is not None:
+                    if sample != args.doOnly:
+                        continue
                 lines += predefined_sample[args.from_workflow][sample]
             args.input = args.from_workflow + "_predef"
             campaign_list = args.DAS_campaign.split(",")
@@ -1935,7 +1948,9 @@ def main(args):
                             camp_idxs.append(idx)
                         except:
                             print(f"{camp_idx} is not a valid input. Try again!\n")
-                            continue
+                            cont = True
+                    if cont:
+                        continue
                     break
 
                 dataset = []
@@ -2076,12 +2091,19 @@ def main(args):
     if args.from_workflow:
         os.system(f"mkdir -p metadata/{args.campaign}/")
         for sample in predefined_sample[args.from_workflow].keys():
+            if args.doOnly is not None:
+                if sample != args.doOnly:
+                    continue
             reduced_fdict = {}
             for dataset in fdict.keys():
                 for s in predefined_sample[args.from_workflow][sample]:
-
-                    if s in dataset:
-                        reduced_fdict[dataset] = fdict[dataset]
+                    if "*" in s:
+                        parts = s.split("*")
+                        if all([p in dataset for p in parts]):
+                            reduced_fdict[dataset] = fdict[dataset]
+                    else:
+                        if s in dataset:
+                            reduced_fdict[dataset] = fdict[dataset]
 
             with open(
                 f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json",
