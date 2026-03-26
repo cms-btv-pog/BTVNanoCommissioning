@@ -976,7 +976,6 @@ def JME_shifts(
                         ## loop over JES/JEC uncertainties
                         if jes_sources_id in jes_sources.keys():
                             for jes_syst in jes_sources[jes_sources_id]:
-                                print(f"{jecname}_{jes_syst}_AK4PFPuppi")
                                 jesuncmap = correct_map["JME"][f"{jecname}_{jes_syst}_AK4PFPuppi"]
                                 jesunc = jesuncmap.evaluate(j.eta, j.pt_JECnom)
                                 jesunc_t1 = jesuncmap.evaluate(t1j.eta, t1j.pt_JECnom)
