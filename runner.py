@@ -678,7 +678,6 @@ if __name__ == "__main__":
                         "BTVNanoCommissioning.tar.gz",
                         base_dir,
                         exclude_dirs=[
-                            "jsonpog-integration",
                             "BTVNanoCommissioning.egg-info",
                         ],
                     )
