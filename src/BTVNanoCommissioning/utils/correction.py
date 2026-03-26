@@ -886,7 +886,11 @@ def JME_shifts(
                 if systematic != False:
                     unc_jets, unc_met = {}, {}
                     jes_sources = get_JES_keys(year)
-                    jes_sources_id = systematic.split("_")[1]
+                    jes_sources_id = systematic.split("_")
+                    if len(jes_sources_id) == 2:
+                        jes_sources_id = jes_sources_id[1]
+                    else:
+                        jes_sources_id = "reduced"
 
                     for var in ["up", "down"]:
                         fac = 1.0 if var == "up" else -1.0
@@ -1146,7 +1150,11 @@ def JME_shifts(
                     ),
                 ]
             jes_sources = get_JES_keys(year)
-            jes_sources_id = systematic.split("_")[1]
+            jes_sources_id = systematic.split("_")
+            if len(jes_sources_id) == 2:
+                jes_sources_id = jes_sources_id[1]
+            else:
+                jes_sources_id = "reduced"
             if jes_sources_id in jes_sources.keys():
                 for jes_syst in jes_sources[jes_sources_id]:
                     if f"JES_{jes_syst}" in jets.fields:
@@ -2506,6 +2514,12 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
                 weights.add("aS_weight", nom)
                 weights.add("PDFaS_weight", nom)
 
+        else:
+            warnings.warn("unexpected PDF set used!")
+            weights.add("aS_weight", nom, up, down)
+            weights.add("PDF_weight", nom, up, down)
+            weights.add("PDFaS_weight", nom, up, down)
+
     else:
         warnings.warn("PDF weights are not available")
         weights.add("aS_weight", nom, up, down)
@@ -3008,6 +3022,17 @@ def reweighting(events, isSyst):
                     PDFaS_genWeightUp = (nom + pdfas_unc) * genWeight
                     PDFaS_genWeightDown = (nom - pdfas_unc) * genWeight
 
+                else:
+                    warnings.warn(
+                        "unexpected PDF set used, all sumws will be the nominal!"
+                    )
+                    PDF_genWeightUp = genWeight
+                    PDF_genWeightDown = genWeight
+                    aS_genWeightUp = genWeight
+                    aS_genWeightDown = genWeight
+                    PDFaS_genWeightUp = genWeight
+                    PDFaS_genWeightDown = genWeight
+
                 sumws["PDF_sumwUp"] = np.sum(
                     np.array(PDF_genWeightUp), dtype=np.float64
                 )
@@ -3023,6 +3048,10 @@ def reweighting(events, isSyst):
                 )
                 sumws["PDFaS_sumwDown"] = np.sum(
                     np.array(PDFaS_genWeightDown), dtype=np.float64
+                )
+            else:
+                warnings.warn(
+                    "no LHE PDF weights found for reweighting!"
                 )
 
             if "LHEScaleWeight" in events.fields:
@@ -3050,6 +3079,10 @@ def reweighting(events, isSyst):
                 sumws["muF_sumwDown"] = np.sum(
                     np.array(muF_genWeightDown), dtype=np.float64
                 )
+            else:
+                warnings.warn(
+                    "no LHE scale weights found for reweighting!"
+                )
 
             if "PSWeight" in events.fields:
                 if len(events.PSWeight[0]) == 4:
@@ -3069,6 +3102,14 @@ def reweighting(events, isSyst):
                     sumws["FSR_sumwDown"] = np.sum(
                         np.array(FSR_genWeightDown), dtype=np.float64
                     )
+                else:
+                    warnings.warn(
+                        "wrong number of PS weights for reweighting!"
+                    )
+            else:
+                warnings.warn(
+                    "no PS weights found for reweighting!"
+                )
 
     else:
         sumws["sumw"] = len(events)
