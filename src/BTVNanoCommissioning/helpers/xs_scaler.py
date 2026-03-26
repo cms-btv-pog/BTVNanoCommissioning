@@ -58,12 +58,12 @@ def scaleSumW(output, lumi):
                 if sample in xs_dict.keys():
                     for syst in ["PDF", "aS", "PDFaS", "muR", "muF", "ISR", "FSR"]:
                         for var in ["Up", "Down"]:
-                            key = f"{syst}_sumw{var}"
-                            if key in sumws.keys():
-                                scaled[sample][key] = merged_output[sample][key]
+                            key_reweight = f"{syst}_sumw{var}"
+                            if key_reweight in merged_output[sample].keys():
+                                scaled[sample][key_reweight] = merged_output[sample][key_reweight]
                             else:
-                                scaled[sample][key] = merged_output[sample]["sumw"]
-                                print(f"WARNING: {key} not found!")
+                                scaled[sample][key_reweight] = merged_output[sample]["sumw"]
+                                print(f"WARNING: {key_reweight} not found!")
 
                     h = h * xs_dict[sample] * lumi / merged_output[sample]["sumw"]
                     h_PDF_weightUp = (
