@@ -270,7 +270,6 @@ correction_config = {
             # MC: use Summer24 MC truth JECs from the Summer24 CVMFS era
             # JER: placeholder from Summer23BPix until dedicated 2025 JER is derived.
             "MC": "Summer24Prompt24_V2 Summer23BPixPrompt23_RunD_JRV1",
-            # Data L2L3Residual corrections (Winter25Prompt25_V3)
             "Run2025C": "Winter25Prompt25_V3",
             "Run2025D": "Winter25Prompt25_V3",
             "Run2025E": "Winter25Prompt25_V3",
@@ -278,7 +277,6 @@ correction_config = {
             "Run2025G": "Winter25Prompt25_V3",
         },
         "jetveto": {"Winter25Prompt25_RunCDEFG_V1": "jetvetomap"},
-        # Lepton SFs: reuse 2024 SFs from Run3-24CDEReprocessingFGHIPrompt-Summer24
         "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightPFIso_DEN_TightID",
@@ -296,10 +294,14 @@ correction_config = {
         ],
         # Per-POG CVMFS path overrides.
         # JME_MC: MC truth JECs must come from the Summer24 era (L2Relative differs).
-        # MUO/EGM/electronSS: no Winter25-specific SFs yet, reuse Summer24.
+        # MUO: 2025 SFs available (muon_Z.json.gz under muo_SF25_Z_and_highpt/,
+        #       copied to local data/ fallback since latest/ is still empty on CVMFS).
+        # muonSS: no 2025 muon scale/smearing yet, reuse Summer24.
+        # EGM: no 2025 electron ID SFs yet (electron.json.gz), reuse Summer24.
+        # electronSS: 2025 SaS available.
         "cvmfs_override": {
             "JME_MC": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
-            "MUO": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
+            "MUO": "Run3-25Prompt-Summer24-NanoAODv15",
             "muonSS": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
             "EGM": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
             "electronSS": "Run3-25Prompt-Summer24-NanoAODv15",
