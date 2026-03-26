@@ -60,9 +60,13 @@ def scaleSumW(output, lumi):
                         for var in ["Up", "Down"]:
                             key_reweight = f"{syst}_sumw{var}"
                             if key_reweight in merged_output[sample].keys():
-                                scaled[sample][key_reweight] = merged_output[sample][key_reweight]
+                                scaled[sample][key_reweight] = merged_output[sample][
+                                    key_reweight
+                                ]
                             else:
-                                scaled[sample][key_reweight] = merged_output[sample]["sumw"]
+                                scaled[sample][key_reweight] = merged_output[sample][
+                                    "sumw"
+                                ]
                                 print(f"WARNING: {key_reweight} not found!")
 
                     h = h * xs_dict[sample] * lumi / merged_output[sample]["sumw"]

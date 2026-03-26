@@ -236,7 +236,15 @@ def config_parser(parser):
         "--isSyst",
         default="False",
         type=str,
-        choices=["False", "all", "weight_only", "JERC_full", "JERC_reduced", "JERC_total", "JP_MC"],
+        choices=[
+            "False",
+            "all",
+            "weight_only",
+            "JERC_full",
+            "JERC_reduced",
+            "JERC_total",
+            "JP_MC",
+        ],
         help="Run with systematics (default: %(default)s)",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
