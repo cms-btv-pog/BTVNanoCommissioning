@@ -56,18 +56,14 @@ def scaleSumW(output, lumi):
                 h_PS_FSRDown = copy.deepcopy(h_obj)
 
                 if sample in xs_dict.keys():
-                    scaled[sample]["PDF_sumwUp"] = merged_output[sample]["PDF_sumwUp"]
-                    scaled[sample]["PDF_sumwDown"] = merged_output[sample]["PDF_sumwDown"]
-                    scaled[sample]["aS_sumwUp"] = merged_output[sample]["aS_sumwUp"]
-                    scaled[sample]["aS_sumwDown"] = merged_output[sample]["aS_sumwDown"]
-                    scaled[sample]["muR_sumwUp"] = merged_output[sample]["muR_sumwUp"]
-                    scaled[sample]["muR_sumwDown"] = merged_output[sample]["muR_sumwDown"]
-                    scaled[sample]["muF_sumwUp"] = merged_output[sample]["muF_sumwUp"]
-                    scaled[sample]["muF_sumwDown"] = merged_output[sample]["muF_sumwDown"]
-                    scaled[sample]["ISR_sumwUp"] = merged_output[sample]["ISR_sumwUp"]
-                    scaled[sample]["ISR_sumwDown"] = merged_output[sample]["ISR_sumwDown"]
-                    scaled[sample]["FSR_sumwUp"] = merged_output[sample]["FSR_sumwUp"]
-                    scaled[sample]["FSR_sumwDown"] = merged_output[sample]["FSR_sumwDown"]
+                    for syst in ["PDF", "aS", "PDFaS", "muR", "muF", "ISR", "FSR"]:
+                        for var in ["Up", "Down"]:
+                            key = f"{syst}_sumw{var}"
+                            if key in sumws.keys():
+                                scaled[sample][key] = merged_output[sample][key]
+                            else:
+                                scaled[sample][key] = merged_output[sample]["sumw"]
+                                print(f"WARNING: {key} not found!")
 
                     h = h * xs_dict[sample] * lumi / merged_output[sample]["sumw"]
                     h_PDF_weightUp = (
