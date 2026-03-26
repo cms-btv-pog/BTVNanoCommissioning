@@ -1,4 +1,4 @@
-import os
+import os, sys
 import json
 import shutil
 import tarfile
@@ -23,6 +23,7 @@ def get_condor_submitter_parser(parser):
         required=True,
     )
     parser.add_argument(
+        "-n",
         "--condorFileSize",
         type=int,
         default=50,
@@ -37,6 +38,11 @@ def get_condor_submitter_parser(parser):
         "--remoteRepo",
         default=None,
         help="If specified, access BTVNanoCommsioning from a remote tarball (downloaded via https), instead of from a transferred sandbox",
+    )
+    parser.add_argument(
+        "--jobqueue",
+        default="tomorrow",
+        help="JobFlavour for condor@lxplus. E.g. microcentury, longlunch, workday, tomorrow",
     )
     return parser
 
@@ -61,6 +67,7 @@ def get_main_parser():
         "--samples",
         "--json",
         dest="samplejson",
+        nargs="+",
         default="dummy_samples.json",
         help="JSON file containing dataset and file locations (default: %(default)s)",
     )
@@ -89,8 +96,16 @@ def get_main_parser():
         "--isSyst",
         default=False,
         type=str,
-        choices=[False, "all", "weight_only", "JERC_split", "JP_MC"],
-        help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
+        choices=[
+            "False",
+            "all",
+            "weight_only",
+            "JERC_full",
+            "JERC_reduced",
+            "JERC_total",
+            "JP_MC",
+        ],
+        help="Run with systematics (default: %(default)s)",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
 
@@ -131,6 +146,16 @@ if __name__ == "__main__":
     print("Running with the following options:")
     print(args)
 
+    uid = os.getuid()
+    homedir = os.getenv("HOME")
+    expected_value = f"{homedir}/x509up_u{uid}"
+    current_value = os.getenv("X509_USER_PROXY")
+    if current_value != expected_value:
+        print("X509_USER_PROXY is NOT set correctly.")
+        print(f"Please run the following command in your shell:")
+        print(f"export X509_USER_PROXY=$HOME/x509up_u`id -u`")
+        sys.exit(1)
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = current_dir.replace("/condor", "")
 
@@ -153,10 +178,11 @@ if __name__ == "__main__":
                 raise Exception("Invalid input, exiting")
 
         if not skip_tar:
+            jobdirs = [d for d in os.listdir(base_dir) if d.startswith("jobs_")]
             make_tarfile(
                 "BTVNanoCommissioning.tar.gz",
                 base_dir,
-                exclude_dirs=["jsonpog-integration", "BTVNanoCommissioning.egg-info"],
+                exclude_dirs=["BTVNanoCommissioning.egg-info"] + jobdirs,
             )
 
     # Create job dir
@@ -178,8 +204,15 @@ if __name__ == "__main__":
         json.dump(vars(args), json_file, indent=4)
 
     ## split the sample json
-    with open(args.samplejson) as f:
-        sample_dict = json.load(f)
+    if isinstance(args.samplejson, str):
+        samplejson = [args.samplejson]
+    else:
+        samplejson = args.samplejson
+    sample_dict = {}
+    for js in samplejson:
+        with open(js) as f:
+            sample_dict.update(json.load(f))
+
     split_sample_dict = {}
     counter = 0
     only = []
@@ -224,7 +257,7 @@ request_cpus = 1
 request_memory = 2000
 use_x509userproxy = true
 
-+JobFlavour = "tomorrow"
++JobFlavour = "{jobqueue}"
 
 Log        = {log_dir}/job.log_$(Cluster)
 Output     = {log_dir}/job.out_$(Cluster)-$(Process)
@@ -237,6 +270,7 @@ transfer_input_files    = {transfer_input_files}
 Queue JOBNUM from {jobnum_file}
 """.format(
         executable=f"{base_dir}/condor/execute.sh",
+        jobqueue=args.jobqueue,
         log_dir=f"{base_dir}/{job_dir}/log",
         transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt"
         + ("" if args.remoteRepo else f",{base_dir}/BTVNanoCommissioning.tar.gz"),
@@ -245,6 +279,6 @@ Queue JOBNUM from {jobnum_file}
     with open(os.path.join(job_dir, "submit.jdl"), "w") as f:
         f.write(jdl_template)
     os.system(f"condor_submit {job_dir}/submit.jdl")
-    print(
-        f"Setup completed. Now submit the condor jobs by:\n  condor_submit {job_dir}/submit.jdl"
-    )
+    # print(
+    #     f"Setup completed. Now submit the condor jobs by:\n  condor_submit {job_dir}/submit.jdl"
+    # )

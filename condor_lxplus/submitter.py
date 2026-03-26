@@ -57,7 +57,7 @@ def get_condor_submitter_parser(parser):
     parser.add_argument(
         "--remoteRepo",
         default=None,
-        help="If specified, access BTVNanoCommsioning from a remote tarball (downloaded via https), instead of from a transferred sandbox",
+        help="If specified, access BTVNanoCommissioning from a remote tarball (downloaded via https), instead of from a transferred sandbox",
     )
     return parser
 
@@ -97,6 +97,7 @@ def get_main_parser():
             "Summer22EE",
             "Summer23",
             "Summer23BPix",
+            "Summer24",
             "2018_UL",
             "2017_UL",
             "2016preVFP_UL",
