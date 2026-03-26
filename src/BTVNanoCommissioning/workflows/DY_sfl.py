@@ -10,6 +10,7 @@ from BTVNanoCommissioning.utils.correction import (
     load_lumi,
     load_SF,
     weight_manager,
+    reweighting,
 )
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histo_writter,
