@@ -38,5 +38,5 @@ jobs:
     - name: Lint with black
       uses: psf/black@stable
       with:
-        options: "--check --verbose --exclude=src/BTVNanoCommissioning/jsonpog-integration"
+        options: "--check --verbose"
         src: "./"

@@ -38,7 +38,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 (events.Jet.jetId >= 2) & (events.Jet.neHEF < 0.99),
                 ak.where(
                     (abs(events.Jet.eta) > 3.0),
-                    (events.Jet.jetId & (1 << 1)) & (events.Jet.neEmEF < 0.4),
+                    (events.Jet.jetId >= 2) & (events.Jet.neEmEF < 0.4),
                     ak.zeros_like(events.Jet.pt, dtype=bool),
                 ),
             ),
@@ -175,6 +175,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
         )
     else:
         jetmask = (events.Jet.pt > min_pt) & (abs(events.Jet.eta) <= max_eta) & (jetid)
+
     return jetmask
 
 

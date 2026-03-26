@@ -96,8 +96,16 @@ def get_main_parser():
         "--isSyst",
         default=False,
         type=str,
-        choices=[False, "all", "weight_only", "JERC_split", "JP_MC"],
-        help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
+        choices=[
+            "False",
+            "all",
+            "weight_only",
+            "JERC_full",
+            "JERC_reduced",
+            "JERC_total",
+            "JP_MC",
+        ],
+        help="Run with systematics (default: %(default)s)",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
 
@@ -174,8 +182,7 @@ if __name__ == "__main__":
             make_tarfile(
                 "BTVNanoCommissioning.tar.gz",
                 base_dir,
-                exclude_dirs=["jsonpog-integration", "BTVNanoCommissioning.egg-info"]
-                + jobdirs,
+                exclude_dirs=["BTVNanoCommissioning.egg-info"] + jobdirs,
             )
 
     # Create job dir
