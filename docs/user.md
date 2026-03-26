@@ -225,8 +225,8 @@ python runner.py --wf {wf} --json metadata/{args.campaign}/{types}_{args.campaig
 
 #=======Optional======
 # ==> configurations for storing info
-#   --isSyst {False,all,weight_only,JERC_split,JP_MC}
-#                         Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None
+#   --isSyst {False,all,weight_only,JERC_full,JERC_reduced,JERC_total,JP_MC}
+#                         Run with systematics (default: False)
 #   --isArray             Output root files
 #   --noHist              Not output coffea histogram
 #   --overwrite           Overwrite existing files

@@ -737,7 +737,6 @@ def JME_shifts(
     """
     dataset = events.metadata["dataset"]
     jecname = ""
-    # https://cms-jerc.web.cern.ch/JECUncertaintySources/, currently no recommendation of reduced/full split sources
     syst_list = [
         i.split("_")[3]
         for i in correct_map["JME"].keys()
@@ -786,6 +785,7 @@ def JME_shifts(
             jets = copy.copy(nocorrjet)
             jets["pt"] = nocorrjet["pt_raw"]
             jets["mass"] = nocorrjet["mass_raw"]
+<<<<<<< HEAD
 
             ## build jet collection for type-1 MET correction
             nocorrt1metjet = copy.copy(events.CorrT1METJet)
@@ -811,8 +811,33 @@ def JME_shifts(
             ]
             t1jets = ak.concatenate([t1jets_1, t1jets_2], axis=1)
             t1jets["pt"] = t1jets["pt_raw"]
+=======
+>>>>>>> 279ce3303c8a527472e19c514833afbb573917ad
 
-            jetType = "AK4PFPuppi"
+            ## build jet collection for type-1 MET correction
+            nocorrt1metjet = copy.copy(events.CorrT1METJet)
+            nocorrt1metjet["pt_raw"] = events.CorrT1METJet["rawPt"]
+            if not isRealData:
+                nocorrt1metjet["Genpt"] = ak.broadcast_arrays(
+                    -1, events.CorrT1METJet.rawPt
+                )[0]
+            nocorrt1metjet["rho"] = ak.broadcast_arrays(
+                events.fixedGridRhoFastjetAll, events.CorrT1METJet.rawPt
+            )[0]
+            nocorrt1metjet["EventID"] = ak.broadcast_arrays(
+                events.event, events.CorrT1METJet.rawPt
+            )[0]
+            nocorrt1metjet["run"] = ak.broadcast_arrays(
+                events.run, events.CorrT1METJet.rawPt
+            )[0]
+
+            keys_keep = get_MET_corr_keys()
+            t1jets_1 = nocorrjet[[key for key in nocorrjet.fields if key in keys_keep]]
+            t1jets_2 = nocorrt1metjet[
+                [key for key in nocorrt1metjet.fields if key in keys_keep]
+            ]
+            t1jets = ak.concatenate([t1jets_1, t1jets_2], axis=1)
+            t1jets["pt"] = t1jets["pt_raw"]
 
             ## flatten jets
             j, nj = ak.flatten(jets), ak.num(jets)
@@ -961,6 +986,7 @@ def JME_shifts(
                             [fixPhiRange(_phi) for _phi in shifted_met_phi]
                         )
 
+<<<<<<< HEAD
                         unc_met[f"MET_UnclusteredEnergy{var}"] = copy.copy(
                             nocorrmet
                         )
@@ -976,11 +1002,30 @@ def JME_shifts(
                                 np.float32,
                             )
                         )
+=======
+                        unc_met[f"MET_UnclusteredEnergy{var}"] = copy.copy(nocorrmet)
+                        unc_met[f"MET_UnclusteredEnergy{var}"]["pt"] = ak.values_astype(
+                            shifted_met_pt,
+                            np.float32,
+                        )
+                        unc_met[f"MET_UnclusteredEnergy{var}"]["phi"] = (
+                            ak.values_astype(
+                                shifted_met_phi,
+                                np.float32,
+                            )
+                        )
+>>>>>>> 279ce3303c8a527472e19c514833afbb573917ad
 
                         ## loop over JES/JEC uncertainties
                         if jes_sources_id in jes_sources.keys():
                             for jes_syst in jes_sources[jes_sources_id]:
+<<<<<<< HEAD
                                 jesuncmap = correct_map["JME"][f"{jecname}_{jes_syst}_AK4PFPuppi"]
+=======
+                                jesuncmap = correct_map["JME"][
+                                    f"{jecname}_{jes_syst}_AK4PFPuppi"
+                                ]
+>>>>>>> 279ce3303c8a527472e19c514833afbb573917ad
                                 jesunc = jesuncmap.evaluate(j.eta, j.pt_JECnom)
                                 jesunc_t1 = jesuncmap.evaluate(t1j.eta, t1j.pt_JECnom)
 
@@ -1011,21 +1056,38 @@ def JME_shifts(
                                     np.float32,
                                 )
                                 t1j["pt"] = t1j[f"pt_JEC{jes_syst}{var}"]
+<<<<<<< HEAD
                                 jer_smear_nom_t1 = get_JER(correct_map, jername, t1j, "nom")
+=======
+                                jer_smear_nom_t1 = get_JER(
+                                    correct_map, jername, t1j, "nom"
+                                )
+>>>>>>> 279ce3303c8a527472e19c514833afbb573917ad
                                 t1j[f"pt_JEC{jes_syst}{var}_JERnom"] = ak.values_astype(
                                     t1j[f"pt_JEC{jes_syst}{var}"] * jer_smear_nom_t1,
                                     np.float32,
                                 )
                                 t1j["pt"] = t1j[f"pt_JEC{jes_syst}{var}_JERnom"]
+<<<<<<< HEAD
                                 met_pt_JECvar_JERnom, met_phi_JECvar_JERnom = calc_T1_MET(
                                     met_raw,
                                     met_nano,
                                     ak.unflatten(t1j, nt1j),
                                     campaign,
+=======
+                                met_pt_JECvar_JERnom, met_phi_JECvar_JERnom = (
+                                    calc_T1_MET(
+                                        met_raw,
+                                        met_nano,
+                                        ak.unflatten(t1j, nt1j),
+                                        campaign,
+                                    )
+>>>>>>> 279ce3303c8a527472e19c514833afbb573917ad
                                 )
 
                                 ## JES/JEC uncertainty
                                 unc_jets[f"JES_{jes_syst}{var}"] = copy.copy(nocorrjet)
+<<<<<<< HEAD
                                 unc_jets[f"JES_{jes_syst}{var}"]["pt"] = ak.values_astype(
                                     ak.unflatten(j[f"pt_JEC{jes_syst}{var}_JERnom"], nj),
                                     np.float32,
@@ -1043,6 +1105,37 @@ def JME_shifts(
                                 unc_met[f"JES_{jes_syst}{var}"]["phi"] = ak.values_astype(
                                     met_phi_JECvar_JERnom,
                                     np.float32,
+=======
+                                unc_jets[f"JES_{jes_syst}{var}"]["pt"] = (
+                                    ak.values_astype(
+                                        ak.unflatten(
+                                            j[f"pt_JEC{jes_syst}{var}_JERnom"], nj
+                                        ),
+                                        np.float32,
+                                    )
+                                )
+                                unc_jets[f"JES_{jes_syst}{var}"]["mass"] = (
+                                    ak.values_astype(
+                                        ak.unflatten(
+                                            j[f"mass_JEC{jes_syst}{var}_JERnom"], nj
+                                        ),
+                                        np.float32,
+                                    )
+                                )
+
+                                unc_met[f"JES_{jes_syst}{var}"] = copy.copy(nocorrmet)
+                                unc_met[f"JES_{jes_syst}{var}"]["pt"] = (
+                                    ak.values_astype(
+                                        met_pt_JECvar_JERnom,
+                                        np.float32,
+                                    )
+                                )
+                                unc_met[f"JES_{jes_syst}{var}"]["phi"] = (
+                                    ak.values_astype(
+                                        met_phi_JECvar_JERnom,
+                                        np.float32,
+                                    )
+>>>>>>> 279ce3303c8a527472e19c514833afbb573917ad
                                 )
 
                     jets["JER"] = ak.zip(
@@ -3050,9 +3143,13 @@ def reweighting(events, isSyst):
                     np.array(PDFaS_genWeightDown), dtype=np.float64
                 )
             else:
+<<<<<<< HEAD
                 warnings.warn(
                     "no LHE PDF weights found for reweighting!"
                 )
+=======
+                warnings.warn("no LHE PDF weights found for reweighting!")
+>>>>>>> 279ce3303c8a527472e19c514833afbb573917ad
 
             if "LHEScaleWeight" in events.fields:
                 muR_genWeightUp = (
@@ -3080,9 +3177,13 @@ def reweighting(events, isSyst):
                     np.array(muF_genWeightDown), dtype=np.float64
                 )
             else:
+<<<<<<< HEAD
                 warnings.warn(
                     "no LHE scale weights found for reweighting!"
                 )
+=======
+                warnings.warn("no LHE scale weights found for reweighting!")
+>>>>>>> 279ce3303c8a527472e19c514833afbb573917ad
 
             if "PSWeight" in events.fields:
                 if len(events.PSWeight[0]) == 4:
@@ -3103,6 +3204,7 @@ def reweighting(events, isSyst):
                         np.array(FSR_genWeightDown), dtype=np.float64
                     )
                 else:
+<<<<<<< HEAD
                     warnings.warn(
                         "wrong number of PS weights for reweighting!"
                     )
@@ -3110,6 +3212,11 @@ def reweighting(events, isSyst):
                 warnings.warn(
                     "no PS weights found for reweighting!"
                 )
+=======
+                    warnings.warn("wrong number of PS weights for reweighting!")
+            else:
+                warnings.warn("no PS weights found for reweighting!")
+>>>>>>> 279ce3303c8a527472e19c514833afbb573917ad
 
     else:
         sumws["sumw"] = len(events)
