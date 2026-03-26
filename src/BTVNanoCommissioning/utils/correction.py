@@ -75,16 +75,17 @@ def load_SF(year, campaign, syst=False):
         if SF == "LUM":
             ## Check whether files in jsonpog-integration exist
             if os.path.exists(
-                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/"
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
             ):
-                try:
-                    correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
-                        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
-                    )
-                except FileNotFoundError:
-                    correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
-                        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
-                    )
+                correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
+                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
+                )
+            elif os.path.exists(
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
+            ):
+                correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
+                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
+                )
             ## Otherwise custom files
             else:
                 _pu_path = f"BTVNanoCommissioning.data.LUM.{campaign}"
@@ -340,6 +341,27 @@ def load_SF(year, campaign, syst=False):
                     campaign,
                     f"jec_compiled_{config[campaign]['JME']['name']}.pkl.gz",
                 )
+            elif "JME_path" in config[campaign] and os.path.exists(
+                config[campaign]["JME_path"]
+            ):
+                # Custom JME path (e.g. preliminary Puppi JEC for Run 2 NanoAODv15)
+                correct_map["JME"] = correctionlib.CorrectionSet.from_file(
+                    config[campaign]["JME_path"]
+                )
+                correct_map["JME_cfg"] = config[campaign]["JME"]
+                for dataset in correct_map["JME_cfg"].keys():
+                    if (
+                        np.all(
+                            np.char.find(
+                                np.array(list(correct_map["JME"].keys())),
+                                correct_map["JME_cfg"][dataset],
+                            )
+                        )
+                        == -1
+                    ):
+                        raise (
+                            f"{dataset} has no JEC map : {correct_map['JME_cfg'][dataset]} available"
+                        )
             elif os.path.exists(
                 f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{campaign_map()[campaign]}/latest/jet_jerc.json.gz"
             ):
@@ -790,6 +812,8 @@ def JME_shifts(
             t1jets = ak.concatenate([t1jets_1, t1jets_2], axis=1)
             t1jets["pt"] = t1jets["pt_raw"]
 
+            jetType = "AK4PFPuppi"
+
             ## flatten jets
             j, nj = ak.flatten(jets), ak.num(jets)
             t1j, nt1j = ak.flatten(t1jets), ak.num(t1jets)
@@ -952,6 +976,7 @@ def JME_shifts(
                         ## loop over JES/JEC uncertainties
                         if jes_sources_id in jes_sources.keys():
                             for jes_syst in jes_sources[jes_sources_id]:
+                                print(f"{jecname}_{jes_syst}_AK4PFPuppi")
                                 jesuncmap = correct_map["JME"][f"{jecname}_{jes_syst}_AK4PFPuppi"]
                                 jesunc = jesuncmap.evaluate(j.eta, j.pt_JECnom)
                                 jesunc_t1 = jesuncmap.evaluate(t1j.eta, t1j.pt_JECnom)
@@ -1864,6 +1889,9 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
     allele = ele if ele.ndim > 1 else ak.singletons(ele)
 
     for sf in correct_map["EGM_cfg"].keys():
+        # if sf.split(" ")[1] == "2024":
+        #     sf = sf.replace("2024", "2024Prompt")
+
         ## Only apply SFs for lepton pass HLT filter
         if not isHLT and "Trig" in sf:
             continue
@@ -2241,7 +2269,12 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
         sfname = sf.split(" ")[0]
         if syst:
-            weights.add(sfname, sfs_alle, sfs_alle_up, sfs_alle_down)
+            weights.add(
+                sfname,
+                ak.ravel(sfs_alle),
+                ak.ravel(sfs_alle_up),
+                ak.ravel(sfs_alle_down),
+            )
         else:
             weights.add(sfname, sfs_alle)
 
@@ -2687,10 +2720,15 @@ class JPCalibHandler(object):
 
         # now calculating Σ_tr{0..N-1} ((-logΠ)^tr / tr!)
         trk_index = ak.local_index(proba)
+
+        # Handle fully-empty track collections: ak.max(...) can return None
+        # (e.g. no tracks pass JP selection in a chunk).
+        max_val = ak.max(trk_index, axis=None)
+        max_trk_index = 0 if max_val is None else int(ak.to_numpy(max_val))
         fact_array = ak.concatenate(
             [
                 [1.0],
-                np.arange(1, max(5, ak.max(trk_index) + 1), dtype=np.float64).cumprod(),
+                np.arange(1, max(5, max_trk_index + 1), dtype=np.float64).cumprod(),
             ]
         )  # construct a factorial array
         trk_index_fl, _layouts = self.flatten(trk_index)
@@ -2777,24 +2815,23 @@ def common_shifts(self, events):
             self.isSyst,
         )
     else:
-        ## Using PFMET
-        if int(self._year) < 2020:
-            shifts = [
-                (
-                    {
-                        "Jet": events.Jet,
-                        "MET": events.MET,
-                    },
-                    None,
-                )
-            ]
-        ## Using PuppiMET
-        else:
+        ## Use PuppiMET if available (NanoAODv15), otherwise fall back to PFMET
+        if hasattr(events, "PuppiMET"):
             shifts = [
                 (
                     {
                         "Jet": events.Jet,
                         "MET": events.PuppiMET,
+                    },
+                    None,
+                )
+            ]
+        else:
+            shifts = [
+                (
+                    {
+                        "Jet": events.Jet,
+                        "MET": events.MET,
                     },
                     None,
                 )

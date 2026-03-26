@@ -28,7 +28,8 @@ def campaign_map():
             else:
                 dirnames[subdirs[i].split("-")[2]] = subdirs[i]
         elif "Run2" in subdirs[i]:
-            dirnames[subdirs[i].split("-")[1] + "-UL"] = subdirs[i]
+            key = subdirs[i].split("-")[1] + "-UL"
+            dirnames[key] = subdirs[i]
         elif "Run3" not in subdirs[i] and "Run2" not in subdirs[i]:
             continue
         else:

@@ -35,7 +35,13 @@ def dump_lumi(output, fname, year):
         brilcalc_cmd = f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval 'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json -c web -i {fname}_lumi.json -u /pb '"
     elif year in ["2025"]:
         # Using recommended temporary Run 3 normtag
-        brilcalc_cmd = f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval 'brilcalc lumi -b \"STABLE BEAMS\" --datatag online -c web -i {fname}_lumi.json -u /pb '"
+        brilcalc_cmd = f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval 'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_BRIL.json -c web -i {fname}_lumi.json -u /pb --datatag online '"
+    elif year in ["2016", "2017", "2018"]:
+        # Run 2 UL normtag
+        brilcalc_cmd = f"source /cvmfs/cms-bril.cern.ch/cms-lumi-pog/brilws-docker/brilws-env; eval 'brilcalc lumi --normtag /cvmfs/cms-bril.cern.ch/cms-lumi-pog/Normtags/normtag_PHYSICS.json -c web -i {fname}_lumi.json -u /pb '"
+    else:
+        print(f"WARNING: Unknown year '{year}', skipping brilcalc lumi calculation.")
+        return
     lumi_in_pb = os.popen(brilcalc_cmd).read()
     lumi_in_pb = lumi_in_pb[
         lumi_in_pb.find("#Summary:") : lumi_in_pb.find("#Check JSON:")
@@ -94,7 +100,7 @@ if __name__ == "__main__":
         "-y",
         "--year",
         default="2024",
-        choices=["2022", "2023", "2024", "2025"],
+        choices=["2016", "2017", "2018", "2022", "2023", "2024", "2025"],
         help="The data-taking year to process the luminosity for",
     )
     parser.add_argument(

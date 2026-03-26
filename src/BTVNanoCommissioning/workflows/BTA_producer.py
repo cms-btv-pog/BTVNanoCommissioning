@@ -416,6 +416,7 @@ class NanoProcessor(processor.ProcessorABC):
         zeros = ak.zeros_like(jet.pt, dtype=int)
         if "pt_raw" not in jet.fields:
             jet["pt_raw"] = jet.pt * (1.0 - jet.rawFactor)
+        if "pt_orig" not in jet.fields:
             jet["pt_orig"] = jet.pt
         Jet = ak.zip(
             {

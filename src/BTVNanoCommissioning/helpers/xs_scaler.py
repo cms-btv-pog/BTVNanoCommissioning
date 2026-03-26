@@ -7,13 +7,13 @@ from BTVNanoCommissioning.helpers.xsection import xsection
 """
 Scale histograms to corresponding cross-section. Merge mutiple `.coffea` and collate the MC samples into sub-class in this function.
 """
-# from BTVNanoCommissioning.helpers.xsection_13TeV import xsection_13TeV
+from BTVNanoCommissioning.helpers.xsection_13TeV import xsection_13TeV
 import numpy as np
 
 
 def scale_xs(hist, lumi, events):
     xs_dict = {}
-    for obj in xsection:
+    for obj in xsection + xsection_13TeV:
         xs_dict[obj["process_name"]] = float(obj["cross_section"])
     scales = {}
     for key in events:
@@ -27,7 +27,7 @@ def scale_xs(hist, lumi, events):
 def scaleSumW(output, lumi):
     scaled = {}
     xs_dict = {}
-    for obj in xsection:
+    for obj in xsection + xsection_13TeV:
         xs_dict[obj["process_name"]] = float(obj["cross_section"])
         # if k-factor in the xsection: multiply by the k-factor
         if "kFactor" in obj.keys() and obj["kFactor"] != "":
