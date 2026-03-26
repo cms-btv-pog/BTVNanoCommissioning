@@ -237,9 +237,12 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             self.model_base = None
         username = os.environ.get("USER")
-        eos_base = f"/eos/user/{username[0]}/{username}"
-        if os.path.exists(eos_base):
-            base_path = eos_base
+        cern_eos_base = f"/eos/user/{username[0]}/{username}"
+        desy_dust_base = f"/data/dust/user/{username}"
+        if os.path.exists(cern_eos_base):
+            base_path = cern_eos_base
+        elif os.path.exists(desy_dust_base):
+            base_path = desy_dust_base
         else:
             base_path = os.getcwd()
         self.out_dir_base = os.path.join(
@@ -255,6 +258,8 @@ class NanoProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
+        if len(events) == 0:
+            return {}
         events = missing_branch(events)
         vetoed_events, shifts = common_shifts(self, events)
 
