@@ -266,6 +266,9 @@ correction_config = {
     "Winter25": {
         "DC": "Cert_Collisions2025_391658_398860_Golden.json",
         "LUM": "puWeights2025.json.gz",
+        # Year-dependent JES regrouped uncertainties use the MC JEC campaign year,
+        # not the data year.  Summer24 JECs have "_2024_" in the correction names.
+        "JES_MC_year": "2024",
         "JME": {
             # MC: use Summer24 MC truth JECs from the Summer24 CVMFS era
             # JER: placeholder from Summer23BPix until dedicated 2025 JER is derived.
@@ -293,14 +296,18 @@ correction_config = {
             "SmearAndSyst",
         ],
         # Per-POG CVMFS path overrides.
+        # JME: data L2L3Residual from Winter25 JME era.
         # JME_MC: MC truth JECs must come from the Summer24 era (L2Relative differs).
+        # jetveto: jetvetomap from Winter25 JME era.
         # MUO: 2025 SFs available (muon_Z.json.gz under muo_SF25_Z_and_highpt/,
-        #       copied to local data/ fallback since latest/ is still empty on CVMFS).
+        #       copied to local data/ fallback.
         # muonSS: no 2025 muon scale/smearing yet, reuse Summer24.
         # EGM: no 2025 electron ID SFs yet (electron.json.gz), reuse Summer24.
         # electronSS: 2025 SaS available.
         "cvmfs_override": {
+            "JME": "Run3-25Prompt-Winter25-NanoAODv15",
             "JME_MC": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
+            "jetveto": "Run3-25Prompt-Winter25-NanoAODv15",
             "MUO": "Run3-25Prompt-Summer24-NanoAODv15",
             "muonSS": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
             "EGM": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",

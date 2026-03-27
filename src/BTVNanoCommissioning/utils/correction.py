@@ -796,6 +796,11 @@ def JME_shifts(
     ValueError: If the campaign is not recognized or supported.
     """
     dataset = events.metadata["dataset"]
+    # Year-dependent JES uncertainty names (e.g. Regrouped_Absolute_YYYY)
+    # must use the MC JEC campaign year, not the data year.  When MC JECs are
+    # borrowed from a different era (e.g. Summer24 JECs for Winter25 data),
+    # the config can set "JES_MC_year" to override.
+    jes_year = config.get(campaign, {}).get("JES_MC_year", year)
     jecname = ""
     syst_list = [
         i.split("_")[3]
@@ -942,7 +947,7 @@ def JME_shifts(
                 ## JES/JEC & JER systematics
                 if systematic != False:
                     unc_jets, unc_met = {}, {}
-                    jes_sources = get_JES_keys(year)
+                    jes_sources = get_JES_keys(jes_year)
                     jes_sources_id = systematic.split("_")
                     if len(jes_sources_id) == 2:
                         jes_sources_id = jes_sources_id[1]
@@ -1220,7 +1225,7 @@ def JME_shifts(
                         "JERDown",
                     ),
                 ]
-            jes_sources = get_JES_keys(year)
+            jes_sources = get_JES_keys(jes_year)
             jes_sources_id = systematic.split("_")
             if len(jes_sources_id) == 2:
                 jes_sources_id = jes_sources_id[1]
