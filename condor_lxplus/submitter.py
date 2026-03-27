@@ -194,13 +194,19 @@ if __name__ == "__main__":
     os.mkdir(job_dir + "/log")
 
     # Handle voms proxy
-    proxy_file = get_proxy_path()
-    os.system(f"scp {proxy_file} proxy")
-    print(f"Copied proxy file {proxy_file} to local directory.")
+    if args.voms is not None:
+        if not os.path.exists(args.voms):
+            raise Exception(f"Provided voms proxy path {args.voms} does not exist.")
+        shutil.copy(args.voms, os.path.join(job_dir+"/..", "proxy"))
+        print(f"Copied provided proxy file {args.voms} to local directory.")
+    else:
+        proxy_file = get_proxy_path()
+        os.system(f"scp {proxy_file} proxy")
+        print(f"Copied proxy file {proxy_file} to local directory.")
 
     # Find conda/mamba environment
     envpath = "/eos/home-m/milee/miniforge3/envs/btv_coffea/bin"
-    pathvarlist = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea" in i]
+    pathvarlist = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea" in i or "envs/BTVCOFFEA" in i]
     if len(pathvarlist) == 0:
         print(
             f"You did not source the btv_coffea conda/mamba environment. Proceed with the central conda environment:\n{envpath} ?"
