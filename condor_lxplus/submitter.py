@@ -59,6 +59,16 @@ def get_condor_submitter_parser(parser):
         default=None,
         help="If specified, access BTVNanoCommissioning from a remote tarball (downloaded via https), instead of from a transferred sandbox",
     )
+    parser.add_argument(
+        "--noSpool",
+        action="store_true",
+        help="Submit condor jobs without spooling."
+    )
+    parser.add_argument(
+        "--nThreads",
+        default=1,
+        help="Number of CPUs to request for condor. RAM of the job scales as 2Gb*nThreads"
+    )
     return parser
 
 
@@ -272,10 +282,9 @@ if __name__ == "__main__":
 Executable = {executable}
 
 
-Arguments = $(JOBNUM) {base_dir} {outputDir} {envpath}
+Arguments = $(JOBNUM) {base_dir} {outputDir} {envpath} {nthreads}
 
-request_cpus = 1
-request_memory = 2000
+request_cpus = {nthreads}
 
 +JobFlavour = "longlunch"
 
@@ -286,7 +295,10 @@ Error      = {log_dir}/job.err_$(Cluster)-$(Process)
 should_transfer_files   = YES
 when_to_transfer_output = ON_EXIT_OR_EVICT
 transfer_input_files    = {transfer_input_files}
-transfer_output_files   = .success
+
+on_exit_remove   = (ExitBySignal == False) && (ExitCode == 0)
+max_retries      = 3
+requirements     = (Machine =!= split(LastRemoteHost, "@")[1])
 
 Queue JOBNUM from {jobnum_file}
 """.format(
@@ -294,6 +306,7 @@ Queue JOBNUM from {jobnum_file}
         base_dir=base_dir,
         outputDir=args.outputDir,
         envpath=envpath,
+        nthreads=args.nThreads,
         log_dir=f"{base_dir}/{job_dir}/log",
         transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt",
         jobnum_file=f"{base_dir}/{job_dir}/jobnum_list.txt",
@@ -307,6 +320,10 @@ Queue JOBNUM from {jobnum_file}
         )
         spool = "-spool"
     else:
+        spool = ""
+
+    if args.noSpool:
+        print("Submitting without spooling due to --noSpool option.")
         spool = ""
     if args.submit:
         os.system(f"condor_submit {spool} {job_dir}/submit.jdl")

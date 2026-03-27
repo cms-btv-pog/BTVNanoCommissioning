@@ -2,6 +2,9 @@
 
 JOBID=$1
 COMMDIR=$2
+OUTPUTDIR=$3
+ENVPATH=$4
+NTHREADS=$5
 
 export HOME=`pwd`
 if [ -d /afs/cern.ch/user/${USER:0:1}/$USER ]; then
@@ -15,7 +18,7 @@ cd $COMMDIR
 export X509_USER_PROXY=$COMMDIR/proxy
 voms-proxy-info
 
-export PATH="$4:$PATH" 
+export PATH="$ENVPATH:$PATH" 
 
 # Build the sample json given the job id
 python -c "import json, os; flname = 'split_samples.json' if os.path.isfile(f'$WORKDIR/split_samples.json') else 'split_samples_resubmit.json';  json.dump(json.load(open(f'$WORKDIR/{flname}'))['$JOBID'], open('$WORKDIR/sample.json', 'w'), indent=4)"
@@ -41,12 +44,13 @@ for key in  isArray noHist overwrite skipbadfiles; do
 done
 OPTS="$OPTS --output ${ARGS[output]//.coffea/_$JOBID.coffea}"  # add a suffix to output file name
 OPTS="$OPTS --json $WORKDIR/sample.json"  # use the sample json for this JOBID
-OPTS="$OPTS --worker 1"  # use number of worker = 1
-OPTS="$OPTS --executor iterative --overwrite --outputdir $3"
+OPTS="$OPTS --worker $NTHREADS"  # use number of worker = 1
+OPTS="$OPTS --executor futures --overwrite --outputdir $OUTPUTDIR"
 
 # Launch
 echo "Now launching: python runner.py $OPTS"
 python runner.py $OPTS
 
-touch $WORKDIR/.success
+RET=$?
 
+exit $RET
