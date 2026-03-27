@@ -263,7 +263,7 @@ correction_config = {
             "SmearAndSyst",
         ],
     },
-    "Winter25": {
+    "Prompt25": {
         "DC": "Cert_Collisions2025_391658_398860_Golden.json",
         "LUM": "puWeights2025.json.gz",
         # Year-dependent JES regrouped uncertainties use the MC JEC campaign year,
