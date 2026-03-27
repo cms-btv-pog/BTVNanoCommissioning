@@ -25,8 +25,9 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
     # Implement fix from:
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13p6TeV#nanoAOD_Flags
     # Note: this is only the jetId==6, ie. passJetIdTightLepVeto. Looser selection is not implemented.
-    if campaign in ["Summer22", "Summer22EE", "Summer23", "Summer23BPix"]:
-        # NanoV12
+    has_jetId = hasattr(events.Jet, "jetId")
+    if campaign in ["Summer22", "Summer22EE", "Summer23", "Summer23BPix"] and has_jetId:
+        # NanoV12 (has jetId branch)
         jetid = ak.where(
             abs(events.Jet.eta) <= 2.7,
             (events.Jet.jetId >= 2)
@@ -37,13 +38,21 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 (events.Jet.jetId >= 2) & (events.Jet.neHEF < 0.99),
                 ak.where(
                     (abs(events.Jet.eta) > 3.0),
-                    (events.Jet.jetId & (1 << 1)) & (events.Jet.neEmEF < 0.4),
+                    (events.Jet.jetId >= 2) & (events.Jet.neEmEF < 0.4),
                     ak.zeros_like(events.Jet.pt, dtype=bool),
                 ),
             ),
         )
-    elif campaign in ["Winter24", "Summer24"]:
-        # NanoV13 & NanoV14 & NanoV15
+    elif campaign in [
+        "Summer22",
+        "Summer22EE",
+        "Summer23",
+        "Summer23BPix",
+        "Winter24",
+        "Summer24",
+        "Winter25",
+    ]:
+        # NanoV13+ / NanoV15 reprocessing (no jetId branch, compute from components)
         barrel = (
             (events.Jet.neHEF < 0.99)
             & (events.Jet.neEmEF < 0.9)
@@ -77,10 +86,84 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
             jetid & (events.Jet.muEF < 0.8) & (events.Jet.chEmEF < 0.8),
             jetid,
         )
+    elif campaign in ["2016preVFP-UL", "2016postVFP-UL"]:
+        # Run 2 NanoAODv15 jet ID for 2016 (TightLepVeto)
+        # https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13TeV
+        barrel_2016 = (
+            (events.Jet.neHEF < 0.9)
+            & (events.Jet.neEmEF < 0.9)
+            & (events.Jet.chMultiplicity + events.Jet.neMultiplicity > 1)
+            & (events.Jet.chHEF > 0.0)
+            & (events.Jet.chMultiplicity > 0)
+        )
+        t1_2016 = (events.Jet.neHEF < 0.98) & (events.Jet.neEmEF < 0.99)
+        t2_2016 = events.Jet.neMultiplicity >= 1
+        endcap_2016 = (events.Jet.neMultiplicity > 2) & (events.Jet.neEmEF < 0.9)
+
+        jetid = ak.where(
+            abs(events.Jet.eta) <= 2.4,
+            barrel_2016,
+            ak.where(
+                (abs(events.Jet.eta) > 2.4) & (abs(events.Jet.eta) <= 2.7),
+                t1_2016,
+                ak.where(
+                    (abs(events.Jet.eta) > 2.7) & (abs(events.Jet.eta) <= 3.0),
+                    t2_2016,
+                    ak.where(
+                        (abs(events.Jet.eta) > 3.0),
+                        endcap_2016,
+                        ak.zeros_like(events.Jet.pt, dtype=bool),
+                    ),
+                ),
+            ),
+        )
+        # TightLepVeto: only in barrel (|eta| <= 2.4) for 2016
+        jetid = ak.where(
+            np.abs(events.Jet.eta) <= 2.4,
+            jetid & (events.Jet.muEF < 0.8) & (events.Jet.chEmEF < 0.8),
+            jetid,
+        )
+    elif campaign in ["2017-UL", "2018-UL"]:
+        # Run 2 NanoAODv15 jet ID for 2017 & 2018 (TightLepVeto)
+        # https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13TeV
+        barrel_1718 = (
+            (events.Jet.neHEF < 0.9)
+            & (events.Jet.neEmEF < 0.9)
+            & (events.Jet.chMultiplicity + events.Jet.neMultiplicity > 1)
+            & (events.Jet.chHEF > 0.0)
+            & (events.Jet.chMultiplicity > 0)
+        )
+        t1_1718 = (events.Jet.neHEF < 0.90) & (events.Jet.neEmEF < 0.99)
+        t2_1718 = events.Jet.neHEF < 0.9999
+        endcap_1718 = (events.Jet.neMultiplicity > 2) & (events.Jet.neEmEF < 0.9)
+
+        jetid = ak.where(
+            abs(events.Jet.eta) <= 2.6,
+            barrel_1718,
+            ak.where(
+                (abs(events.Jet.eta) > 2.6) & (abs(events.Jet.eta) <= 2.7),
+                t1_1718,
+                ak.where(
+                    (abs(events.Jet.eta) > 2.7) & (abs(events.Jet.eta) <= 3.0),
+                    t2_1718,
+                    ak.where(
+                        (abs(events.Jet.eta) > 3.0),
+                        endcap_1718,
+                        ak.zeros_like(events.Jet.pt, dtype=bool),
+                    ),
+                ),
+            ),
+        )
+        # TightLepVeto: |eta| <= 2.7 for 2017 & 2018
+        jetid = ak.where(
+            np.abs(events.Jet.eta) <= 2.7,
+            jetid & (events.Jet.muEF < 0.8) & (events.Jet.chEmEF < 0.8),
+            jetid,
+        )
     else:
         jetid = events.Jet.jetId >= 5
 
-    jetid = ak.values_astype(jetid, np.bool)
+    jetid = ak.values_astype(jetid, bool)
 
     if campaign == "Rereco17_94X":
         # Use puId for Run2
@@ -92,6 +175,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
         )
     else:
         jetmask = (events.Jet.pt > min_pt) & (abs(events.Jet.eta) <= max_eta) & (jetid)
+
     return jetmask
 
 

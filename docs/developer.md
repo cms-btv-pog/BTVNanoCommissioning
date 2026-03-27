@@ -158,8 +158,8 @@ You can simply include a workflow by adding the entries with name
         fi
         if [[ $string == *"ci:skip syst"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all//g')
-        elif [[ $string == *"ci:JERC_split"* ]]; then
-            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_split/g')
+        elif [[ $string == *"ci:JERC_reduced"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_reduced/g')
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
@@ -175,7 +175,7 @@ python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json
 - `[skip ci]`: not running ci at all in the commit message
 - `ci:skip array` : remove `--isArray` option
 - `ci:skip syst` : remove `--isSyst all` option
-- `ci:JERC_split` : change systematic option to split JERC uncertainty sources `--isSyst JERC_split`
+- `ci:JERC_reduced` : change systematic option to split JERC uncertainty sources `--isSyst JERC_reduced`
 - `ci:weight_only` : change systematic option to weight only variations `--isSyst weight_only`
 
 <details><summary>Set CI in your github account</summary>
@@ -390,31 +390,34 @@ if "JES_Total" in jets.fields:
     ]
 ```
 
-In case the shifts are in common , put to `common_shifts`:
+In case the shifts are in common, put to `common_shifts`:
 ```python
 if "JME" in self.SF_map.keys():
-        syst_JERC = self.isSyst
-        if self.isSyst == "JERC_split":
-            syst_JERC = "split"
-        shifts = JME_shifts(
-            shifts, self.SF_map, events, self._campaign, isRealData, syst_JERC
-        )
+    shifts = JME_shifts(
+        shifts, self.SF_map, events, self._year, self._campaign, isRealData, self.isSyst,
+    )
+else:
+    ## Use PuppiMET if available (NanoAODv15), otherwise fall back to PFMET
+    if hasattr(events, "PuppiMET"):
+        shifts = [
+            (
+                {
+                    "Jet": events.Jet,
+                    "MET": events.PuppiMET,
+                },
+                None,
+            )
+        ]
     else:
-        if int(self._year) < 2020:
-            shifts = [
-                ({"Jet": events.Jet, "MET": events.MET, "Muon": events.Muon}, None)
-            ]
-        else:
-            shifts = [
-                (
-                    {
-                        "Jet": events.Jet,
-                        "MET": events.PuppiMET,
-                        "Muon": events.Muon,
-                    },
-                    None,
-                )
-            ]
+        shifts = [
+            (
+                {
+                    "Jet": events.Jet,
+                    "MET": events.MET,
+                },
+                None,
+            )
+        ]
 ```
 
 

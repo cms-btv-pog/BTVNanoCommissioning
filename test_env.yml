@@ -19,4 +19,5 @@ dependencies:
   - arrow
   - dask-jobqueue
   - pip:
-    - coffea==0.7.30
+    - coffea==0.7.31
+    - correctionlib==2.7.0
