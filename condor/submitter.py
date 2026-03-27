@@ -159,15 +159,13 @@ if __name__ == "__main__":
         skip_tar = False
         if os.path.exists("BTVNanoCommissioning.tar.gz"):
             user_input = input(
-                "BTVNanoCommissioning.tar.gz already exists, skip the tarring? (y/n): "
+                "BTVNanoCommissioning.tar.gz already exists, skip the tarring? ([y]/n): "
             )
-            if user_input.lower() == "y":
+            if user_input.lower() != "n":
                 skip_tar = True
-            elif user_input.lower() == "n":
+            else:
                 skip_tar = False
                 os.remove("BTVNanoCommissioning.tar.gz")
-            else:
-                raise Exception("Invalid input, exiting")
 
         if not skip_tar:
             jobdirs = [d for d in os.listdir(base_dir) if d.startswith("jobs_")]
@@ -181,8 +179,8 @@ if __name__ == "__main__":
     # Create job dir
     job_dir = f"jobs_{args.jobName}"
     if os.path.exists(job_dir):
-        user_input = input("Job directory already exists, overwrite? (y/n): ")
-        if user_input.lower() == "y":
+        user_input = input("Job directory already exists, overwrite? ([y]/n): ")
+        if user_input.lower() != "n":
             shutil.rmtree(job_dir)
         else:
             raise Exception("Job exiting...")
