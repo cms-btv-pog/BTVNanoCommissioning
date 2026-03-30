@@ -26,7 +26,6 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 ## load histograms & selctions for this workflow
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
-    histo_writter,
 )
 from BTVNanoCommissioning.utils.histogramming.histograms.qgtag import qg_writer
 from BTVNanoCommissioning.utils.array_writer import array_writer
@@ -239,6 +238,7 @@ class NanoProcessor(processor.ProcessorABC):
         event_level = ak.fill_none(event_level, False)
         if shift_name is None:
             output = dump_lumi(events[req_lumi], output)
+
         # Skip empty events -
         if len(events[event_level]) == 0:
             if self.isArray:
