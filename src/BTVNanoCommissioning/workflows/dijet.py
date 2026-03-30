@@ -11,6 +11,7 @@ from BTVNanoCommissioning.utils.correction import (
     load_SF,
     common_shifts,
     weight_manager,
+    reweighting,
 )
 
 # user helper function
@@ -68,36 +69,18 @@ class NanoProcessor(processor.ProcessorABC):
 
     def process(self, events):
         events = missing_branch(events)
+        sumws = reweighting(events, self.isSyst)
         vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
-            self.process_shift(update(vetoed_events, collections), name)
+            self.process_shift(update(vetoed_events, collections), sumws, name)
             for collections, name in shifts
         )
 
     ## Processed events per-chunk, made selections, filled histogram, stored root files
-    def process_shift(self, events, shift_name):
+    def process_shift(self, events, sumws, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
-        ######################
-        #  Create histogram  # : Get the histogram dict from `histogrammer`
-        ######################
-
-        output = {}
-
-        if not self.noHist:
-            output = histogrammer(
-                jet_fields=events.Jet.fields,
-                obj_list=[],
-                hist_collections=["qgtag"],
-                axes_collections=["qgtag"],
-                is_dijet=True,
-            )
-
-        if isRealData:
-            output["sumw"] = len(events)
-        else:
-            output["sumw"] = ak.sum(events.genWeight)
 
         ####################
         #    Selections    #
@@ -106,9 +89,6 @@ class NanoProcessor(processor.ProcessorABC):
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
-        # only dump for nominal case
-        if shift_name is None:
-            output = dump_lumi(events[req_lumi], output)
 
         ## HLT
         if self.selectionModifier == "ZB":
@@ -215,7 +195,50 @@ class NanoProcessor(processor.ProcessorABC):
         event_level = event_level & req_vtx
 
         ##<==== finish selection
+
+        ######################
+        #  Create histogram  # : Get the histogram dict from `histogrammer`
+        ######################
+
+        output = {}
+
+        if not self.noHist:
+            output = histogrammer(
+                jet_fields=events.Jet.fields,
+                obj_list=[],
+                hist_collections=["qgtag"],
+                axes_collections=["qgtag"],
+                is_dijet=True,
+            )
+        # only dump for nominal case
+        if shift_name is None:
+            output = dump_lumi(events[req_lumi], output)
+
+        if shift_name is None:
+            output["sumw"] = sumws["sumw"]
+            if not isRealData and self.isSyst:
+                if "LHEPdfWeight" in events.fields:
+                    output["PDF_sumwUp"] = sumws["PDF_sumwUp"]
+                    output["PDF_sumwDown"] = sumws["PDF_sumwDown"]
+                    output["aS_sumwUp"] = sumws["aS_sumwUp"]
+                    output["aS_sumwDown"] = sumws["aS_sumwDown"]
+                    output["PDFaS_sumwUp"] = sumws["PDFaS_sumwUp"]
+                    output["PDFaS_sumwDown"] = sumws["PDFaS_sumwDown"]
+                if "LHEScaleWeight" in events.fields:
+                    output["muR_sumwUp"] = sumws["muR_sumwUp"]
+                    output["muR_sumwDown"] = sumws["muR_sumwDown"]
+                    output["muF_sumwUp"] = sumws["muF_sumwUp"]
+                    output["muF_sumwDown"] = sumws["muF_sumwDown"]
+                if "PSWeight" in events.fields:
+                    if len(events.PSWeight[0]) == 4:
+                        output["ISR_sumwUp"] = sumws["ISR_sumwUp"]
+                        output["ISR_sumwDown"] = sumws["ISR_sumwDown"]
+                        output["FSR_sumwUp"] = sumws["FSR_sumwUp"]
+                        output["FSR_sumwDown"] = sumws["FSR_sumwDown"]
+
         event_level = ak.fill_none(event_level, False)
+        if shift_name is None:
+            output = dump_lumi(events[req_lumi], output)
         # Skip empty events -
         if len(events[event_level]) == 0:
             if self.isArray:
