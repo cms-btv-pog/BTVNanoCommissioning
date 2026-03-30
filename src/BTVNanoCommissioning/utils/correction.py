@@ -516,7 +516,7 @@ def load_lumi(campaign):
 def add_jec_variables(jets, event_rho):
     jets["pt_raw"] = (1 - jets.rawFactor) * jets.pt
     jets["mass_raw"] = (1 - jets.rawFactor) * jets.mass
-    if hasattr(jets, "genJetIdxG"):
+    if hasattr(jets, "genJetIdx"):
         jets["pt_gen"] = ak.values_astype(
             ak.fill_none(jets.matched_gen.pt, 0), np.float32
         )
@@ -726,21 +726,21 @@ def calc_T1_MET(
 
     MET_x_baseline = met_raw.pt * np.cos(met_raw.phi)
     MET_y_baseline = met_raw.pt * np.sin(met_raw.phi)
-    if campaign in ["Summer24", "Prompt25"]:  # NanoAODv15
+    if campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
         jet_mask = (
             (shifted_jets["pt"] > 15.0)
-            & (shifted_jets["eta"] < 5.2)
+            & (abs(shifted_jets["eta"]) < 5.2)
             & (shifted_jets["EmEF"] < 0.9)
         )
     else:  # NanoAODv12
-        jet_mask = (shifted_jets["pt"] > 15.0) & (shifted_jets["eta"] < 5.2)
+        jet_mask = (shifted_jets["pt"] > 15.0) & (abs(shifted_jets["eta"]) < 5.2)
     sel_jet = shifted_jets[jet_mask]
     jet_pt_L1 = sel_jet["pt_raw"] * (1.0 - sel_jet["muonSubtrFactor"])
     delta_pt = sel_jet["pt"] - jet_pt_L1
     MET_x_shifts = delta_pt * np.cos(sel_jet["phi"])
     MET_y_shifts = delta_pt * np.sin(sel_jet["phi"])
-    MET_x = MET_x_baseline + ak.sum(MET_x_shifts, axis=-1)
-    MET_y = MET_y_baseline + ak.sum(MET_y_shifts, axis=-1)
+    MET_x = MET_x_baseline - ak.sum(MET_x_shifts, axis=-1)
+    MET_y = MET_y_baseline - ak.sum(MET_y_shifts, axis=-1)
     pt_miss_final = np.sqrt(MET_x * MET_x + MET_y * MET_y)
     phi_miss_final = np.arctan2(MET_y, MET_x)
 
@@ -1013,7 +1013,7 @@ def JME_shifts(
                             shifted_met_phi = phi_unclustered_down
 
                         def fixPhiRange(phi):
-                            if phi < np.pi:
+                            if phi < -np.pi:
                                 phi = phi + 2.0 * np.pi
                             if phi > np.pi:
                                 phi = phi - 2.0 * np.pi
