@@ -381,6 +381,8 @@ def load_SF(year, campaign, syst=False):
                     config[campaign]["JME_path"]
                 )
                 correct_map["JME_cfg"] = config[campaign]["JME"]
+                # FIXME need to store the JSON path in case we want to parse the run binning edges for ad-hoc JEC run clamp fix (see _get_jec_run_edges)
+                correct_map["JME_json_path"] = config[campaign]["JME_path"]
                 for dataset in correct_map["JME_cfg"].keys():
                     if (
                         np.all(
@@ -429,6 +431,8 @@ def load_SF(year, campaign, syst=False):
                         _jme_path
                     )
                 correct_map["JME_cfg"] = config[campaign]["JME"]
+                # FIXME need to store the JSON path in case we want to parse the run binning edges for ad-hoc JEC run clamp fix (see _get_jec_run_edges)
+                correct_map["JME_json_path"] = _jme_path
                 for dataset in correct_map["JME_cfg"].keys():
                     if (
                         np.all(
@@ -509,6 +513,55 @@ def load_lumi(campaign):
             return LumiMask(filename)
 
 
+# #FIXME JEC run-number ad-hoc boundary fix
+# See: https://cms-talk.web.cern.ch/t/bug-in-2025-jerc-json-file/47675
+# In March 2026, there is a bug in the JEC corrections, as
+# correctionlib bins are half-open [low, high), so the last run in each
+# era is excluded from the L2L3Residual correction.  This helper fixes
+# the valid run range so we can clamp before evaluate().
+
+_jec_run_edge_cache = {}
+
+
+def _get_jec_run_edges(correct_map, jecname):
+    """Return (lo, hi) run clamp range from L2L3Residual bin edges.
+
+    Parses the JME JSON to find the run binning edges directly.
+    correctionlib uses half-open [lo, hi) bins, so the last valid
+    integer run is edges[-1] - 1.
+    Returns None if no run-binned L2L3Residual exists.
+    The result is cached per jecname.
+    """
+    if jecname in _jec_run_edge_cache:
+        return _jec_run_edge_cache[jecname]
+
+    jme_json_path = correct_map.get("JME_json_path")
+    if jme_json_path is None:
+        _jec_run_edge_cache[jecname] = None
+        return None
+
+    l2l3_name = f"{jecname}_L2L3Residual_AK4PFPuppi"
+    result = None
+    with gzip.open(jme_json_path, "rt") as f:
+        for corr in json.load(f).get("corrections", []):
+            if corr["name"] != l2l3_name:
+                continue
+            inputs = corr.get("inputs", [])
+            data = corr.get("data", {})
+            if (
+                inputs
+                and inputs[0].get("name") == "run"
+                and data.get("nodetype") == "binning"
+                and data.get("flow") == "error"
+            ):
+                edges = data["edges"]
+                result = (edges[0], edges[-1] - 1)
+            break
+
+    _jec_run_edge_cache[jecname] = result
+    return result
+
+
 ## JEC
 # FIXME: would be nicer if we can move to correctionlib in the future together with factory and workable
 
@@ -516,7 +569,7 @@ def load_lumi(campaign):
 def add_jec_variables(jets, event_rho):
     jets["pt_raw"] = (1 - jets.rawFactor) * jets.pt
     jets["mass_raw"] = (1 - jets.rawFactor) * jets.mass
-    if hasattr(jets, "genJetIdxG"):
+    if hasattr(jets, "genJetIdx"):
         jets["pt_gen"] = ak.values_astype(
             ak.fill_none(jets.matched_gen.pt, 0), np.float32
         )
@@ -726,21 +779,21 @@ def calc_T1_MET(
 
     MET_x_baseline = met_raw.pt * np.cos(met_raw.phi)
     MET_y_baseline = met_raw.pt * np.sin(met_raw.phi)
-    if campaign in ["Summer24", "Prompt25"]:  # NanoAODv15
+    if campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
         jet_mask = (
             (shifted_jets["pt"] > 15.0)
-            & (shifted_jets["eta"] < 5.2)
+            & (abs(shifted_jets["eta"]) < 5.2)
             & (shifted_jets["EmEF"] < 0.9)
         )
     else:  # NanoAODv12
-        jet_mask = (shifted_jets["pt"] > 15.0) & (shifted_jets["eta"] < 5.2)
+        jet_mask = (shifted_jets["pt"] > 15.0) & (abs(shifted_jets["eta"]) < 5.2)
     sel_jet = shifted_jets[jet_mask]
     jet_pt_L1 = sel_jet["pt_raw"] * (1.0 - sel_jet["muonSubtrFactor"])
     delta_pt = sel_jet["pt"] - jet_pt_L1
     MET_x_shifts = delta_pt * np.cos(sel_jet["phi"])
     MET_y_shifts = delta_pt * np.sin(sel_jet["phi"])
-    MET_x = MET_x_baseline + ak.sum(MET_x_shifts, axis=-1)
-    MET_y = MET_y_baseline + ak.sum(MET_y_shifts, axis=-1)
+    MET_x = MET_x_baseline - ak.sum(MET_x_shifts, axis=-1)
+    MET_y = MET_y_baseline - ak.sum(MET_y_shifts, axis=-1)
     pt_miss_final = np.sqrt(MET_x * MET_x + MET_y * MET_y)
     phi_miss_final = np.arctan2(MET_y, MET_x)
 
@@ -904,6 +957,23 @@ def JME_shifts(
                 tmp_pt_t1 = np.clip(tmp_pt_t1, 30, None)
                 JEC_input_t1[2] = tmp_pt_t1
 
+            # #FIXME Ad-hoc fix: clamp run number for data L2L3Residual boundary bug.
+            # correctionlib uses half-open [low, high) bins, so the last run in
+            # each era is excluded.  Clamp to (first_edge, last_edge - 1) so
+            # that boundary runs still get a valid correction.
+            # See: https://cms-talk.web.cern.ch/t/bug-in-2025-jerc-json-file/47675
+            if isRealData:
+                run_idx = next(
+                    (i for i, inp in enumerate(JECcorr.inputs) if inp.name == "run"),
+                    None,
+                )
+                if run_idx is not None:
+                    _run_edges = _get_jec_run_edges(correct_map, jecname)
+                    if _run_edges is not None:
+                        lo, hi = _run_edges
+                        JEC_input[run_idx] = np.clip(JEC_input[run_idx], lo, hi)
+                        JEC_input_t1[run_idx] = np.clip(JEC_input_t1[run_idx], lo, hi)
+
             JECflatCorrFactor = JECcorr.evaluate(*JEC_input)
             j["pt_JECnom"] = j["pt"] * JECflatCorrFactor
             j["mass_JECnom"] = j["mass"] * JECflatCorrFactor
@@ -1013,7 +1083,7 @@ def JME_shifts(
                             shifted_met_phi = phi_unclustered_down
 
                         def fixPhiRange(phi):
-                            if phi < np.pi:
+                            if phi < -np.pi:
                                 phi = phi + 2.0 * np.pi
                             if phi > np.pi:
                                 phi = phi - 2.0 * np.pi
