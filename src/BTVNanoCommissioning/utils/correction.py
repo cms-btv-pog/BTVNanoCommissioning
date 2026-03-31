@@ -515,7 +515,7 @@ def load_lumi(campaign):
 
 # #FIXME JEC run-number ad-hoc boundary fix
 # See: https://cms-talk.web.cern.ch/t/bug-in-2025-jerc-json-file/47675
-# In March 2026, there is a bug in the JEC corrections, as 
+# In March 2026, there is a bug in the JEC corrections, as
 # correctionlib bins are half-open [low, high), so the last run in each
 # era is excluded from the L2L3Residual correction.  This helper fixes
 # the valid run range so we can clamp before evaluate().
