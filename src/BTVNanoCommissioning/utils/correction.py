@@ -381,6 +381,8 @@ def load_SF(year, campaign, syst=False):
                     config[campaign]["JME_path"]
                 )
                 correct_map["JME_cfg"] = config[campaign]["JME"]
+                # FIXME need to store the JSON path in case we want to parse the run binning edges for ad-hoc JEC run clamp fix (see _get_jec_run_edges)
+                correct_map["JME_json_path"] = config[campaign]["JME_path"]
                 for dataset in correct_map["JME_cfg"].keys():
                     if (
                         np.all(
@@ -429,6 +431,8 @@ def load_SF(year, campaign, syst=False):
                         _jme_path
                     )
                 correct_map["JME_cfg"] = config[campaign]["JME"]
+                # FIXME need to store the JSON path in case we want to parse the run binning edges for ad-hoc JEC run clamp fix (see _get_jec_run_edges)
+                correct_map["JME_json_path"] = _jme_path
                 for dataset in correct_map["JME_cfg"].keys():
                     if (
                         np.all(
@@ -507,6 +511,55 @@ def load_lumi(campaign):
         _lumi_path = "BTVNanoCommissioning.data.DC"
         with importlib.resources.path(_lumi_path, config[campaign]["DC"]) as filename:
             return LumiMask(filename)
+
+
+# #FIXME JEC run-number ad-hoc boundary fix
+# See: https://cms-talk.web.cern.ch/t/bug-in-2025-jerc-json-file/47675
+# In March 2026, there is a bug in the JEC corrections, as
+# correctionlib bins are half-open [low, high), so the last run in each
+# era is excluded from the L2L3Residual correction.  This helper fixes
+# the valid run range so we can clamp before evaluate().
+
+_jec_run_edge_cache = {}
+
+
+def _get_jec_run_edges(correct_map, jecname):
+    """Return (lo, hi) run clamp range from L2L3Residual bin edges.
+
+    Parses the JME JSON to find the run binning edges directly.
+    correctionlib uses half-open [lo, hi) bins, so the last valid
+    integer run is edges[-1] - 1.
+    Returns None if no run-binned L2L3Residual exists.
+    The result is cached per jecname.
+    """
+    if jecname in _jec_run_edge_cache:
+        return _jec_run_edge_cache[jecname]
+
+    jme_json_path = correct_map.get("JME_json_path")
+    if jme_json_path is None:
+        _jec_run_edge_cache[jecname] = None
+        return None
+
+    l2l3_name = f"{jecname}_L2L3Residual_AK4PFPuppi"
+    result = None
+    with gzip.open(jme_json_path, "rt") as f:
+        for corr in json.load(f).get("corrections", []):
+            if corr["name"] != l2l3_name:
+                continue
+            inputs = corr.get("inputs", [])
+            data = corr.get("data", {})
+            if (
+                inputs
+                and inputs[0].get("name") == "run"
+                and data.get("nodetype") == "binning"
+                and data.get("flow") == "error"
+            ):
+                edges = data["edges"]
+                result = (edges[0], edges[-1] - 1)
+            break
+
+    _jec_run_edge_cache[jecname] = result
+    return result
 
 
 ## JEC
@@ -903,6 +956,23 @@ def JME_shifts(
                 tmp_pt_t1 = JEC_input_t1[2]
                 tmp_pt_t1 = np.clip(tmp_pt_t1, 30, None)
                 JEC_input_t1[2] = tmp_pt_t1
+
+            # #FIXME Ad-hoc fix: clamp run number for data L2L3Residual boundary bug.
+            # correctionlib uses half-open [low, high) bins, so the last run in
+            # each era is excluded.  Clamp to (first_edge, last_edge - 1) so
+            # that boundary runs still get a valid correction.
+            # See: https://cms-talk.web.cern.ch/t/bug-in-2025-jerc-json-file/47675
+            if isRealData:
+                run_idx = next(
+                    (i for i, inp in enumerate(JECcorr.inputs) if inp.name == "run"),
+                    None,
+                )
+                if run_idx is not None:
+                    _run_edges = _get_jec_run_edges(correct_map, jecname)
+                    if _run_edges is not None:
+                        lo, hi = _run_edges
+                        JEC_input[run_idx] = np.clip(JEC_input[run_idx], lo, hi)
+                        JEC_input_t1[run_idx] = np.clip(JEC_input_t1[run_idx], lo, hi)
 
             JECflatCorrFactor = JECcorr.evaluate(*JEC_input)
             j["pt_JECnom"] = j["pt"] * JECflatCorrFactor
