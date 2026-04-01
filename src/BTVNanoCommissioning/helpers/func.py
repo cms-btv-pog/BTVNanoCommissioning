@@ -32,24 +32,6 @@ def campaign_map():
             raise ValueError("Unknown campaign name")
     return dirnames
 
-# Added since some corrections have UL v15 (EGM), others only have UL v9 (MUO)
-def campaign_map_pog(pog):
-    dir = Path(f"/cvmfs/cms-griddata.cern.ch/cat/metadata/{pog}/")
-    if not os.path.exists(dir):
-        raise(f"Dir does not exist: {dir}.")
-
-    subdirs = [p.name for p in dir.iterdir() if p.is_dir()]
-    dirnames = {}
-    for i in range(len(subdirs)):
-        if "Run3" in subdirs[i]:
-            dirnames[subdirs[i].split("-")[2]] = subdirs[i]
-        elif "Run2" in subdirs[i]:
-            dirnames[subdirs[i].split("-")[1] + "-UL"] = subdirs[i]
-        elif "Run3" not in subdirs[i] and "Run2" not in subdirs[i]:
-            continue
-        else:
-            raise ValueError("Unknown campaign name")
-    return dirnames
 
 def memory_usage_psutil():
     # return the memory usage in MB

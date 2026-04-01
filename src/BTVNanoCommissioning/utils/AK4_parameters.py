@@ -45,6 +45,13 @@ correction_config = {
             "SmearAndSyst",
         ],
         "roccor":  "",
+
+        "cvmfs_override": {
+            "MUO": "Run2-2016preVFP-UL-NanoAODv9",    # Nanov15 unavailable
+            "muonSS": "Run2-2016preVFP-UL-NanoAODv9", # Nanov15 unavailable
+            "EGM": "Run2-2016preVFP-UL-NanoAODv15",
+            "electronSS": "Run2-2016preVFP-UL-NanoAODv15",
+        },
     },
     "2016postVFP-UL": {
         "DC": "Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt",
@@ -69,6 +76,13 @@ correction_config = {
             "SmearAndSyst",
         ],
         "roccor":  "",
+
+        "cvmfs_override": {
+            "MUO": "Run2-2016postVFP-UL-NanoAODv9",    # Nanov15 unavailable
+            "muonSS": "Run2-2016postVFP-UL-NanoAODv9", # Nanov15 unavailable
+            "EGM": "Run2-2016postVFP-UL-NanoAODv15",
+            "electronSS": "Run2-2016postVFP-UL-NanoAODv15",
+        },
     },
     "2017-UL": {
         "DC": "Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt",
@@ -96,22 +110,12 @@ correction_config = {
         ],
         "roccor":  "",
 
-        # "DC": "Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt",
-        # "LUM": None,
-        # "JME": "jec_compiled.pkl.gz",
-        # "BTV": {"deepCSV": "shape", "deepJet": "shape"},
-        # "EGM": {
-        #     "ele_ID 2017 UL-Electron-ID-SF": "wp90iso",
-        #     "ele_Reco 2017 UL-Electron-ID-SF": "RecoAbove20",
-        # },
-        # "MUO": {
-        #     "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
-        #     "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
-        #     "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
-        #     "mu_Iso 2017_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
-        #     "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2017_UL_ID.histo.json",
-        #     "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2017_UL_trackerMuon.histo.json",
-        # },
+        "cvmfs_override": {
+            "MUO": "Run2-2017-UL-NanoAODv9",    # Nanov15 unavailable
+            "muonSS": "Run2-2017-UL-NanoAODv9", # Nanov15 unavailable
+            "EGM": "Run2-2017-UL-NanoAODv15",
+            "electronSS": "Run2-2017-UL-NanoAODv15",
+        },
     },
     "2018-UL": {
         "DC": "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt",
@@ -137,6 +141,13 @@ correction_config = {
             "SmearAndSyst",
         ],
         "roccor":  "",
+
+        "cvmfs_override": {
+            "MUO": "Run2-2018-UL-NanoAODv9",    # Nanov15 unavailable
+            "muonSS": "Run2-2018-UL-NanoAODv9", # Nanov15 unavailable
+            "EGM": "Run2-2018-UL-NanoAODv15",
+            "electronSS": "Run2-2018-UL-NanoAODv15",
+        },
     },
     "Winter22Run3": {
         "DC": "Cert_Collisions2022_355100_357900_Golden.json",
