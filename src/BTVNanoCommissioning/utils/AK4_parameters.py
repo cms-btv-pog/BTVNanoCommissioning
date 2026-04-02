@@ -31,6 +31,7 @@ correction_config = {
             "Run2016E": "Summer20UL16APV_RunEF_V1",
             "Run2016F": "Summer20UL16APV_RunEF_V1",
         },
+        "JME_path": "src/BTVNanoCommissioning/data/JME/2016preVFP-UL/jet_jerc.json.gz",
         "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
@@ -62,6 +63,7 @@ correction_config = {
             "Run2016G": "Summer20UL16_RunFGH_V1",
             "Run2016H": "Summer20UL16_RunFGH_V1",
         },
+        "JME_path": "src/BTVNanoCommissioning/data/JME/2016postVFP-UL/jet_jerc.json.gz",
         "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
@@ -95,6 +97,7 @@ correction_config = {
             "Run2017E": "Summer20UL17_RunE_V1",
             "Run2017F": "Summer20UL17_RunF_V1",
         },
+        "JME_path": "src/BTVNanoCommissioning/data/JME/2017-UL/jet_jerc.json.gz",
         "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
@@ -127,6 +130,7 @@ correction_config = {
             "Run2018C": "Summer20UL18_RunC_V1",
             "Run2018D": "Summer20UL18_RunD_V1",
         },
+        "JME_path": "src/BTVNanoCommissioning/data/JME/2018-UL/jet_jerc.json.gz",
         "MUO": {
             "mu_ID": "NUM_TightID_DEN_TrackerMuons",
             "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
