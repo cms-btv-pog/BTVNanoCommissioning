@@ -735,17 +735,16 @@ def JME_shifts(
             j, nj = ak.flatten(jets), ak.num(jets)
             t1j, nt1j = ak.flatten(t1jets), ak.num(t1jets)
 
-            ## store the original met info
+            ## store the original met info (nocorrmet), raw met, nanoaod met
             if (int(year) > 2020) | ("UL" in campaign):
                 nocorrmet = events.PuppiMET
+                met_raw = events.RawPuppiMET
+                met_nano = events.PuppiMET
             else:
                 nocorrmet = events.MET
+                met_raw = events.RawMET
+                met_nano = events.MET
             met = copy.copy(nocorrmet)
-
-            ## raw MET
-            met_raw = events.RawPuppiMET if int(year) > 2020 else events.RawMET
-            ## NanoAOD MET
-            met_nano = events.PuppiMET if int(year) > 2020 else events.MET
 
             ## JES/JEC
             JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
