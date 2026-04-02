@@ -7,6 +7,7 @@ from BTVNanoCommissioning.utils.correction import (
     load_SF,
     weight_manager,
     common_shifts,
+    reweighting,
 )
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link, flatten
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
@@ -55,14 +56,15 @@ class NanoProcessor(processor.ProcessorABC):
 
     def process(self, events):
         events = missing_branch(events)
+        sumws = reweighting(events, self.isSyst)
         vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
-            self.process_shift(update(vetoed_events, collections), name)
+            self.process_shift(update(vetoed_events, collections), sumws, name)
             for collections, name in shifts
         )
 
-    def process_shift(self, events, shift_name):
+    def process_shift(self, events, sumws, shift_name):
         dataset = events.metadata["dataset"]
         isRealData = not hasattr(events, "genWeight")
 
@@ -108,7 +110,27 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         if shift_name is None:
-            output["sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
+            output["sumw"] = sumws["sumw"]
+            if not isRealData and self.isSyst:
+                if "LHEPdfWeight" in events.fields:
+                    output["PDF_sumwUp"] = sumws["PDF_sumwUp"]
+                    output["PDF_sumwDown"] = sumws["PDF_sumwDown"]
+                    output["aS_sumwUp"] = sumws["aS_sumwUp"]
+                    output["aS_sumwDown"] = sumws["aS_sumwDown"]
+                    output["PDFaS_sumwUp"] = sumws["PDFaS_sumwUp"]
+                    output["PDFaS_sumwDown"] = sumws["PDFaS_sumwDown"]
+                if "LHEScaleWeight" in events.fields:
+                    output["muR_sumwUp"] = sumws["muR_sumwUp"]
+                    output["muR_sumwDown"] = sumws["muR_sumwDown"]
+                    output["muF_sumwUp"] = sumws["muF_sumwUp"]
+                    output["muF_sumwDown"] = sumws["muF_sumwDown"]
+                if "PSWeight" in events.fields:
+                    if len(events.PSWeight[0]) == 4:
+                        output["ISR_sumwUp"] = sumws["ISR_sumwUp"]
+                        output["ISR_sumwDown"] = sumws["ISR_sumwDown"]
+                        output["FSR_sumwUp"] = sumws["FSR_sumwUp"]
+                        output["FSR_sumwDown"] = sumws["FSR_sumwDown"]
+
         ####################
         #    Selections    #
         ####################
@@ -124,16 +146,21 @@ class NanoProcessor(processor.ProcessorABC):
         req_trig = HLT_helper(events, triggers)
 
         ## Lepton cuts
+        # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
+        iso_mu = events.Muon[(events.Muon.pt > 30) & mu_idiso(events, self._campaign)]
+        iso_ele = events.Electron[
+            (events.Electron.pt > 34) & ele_mvatightid(events, self._campaign)
+        ]
         if isMu:
-            # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
-            iso_lep = events.Muon[
-                (events.Muon.pt > 30) & mu_idiso(events, self._campaign)
-            ]
+            iso_lep = iso_mu
+            iso_otherflav = iso_ele
         elif isEle:
-            iso_lep = events.Electron[
-                (events.Electron.pt > 34) & ele_mvatightid(events, self._campaign)
-            ]
-        req_lep = ak.count(iso_lep.pt, axis=1) == 1
+            iso_lep = iso_ele
+            iso_otherflav = iso_mu
+
+        req_lep = (ak.count(iso_lep.pt, axis=1) == 1) & (
+            ak.count(iso_otherflav.pt, axis=1) == 0
+        )
         jet_sel = ak.fill_none(
             jet_id(events, self._campaign)
             & (ak.all(events.Jet.metric_table(iso_lep) > 0.5, axis=2)),
@@ -343,13 +370,11 @@ class NanoProcessor(processor.ProcessorABC):
         sz = shmu + ssmu
         sw = shmu + smet
 
-        osss = 1
-        ossswrite = shmu.charge * ssmu.charge * -1
+        osss = shmu.charge * ssmu.charge * -1  # Actual osss calculation
         smuon_jet_passc = {}
         c_algos = []
         c_wps = []
         if "cutbased_Wc" in self.selMod:
-            osss = shmu.charge * ssmu.charge * -1
             c_algos = btag_wp_dict[self._year + "_" + self._campaign].keys()
             for c_algo in c_algos:
                 smuon_jet_passc[c_algo] = {}
@@ -369,9 +394,9 @@ class NanoProcessor(processor.ProcessorABC):
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
         pruned_ev["SelJet"] = sjets
-        if self.selMod.endswith("M"):
+        if isMu:
             pruned_ev["SelMuon"] = shmu
-        else:
+        elif isEle:
             pruned_ev["SelElectron"] = shmu
         pruned_ev["MuonJet"] = smuon_jet
         pruned_ev["SoftMuon"] = ssmu
@@ -379,7 +404,7 @@ class NanoProcessor(processor.ProcessorABC):
         if "Wc" in self.selMod:
             pruned_ev["osss"] = osss
         else:
-            pruned_ev["osss"] = ossswrite
+            pruned_ev["osss"] = 1.0
         pruned_ev["njet"] = njet
         pruned_ev["W_transmass"] = wm
         pruned_ev["W_pt"] = wp
@@ -627,7 +652,23 @@ class NanoProcessor(processor.ProcessorABC):
         #######################
         if self.isArray:
             array_writer(
-                self, pruned_ev, events, weights, systematics, dataset, isRealData
+                self,
+                pruned_ev,
+                events,
+                weights,
+                systematics,
+                dataset,
+                isRealData,
+                doOnly=[
+                    "SelJet",
+                    "njet",
+                    "PuppiMET",
+                    "dilep_mass",
+                    "SoftMuon_dxySig",
+                    "MuonJet_muneuEF",
+                    "soft_l_ptratio",
+                    "osss",
+                ],
             )
 
         return {dataset: output}

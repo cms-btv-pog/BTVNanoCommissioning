@@ -14,6 +14,7 @@ from BTVNanoCommissioning.utils.correction import (
     load_SF,
     weight_manager,
     common_shifts,
+    reweighting,
 )
 from BTVNanoCommissioning.utils.selection import (
     softmu_mask,
@@ -53,14 +54,15 @@ class NanoProcessor(processor.ProcessorABC):
 
     def process(self, events):
         events = missing_branch(events)
+        sumws = reweighting(events, self.isSyst)
         vetoed_events, shifts = common_shifts(self, events)
 
         return processor.accumulate(
-            self.process_shift(update(vetoed_events, collections), name)
+            self.process_shift(update(vetoed_events, collections), sumws, name)
             for collections, name in shifts
         )
 
-    def process_shift(self, events, shift_name):
+    def process_shift(self, events, sumws, shift_name):
         isRealData = not hasattr(events, "genWeight")
         dataset = events.metadata["dataset"]
 
@@ -73,7 +75,26 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         if shift_name is None:
-            output["sumw"] = len(events) if isRealData else ak.sum(events.genWeight)
+            output["sumw"] = sumws["sumw"]
+            if not isRealData and self.isSyst:
+                if "LHEPdfWeight" in events.fields:
+                    output["PDF_sumwUp"] = sumws["PDF_sumwUp"]
+                    output["PDF_sumwDown"] = sumws["PDF_sumwDown"]
+                    output["aS_sumwUp"] = sumws["aS_sumwUp"]
+                    output["aS_sumwDown"] = sumws["aS_sumwDown"]
+                    output["PDFaS_sumwUp"] = sumws["PDFaS_sumwUp"]
+                    output["PDFaS_sumwDown"] = sumws["PDFaS_sumwDown"]
+                if "LHEScaleWeight" in events.fields:
+                    output["muR_sumwUp"] = sumws["muR_sumwUp"]
+                    output["muR_sumwDown"] = sumws["muR_sumwDown"]
+                    output["muF_sumwUp"] = sumws["muF_sumwUp"]
+                    output["muF_sumwDown"] = sumws["muF_sumwDown"]
+                if "PSWeight" in events.fields:
+                    if len(events.PSWeight[0]) == 4:
+                        output["ISR_sumwUp"] = sumws["ISR_sumwUp"]
+                        output["ISR_sumwDown"] = sumws["ISR_sumwDown"]
+                        output["FSR_sumwUp"] = sumws["FSR_sumwUp"]
+                        output["FSR_sumwDown"] = sumws["FSR_sumwDown"]
 
         ####################
         #    Selections    #

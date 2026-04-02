@@ -1,6 +1,8 @@
 import importlib.resources
 import contextlib
 import copy
+import gzip
+import json
 import os
 import re
 import warnings
@@ -50,14 +52,14 @@ def load_SF(year, campaign, syst=False):
 
     This function reads scale factors from the specified campaign configuration and returns them in a suitable format.
     It handles different types of scale factors, such as pileup weights, and checks for the existence of files in
-    the jsonpog-integration directory or custom files.
+    the CMS analysis corrections metadata directory or custom files.
 
     Example:
     ```python
     ## Initialization, add EGM map from correctionlib
     correction_map["EGM"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/jsonpog-integration/POG/EGM/{campaign}/electron.json.gz"
-                )
+        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest/{_ele_file}.json.gz"
+    )
     ## Initialization, add EGM map from custom file by extractor
     ext = extractor()
     ext.add_weight_sets(["eleID EGamma2D {filename}.root"])
@@ -84,6 +86,7 @@ def load_SF(year, campaign, syst=False):
     for SF in config[campaign].keys():
         if SF == "DC":
             continue
+
         ## pileup weight
         if SF == "LUM":
             ## Check whether files in jsonpog-integration exist
@@ -224,7 +227,7 @@ def load_SF(year, campaign, syst=False):
                 )
 
             ## check if any custom corrections needed
-            # FIXME: (some low pT muons not supported in jsonpog-integration at the moment)
+            # FIXME: (some low pT muons not supported in CMS analysis corrections at the moment)
             if (
                 "histo.json" in "\t".join(list(config[campaign]["MUO"].values()))
                 or "histo.txt" in "\t".join(list(config[campaign]["MUO"].values()))
@@ -501,16 +504,62 @@ def load_lumi(campaign):
     FileNotFoundError: If the luminosity mask file does not exist.
     """
 
-    _lumi_path = "BTVNanoCommissioning.data.DC"
-    if os.path.exists(
-        f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/config[campaign]["DC"]'
-    ):
-        return LumiMask(
-            f"/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/{config[campaign]['DC']}"
-        )
+    _lumi_path = f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/latest/{config[campaign]["DC"]}'
+    if os.path.exists(_lumi_path):
+        return LumiMask(_lumi_path)
     else:
+        _lumi_path = "BTVNanoCommissioning.data.DC"
         with importlib.resources.path(_lumi_path, config[campaign]["DC"]) as filename:
             return LumiMask(filename)
+
+
+# #FIXME JEC run-number ad-hoc boundary fix
+# See: https://cms-talk.web.cern.ch/t/bug-in-2025-jerc-json-file/47675
+# In March 2026, there is a bug in the JEC corrections, as
+# correctionlib bins are half-open [low, high), so the last run in each
+# era is excluded from the L2L3Residual correction.  This helper fixes
+# the valid run range so we can clamp before evaluate().
+
+_jec_run_edge_cache = {}
+
+
+def _get_jec_run_edges(correct_map, jecname):
+    """Return (lo, hi) run clamp range from L2L3Residual bin edges.
+
+    Parses the JME JSON to find the run binning edges directly.
+    correctionlib uses half-open [lo, hi) bins, so the last valid
+    integer run is edges[-1] - 1.
+    Returns None if no run-binned L2L3Residual exists.
+    The result is cached per jecname.
+    """
+    if jecname in _jec_run_edge_cache:
+        return _jec_run_edge_cache[jecname]
+
+    jme_json_path = correct_map.get("JME_json_path")
+    if jme_json_path is None:
+        _jec_run_edge_cache[jecname] = None
+        return None
+
+    l2l3_name = f"{jecname}_L2L3Residual_AK4PFPuppi"
+    result = None
+    with gzip.open(jme_json_path, "rt") as f:
+        for corr in json.load(f).get("corrections", []):
+            if corr["name"] != l2l3_name:
+                continue
+            inputs = corr.get("inputs", [])
+            data = corr.get("data", {})
+            if (
+                inputs
+                and inputs[0].get("name") == "run"
+                and data.get("nodetype") == "binning"
+                and data.get("flow") == "error"
+            ):
+                edges = data["edges"]
+                result = (edges[0], edges[-1] - 1)
+            break
+
+    _jec_run_edge_cache[jecname] = result
+    return result
 
 
 ## JEC
@@ -520,7 +569,7 @@ def load_lumi(campaign):
 def add_jec_variables(jets, event_rho):
     jets["pt_raw"] = (1 - jets.rawFactor) * jets.pt
     jets["mass_raw"] = (1 - jets.rawFactor) * jets.mass
-    if hasattr(jets, "genJetIdxG"):
+    if hasattr(jets, "genJetIdx"):
         jets["pt_gen"] = ak.values_astype(
             ak.fill_none(jets.matched_gen.pt, 0), np.float32
         )
@@ -573,7 +622,7 @@ def jetveto(jets, correct_map):
         )
 
 
-# from https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/blob/master/examples/jercExample.py
+# from https://gitlab.cern.ch/cms-analysis-corrections/JME/examples/-/blob/latest/jercExample.py
 def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
     """
     Helper function for getting values of input variables
@@ -600,14 +649,11 @@ def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
     return input_values
 
 
-cset_jersmear_paths = [
-    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/JER-Smearing/latest/jer_smear.json.gz",
-    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/jer_smear.json.gz",
-]
-for _jersmear_path in cset_jersmear_paths:
-    if os.path.exists(_jersmear_path):
-        cset_jersmear = correctionlib.CorrectionSet.from_file(_jersmear_path)
-        break
+_jersmear_path = (
+    "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/JER-Smearing/latest/jer_smear.json.gz"
+)
+if os.path.exists(_jersmear_path):
+    cset_jersmear = correctionlib.CorrectionSet.from_file(_jersmear_path)
 else:
     warnings.warn(
         "JER smearing JSON not found in CVMFS. JER smearing corrections will be disabled.",
@@ -616,6 +662,158 @@ else:
     )
     cset_jersmear = {"JERSmear": None}
 sf_jersmear = cset_jersmear["JERSmear"]
+
+
+# JEC/JES sources for the full set according to
+# https://cms-jerc.web.cern.ch/Recommendations/#case-i
+def get_JES_keys(year: int | str) -> dict[str, set]:
+    return {
+        "full": {
+            "AbsoluteMPFBias",
+            "AbsoluteScale",
+            "AbsoluteStat",
+            "FlavorQCD",
+            "Fragmentation",
+            "PileUpDataMC",
+            "PileUpPtBB",
+            "PileUpPtEC1",
+            "PileUpPtEC2",
+            "PileUpPtHF",
+            "PileUpPtRef",
+            "RelativeFSR",
+            "RelativeJEREC1",
+            "RelativeJEREC2",
+            "RelativeJERHF",
+            "RelativePtBB",
+            "RelativePtEC1",
+            "RelativePtEC2",
+            "RelativePtHF",
+            "RelativeBal",
+            "RelativeSample",
+            "RelativeStatEC",
+            "RelativeStatFSR",
+            "RelativeStatHF",
+            "SinglePionECAL",
+            "SinglePionHCAL",
+            "TimePtEta",
+        },
+        "reduced": {
+            f"Regrouped_Absolute_{year}",
+            "Regrouped_Absolute",
+            f"Regrouped_BBEC1_{year}",
+            "Regrouped_BBEC1",
+            f"Regrouped_EC2_{year}",
+            "Regrouped_EC2",
+            "Regrouped_FlavorQCD",
+            f"Regrouped_HF_{year}",
+            "Regrouped_HF",
+            "Regrouped_RelativeBal",
+            f"Regrouped_RelativeSample_{year}",
+        },
+        "total": {"Total"},
+    }
+
+
+def get_JER(
+    correct_map,
+    jername,
+    j,
+    jersyst,
+):
+    """
+    Retrieve JER for each jet pt shift.
+
+    Parameters:
+    correct_map (dict): A dictionary containing correction factors and settings for JER.
+    jername (str): name of the JER
+    j (jets): jet collection
+    """
+
+    JERSF = correct_map["JME"][f"{jername}_ScaleFactor_AK4PFPuppi"]
+    JERSF_input = get_corr_inputs(j, JERSF, jersyst)
+    j["JERSF"] = JERSF.evaluate(*JERSF_input)
+
+    JERptres = correct_map["JME"][f"{jername}_PtResolution_AK4PFPuppi"]
+    JERptres_input = get_corr_inputs(j, JERptres)
+    j["JER"] = JERptres.evaluate(*JERptres_input)
+
+    if sf_jersmear is None:
+        warnings.warn(
+            "JER smearing coefficients unavailable. "
+            "Proceeding without applying JER smearing.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return ak.ones_like(j.pt)
+    else:
+        JERsmear_input = get_corr_inputs(j, sf_jersmear)
+        return sf_jersmear.evaluate(*JERsmear_input)
+
+
+def get_MET_corr_keys():
+    return [
+        "pt_raw",
+        "eta",
+        "phi",
+        "area",
+        "EmEF",
+        "muonSubtrFactor",
+        "Genpt",
+        "rho",
+        "EventID",
+        "run",
+    ]
+
+
+def calc_T1_MET(
+    met_raw,
+    met_nano,
+    shifted_jets,
+    campaign,
+    systematic=False,
+):
+    """
+    Correction taken from here: https://cms-jerc.web.cern.ch/Type1MET/
+    Systematic taken from here: https://cms-talk.web.cern.ch/t/unclustered-met-uncertainty-2022-2023-nanoaodv12/141752/5
+    """
+
+    MET_x_baseline = met_raw.pt * np.cos(met_raw.phi)
+    MET_y_baseline = met_raw.pt * np.sin(met_raw.phi)
+    if campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
+        jet_mask = (
+            (shifted_jets["pt"] > 15.0)
+            & (abs(shifted_jets["eta"]) < 5.2)
+            & (shifted_jets["EmEF"] < 0.9)
+        )
+    else:  # NanoAODv12
+        jet_mask = (shifted_jets["pt"] > 15.0) & (abs(shifted_jets["eta"]) < 5.2)
+    sel_jet = shifted_jets[jet_mask]
+    jet_pt_L1 = sel_jet["pt_raw"] * (1.0 - sel_jet["muonSubtrFactor"])
+    delta_pt = sel_jet["pt"] - jet_pt_L1
+    MET_x_shifts = delta_pt * np.cos(sel_jet["phi"])
+    MET_y_shifts = delta_pt * np.sin(sel_jet["phi"])
+    MET_x = MET_x_baseline - ak.sum(MET_x_shifts, axis=-1)
+    MET_y = MET_y_baseline - ak.sum(MET_y_shifts, axis=-1)
+    pt_miss_final = np.sqrt(MET_x * MET_x + MET_y * MET_y)
+    phi_miss_final = np.arctan2(MET_y, MET_x)
+
+    if systematic:
+        pt_unclustered_up = met_nano.ptUnclusteredUp / met_nano.pt * pt_miss_final
+        pt_unclustered_down = met_nano.ptUnclusteredDown / met_nano.pt * pt_miss_final
+        phi_unclustered_up = met_nano.phiUnclusteredUp / met_nano.phi * phi_miss_final
+        phi_unclustered_down = (
+            met_nano.phiUnclusteredDown / met_nano.phi * phi_miss_final
+        )
+        return (
+            pt_miss_final,
+            phi_miss_final,
+            pt_unclustered_up,
+            pt_unclustered_down,
+            phi_unclustered_up,
+            phi_unclustered_down,
+        )
+    else:
+        return pt_miss_final, phi_miss_final
 
 
 ## JERC
@@ -1245,7 +1443,7 @@ def MUO_shifts(shifts, correct_map, events, isRealData, systematic=False):
     Applies the Run 3 recommended muon scale and smearing corrections.
     Returns the corrected muon objects, including systematics.
     Adapted from this example of muon SS correction usage:
-    https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/blob/master/examples/muoScaleAndSmearingCoffeaExample.py
+    https://gitlab.cern.ch/cms-analysis-corrections/MUO/examples/-/blob/latest/muoScaleAndSmearingCoffeaExample.py
     """
 
     mu = events.Muon
@@ -1377,7 +1575,7 @@ def EGM_shifts(shifts, correct_map, events, isRealData, systematic=False):
     Applies the Run 3 recommended electron scale and smearing corrections.
     Returns the corrected electron objects, including systematics.
     Adapted from this example of electron SS correction usage:
-    https://gitlab.cern.ch/cms-nanoAOD/jsonpog-integration/-/blob/master/examples/egmScaleAndSmearingExample.py
+    https://gitlab.cern.ch/cms-analysis-corrections/EGM/examples/-/blob/latest/egmScaleAndSmearingExample.py
     """
 
     ele = events.Electron
@@ -1396,19 +1594,14 @@ def EGM_shifts(shifts, correct_map, events, isRealData, systematic=False):
         scale_evaluator = correct_map["electronSS"].compound[
             correct_map["electronSS_cfg"][0]
         ]
-        if "Summer24" in correct_map["campaign"]:
-            scale = scale_evaluator.evaluate(
-                "scale", events_run, ele_etaSC, ele_r9, ele_pt, ele_seedGain
-            )
-        else:
-            scale = scale_evaluator.evaluate(
-                "scale",
-                events_run,
-                ele_etaSC,
-                ele_r9,
-                ele_pt,
-                ele_seedGain,
-            )
+        scale = scale_evaluator.evaluate(
+            "scale",
+            events_run,
+            ele_etaSC,
+            ele_r9,
+            ele_pt,
+            ele_seedGain,
+        )
         scale = ak.unflatten(scale, n_ele)
         ele_pt_corr = scale * ele.pt
     else:  # smear correction is only applied to MC
@@ -1596,7 +1789,7 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
     jet (dict): A dictionary containing the properties of the jet.
     correct_map (dict): A dictionary containing correction factors and settings for b-tagging scale factors.x
     weights (coffea.weight.Weight): An instance of coffea's Weight class to store the calculated weights.
-    SFtype (str): The type of scale factor to apply , only shape-based C, B are supported.
+    SFtype (str): The type of scale factor to apply. Only shape-based C, B are supported.
     syst (bool, optional): A flag to indicate whether to apply systematic variations. Default is False.
 
     Returns:
@@ -1805,18 +1998,12 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
     for sf in correct_map["EGM_cfg"].keys():
         ## Only apply SFs for lepton pass HLT filter
-        if not isHLT and "HLT" in sf:
+        if not isHLT and "Trig" in sf:
             continue
         sf_type = sf[: sf.find(" ")]
         for nele in range(ak.num(allele.pt)[0]):
             ele = allele[:, nele]
-            ele_etaSC = (
-                ak.fill_none(ele.eta + ele.deltaEtaSC, -2.5)
-                if "Summer24" not in correct_map["campaign"]
-                else ak.fill_none(ele.superclusterEta, -2.5)
-            )
-            ele_pt = ak.fill_none(ele.pt, 20)
-            ele_pt = np.clip(ele_pt, 20, 999)
+            ele_etaSC = ak.fill_none(ele.eta + ele.deltaEtaSC, -2.5)
             masknone = ak.is_none(ele.pt)
             sfs_alle, sfs_alle_up, sfs_alle_down = (
                 np.ones_like(allele[:, 0].pt),
@@ -1827,13 +2014,13 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
             if "correctionlib" in str(type(correct_map["EGM"])):
                 ## reco SFs, split by pT
                 if "Reco" in sf:
+                    ele_pt = np.clip(ele.pt, 20, 74.99999)
+                    ele_pt_low = np.where(ele.pt >= 20, 19.99999, ele.pt)
+                    ele_pt_high = np.clip(ele.pt, 75, 10000)
                     ## phi is used in Summer23
-                    ele_pt = np.clip(ele.pt, 20.1, 74.9)
-                    ele_pt_low = np.where(ele.pt >= 20.0, 19.9, ele.pt)
-                    ele_pt_high = np.clip(ele.pt, 75.0, 500.0)
                     if "Summer23" in correct_map["campaign"]:
                         sfs_low = np.where(
-                            (ele.pt <= 20.0) & ~masknone,
+                            (ele.pt < 20.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1845,7 +2032,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             1.0,
                         )
                         sfs_high = np.where(
-                            (ele.pt > 75.0) & ~masknone,
+                            (ele.pt >= 75.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1857,7 +2044,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             sfs_low,
                         )
                         sfs = np.where(
-                            (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                            (ele.pt >= 20.0) & (ele.pt < 75.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1872,7 +2059,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
                         if syst != False:
                             sfs_up_low = np.where(
-                                (ele.pt <= 20.0) & ~masknone,
+                                (ele.pt < 20.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -1884,7 +2071,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 0.0,
                             )
                             sfs_down_low = np.where(
-                                (ele.pt <= 20.0) & ~masknone,
+                                (ele.pt < 20.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -1896,7 +2083,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 0.0,
                             )
                             sfs_up_high = np.where(
-                                (ele.pt > 75.0) & ~masknone,
+                                (ele.pt >= 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -1908,7 +2095,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_up_low,
                             )
                             sfs_down_high = np.where(
-                                (ele.pt > 75.0) & ~masknone,
+                                (ele.pt >= 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -1920,7 +2107,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_down_low,
                             )
                             sfs_up = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele.pt >= 20.0) & (ele.pt < 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -1932,7 +2119,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_up_high,
                             )
                             sfs_down = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele.pt >= 20.0) & (ele.pt < 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -1948,22 +2135,18 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
                     else:
                         sfs_low = np.where(
-                            (ele.pt <= 20.0) & ~masknone,
-                            (
-                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                    sf.split(" ")[1],
-                                    "sf",
-                                    "RecoBelow20",
-                                    ele_etaSC,
-                                    ele_pt_low,
-                                )
-                                if "Summer24" not in correct_map["campaign"]
-                                else 1.0
-                            ),  # TODO: temporary until RecoBelow20 is released for 2024
+                            (ele.pt < 20.0) & ~masknone,
+                            correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                sf.split(" ")[1],
+                                "sf",
+                                "RecoBelow20",
+                                ele_etaSC,
+                                ele_pt_low,
+                            ),
                             1.0,
                         )
                         sfs_high = np.where(
-                            (ele.pt > 75.0) & ~masknone,
+                            (ele.pt >= 75.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
                                 "sf",
@@ -1974,7 +2157,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             sfs_low,
                         )
                         sfs = np.where(
-                            (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                            (ele.pt >= 20.0) & (ele.pt < 75.0) & ~masknone,
                             correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1], "sf", "Reco20to75", ele_etaSC, ele_pt
                             ),
@@ -1984,37 +2167,29 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
                         if syst:
                             sfs_up_low = np.where(
-                                (ele.pt <= 20.0) & ~masknone,
-                                (
-                                    correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                        sf.split(" ")[1],
-                                        "sfup",
-                                        "RecoBelow20",
-                                        ele_etaSC,
-                                        ele_pt_low,
-                                    )
-                                    if "Summer24" not in correct_map["campaign"]
-                                    else 0.0
-                                ),  # TODO: temporary until RecoBelow20 is released for 2024
+                                (ele.pt < 20.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfup",
+                                    "RecoBelow20",
+                                    ele_etaSC,
+                                    ele_pt_low,
+                                ),
                                 0.0,
                             )
                             sfs_down_low = np.where(
-                                (ele.pt <= 20.0) & ~masknone,
-                                (
-                                    correct_map["EGM"][sf.split(" ")[2]].evaluate(
-                                        sf.split(" ")[1],
-                                        "sfdown",
-                                        "RecoBelow20",
-                                        ele_etaSC,
-                                        ele_pt_low,
-                                    )
-                                    if "Summer24" not in correct_map["campaign"]
-                                    else 0.0
-                                ),  # TODO: temporary until RecoBelow20 is released for 2024
+                                (ele.pt < 20.0) & ~masknone,
+                                correct_map["EGM"][sf.split(" ")[2]].evaluate(
+                                    sf.split(" ")[1],
+                                    "sfdown",
+                                    "RecoBelow20",
+                                    ele_etaSC,
+                                    ele_pt_low,
+                                ),
                                 0.0,
                             )
                             sfs_up_high = np.where(
-                                (ele.pt > 75.0) & ~masknone,
+                                (ele.pt >= 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -2025,7 +2200,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_up_low,
                             )
                             sfs_down_high = np.where(
-                                (ele.pt > 75.0) & ~masknone,
+                                (ele.pt >= 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -2036,7 +2211,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_down_low,
                             )
                             sfs_up = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele.pt >= 20.0) & (ele.pt < 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfup",
@@ -2047,7 +2222,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 sfs_up_high,
                             )
                             sfs_down = np.where(
-                                (ele.pt > 20.0) & (ele.pt <= 75.0) & ~masknone,
+                                (ele.pt >= 20.0) & (ele.pt < 75.0) & ~masknone,
                                 correct_map["EGM"][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
                                     "sfdown",
@@ -2066,13 +2241,17 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         type(correct_map["EGM_HLT"])
                     ):
                         _ele_map = "EGM_HLT"
+                        ele_pt = ak.fill_none(ele.pt, 25.0)
+                        ele_pt = np.clip(ele_pt, 25.0, None)
                     # ID SFs
                     else:
                         _ele_map = "EGM"
+                        ele_pt = ak.fill_none(ele.pt, 10.0)
+                        ele_pt = np.clip(ele_pt, 10.0, None)
 
                     if "Summer23" in correct_map["campaign"]:
                         sfs = np.where(
-                            masknone | (ele.pt > 1000.0),
+                            masknone,
                             1.0,
                             correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
@@ -2086,7 +2265,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
                         if syst:
                             sfs_up = np.where(
-                                masknone | (ele.pt > 1000.0),
+                                masknone,
                                 1.0,
                                 correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
@@ -2098,7 +2277,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 ),
                             )
                             sfs_down = np.where(
-                                masknone | (ele.pt > 1000.0),
+                                masknone,
                                 1.0,
                                 correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
@@ -2111,7 +2290,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             )
                     else:
                         sfs = np.where(
-                            masknone | (ele.pt > 1000.0),
+                            masknone,
                             1.0,
                             correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                 sf.split(" ")[1],
@@ -2124,7 +2303,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
                         if syst:
                             sfs_up = np.where(
-                                masknone | (ele.pt > 1000.0),
+                                masknone,
                                 1.0,
                                 correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
@@ -2135,7 +2314,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                                 ),
                             )
                             sfs_down = np.where(
-                                masknone | (ele.pt > 1000.0),
+                                masknone,
                                 1.0,
                                 correct_map[_ele_map][sf.split(" ")[2]].evaluate(
                                     sf.split(" ")[1],
@@ -2206,7 +2385,7 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
     allmu = mu if mu.ndim > 1 else ak.singletons(mu)
     for sf in correct_map["MUO_cfg"].keys():
         ## Only apply SFs for lepton pass HLT filter
-        if not isHLT and "HLT" in sf:
+        if not isHLT and "Trig" in sf:
             continue
         if "low" in sf:
             continue
@@ -2219,8 +2398,11 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
         for nmu in range(ak.num(allmu.pt)[0]):
             mu = allmu[:, nmu]
             masknone = ak.is_none(mu.pt)
-            mu_pt = np.clip(mu.pt, 15.0, 199.9)
-            mu_eta = np.clip(np.abs(mu.eta), 0.0, 2.4)
+            if "Trig" in sf:
+                mu_pt = np.clip(mu.pt, 26.0, None)
+            else:
+                mu_pt = np.clip(mu.pt, 10.0, None)
+            mu_eta = np.clip(mu.eta, -2.4, 2.399999)
             sfs = 1.0
             if "correctionlib" in str(type(correct_map["MUO"])):
                 sfs = np.where(
@@ -2232,14 +2414,20 @@ def muSFs(mu, correct_map, weights, syst=False, isHLT=False):
                 )
 
                 if syst:
-                    sf_unc = np.where(
+                    sfs_up = np.where(
                         masknone,
-                        0.0,
+                        1.0,
                         correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
-                            mu_eta, mu_pt, "syst"
+                            mu_eta, mu_pt, "systup"
                         ),
                     )
-                    sfs_up, sfs_down = 1.0 + sf_unc, 1.0 - sf_unc
+                    sfs_down = np.where(
+                        masknone,
+                        1.0,
+                        correct_map["MUO"][correct_map["MUO_cfg"][sf]].evaluate(
+                            mu_eta, mu_pt, "systdown"
+                        ),
+                    )
             else:
                 if "mu" in sf:
                     sfs = np.where(
@@ -2339,31 +2527,92 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
     up = np.ones(len(weights.weight()))
     down = np.ones(len(weights.weight()))
 
-    # NNPDF31_nnlo_hessian_pdfas
-    # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
-    if pdf_weights is not None and "306000 - 306102" in pdf_weights.__doc__:
-        # Hessian PDF weights
-        # Eq. 21 of https://arxiv.org/pdf/1510.03865v1.pdf
-        arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
-        summed = ak.sum(np.square(arg), axis=1)
-        pdf_unc = np.sqrt((1.0 / 99.0) * summed)
+    if pdf_weights is not None:
 
-        # alpha_S weights
-        # Eq. 27 of same ref
-        as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
+        if "306000 - 306102" in pdf_weights.__doc__:
+            # NNPDF31_nnlo_hessian_pdfas
+            # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_hessian_pdfas/NNPDF31_nnlo_hessian_pdfas.info
 
-        # PDF + alpha_S weights
-        # Eq. 28 of same ref
-        pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
-        if isSyst != False:
-            weights.add("PDF_weight", nom, pdf_unc + nom)
-            weights.add("aS_weight", nom, as_unc + nom)
-            weights.add("PDFaS_weight", nom, pdfas_unc + nom)
+            # Hessian PDF weights
+            # Eq. 21 of https://arxiv.org/pdf/1510.03865v1.pdf
+            arg = pdf_weights[:, 1:-2] - np.ones((len(weights.weight()), 100))
+            summed = ak.sum(np.square(arg), axis=1)
+            pdf_unc = np.sqrt((1.0 / 99.0) * summed)
+
+            # alpha_S weights
+            # Eq. 27 of same ref
+            as_unc = 0.5 * (pdf_weights[:, 102] - pdf_weights[:, 101])
+
+            # PDF + alpha_S weights
+            # Eq. 28 of same ref
+            pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
+
+            if isSyst != False:
+                weights.add("PDF_weight", nom, nom + pdf_unc, None)
+                weights.add("aS_weight", nom, nom + as_unc, None)
+                weights.add("PDFaS_weight", nom, nom + pdfas_unc, None)
+            else:
+                weights.add("PDF_weight", nom)
+                weights.add("aS_weight", nom)
+                weights.add("PDFaS_weight", nom)
+
+        elif "325300 - 325402" in pdf_weights.__doc__:
+            # NNPDF31_nnlo_as_0118_mc_hessian_pdfas
+            # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_as_0118_mc_hessian_pdfas/NNPDF31_nnlo_as_0118_mc_hessian_pdfas.info
+
+            pdf_unc = np.zeros_like(weights.weight(), dtype=np.float64)
+            pdfas_unc = np.zeros_like(weights.weight(), dtype=np.float64)
+            for iPDF in range(1, 103):
+                if iPDF < 101:
+                    pdf_unc = (
+                        pdf_unc
+                        + (pdf_weights[:, iPDF] / pdf_weights[:, 0] - 1.0) ** 2.0
+                    )
+                pdfas_unc = (
+                    pdf_unc + (pdf_weights[:, iPDF] / pdf_weights[:, 0] - 1.0) ** 2.0
+                )
+            pdf_unc = np.sqrt(pdf_unc)
+            pdfas_unc = np.sqrt(pdfas_unc)
+            as_unc_up = pdf_weights[:, 101]
+            as_unc_down = pdf_weights[:, 102]
+
+            if isSyst != False:
+                weights.add("PDF_weight", nom, nom + pdf_unc, nom - pdf_unc)
+                weights.add("aS_weight", nom, as_unc_up, as_unc_down)
+                weights.add("PDFaS_weight", nom, nom + pdfas_unc, nom - pdfas_unc)
+            else:
+                weights.add("PDF_weight", nom)
+                weights.add("aS_weight", nom)
+                weights.add("PDFaS_weight", nom)
+
+        elif "325500 - 325600" in pdf_weights.__doc__:
+            # NNPDF31_nnlo_as_0118_nf_4_mc_hessian
+            # https://lhapdfsets.web.cern.ch/current/NNPDF31_nnlo_as_0118_nf_4_mc_hessian/NNPDF31_nnlo_as_0118_nf_4_mc_hessian.info
+
+            pdf_unc = np.zeros_like(weights.weight(), dtype=np.float64)
+            mean_w = np.mean(pdf_weights, axis=1)
+            for iPDF in range(101):
+                pdf_unc = pdf_unc + ((pdf_weights[:, iPDF] - mean_w) ** 2.0)
+            pdf_unc = np.sqrt(pdf_unc / (101.0 - 1.0))
+            pdfas_unc = pdf_unc
+            as_unc_up = np.ones_like(weights.weight(), dtype=np.float64)
+            as_unc_down = np.ones_like(weights.weight(), dtype=np.float64)
+
+            if isSyst != False:
+                weights.add("PDF_weight", nom, nom + pdf_unc, nom - pdf_unc)
+                weights.add("aS_weight", nom, as_unc_up, as_unc_down)
+                weights.add("PDFaS_weight", nom, nom + pdfas_unc, nom - pdfas_unc)
+            else:
+                weights.add("PDF_weight", nom)
+                weights.add("aS_weight", nom)
+                weights.add("PDFaS_weight", nom)
 
         else:
-            weights.add("PDF_weight", nom)
-            weights.add("aS_weight", nom)
-            weights.add("PDFaS_weight", nom)
+            warnings.warn("unexpected PDF set used!")
+            weights.add("aS_weight", nom, up, down)
+            weights.add("PDF_weight", nom, up, down)
+            weights.add("PDFaS_weight", nom, up, down)
+
     else:
         warnings.warn("PDF weights are not available")
         weights.add("aS_weight", nom, up, down)
@@ -2373,16 +2622,19 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
 
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_the
 def top_pT_sf_formula(pt):
-    return 0.103 * np.exp(-0.0118 * pt) - 0.000134 * pt + 0.973
+    x = np.clip(pt, 0, 2000)
+    # From page 30 of AN v9 https://cms.cern.ch/iCMS/jsp/db_notes/noteInfo.jsp?cmsnoteid=CMS%20AN-2024/019
+    w_13_to_13p6 = (
+        0.991 + 0.000075 * x
+    )  # Extrapolation of the number below (which was for CoM = 13 TeV) to CoM = 13.6 TeV
+    return (0.103 * np.exp(-0.0118 * x) - 0.000134 * x + 0.973) * w_13_to_13p6
 
 
 def top_pT_reweighting(gen):
-    #     """
-    #     Apply this SF only to TTbar datasets! Updated to latest suggestion
-    #     Documentation:
-    #         - https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting
-    #         - https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_the
-    #     """
+    # Apply this SF only to TTbar datasets! Updated to latest suggestion
+    # Documentation:
+    #     - https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting
+    #     - https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_the
     top = gen[(gen.pdgId == 6) & gen.hasFlags(["isLastCopy"])]
     anti_top = gen[(gen.pdgId == -6) & gen.hasFlags(["isLastCopy"])]
     return np.sqrt(
@@ -2408,9 +2660,9 @@ def add_ps_weight(weights, ps_weights, isSyst=False):
             down_fsr = ps_weights[:, 3]
             weights.add("UEPS_ISR", nom, up_isr, down_isr)
             weights.add("UEPS_FSR", nom, up_fsr, down_fsr)
-
         else:
             warnings.warn(f"PS weight vector has length {len(ps_weights[0])}")
+            weights.add("UEPS_ISR", nom, nom, nom)
             weights.add("UEPS_FSR", nom, nom, nom)
 
 
@@ -2439,14 +2691,14 @@ def add_scalevar_weight(weights, lhe_weights, isSyst=False):
                 weights.add(
                     "scalevar_muR",
                     nom,
-                    lhe_weights[:, 1] / nom,
                     lhe_weights[:, 7] / nom,
+                    lhe_weights[:, 1] / nom,
                 )
                 weights.add(
                     "scalevar_muF",
                     nom,
-                    lhe_weights[:, 3] / nom,
                     lhe_weights[:, 5] / nom,
+                    lhe_weights[:, 3] / nom,
                 )
                 weights.add(
                     "scalevar_muR_muF", nom, lhe_weights[:, 0], lhe_weights[:, 8]
@@ -2574,10 +2826,15 @@ class JPCalibHandler(object):
 
         # now calculating Σ_tr{0..N-1} ((-logΠ)^tr / tr!)
         trk_index = ak.local_index(proba)
+
+        # Handle fully-empty track collections: ak.max(...) can return None
+        # (e.g. no tracks pass JP selection in a chunk).
+        max_val = ak.max(trk_index, axis=None)
+        max_trk_index = 0 if max_val is None else int(ak.to_numpy(max_val))
         fact_array = ak.concatenate(
             [
                 [1.0],
-                np.arange(1, max(5, ak.max(trk_index) + 1), dtype=np.float64).cumprod(),
+                np.arange(1, max(5, max_trk_index + 1), dtype=np.float64).cumprod(),
             ]
         )  # construct a factorial array
         trk_index_fl, _layouts = self.flatten(trk_index)
@@ -2654,9 +2911,6 @@ def common_shifts(self, events):
     shifts = []
 
     if "JME" in self.SF_map.keys():
-        syst_JERC = self.isSyst
-        if self.isSyst == "JERC_split":
-            syst_JERC = "split"
         shifts = JME_shifts(
             shifts,
             self.SF_map,
@@ -2664,7 +2918,7 @@ def common_shifts(self, events):
             self._year,
             self._campaign,
             isRealData,
-            syst_JERC,
+            self.isSyst,
         )
     else:
         ## Use PuppiMET if available (NanoAODv15), otherwise fall back to PFMET
@@ -2737,28 +2991,20 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         add_pdf_weight(weights, pruned_ev.LHEPdfWeight, isSyst)
     if "LHEScaleWeight" in pruned_ev.fields:
         add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
+
     if "TT" in pruned_ev.metadata["dataset"]:
+        nom = top_pT_reweighting(pruned_ev.GenPart)
+    else:
+        nom = ak.ones_like(weights.weight())
+    if isSyst != False and "GenPart" in pruned_ev.fields:
         weights.add(
             "ttbar_weight",
-            top_pT_reweighting(pruned_ev.GenPart),
-            (
-                top_pT_reweighting(pruned_ev.GenPart)
-                - ak.ones_like(top_pT_reweighting(pruned_ev.GenPart))
-            )
-            * 2.0
-            + ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
+            nom,
+            nom + np.abs(ak.ones_like(nom) - nom),
+            nom - np.abs(ak.ones_like(nom) - nom),
         )
-        if isSyst != False:
-            weights.add(
-                "ttbar_weight",
-                top_pT_reweighting(pruned_ev.GenPart),
-                (
-                    top_pT_reweighting(pruned_ev.GenPart)
-                    - ak.ones_like(top_pT_reweighting(pruned_ev.GenPart))
-                )
-                * 2.0,
-                ak.ones_like(top_pT_reweighting(pruned_ev.GenPart)),
-            )
+    else:
+        weights.add("ttbar_weight", nom)
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
         syst_wei = True if isSyst != False else False
@@ -2780,3 +3026,174 @@ def weight_manager(pruned_ev, SF_map, isSyst):
             btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepCSVC", syst_wei)
 
     return weights
+
+
+def reweighting(events, isSyst):
+
+    sumws = {}
+    if "genWeight" in events.fields:
+
+        # Calculate nominal sumw, including top pt weights
+        if "TT" in events.metadata["dataset"]:
+            genWeight = events.genWeight * top_pT_reweighting(events.GenPart)
+        else:
+            genWeight = events.genWeight
+        sumws["sumw"] = np.sum(np.array(genWeight), dtype=np.float64)
+
+        # Calculate reweighted sumws for theory systematics
+        if isSyst != False:
+
+            if "LHEPdfWeight" in events.fields:
+                nom = np.ones(len(events))
+
+                if "306000 - 306102" in events.LHEPdfWeight.__doc__:
+                    arg = events.LHEPdfWeight[:, 1:-2] - np.ones((len(events), 100))
+                    summed = ak.sum(np.square(arg), axis=1)
+                    pdf_unc = np.sqrt((1.0 / 99.0) * summed)
+                    as_unc = 0.5 * (
+                        events.LHEPdfWeight[:, 102] - events.LHEPdfWeight[:, 101]
+                    )
+                    pdfas_unc = np.sqrt(np.square(pdf_unc) + np.square(as_unc))
+                    PDF_genWeightUp = (nom + pdf_unc) * genWeight
+                    PDF_genWeightDown = 1.0 / (nom + pdf_unc) * genWeight
+                    aS_genWeightUp = (nom + as_unc) * genWeight
+                    aS_genWeightDown = 1.0 / (nom + as_unc) * genWeight
+                    PDFaS_genWeightUp = (nom + pdfas_unc) * genWeight
+                    PDFaS_genWeightDown = 1.0 / (nom + pdfas_unc) * genWeight
+
+                elif "325300 - 325402" in events.LHEPdfWeight.__doc__:  # Run 3 5FS
+                    pdf_unc = np.zeros_like(genWeight, dtype=np.float64)
+                    pdfas_unc = np.zeros_like(genWeight, dtype=np.float64)
+                    for iPDF in range(1, 103):
+                        if iPDF < 101:
+                            pdf_unc = (
+                                pdf_unc
+                                + (
+                                    events.LHEPdfWeight[:, iPDF]
+                                    / events.LHEPdfWeight[:, 0]
+                                    - 1.0
+                                )
+                                ** 2.0
+                            )
+                        pdfas_unc = (
+                            pdf_unc
+                            + (
+                                events.LHEPdfWeight[:, iPDF] / events.LHEPdfWeight[:, 0]
+                                - 1.0
+                            )
+                            ** 2.0
+                        )
+                    pdf_unc = np.sqrt(pdf_unc)
+                    pdfas_unc = np.sqrt(pdfas_unc)
+                    as_unc_up = events.LHEPdfWeight[:, 101]
+                    as_unc_down = events.LHEPdfWeight[:, 102]
+                    PDF_genWeightUp = (nom + pdf_unc) * genWeight
+                    PDF_genWeightDown = (nom - pdf_unc) * genWeight
+                    aS_genWeightUp = as_unc_up * genWeight
+                    aS_genWeightDown = as_unc_down * genWeight
+                    PDFaS_genWeightUp = (nom + pdfas_unc) * genWeight
+                    PDFaS_genWeightDown = (nom - pdfas_unc) * genWeight
+
+                elif "325500 - 325600" in events.LHEPdfWeight.__doc__:  # Run 3 4FS
+                    pdf_unc = np.zeros_like(genWeight, dtype=np.float64)
+                    mean_w = np.mean(events.LHEPdfWeight, axis=1)
+                    for iPDF in range(101):
+                        pdf_unc = (
+                            pdf_unc + (events.LHEPdfWeight[:, iPDF] - mean_w) ** 2.0
+                        )
+                    pdf_unc = np.sqrt(pdf_unc / (101.0 - 1.0))
+                    pdfas_unc = pdf_unc
+                    as_unc_up = np.ones_like(genWeight, dtype=np.float64)
+                    as_unc_down = np.ones_like(genWeight, dtype=np.float64)
+                    PDF_genWeightUp = (nom + pdf_unc) * genWeight
+                    PDF_genWeightDown = (nom - pdf_unc) * genWeight
+                    aS_genWeightUp = as_unc_up * genWeight
+                    aS_genWeightDown = as_unc_down * genWeight
+                    PDFaS_genWeightUp = (nom + pdfas_unc) * genWeight
+                    PDFaS_genWeightDown = (nom - pdfas_unc) * genWeight
+
+                else:
+                    warnings.warn(
+                        "unexpected PDF set used, all sumws will be the nominal!"
+                    )
+                    PDF_genWeightUp = genWeight
+                    PDF_genWeightDown = genWeight
+                    aS_genWeightUp = genWeight
+                    aS_genWeightDown = genWeight
+                    PDFaS_genWeightUp = genWeight
+                    PDFaS_genWeightDown = genWeight
+
+                sumws["PDF_sumwUp"] = np.sum(
+                    np.array(PDF_genWeightUp), dtype=np.float64
+                )
+                sumws["PDF_sumwDown"] = np.sum(
+                    np.array(PDF_genWeightDown), dtype=np.float64
+                )
+                sumws["aS_sumwUp"] = np.sum(np.array(aS_genWeightUp), dtype=np.float64)
+                sumws["aS_sumwDown"] = np.sum(
+                    np.array(aS_genWeightDown), dtype=np.float64
+                )
+                sumws["PDFaS_sumwUp"] = np.sum(
+                    np.array(PDFaS_genWeightUp), dtype=np.float64
+                )
+                sumws["PDFaS_sumwDown"] = np.sum(
+                    np.array(PDFaS_genWeightDown), dtype=np.float64
+                )
+            else:
+                warnings.warn("no LHE PDF weights found for reweighting!")
+
+            if "LHEScaleWeight" in events.fields:
+                muR_genWeightUp = (
+                    events.LHEScaleWeight[:, 7] / events.LHEScaleWeight[:, 4]
+                ) * genWeight
+                muR_genWeightDown = (
+                    events.LHEScaleWeight[:, 1] / events.LHEScaleWeight[:, 4]
+                ) * genWeight
+                muF_genWeightUp = (
+                    events.LHEScaleWeight[:, 5] / events.LHEScaleWeight[:, 4]
+                ) * genWeight
+                muF_genWeightDown = (
+                    events.LHEScaleWeight[:, 3] / events.LHEScaleWeight[:, 4]
+                ) * genWeight
+                sumws["muR_sumwUp"] = np.sum(
+                    np.array(muR_genWeightUp), dtype=np.float64
+                )
+                sumws["muR_sumwDown"] = np.sum(
+                    np.array(muR_genWeightDown), dtype=np.float64
+                )
+                sumws["muF_sumwUp"] = np.sum(
+                    np.array(muF_genWeightUp), dtype=np.float64
+                )
+                sumws["muF_sumwDown"] = np.sum(
+                    np.array(muF_genWeightDown), dtype=np.float64
+                )
+            else:
+                warnings.warn("no LHE scale weights found for reweighting!")
+
+            if "PSWeight" in events.fields:
+                if len(events.PSWeight[0]) == 4:
+                    ISR_genWeightUp = events.PSWeight[:, 0] * genWeight
+                    ISR_genWeightDown = events.PSWeight[:, 2] * genWeight
+                    FSR_genWeightUp = events.PSWeight[:, 1] * genWeight
+                    FSR_genWeightDown = events.PSWeight[:, 3] * genWeight
+                    sumws["ISR_sumwUp"] = np.sum(
+                        np.array(ISR_genWeightUp), dtype=np.float64
+                    )
+                    sumws["ISR_sumwDown"] = np.sum(
+                        np.array(ISR_genWeightDown), dtype=np.float64
+                    )
+                    sumws["FSR_sumwUp"] = np.sum(
+                        np.array(FSR_genWeightUp), dtype=np.float64
+                    )
+                    sumws["FSR_sumwDown"] = np.sum(
+                        np.array(FSR_genWeightDown), dtype=np.float64
+                    )
+                else:
+                    warnings.warn("wrong number of PS weights for reweighting!")
+            else:
+                warnings.warn("no PS weights found for reweighting!")
+
+    else:
+        sumws["sumw"] = len(events)
+
+    return sumws

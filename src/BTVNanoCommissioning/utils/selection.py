@@ -25,8 +25,9 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
     # Implement fix from:
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13p6TeV#nanoAOD_Flags
     # Note: this is only the jetId==6, ie. passJetIdTightLepVeto. Looser selection is not implemented.
-    if campaign in ["Summer22", "Summer22EE", "Summer23", "Summer23BPix"]:
-        # NanoV12
+    has_jetId = hasattr(events.Jet, "jetId")
+    if campaign in ["Summer22", "Summer22EE", "Summer23", "Summer23BPix"] and has_jetId:
+        # NanoV12 (has jetId branch)
         jetid = ak.where(
             abs(events.Jet.eta) <= 2.7,
             (events.Jet.jetId >= 2)
@@ -37,7 +38,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
                 (events.Jet.jetId >= 2) & (events.Jet.neHEF < 0.99),
                 ak.where(
                     (abs(events.Jet.eta) > 3.0),
-                    (events.Jet.jetId & (1 << 1)) & (events.Jet.neEmEF < 0.4),
+                    (events.Jet.jetId >= 2) & (events.Jet.neEmEF < 0.4),
                     ak.zeros_like(events.Jet.pt, dtype=bool),
                 ),
             ),
@@ -175,6 +176,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
         )
     else:
         jetmask = (events.Jet.pt > min_pt) & (abs(events.Jet.eta) <= max_eta) & (jetid)
+
     return jetmask
 
 
@@ -182,7 +184,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
 def ele_cuttightid(events, campaign):
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign
+        if campaign not in ["Summer24", "Winter25", "Prompt25"]
         else events.Electron.superclusterEta
     )
     elemask = (
@@ -194,7 +196,7 @@ def ele_cuttightid(events, campaign):
 def ele_mvatightid(events, campaign):
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign
+        if campaign not in ["Summer24", "Winter25", "Prompt25"]
         else events.Electron.superclusterEta
     )
     elemask = (
@@ -239,7 +241,7 @@ def jet_cut(events, campaign, ptmin=180, ptmax=1e5, absetamin=0, absetamax=2.5):
         & (abs(events.Jet.eta) < absetamax)
         & (events.Jet.pt > ptmin)
         & (events.Jet.pt < ptmax)
-        & (events.Jet.jetId >= 5)
+        & (jet_id(events, campaign))
     )
     return multijetmask
 

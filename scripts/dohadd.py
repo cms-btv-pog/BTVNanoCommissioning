@@ -21,7 +21,8 @@ for subdir in subdirs:
             if len(glob(f"{indir}/{subdir}/{syst}/{samp}/*.root")) == 0:
                 continue
             outfile.write(
-                f"hadd -v 0 {indir}/{subdir}/{syst}/{samp}.root {indir}/{subdir}/{syst}/{samp}/*.root\n"
+                f"mkdir -p {indir}/{subdir}_merged/{syst}/\n"
+                f"hadd -v 0 {indir}/{subdir}_merged/{syst}/{samp}.root {indir}/{subdir}/{syst}/{samp}/*.root\n"
             )
 
 print(
