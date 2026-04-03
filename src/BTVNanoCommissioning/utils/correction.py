@@ -340,16 +340,16 @@ def load_SF(year, campaign, syst=False):
 
         ## Rochester muon momentum correction (Run 2)
         elif SF == "roccor":
-            if "2016postVFP_UL" == campaign:
+            if "2016postVFP-UL" == campaign:
                 filename = "RoccoR2016bUL.txt"
-            elif "2016preVFP_UL" in campaign:
+            elif "2016preVFP-UL" in campaign:
                 filename = "RoccoR2016aUL.txt"
-            elif "2017_UL" in campaign:
+            elif "2017-UL" in campaign:
                 filename = "RoccoR2017UL.txt"
-            if "2018_UL" in campaign:
+            if "2018-UL" in campaign:
                 filename = "RoccoR2018UL.txt"
 
-            full_path = "src/BTVNanoCommissioning/data/LSF/roccor/" + filename
+            full_path = "src/BTVNanoCommissioning/data/MUO/roccor/" + filename
             rochester_data = txt_converters.convert_rochester_file(
                 full_path, loaduncs=True
             )
@@ -359,7 +359,7 @@ def load_SF(year, campaign, syst=False):
         elif SF == "JME":
             if "name" in config[campaign]["JME"].keys():
                 if not os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{campaign_map()[campaign]}/latest/jec_compiled_{config[campaign]['JME']['name']}.pkl.gz"
+                    f"src/BTVNanoCommissioning/data/JME/{_cvmfs_dir(campaign, 'JMAR')}/latest/jec_compiled_{config[campaign]['JME']['name']}.pkl.gz"
                 ):
                     _compile_jec_(
                         year,
@@ -933,14 +933,16 @@ def JME_shifts(
             j, nj = ak.flatten(jets), ak.num(jets)
             t1j, nt1j = ak.flatten(t1jets), ak.num(t1jets)
 
-            ## store the original met info
-            nocorrmet = events.PuppiMET if int(year) > 2020 else events.MET
+            ## store the original met info (nocorrmet), raw met, nanoaod met
+            if (int(year) > 2020) | ("UL" in campaign):
+                nocorrmet = events.PuppiMET
+                met_raw = events.RawPuppiMET
+                met_nano = events.PuppiMET
+            else:
+                nocorrmet = events.MET
+                met_raw = events.RawMET
+                met_nano = events.MET
             met = copy.copy(nocorrmet)
-
-            ## raw MET
-            met_raw = events.RawPuppiMET if int(year) > 2020 else events.RawMET
-            ## NanoAOD MET
-            met_nano = events.PuppiMET if int(year) > 2020 else events.MET
 
             ## JES/JEC
             JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
@@ -1226,12 +1228,12 @@ def JME_shifts(
 
         else:
             if isRealData:
-                if "2016preVFP_UL" == campaign:
+                if "2016preVFP-UL" == campaign:
                     if "2016B" in dataset or "2016C" in dataset or "2016D" in dataset:
                         jecname = "BCD"
                     elif "2016E" in dataset or "2016F" in dataset:
                         jecname = "EF"
-                elif "2016postVFP_UL" == campaign:
+                elif "2016postVFP-UL" == campaign:
                     jecname = "FGH"
                 elif campaign == "Rereco17_94X":
                     jecname = ""
