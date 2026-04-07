@@ -23,11 +23,18 @@ def get_condor_submitter_parser(parser):
         required=True,
     )
     parser.add_argument(
+        "-nCPU",
+        "--nCPU",
+        default=1,
+        type=int,
+        help="Number of CPUs to request for each condor job (default: %(default)s). Job memory scales as nCPU*3GB, adjust if necessary.",
+    )
+    parser.add_argument(
         "-n",
         "--condorFileSize",
         type=int,
         default=50,
-        help="Number of files proceed per condor job",
+        help="Number of files proceed per condor job (default: %(default)s)",
     )
     parser.add_argument(
         "--outputDir",
@@ -249,10 +256,9 @@ if __name__ == "__main__":
 Executable = {executable}
 
 
-Arguments = $(JOBNUM)
+Arguments = $(JOBNUM) $(request_cpus)
 
-request_cpus = 1
-request_memory = 2000
+request_cpus = {nCPU}
 use_x509userproxy = true
 
 +JobFlavour = "{jobqueue}"
@@ -272,6 +278,7 @@ Queue JOBNUM from {jobnum_file}
         log_dir=f"{base_dir}/{job_dir}/log",
         transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt"
         + ("" if args.remoteRepo else f",{base_dir}/BTVNanoCommissioning.tar.gz"),
+        nCPU=args.nCPU,
         jobnum_file=f"{base_dir}/{job_dir}/jobnum_list.txt",
     )
     with open(os.path.join(job_dir, "submit.jdl"), "w") as f:
