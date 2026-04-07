@@ -784,7 +784,7 @@ met_filters = {
             "BadPFMuonDzFilter",
             "hfNoisyHitsFilter",
             "eeBadScFilter",
-            "ecalBadCalibFilter"
+            "ecalBadCalibFilter",
         ],
     },
     "Prompt25": {

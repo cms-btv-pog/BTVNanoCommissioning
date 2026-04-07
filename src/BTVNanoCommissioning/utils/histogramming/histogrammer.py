@@ -315,21 +315,15 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     if col_name not in pruned_ev.fields:
                         continue
                     jet_col = pruned_ev[col_name]
-                    jet_syst = np.full(
-                        len(flatten(jet_col.pt)), syst[0]
-                    )
+                    jet_syst = np.full(len(flatten(jet_col.pt)), syst[0])
                     h.fill(
                         jet_syst,
                         flatten(jet_col.flavor),
                         flatten(jet_col.pt),
-                        weight=flatten(
-                            ak.broadcast_arrays(weight, jet_col.pt)[0]
-                        ),
+                        weight=flatten(ak.broadcast_arrays(weight, jet_col.pt)[0]),
                     )
                 elif histname.endswith("jet_pt") and "AllSelJet" in pruned_ev.fields:
-                    jet_syst = np.full(
-                        len(flatten(pruned_ev["AllSelJet"].pt)), syst[0]
-                    )
+                    jet_syst = np.full(len(flatten(pruned_ev["AllSelJet"].pt)), syst[0])
                     h.fill(
                         jet_syst,
                         flatten(pruned_ev["AllSelJet"].flavor),
