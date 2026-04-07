@@ -7,13 +7,13 @@ import numpy as np, pandas as pd
 
 ### NOTICE The scripts only works on lxplus...
 
-parser = argparse.ArgumentParser(description="Create prescale weights(lxplus)")
+parser = argparse.ArgumentParser(description="Create prescale weights on lxplus using brilcalc")
 
 parser.add_argument(
     "-l",
     "--lumimask",
     default="src/BTVNanoCommissioning/data/DC/Cert_Collisions2022_355100_362760_Golden.json",
-    help="lumimask to generate prescale weights",
+    help="Lumimask to generate prescale weights. TIP: use DCS-only lumimasks to avoid issues with missing runs."
 )
 parser.add_argument(
     "-H",
@@ -22,9 +22,9 @@ parser.add_argument(
     type=str,
     help="Which HLT is used; comma separated for multiple.",
 )
-parser.add_argument("-v", "--verbose", action="store_true", help="debugging")
-parser.add_argument("-t", "--test", action="store_true", help="test with only 5 runs")
-parser.add_argument("-f", "--force", action="store_true", help="recreate .csv")
+parser.add_argument("-v", "--verbose", action="store_true", help="Debugging")
+parser.add_argument("-t", "--test", action="store_true", help="Test with only 5 runs")
+parser.add_argument("-f", "--force", action="store_true", help="Recreate .csv")
 parser.add_argument(
     "-i", "--ignore_csv_output", action="store_true", help="Ignore writing the .csv"
 )
@@ -35,8 +35,13 @@ parser.add_argument(
     type=int,
     help="Number of threads for parallel run processing (default: auto)",
 )
-
-### NOTICE The scripts only works on lxplus...
+parser.add_argument(
+    "-y",
+    "--year",
+    default=0,
+    type=int,
+    help="Year of the lumimask, used for naming the output files. If 0, year is not included in the output file name and run numbers are used instead.",
+)
 
 
 def process_run(run_input):
@@ -64,6 +69,22 @@ def process_run(run_input):
         return None
 
     csv_output = command.stdout
+    if ",None," in csv_output:
+        print(
+            f"Warning: No prescale info found for Run #{run}, HLT_{trg}. Check if the HLT path name is correct and if the run has prescale info available."
+        )
+
+        # Return a placeholder row with prescale value of 1.0 for the entire run
+        df = pandas.DataFrame(
+            columns=["cmsls", "totprescval", "# run", "hltpath/prescval"]
+        )
+        df["# run"] = int(run)
+        df["hltpath/prescval"] = f"HLT_{trg}_v99999"
+        df["totprescval"] = 1.0 
+        df["cmsls"] = 1
+
+        return df
+
     df = pandas.read_csv(
         io.StringIO(csv_output),
         usecols=["cmsls", "totprescval", "# run", "hltpath/prescval"],
@@ -263,7 +284,10 @@ if __name__ == "__main__":
             corrections=[psCorr],
             description=f"prescales for HLT_{HLT}",
         )
-        dumpfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{HLT}_run{min(runs_in_mask)}_{max(runs_in_mask)}.json"
+        if args.year != 0:
+            dumpfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{HLT}_year{args.year}.json"
+        else:
+            dumpfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{HLT}_run{min(runs_in_mask)}_{max(runs_in_mask)}.json"
         with open(
             dumpfile,
             "w",
