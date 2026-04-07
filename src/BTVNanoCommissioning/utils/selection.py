@@ -249,7 +249,8 @@ def jet_cut(events, campaign, ptmin=180, ptmax=1e5, absetamin=0, absetamax=2.5):
 def MET_filters(events, campaign):
     # apply MET filter
     metfilter = ak.ones_like(events.run, dtype=bool)
-    for flag in met_filters[campaign]["data" if "Run" else "mc"]:
+    isRealData = not hasattr(events, "genWeight")
+    for flag in met_filters[campaign]["data" if isRealData else "mc"]:
         metfilter = events.Flag[flag] & metfilter
     ## Flag_ecalBadCalibFilter
     badjet = (
@@ -577,6 +578,7 @@ met_filters = {
             "HBHENoiseIsoFilter",
             "EcalDeadCellTriggerPrimitiveFilter",
             "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
             "eeBadScFilter",
         ],
         "mc": [
@@ -586,6 +588,7 @@ met_filters = {
             "HBHENoiseIsoFilter",
             "EcalDeadCellTriggerPrimitiveFilter",
             "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
             "eeBadScFilter",
         ],
     },
@@ -752,6 +755,7 @@ met_filters = {
             "BadPFMuonDzFilter",
             "hfNoisyHitsFilter",
             "eeBadScFilter",
+            "ecalBadCalibFilter",
         ],
         "mc": [
             "goodVertices",
@@ -761,6 +765,29 @@ met_filters = {
             "BadPFMuonDzFilter",
             "hfNoisyHitsFilter",
             "eeBadScFilter",
+            "ecalBadCalibFilter"
+        ],
+    },
+    "Prompt25": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+            "ecalBadCalibFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+            "ecalBadCalibFilter",
         ],
     },
     "prompt_dataMC": {
