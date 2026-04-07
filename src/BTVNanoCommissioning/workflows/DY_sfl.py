@@ -246,11 +246,14 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["AllSelJet"] = event_jet[event_level]  # untouched by histo_writter
 
         for tagger, tag_obj in btag_wp_dict[f"{self._year}_{self._campaign}"].items():
+            neg_branch = f"btagNeg{tagger}B"
+            if neg_branch not in event_jet.fields:
+                continue  # btagNeg* branches only exist in BTVNano
             for stringency, wp in tag_obj["b"].items():
                 if stringency == "No":
                     continue
                 mask_postag = event_jet[f"btag{tagger}B"] > wp
-                mask_negtag = event_jet[f"btagNeg{tagger}B"] > wp
+                mask_negtag = event_jet[neg_branch] > wp
                 postag_jet = event_jet[mask_postag][event_level]
                 negtag_jet = event_jet[mask_negtag][event_level]
                 key = f"{tagger}{stringency}"

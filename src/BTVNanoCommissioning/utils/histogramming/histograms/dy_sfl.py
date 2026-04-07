@@ -1,6 +1,6 @@
 import hist as Hist
 
-from BTVNanoCommissioning.utils.selection import btag_wp_dict
+from BTVNanoCommissioning.utils.selection import wp_dict
 
 
 def get_histograms(axes, **kwargs):
@@ -33,8 +33,9 @@ def get_histograms(axes, **kwargs):
         hists[f"dr_{i}jet"] = Hist.Hist(
             axes["syst"], axes["flav"], axes["dr"], Hist.storage.Weight()
         )
-    for tagger in btag_wp_dict[year + "_" + campaign].keys():
-        for stringency in btag_wp_dict[year + "_" + campaign][tagger]["b"].keys():
+    wps = wp_dict(year, campaign)
+    for tagger in wps.keys():
+        for stringency in wps[tagger]["b"].keys():
             if "No" in stringency:
                 continue
             hists[f"{tagger}{stringency}_postag_jet_pt"] = Hist.Hist(

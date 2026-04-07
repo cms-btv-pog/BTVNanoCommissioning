@@ -2651,7 +2651,7 @@ def add_ps_weight(weights, ps_weights, isSyst=False):
     down_fsr = np.ones(len(weights.weight()))
 
     if ps_weights is not None and isSyst != False:
-        if len(ps_weights[0]) == 4:
+        if len(ps_weights[0]) >= 4:
             up_isr = ps_weights[:, 0]
             down_isr = ps_weights[:, 2]
             up_fsr = ps_weights[:, 1]
