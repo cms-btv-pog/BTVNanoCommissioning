@@ -6,7 +6,7 @@ import argparse
 from rich import print
 from BTVNanoCommissioning.utils.xrootdtools import get_xrootd_sites_map, find_other_file
 from glob import glob
-from alive_progress import alive_bar
+# from alive_progress import alive_bar
 
 parser = argparse.ArgumentParser()
 parser.add_argument("job_dir", type=str, help="Input string")
@@ -40,20 +40,20 @@ outdir = args["outputDir"]
 
 toresubmit = []
 
-with alive_bar(len(numlist), title="Checking jobs") as bar:
-    for n in numlist:
-        outfile = f"{outdir}/hists_{n}/hists_{n}.coffea"
-        if not os.path.isfile(outfile):
-            print(f"[red]Job {n}[/] does not have an output histogram file.")
+# with alive_bar(len(numlist), title="Checking jobs") as bar:
+for n in numlist:
+    outfile = f"{outdir}/hists_{n}/hists_{n}.coffea"
+    if not os.path.isfile(outfile):
+        print(f"[red]Job {n}[/] does not have an output histogram file.")
+        toresubmit.append(n)
+    arraylist = glob(f"{outdir}/arrays_hists_{n}/*/*/*.root")
+    for rootfile in arraylist:
+        filesize = os.path.getsize(rootfile)
+        if filesize < 10 * 1024:  # Files smaller than 10 kB are likely zombies
+            print(f"[red]Job {n}[/] has at least one zombie root output file.")
             toresubmit.append(n)
-        arraylist = glob(f"{outdir}/arrays_hists_{n}/*/*/*.root")
-        for rootfile in arraylist:
-            filesize = os.path.getsize(rootfile)
-            if filesize < 10 * 1024:  # Files smaller than 10 kB are likely zombies
-                print(f"[red]Job {n}[/] has at least one zombie root output file.")
-                toresubmit.append(n)
-                break
-        bar()
+            break
+        # bar()
 
 if len(toresubmit) == 0:
     print("[green][b]All jobs complete. Nothing to resubmit![/][/]\n")

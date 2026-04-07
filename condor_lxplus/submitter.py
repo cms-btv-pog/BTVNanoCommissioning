@@ -194,7 +194,8 @@ if __name__ == "__main__":
     os.mkdir(job_dir + "/log")
 
     # Handle voms proxy
-    proxy_file = get_proxy_path()
+    # proxy_file = get_proxy_path()
+    proxy_file = args.voms
     os.system(f"scp {proxy_file} proxy")
     print(f"Copied proxy file {proxy_file} to local directory.")
 
