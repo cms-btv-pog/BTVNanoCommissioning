@@ -17,7 +17,7 @@ dependencies:
   - parsl==2024.01.29
   - arrow
   - dask-jobqueue
-  - alive_progress
+  - alive-progress
   - pip:
     - coffea==0.7.31
     - correctionlib==2.7.0
