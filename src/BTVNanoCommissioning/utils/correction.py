@@ -934,7 +934,7 @@ def JME_shifts(
             t1j, nt1j = ak.flatten(t1jets), ak.num(t1jets)
 
             ## store the original met info (nocorrmet), raw met, nanoaod met
-            if (int(year) > 2020) | ("UL" in campaign):
+            campaign in ["2016preVFP-UL", "2016postVFP-UL", "2017-UL", "2018-UL", "Summer24", "Winter25", "Prompt25"]: #for nanoaodv15
                 nocorrmet = events.PuppiMET
                 met_raw = events.RawPuppiMET
                 met_nano = events.PuppiMET
