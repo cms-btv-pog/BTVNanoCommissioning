@@ -26,7 +26,6 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 ## load histograms & selctions for this workflow
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
-    histo_writter,
 )
 from BTVNanoCommissioning.utils.histogramming.histograms.qgtag import qg_writer
 from BTVNanoCommissioning.utils.array_writer import array_writer
@@ -37,8 +36,6 @@ from BTVNanoCommissioning.utils.selection import (
     ele_cuttightid,
     MET_filters,
 )
-
-import hist as Hist
 
 
 class NanoProcessor(processor.ProcessorABC):
@@ -92,9 +89,6 @@ class NanoProcessor(processor.ProcessorABC):
         req_lumi = np.ones(len(events), dtype="bool")
         if isRealData:
             req_lumi = self.lumiMask(events.run, events.luminosityBlock)
-        # only dump for nominal case
-        if shift_name is None:
-            output = dump_lumi(events[req_lumi], output)
 
         ## HLT
         if self._year == "2022" or self._year == "2023":
@@ -282,11 +276,15 @@ class NanoProcessor(processor.ProcessorABC):
 
             pruned_ev["psweight"] = np.zeros(len(pruned_ev))
             for trigger in triggers:
-                psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
+                # Check if the prescale weight file exists for the given trigger and year
+                psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_year{self._year}.json"
                 if not os.path.isfile(psfile):
-                    raise NotImplementedError(
-                        f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py`."
-                    )
+                    psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
+                    if not os.path.isfile(psfile):
+                        raise NotImplementedError(
+                            f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py`."
+                        )
+
                 pseval = correctionlib.CorrectionSet.from_file(psfile)
                 thispsweight = pseval["prescaleWeight"].evaluate(
                     pruned_ev.run,
@@ -308,7 +306,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
+            output = qg_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays

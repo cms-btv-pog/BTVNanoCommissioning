@@ -318,7 +318,16 @@ class NanoProcessor(processor.ProcessorABC):
 
             pruned_ev["psweight"] = np.zeros(len(pruned_ev))
             for trigger in triggers:
-                psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
+                # Check if the prescale weight file exists for the given trigger and year
+                psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_year{self._year}.json"
+                if not os.path.isfile(psfile):
+                    psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
+                    if not os.path.isfile(psfile):
+                        raise NotImplementedError(
+                            f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py`."
+                        )
+
+                    # psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_run{run_num}.json"
                 if not os.path.isfile(psfile):
                     raise NotImplementedError(
                         f"Prescale weights not available for {trigger} in {self._year}. Please run `scripts/dump_prescale.py`."
