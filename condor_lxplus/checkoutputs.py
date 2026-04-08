@@ -6,7 +6,7 @@ import argparse
 from rich import print
 from BTVNanoCommissioning.utils.xrootdtools import get_xrootd_sites_map, find_other_file
 from glob import glob
-# from alive_progress import alive_bar
+from alive_progress import alive_bar
 
 parser = argparse.ArgumentParser()
 parser.add_argument("job_dir", type=str, help="Input string")
