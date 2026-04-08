@@ -124,7 +124,7 @@ def qg_writer(
         # weight = weight * weights.partial_weight(include=["psweight"])
 
         for histname, hist in output.items():
-            if histname in ["sumw", "fname", "run", "lumi", "processed", "out"]:
+            if "Var" not in histname or "Obj" not in histname:
                 continue
             hobj = histname.split("_Var")[0].replace("Obj", "")
             var = histname.split("_Var")[1].split("_")[0]
