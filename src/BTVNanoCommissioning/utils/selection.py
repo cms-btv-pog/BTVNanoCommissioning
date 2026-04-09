@@ -185,7 +185,7 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
 def ele_cuttightid(events, campaign):
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign and "Prompt25" not in campaign
+        if campaign not in ["Summer24", "Winter25", "Prompt25"]
         else events.Electron.superclusterEta
     )
     elemask = (
@@ -197,7 +197,7 @@ def ele_cuttightid(events, campaign):
 def ele_mvatightid(events, campaign):
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign and "Prompt25" not in campaign
+        if campaign not in ["Summer24", "Winter25", "Prompt25"]
         else events.Electron.superclusterEta
     )
     elemask = (
