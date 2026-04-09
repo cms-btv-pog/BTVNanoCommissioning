@@ -110,19 +110,25 @@ class NanoProcessor(processor.ProcessorABC):
 
         if shift_name is None:
             output["sumw"] = sumws["sumw"]
-            if not isRealData:
-                output["PDF_sumwUp"] = sumws["PDF_sumwUp"]
-                output["PDF_sumwDown"] = sumws["PDF_sumwDown"]
-                output["aS_sumwUp"] = sumws["aS_sumwUp"]
-                output["aS_sumwDown"] = sumws["aS_sumwDown"]
-                output["muR_sumwUp"] = sumws["muR_sumwUp"]
-                output["muR_sumwDown"] = sumws["muR_sumwDown"]
-                output["muF_sumwUp"] = sumws["muF_sumwUp"]
-                output["muF_sumwDown"] = sumws["muF_sumwDown"]
-                output["ISR_sumwUp"] = sumws["ISR_sumwUp"]
-                output["ISR_sumwDown"] = sumws["ISR_sumwDown"]
-                output["FSR_sumwUp"] = sumws["FSR_sumwUp"]
-                output["FSR_sumwDown"] = sumws["FSR_sumwDown"]
+            if not isRealData and self.isSyst:
+                if "LHEPdfWeight" in events.fields:
+                    output["PDF_sumwUp"] = sumws["PDF_sumwUp"]
+                    output["PDF_sumwDown"] = sumws["PDF_sumwDown"]
+                    output["aS_sumwUp"] = sumws["aS_sumwUp"]
+                    output["aS_sumwDown"] = sumws["aS_sumwDown"]
+                    output["PDFaS_sumwUp"] = sumws["PDFaS_sumwUp"]
+                    output["PDFaS_sumwDown"] = sumws["PDFaS_sumwDown"]
+                if "LHEScaleWeight" in events.fields:
+                    output["muR_sumwUp"] = sumws["muR_sumwUp"]
+                    output["muR_sumwDown"] = sumws["muR_sumwDown"]
+                    output["muF_sumwUp"] = sumws["muF_sumwUp"]
+                    output["muF_sumwDown"] = sumws["muF_sumwDown"]
+                if "PSWeight" in events.fields:
+                    if len(events.PSWeight[0]) == 4:
+                        output["ISR_sumwUp"] = sumws["ISR_sumwUp"]
+                        output["ISR_sumwDown"] = sumws["ISR_sumwDown"]
+                        output["FSR_sumwUp"] = sumws["FSR_sumwUp"]
+                        output["FSR_sumwDown"] = sumws["FSR_sumwDown"]
 
         ####################
         #    Selections    #
@@ -523,12 +529,6 @@ class NanoProcessor(processor.ProcessorABC):
             systematics = ["nominal"] + list(weights.variations)
         else:
             systematics = [shift_name]
-        exclude_btv = [
-            "DeepCSVC",
-            "DeepCSVB",
-            "DeepJetB",
-            "DeepJetC",
-        ]  # exclude b-tag SFs for btag inputs
 
         ####################
         #  Fill histogram  #
@@ -557,9 +557,7 @@ class NanoProcessor(processor.ProcessorABC):
                         flatten(ak.broadcast_arrays(osss, sjets["pt"])[0]),
                         flatten(sjets[histname]),
                         weight=flatten(
-                            ak.broadcast_arrays(
-                                weights.partial_weight(exclude=exclude_btv), sjets["pt"]
-                            )[0]
+                            ak.broadcast_arrays(weight, sjets["pt"])[0]
                         ),
                     )
                 elif (
@@ -573,10 +571,7 @@ class NanoProcessor(processor.ProcessorABC):
                         flatten(ak.broadcast_arrays(osss, spfcands["pt"])[0]),
                         flatten(spfcands[histname.replace("PFCands_", "")]),
                         weight=flatten(
-                            ak.broadcast_arrays(
-                                weights.partial_weight(exclude=exclude_btv),
-                                spfcands["pt"],
-                            )[0]
+                            ak.broadcast_arrays(weight, spfcands["pt"])[0]
                         ),
                     )
                 elif "jet_" in histname and "mu" not in histname:
@@ -633,7 +628,6 @@ class NanoProcessor(processor.ProcessorABC):
                                 smuon_jet[histname.replace(f"_{i}", "")],
                             ),
                             weight=weight,
-                            # weight=weights.partial_weight(exclude=exclude_btv),
                         )
                         if not isRealData and "btag" in self.SF_map.keys():
                             h.fill(
@@ -657,7 +651,7 @@ class NanoProcessor(processor.ProcessorABC):
                 #             flav=smflav,
                 #             osss=osss,
                 #             discr=1.0 / np.tanh(smuon_jet[histname]),
-                #             weight=weights.partial_weight(exclude=exclude_btv),
+                #             weight=weight,
                 #         )
 
             output["njet"].fill(syst, osss, njet, weight=weight)

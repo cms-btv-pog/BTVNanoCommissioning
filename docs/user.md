@@ -26,12 +26,13 @@ Use `fetch.py` in folder `scripts/` to obtain your samples json files for the pr
 The fetch script reads the predefine data & MC samples dataset name and output the json file to `metadata/$CAMPAIGN/`, but to find the exact dataset for BTV studies, we usually need to specify the `DAS_campaign`.
 
 ```
-python scripts/fetch.py -c {campaign} --year {args.year}  --from_workflow {wf} --DAS_campaign {DAS_campaign} {overwrite} {--executor futures}
+python scripts/fetch.py -c {campaign} --year {args.year}  --from_workflow {wf} --DAS_campaign {DAS_campaign} {--overwrite} {--executor futures -w 12}
 # campaign :  the campaign name like Summer23,Winter22
 # year : data taking years 2022/2023...
 # wf: workflow name like ttdilep_sf, ctag_Wc_sf
 # DAS_campaign: Input the campaign name for DAS to search appropriate campaigns, use in dataset construction , please do `campaign1,campaign2,campaign3`. Also supports "auto" (hard-coded!) if campaign and year are specified.
 # overwrite (bool): recreate the exist json file 
+# Use `--executor futures -j 12 -w 12` to parallelize with, e.g., 12 cores
 ```
 
 
@@ -224,8 +225,8 @@ python runner.py --wf {wf} --json metadata/{args.campaign}/{types}_{args.campaig
 
 #=======Optional======
 # ==> configurations for storing info
-#   --isSyst {False,all,weight_only,JERC_split,JP_MC}
-#                         Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None
+#   --isSyst {False,all,weight_only,JERC_full,JERC_reduced,JERC_total,JP_MC}
+#                         Run with systematics (default: False)
 #   --isArray             Output root files
 #   --noHist              Not output coffea histogram
 #   --overwrite           Overwrite existing files
