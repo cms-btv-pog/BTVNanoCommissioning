@@ -82,13 +82,6 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
     Returns:
     None
     """
-    exclude_btv = [
-        "DeepCSVC",
-        "DeepCSVB",
-        "DeepJetB",
-        "DeepJetC",
-    ]  # exclude b-tag SFs for btag inputs
-    # define Jet flavor
 
     # Reduce the jet to the correct dimension in the plot
     found4jets = False
@@ -152,10 +145,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 and histname in pruned_ev.SelJet.fields
             ):
                 temp_weights = flatten(
-                    ak.broadcast_arrays(
-                        weights.partial_weight(exclude=exclude_btv),
-                        pruned_ev.SelJet["pt"],
-                    )[0]
+                    ak.broadcast_arrays(weight, pruned_ev.SelJet["pt"])[0]
                 )
                 temp_syst = np.full(len(temp_weights), syst[0])
                 h.fill(
@@ -163,10 +153,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     flatten(genflavor),
                     flatten(pruned_ev.SelJet[histname]),
                     weight=flatten(
-                        ak.broadcast_arrays(
-                            weights.partial_weight(exclude=exclude_btv),
-                            pruned_ev.SelJet["pt"],
-                        )[0]
+                        ak.broadcast_arrays(weight, pruned_ev.SelJet["pt"])[0]
                     ),
                 )
             # PFcands histograms
@@ -183,10 +170,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         ),
                         flatten(pruned_ev.PFCands[histname.replace("PFCands_", "")]),
                         weight=flatten(
-                            ak.broadcast_arrays(
-                                weights.partial_weight(exclude=exclude_btv),
-                                pruned_ev.PFCands["pt"],
-                            )[0]
+                            ak.broadcast_arrays(weight, pruned_ev.PFCands["pt"])[0]
                         ),
                     )
                 else:
@@ -199,10 +183,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         ),
                         flatten(pruned_ev.PFCands[histname.replace("PFCands_", "")]),
                         weight=flatten(
-                            ak.broadcast_arrays(
-                                weights.partial_weight(exclude=exclude_btv),
-                                pruned_ev.PFCands["pt"],
-                            )[0]
+                            ak.broadcast_arrays(weight, pruned_ev.PFCands["pt"])[0]
                         ),
                     )
             # Leading lepton histograms
@@ -385,13 +366,11 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                             flav=flav,
                             discr=seljet[histname.replace(f"_{i}", "")],
                             weight=weight,
-                            # weight=weights.partial_weight(exclude=exclude_btv),
                         )
                 elif histname in seljets.fields:
                     # No jet index suffix (nj=1) - fill directly
                     discr = seljets[histname]
                     flat_discr = flatten(discr)
-                    # wgt = weights.partial_weight(exclude=exclude_btv, modifier=syst)
                     temp_syst = np.full(len(flat_discr), syst[0])
                     h.fill(
                         syst=temp_syst,
@@ -517,11 +496,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 jet_syst,
                 flat_flav,
                 flatten(pruned_ev.kindisc),
-                weight=flatten(
-                    ak.broadcast_arrays(
-                        weights.partial_weight(exclude=exclude_btv), pruned_ev.kindisc
-                    )[0]
-                ),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.kindisc)[0]),
             )
             output["close_mlj"].fill(
                 jet_syst,
