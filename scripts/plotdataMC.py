@@ -97,6 +97,12 @@ parser.add_argument(
     default=None,
     help="Only for W+c phase space, split opposite sign(1) and same sign events(-1), if not specified, the combined OS-SS phase space is used",
 )
+parser.add_argument(
+    "--syst",
+    type=str,
+    default="nominal",
+    help="MC systematic variation to plot, default is `nominal`",
+)
 
 
 args = parser.parse_args()
@@ -119,6 +125,8 @@ mergemap = {}
 ## create merge map from sample set/data MC
 if not os.path.isdir(f"plot/{args.phase}_{args.ext}/"):
     os.makedirs(f"plot/{args.phase}_{args.ext}/")
+if not os.path.isdir(f"plot/{args.phase}_{args.ext}/{args.syst}"):
+    os.makedirs(f"plot/{args.phase}_{args.ext}/{args.syst}")
 if not any(".coffea" in o for o in output.keys()):
     if "sample" in args.split:
         mergemap = sample_mergemap
@@ -169,11 +177,11 @@ if (
     nj = 1
 if "emctag" in args.phase:
     input_txt = input_txt + " (e$\mu$)"
-elif "ectag" in args.phase:
+elif "ectag" in args.phase or "2D_e_" in args.phase:
     input_txt = input_txt + " (e)"
 elif "QCD" == args.phase:
     input_txt = input_txt + ""
-elif "ttdilep_sf" == args.phase:
+elif "ttdilep_sf" in args.phase:
     input_txt = input_txt + " (e$\mu$)"
 else:
     input_txt = input_txt + " ($\mu$)"
@@ -206,6 +214,18 @@ elif "*" in args.variable:
         ]
 else:
     var_set = args.variable.split(",")
+
+# Sort samples by smallest first
+if "sample" in args.split:
+    collated = {
+        key: value
+        for key, value in sorted(
+            collated.items(),
+            key=lambda item: np.sum(item[1]["njet"][{"syst": "nominal"}].values()),
+        )
+    }
+    print("Sorted keys:", collated.keys())
+
 for index, discr in enumerate(var_set):
     try:
         if not isinstance(collated["mc"][discr], hist.hist.Hist):
@@ -222,6 +242,13 @@ for index, discr in enumerate(var_set):
     ):
         print(discr, "not in file or empty")
         continue
+
+    ## additional legend info
+    if "2Dbin_pt" in discr or "HFvLF_pt" in discr or "BvC_pt" in discr:
+        tmp = discr.strip().split("_")[1][2:]
+        tmp = tmp.split("to")
+        low_edge = tmp[0]
+        up_edge = tmp[1]
 
     ## axis info
     allaxis = {}
@@ -255,6 +282,9 @@ for index, discr in enumerate(var_set):
             )
         ]
         print(f"Available systematics: {systlist}")
+        if args.syst != "nominal" and args.syst not in systlist:
+            print(f"{args.syst} is not an available systematic")
+            sys.exit(1)
 
         # Choose the appropriate systematic name
         if "nominal" in systlist:
@@ -272,6 +302,9 @@ for index, discr in enumerate(var_set):
         noSF_axis = allaxis.copy()
         if "noSF" in systlist:
             noSF_axis["syst"] = "noSF"
+        syst_axis = allaxis.copy()
+        if args.syst != "nominal":
+            syst_axis["syst"] = args.syst
 
     ## rebin config, add xerr
     do_xerr = False
@@ -287,7 +320,7 @@ for index, discr in enumerate(var_set):
             )
 
     # check if plottable, skip otherwise
-    hmc = collated["mc"][discr][allaxis]
+    hmc = collated["mc"][discr][syst_axis]
     if len(hmc.axes) > 2:
         print(f"Skipping {discr}: after selections still has {len(hmc.axes)} axes")
         continue
@@ -490,7 +523,7 @@ for index, discr in enumerate(var_set):
     elif "flav" in collated["mc"][discr].axes.name and args.split != "sample":
         splitflav_stack, labels, color_config = [], [], {}
         color_config["color"], color_config["alpha"] = [], []
-        splitflav_axis = allaxis
+        splitflav_axis = syst_axis
         for sample in collated.keys():
             if sample == "data":
                 continue
@@ -512,6 +545,7 @@ for index, discr in enumerate(var_set):
 
                     color_config["alpha"].append(1.0 - 0.2 * i)
         allaxis["flav"] = sum
+        syst_axis["flav"] = sum
         hep.histplot(
             splitflav_stack,
             stack=True,
@@ -532,17 +566,17 @@ for index, discr in enumerate(var_set):
             xerr=do_xerr,
             flow=args.flow,
         )
-        hmc = collated["mc"][discr][allaxis]
+        hmc = collated["mc"][discr][syst_axis]
         MCerrorband(hmc, ax=ax)
         rax = plotratio(
             collated["data"][discr][allaxis], hmc, ax=rax, flow=args.flow, xerr=do_xerr
         )
     else:
-        hmc = collated["mc"][discr][allaxis]
+        hmc = collated["mc"][discr][syst_axis]
         if "sample" in args.split:
             hep.histplot(
                 [
-                    collated[s][discr][allaxis]
+                    collated[s][discr][syst_axis]
                     for s in collated.keys()
                     if s != "mc" and s != "data"
                 ],
@@ -618,6 +652,10 @@ for index, discr in enumerate(var_set):
     else:
         xlabel = axes_name(discr)
     rax.set_xlabel(xlabel)
+    if "2D" in discr:
+        xtickpos = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]
+        xticklabels = ["L0", "C0", "C1", "C2", "C3", "C4", "B0", "B1", "B2", "B3", "B4"]
+        rax.set_xticks(xtickpos, xticklabels)
     if "sample" in args.split:
         ax.legend(ncols=2, prop={"size": 16})
     else:
@@ -627,13 +665,16 @@ for index, discr in enumerate(var_set):
 
     rax.autoscale(True, axis="x", tight=True)
     xmin, xmax = autoranger(
-        collated["data"][discr][allaxis] + collated["mc"][discr][allaxis],
+        collated["data"][discr][allaxis] + collated["mc"][discr][syst_axis],
         flow=args.flow,
     )
     if args.xrange is not None:
         xmin, xmax = float(args.xrange.split(",")[0]), float(args.xrange.split(",")[1])
     rax.set_xlim(xmin, xmax)
-    at = AnchoredText(input_txt + "\n" + args.ext, loc=2, frameon=False)
+    input_txt_final = input_txt
+    if "2Dbin_pt" in discr or "HFvLF_pt" in discr or "BvC_pt" in discr:
+        input_txt_final += "\n" + low_edge + " < jet $p_T$ < " + up_edge + " GeV"
+    at = AnchoredText(input_txt_final + "\n" + args.ext, loc=2, frameon=False)
     ax.add_artist(at)
     scale = ""
     if args.norm:
@@ -656,26 +697,26 @@ for index, discr in enumerate(var_set):
         name += "_log"
         print(
             "creating:",
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         ax.set_yscale("log")
         ax.set_ylim(bottom=0.1)
         hep.mpl_magic(ax=ax)
         fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.pdf"
         )
         fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.png"
         )
     else:
         print(
             "creating:",
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.png",
         )
         fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.pdf"
         )
         fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
+            f"plot/{args.phase}_{args.ext}/{args.syst}/unc_{discr}_inclusive{scale}_{name}.png"
         )
     plt.close(fig)

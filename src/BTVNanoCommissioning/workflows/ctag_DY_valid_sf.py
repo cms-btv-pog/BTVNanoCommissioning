@@ -1,5 +1,4 @@
-import awkward as ak
-import numpy as np
+import awkward as ak, numpy as np
 from coffea import processor
 
 from BTVNanoCommissioning.utils.correction import (
@@ -9,12 +8,11 @@ from BTVNanoCommissioning.utils.correction import (
     common_shifts,
     reweighting,
 )
-
 from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
-    histo_writter,
+    histo_writer,
 )
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
@@ -55,7 +53,7 @@ class NanoProcessor(processor.ProcessorABC):
         return self._accumulator
 
     def process(self, events):
-        events = missing_branch(events)
+        events = missing_branch(events, f"{self._year}_{self._campaign}")
         sumws = reweighting(events, self.isSyst)
         vetoed_events, shifts = common_shifts(self, events)
 
@@ -79,13 +77,15 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
-        histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
+        hists = ["common", "fourvec", "DY"]
+        if "2D" in self.selMod:
+            hists.append("DY_2D")
         output = {}
         if not self.noHist:
             output = histogrammer(
                 jet_fields=events.Jet.fields,
                 obj_list=["posl", "negl", "dilep", "jet0"],
-                hist_collections=["common", "fourvec", "DY"],
+                hist_collections=hists,
                 include_m=isMu,
             )
 
@@ -134,12 +134,17 @@ class NanoProcessor(processor.ProcessorABC):
         dilep_ele = events.Electron[
             (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
         ]
+
         if isMu:
             thisdilep = dilep_mu
             otherdilep = dilep_ele
+            if "2D" in self.selMod:
+                req_leppt = ak.max(dilep_mu.pt, axis=1, mask_identity=False) > 20
         else:
             thisdilep = dilep_ele
             otherdilep = dilep_mu
+            if "2D" in self.selMod:
+                req_leppt = ak.max(dilep_ele.pt, axis=1, mask_identity=False) > 25
 
         # dilepton
         pos_dilep = thisdilep[thisdilep.charge > 0]
@@ -153,6 +158,8 @@ class NanoProcessor(processor.ProcessorABC):
             False,
             axis=-1,
         )
+        if "2D" in self.selMod:
+            req_dilep = req_dilep & req_leppt
 
         pl_iso = ak.all(
             events.Jet.metric_table(pos_dilep) > 0.4, axis=2, mask_identity=True
@@ -183,7 +190,7 @@ class NanoProcessor(processor.ProcessorABC):
         )
         event_jet = events.Jet[
             ak.fill_none(
-                jet_id(events, self._campaign) & pl_iso & nl_iso,
+                jet_id(events, self._campaign, min_pt=25) & pl_iso & nl_iso,
                 False,
                 axis=-1,
             )
@@ -216,9 +223,11 @@ class NanoProcessor(processor.ProcessorABC):
                     empty=True,
                 )
             return {dataset: output}
+
         ####################
         # Selected objects #
         ####################
+
         sposmu = pos_dilep[event_level][:, 0]
         snegmu = neg_dilep[event_level][:, 0]
         sz = sposmu + snegmu
@@ -232,6 +241,7 @@ class NanoProcessor(processor.ProcessorABC):
                 for b in sposmu.fields
             }
         )
+
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
         pruned_ev["SelJet"] = event_jet[event_level]
@@ -258,13 +268,15 @@ class NanoProcessor(processor.ProcessorABC):
 
         pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
         pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)
-        # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
+
+        # Find the PFCands associate with selected jets, search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
             pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
 
         ####################
         #     Output       #
         ####################
+
         # Configure SFs
         weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
         # Configure systematics
@@ -275,7 +287,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
+            output = histo_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays

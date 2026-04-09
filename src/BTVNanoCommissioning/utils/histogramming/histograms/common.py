@@ -161,18 +161,28 @@ def _get_discriminators(axes, **kwargs):
     for d in disc_list:
         if d not in jet_fields:
             continue
+
         disc_axes = {
-            "btag": Hist.axis.Regular(50, 0.0, 1, name="discr", label=d),
+            "btag": Hist.axis.Regular(50, 0, 1, name="discr", label=d),
             "Bprob": Hist.axis.Regular(50, 0, 10, name="discr", label=d),
             "Res": Hist.axis.Regular(40, 0, 1, name="discr", label=d),
             "Corr": Hist.axis.Regular(40, 0, 2, name="discr", label=d),
+            "2Dbin": Hist.axis.IntCategory(
+                [0, 40, 41, 42, 43, 44, 50, 51, 52, 53, 54], name="discr", label=d
+            ),
         }
 
         if c_wf:
-            if "btag" in d or "ProbaN" == d:
+            if ("btag" in d and "2Dbin" not in d) or "ProbaN" == d:
                 hists[d] = Hist.Hist(
                     *common_axes,
                     disc_axes["btag"],
+                    Hist.storage.Weight(),
+                )
+            elif "2Dbin" in d:
+                hists[d] = Hist.Hist(
+                    *common_axes,
+                    disc_axes["2Dbin"],
                     Hist.storage.Weight(),
                 )
             elif "Bprob" in d:
@@ -195,14 +205,20 @@ def _get_discriminators(axes, **kwargs):
                 )
 
         for i in range(njet):
-            if "btag" in d or "ProbaN" == d:
-                hists[d] = Hist.Hist(
+            if ("btag" in d and "2Dbin" not in d) or "ProbaN" == d:
+                hists[f"{d}_{i}"] = Hist.Hist(
                     *common_axes,
                     disc_axes["btag"],
                     Hist.storage.Weight(),
                 )
+            elif "2Dbin" in d:
+                hists[f"{d}_{i}"] = Hist.Hist(
+                    *common_axes,
+                    disc_axes["2Dbin"],
+                    Hist.storage.Weight(),
+                )
             elif "Bprob" in d:
-                hists[d] = Hist.Hist(
+                hists[f"{d}_{i}"] = Hist.Hist(
                     *common_axes,
                     disc_axes["Bprob"],
                     Hist.storage.Weight(),
@@ -210,13 +226,13 @@ def _get_discriminators(axes, **kwargs):
 
             if include_osss:
                 if "Res" in d:
-                    hists[d] = Hist.Hist(
+                    hists[f"{d}_{i}"] = Hist.Hist(
                         *common_axes,
                         disc_axes["Res"],
                         Hist.storage.Weight(),
                     )
                 elif "Corr" in d:
-                    hists[d] = Hist.Hist(
+                    hists[f"{d}_{i}"] = Hist.Hist(
                         *common_axes,
                         disc_axes["Corr"],
                         Hist.storage.Weight(),
@@ -224,13 +240,13 @@ def _get_discriminators(axes, **kwargs):
 
             else:
                 if "PNetRegPtRawRes" == d:
-                    hists[d] = Hist.Hist(
+                    hists[f"{d}_{i}"] = Hist.Hist(
                         *common_axes,
                         disc_axes["Res"],
                         Hist.storage.Weight(),
                     )
                 elif "PNetRegPtRawCorr" in d:
-                    hists[d] = Hist.Hist(
+                    hists[f"{d}_{i}"] = Hist.Hist(
                         *common_axes,
                         disc_axes["Corr"],
                         Hist.storage.Weight(),

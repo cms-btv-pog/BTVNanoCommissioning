@@ -1,6 +1,8 @@
 import importlib.resources
 import contextlib
 import copy
+import gzip
+import json
 import os
 import re
 import warnings
@@ -28,6 +30,20 @@ from BTVNanoCommissioning.helpers.func import (
     campaign_map,
 )
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
+
+
+def _cvmfs_dir(campaign, pog):
+    """Get CVMFS subdirectory for a campaign and POG, with optional per-POG overrides.
+
+    If the campaign config contains a 'cvmfs_override' dict with a key matching *pog*,
+    return that value directly. Otherwise fall back to campaign_map()[campaign].
+    This allows campaigns like Winter25 to route MUO/EGM to a different CVMFS era
+    than the default one derived from the campaign name.
+    """
+    overrides = config.get(campaign, {}).get("cvmfs_override", {})
+    if pog in overrides:
+        return overrides[pog]
+    return campaign_map()[campaign]
 
 
 def load_SF(year, campaign, syst=False):
@@ -74,18 +90,18 @@ def load_SF(year, campaign, syst=False):
         ## pileup weight
         if SF == "LUM":
             ## Check whether files in jsonpog-integration exist
+            _lum_cvmfs = _cvmfs_dir(campaign, "LUM")
             if os.path.exists(
-                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{_lum_cvmfs}/latest/"
             ):
-                correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
-                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights.json.gz"
-                )
-            elif os.path.exists(
-                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
-            ):
-                correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
-                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{campaign_map()[campaign]}/latest/puWeights_BCDEFGHI.json.gz"
-                )
+                try:
+                    correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
+                        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{_lum_cvmfs}/latest/puWeights.json.gz"
+                    )
+                except FileNotFoundError:
+                    correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
+                        f"/cvmfs/cms-griddata.cern.ch/cat/metadata/LUM/{_lum_cvmfs}/latest/puWeights_BCDEFGHI.json.gz"
+                    )
             ## Otherwise custom files
             else:
                 _pu_path = f"BTVNanoCommissioning.data.LUM.{campaign}"
@@ -120,19 +136,20 @@ def load_SF(year, campaign, syst=False):
                         f"BTVNanoCommissioning.data.BTV.{campaign}", filename
                     )
                 )
+            _btv_cvmfs = _cvmfs_dir(campaign, "BTV")
             if os.path.exists(
-                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{campaign_map()[campaign]}/latest/"
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{_btv_cvmfs}/latest/"
             ):
                 correct_map["btag"] = correctionlib.CorrectionSet.from_file(
-                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{campaign_map()[campaign]}/latest/btagging.json.gz"
+                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{_btv_cvmfs}/latest/btagging.json.gz"
                 )
                 correct_map["ctag"] = correctionlib.CorrectionSet.from_file(
-                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{campaign_map()[campaign]}/latest/ctagging.json.gz"
+                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/BTV/{_btv_cvmfs}/latest/ctagging.json.gz"
                 )
             else:
                 correct_map["btag"] = {}
                 correct_map["ctag"] = {}
-                correct_map["btv_cfg"] = config[campaign]["BTV"]
+                correct_map["BTV_cfg"] = config[campaign]["BTV"]
                 _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
                 for tagger in config[campaign]["BTV"]:
                     with importlib.resources.path(
@@ -174,21 +191,21 @@ def load_SF(year, campaign, syst=False):
                 if "ele" in e and "_json" not in e
             }
             ## muon
-            _mu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{campaign_map()[campaign]}/latest/muon_Z.json.gz"
+            _muo_cvmfs = _cvmfs_dir(campaign, "MUO")
+            _mu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{_muo_cvmfs}/latest/muon_Z.json.gz"
             if not os.path.exists(_mu_path):
-                _mu_path = (
-                    f"src/BTVNanoCommissioning/data/MUO/{campaign}/muon_Z.json.gz"
-                )
+                _mu_path = f"src/BTVNanoCommissioning/data/MUO/{_muo_cvmfs}/latest/muon_Z.json.gz"
             if os.path.exists(_mu_path):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(_mu_path)
             ## electron
+            _egm_cvmfs = _cvmfs_dir(campaign, "EGM")
             for _ele_file, _ele_map in {
                 "electron": "EGM",
                 "electronHlt": "EGM_HLT",
             }.items():
-                _ele_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest/{_ele_file}.json.gz"
+                _ele_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{_egm_cvmfs}/latest/{_ele_file}.json.gz"
                 if not os.path.exists(_ele_path):
-                    _ele_path = f"src/BTVNanoCommissioning/data/EGM/{campaign}/{_ele_file}.json.gz"
+                    _ele_path = f"src/BTVNanoCommissioning/data/EGM/{_egm_cvmfs}/latest/{_ele_file}.json.gz"
                 if os.path.exists(_ele_path):
                     correct_map[_ele_map] = correctionlib.CorrectionSet.from_file(
                         _ele_path
@@ -199,14 +216,14 @@ def load_SF(year, campaign, syst=False):
                 != -1
             ):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/data/MUO/{campaign_map()[campaign]}/latest/{config[campaign]['MUO']['mu_json']}"
+                    f"src/BTVNanoCommissioning/data/MUO/{_muo_cvmfs}/latest/{config[campaign]['MUO']['mu_json']}"
                 )
             if any(
                 np.char.find(np.array(list(config[campaign]["EGM"].keys())), "ele_json")
                 != -1
             ):
                 correct_map["EGM"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/data/EGM/{campaign_map()[campaign]}/latest/{config[campaign]['EGM']['ele_json']}"
+                    f"src/BTVNanoCommissioning/data/EGM/{_egm_cvmfs}/latest/{config[campaign]['EGM']['ele_json']}"
                 )
 
             ## check if any custom corrections needed
@@ -304,15 +321,17 @@ def load_SF(year, campaign, syst=False):
 
         ## lepton scale & smearing
         elif SF == "muonSS":
-            _mu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{campaign_map()[campaign]}/latest/muon_scalesmearing.json.gz"
+            _muss_cvmfs = _cvmfs_dir(campaign, "muonSS")
+            _mu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{_muss_cvmfs}/latest/muon_scalesmearing.json.gz"
             if not os.path.exists(_mu_path):
-                _mu_path = f"src/BTVNanoCommissioning/data/MUO/{campaign_map()[campaign]}/latest/muon_scalesmearing.json.gz"
+                _mu_path = f"src/BTVNanoCommissioning/data/MUO/{_muss_cvmfs}/latest/muon_scalesmearing.json.gz"
             if os.path.exists(_mu_path):
                 correct_map["muonSS"] = correctionlib.CorrectionSet.from_file(_mu_path)
         elif SF == "electronSS":
-            _ele_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{campaign_map()[campaign]}/latest/electronSS_EtDependent.json.gz"
+            _eless_cvmfs = _cvmfs_dir(campaign, "electronSS")
+            _ele_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/EGM/{_eless_cvmfs}/latest/electronSS_EtDependent{'_v1' if year == '2024' else ''}.json.gz"
             if not os.path.exists(_ele_path):
-                _ele_path = f"src/BTVNanoCommissioning/data/EGM/{campaign_map()[campaign]}/latest/electronSS_EtDependent.json.gz"
+                _ele_path = f"src/BTVNanoCommissioning/data/EGM/{_eless_cvmfs}/latest/electronSS_EtDependent.json.gz"
             if os.path.exists(_ele_path):
                 correct_map["electronSS"] = correctionlib.CorrectionSet.from_file(
                     _ele_path
@@ -362,6 +381,8 @@ def load_SF(year, campaign, syst=False):
                     config[campaign]["JME_path"]
                 )
                 correct_map["JME_cfg"] = config[campaign]["JME"]
+                # FIXME need to store the JSON path in case we want to parse the run binning edges for ad-hoc JEC run clamp fix (see _get_jec_run_edges)
+                correct_map["JME_json_path"] = config[campaign]["JME_path"]
                 for dataset in correct_map["JME_cfg"].keys():
                     if (
                         np.all(
@@ -376,12 +397,42 @@ def load_SF(year, campaign, syst=False):
                             f"{dataset} has no JEC map : {correct_map['JME_cfg'][dataset]} available"
                         )
             elif os.path.exists(
-                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{campaign_map()[campaign]}/latest/jet_jerc.json.gz"
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{_cvmfs_dir(campaign, 'JME')}/latest/jet_jerc.json.gz"
             ):
-                correct_map["JME"] = correctionlib.CorrectionSet.from_file(
-                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{campaign_map()[campaign]}/latest/jet_jerc.json.gz"
-                )
+                _jme_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{_cvmfs_dir(campaign, 'JME')}/latest/jet_jerc.json.gz"
+                # If MC corrections live in a different CVMFS era (e.g.
+                # Summer24 MC truth for Winter25 data), merge at JSON
+                # level so we get a single native CorrectionSet.
+                _jme_mc_era = _cvmfs_dir(campaign, "JME_MC")
+                _jme_data_era = _cvmfs_dir(campaign, "JME")
+                _mc_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{_jme_mc_era}/latest/jet_jerc.json.gz"
+                if _jme_mc_era != _jme_data_era and os.path.exists(_mc_path):
+                    with gzip.open(_jme_path, "rt") as f:
+                        _data_json = json.load(f)
+                    with gzip.open(_mc_path, "rt") as f:
+                        _mc_json = json.load(f)
+                    existing = {c["name"] for c in _data_json["corrections"]}
+                    _data_json["corrections"] += [
+                        c for c in _mc_json["corrections"] if c["name"] not in existing
+                    ]
+                    existing_comp = {
+                        c["name"] for c in _data_json.get("compound_corrections", [])
+                    }
+                    _data_json.setdefault("compound_corrections", []).extend(
+                        c
+                        for c in _mc_json.get("compound_corrections", [])
+                        if c["name"] not in existing_comp
+                    )
+                    correct_map["JME"] = correctionlib.CorrectionSet.from_string(
+                        json.dumps(_data_json)
+                    )
+                else:
+                    correct_map["JME"] = correctionlib.CorrectionSet.from_file(
+                        _jme_path
+                    )
                 correct_map["JME_cfg"] = config[campaign]["JME"]
+                # FIXME need to store the JSON path in case we want to parse the run binning edges for ad-hoc JEC run clamp fix (see _get_jec_run_edges)
+                correct_map["JME_json_path"] = _jme_path
                 for dataset in correct_map["JME_cfg"].keys():
                     if (
                         np.all(
@@ -397,13 +448,13 @@ def load_SF(year, campaign, syst=False):
                         )
         elif SF == "JMAR":
             if os.path.exists(
-                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{campaign_map()[campaign]}/latest/jmar.json.gz"
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{_cvmfs_dir(campaign, 'JMAR')}/latest/jmar.json.gz"
             ):
                 correct_map["JMAR_cfg"] = {
                     j: f for j, f in config[campaign]["JMAR"].items()
                 }
                 correct_map["JMAR"] = correctionlib.CorrectionSet.from_file(
-                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{campaign_map()[campaign]}/latest/jmar.json.gz"
+                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{_cvmfs_dir(campaign, 'JMAR')}/latest/jmar.json.gz"
                 )
         elif SF == "jetveto":
             correct_map["jetveto_cfg"] = {
@@ -416,10 +467,10 @@ def load_SF(year, campaign, syst=False):
                     isRootFile = True
 
             if not isRootFile and os.path.exists(
-                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{campaign_map()[campaign]}/latest/jetvetomaps.json.gz"
+                f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{_cvmfs_dir(campaign, 'jetveto')}/latest/jetvetomaps.json.gz"
             ):
                 correct_map["jetveto"] = correctionlib.CorrectionSet.from_file(
-                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{campaign_map()[campaign]}/latest/jetvetomaps.json.gz"
+                    f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{_cvmfs_dir(campaign, 'jetveto')}/latest/jetvetomaps.json.gz"
                 )
             else:
                 ext = extractor()
@@ -462,6 +513,55 @@ def load_lumi(campaign):
             return LumiMask(filename)
 
 
+# #FIXME JEC run-number ad-hoc boundary fix
+# See: https://cms-talk.web.cern.ch/t/bug-in-2025-jerc-json-file/47675
+# In March 2026, there is a bug in the JEC corrections, as
+# correctionlib bins are half-open [low, high), so the last run in each
+# era is excluded from the L2L3Residual correction.  This helper fixes
+# the valid run range so we can clamp before evaluate().
+
+_jec_run_edge_cache = {}
+
+
+def _get_jec_run_edges(correct_map, jecname):
+    """Return (lo, hi) run clamp range from L2L3Residual bin edges.
+
+    Parses the JME JSON to find the run binning edges directly.
+    correctionlib uses half-open [lo, hi) bins, so the last valid
+    integer run is edges[-1] - 1.
+    Returns None if no run-binned L2L3Residual exists.
+    The result is cached per jecname.
+    """
+    if jecname in _jec_run_edge_cache:
+        return _jec_run_edge_cache[jecname]
+
+    jme_json_path = correct_map.get("JME_json_path")
+    if jme_json_path is None:
+        _jec_run_edge_cache[jecname] = None
+        return None
+
+    l2l3_name = f"{jecname}_L2L3Residual_AK4PFPuppi"
+    result = None
+    with gzip.open(jme_json_path, "rt") as f:
+        for corr in json.load(f).get("corrections", []):
+            if corr["name"] != l2l3_name:
+                continue
+            inputs = corr.get("inputs", [])
+            data = corr.get("data", {})
+            if (
+                inputs
+                and inputs[0].get("name") == "run"
+                and data.get("nodetype") == "binning"
+                and data.get("flow") == "error"
+            ):
+                edges = data["edges"]
+                result = (edges[0], edges[-1] - 1)
+            break
+
+    _jec_run_edge_cache[jecname] = result
+    return result
+
+
 ## JEC
 # FIXME: would be nicer if we can move to correctionlib in the future together with factory and workable
 
@@ -469,7 +569,7 @@ def load_lumi(campaign):
 def add_jec_variables(jets, event_rho):
     jets["pt_raw"] = (1 - jets.rawFactor) * jets.pt
     jets["mass_raw"] = (1 - jets.rawFactor) * jets.mass
-    if hasattr(jets, "genJetIdxG"):
+    if hasattr(jets, "genJetIdx"):
         jets["pt_gen"] = ak.values_astype(
             ak.fill_none(jets.matched_gen.pt, 0), np.float32
         )
@@ -679,21 +779,21 @@ def calc_T1_MET(
 
     MET_x_baseline = met_raw.pt * np.cos(met_raw.phi)
     MET_y_baseline = met_raw.pt * np.sin(met_raw.phi)
-    if campaign in ["Summer24", "Prompt25"]:  # NanoAODv15
+    if campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
         jet_mask = (
             (shifted_jets["pt"] > 15.0)
-            & (shifted_jets["eta"] < 5.2)
+            & (abs(shifted_jets["eta"]) < 5.2)
             & (shifted_jets["EmEF"] < 0.9)
         )
     else:  # NanoAODv12
-        jet_mask = (shifted_jets["pt"] > 15.0) & (shifted_jets["eta"] < 5.2)
+        jet_mask = (shifted_jets["pt"] > 15.0) & (abs(shifted_jets["eta"]) < 5.2)
     sel_jet = shifted_jets[jet_mask]
     jet_pt_L1 = sel_jet["pt_raw"] * (1.0 - sel_jet["muonSubtrFactor"])
     delta_pt = sel_jet["pt"] - jet_pt_L1
     MET_x_shifts = delta_pt * np.cos(sel_jet["phi"])
     MET_y_shifts = delta_pt * np.sin(sel_jet["phi"])
-    MET_x = MET_x_baseline + ak.sum(MET_x_shifts, axis=-1)
-    MET_y = MET_y_baseline + ak.sum(MET_y_shifts, axis=-1)
+    MET_x = MET_x_baseline - ak.sum(MET_x_shifts, axis=-1)
+    MET_y = MET_y_baseline - ak.sum(MET_y_shifts, axis=-1)
     pt_miss_final = np.sqrt(MET_x * MET_x + MET_y * MET_y)
     phi_miss_final = np.arctan2(MET_y, MET_x)
 
@@ -749,6 +849,11 @@ def JME_shifts(
     ValueError: If the campaign is not recognized or supported.
     """
     dataset = events.metadata["dataset"]
+    # Year-dependent JES uncertainty names (e.g. Regrouped_Absolute_YYYY)
+    # must use the MC JEC campaign year, not the data year.  When MC JECs are
+    # borrowed from a different era (e.g. Summer24 JECs for Winter25 data),
+    # the config can set "JES_MC_year" to override.
+    jes_year = config.get(campaign, {}).get("JES_MC_year", year)
     jecname = ""
     syst_list = [
         i.split("_")[3]
@@ -852,6 +957,23 @@ def JME_shifts(
                 tmp_pt_t1 = np.clip(tmp_pt_t1, 30, None)
                 JEC_input_t1[2] = tmp_pt_t1
 
+            # #FIXME Ad-hoc fix: clamp run number for data L2L3Residual boundary bug.
+            # correctionlib uses half-open [low, high) bins, so the last run in
+            # each era is excluded.  Clamp to (first_edge, last_edge - 1) so
+            # that boundary runs still get a valid correction.
+            # See: https://cms-talk.web.cern.ch/t/bug-in-2025-jerc-json-file/47675
+            if isRealData:
+                run_idx = next(
+                    (i for i, inp in enumerate(JECcorr.inputs) if inp.name == "run"),
+                    None,
+                )
+                if run_idx is not None:
+                    _run_edges = _get_jec_run_edges(correct_map, jecname)
+                    if _run_edges is not None:
+                        lo, hi = _run_edges
+                        JEC_input[run_idx] = np.clip(JEC_input[run_idx], lo, hi)
+                        JEC_input_t1[run_idx] = np.clip(JEC_input_t1[run_idx], lo, hi)
+
             JECflatCorrFactor = JECcorr.evaluate(*JEC_input)
             j["pt_JECnom"] = j["pt"] * JECflatCorrFactor
             j["mass_JECnom"] = j["mass"] * JECflatCorrFactor
@@ -895,7 +1017,7 @@ def JME_shifts(
                 ## JES/JEC & JER systematics
                 if systematic != False:
                     unc_jets, unc_met = {}, {}
-                    jes_sources = get_JES_keys(year)
+                    jes_sources = get_JES_keys(jes_year)
                     jes_sources_id = systematic.split("_")
                     if len(jes_sources_id) == 2:
                         jes_sources_id = jes_sources_id[1]
@@ -961,7 +1083,7 @@ def JME_shifts(
                             shifted_met_phi = phi_unclustered_down
 
                         def fixPhiRange(phi):
-                            if phi < np.pi:
+                            if phi < -np.pi:
                                 phi = phi + 2.0 * np.pi
                             if phi > np.pi:
                                 phi = phi - 2.0 * np.pi
@@ -1173,7 +1295,7 @@ def JME_shifts(
                         "JERDown",
                     ),
                 ]
-            jes_sources = get_JES_keys(year)
+            jes_sources = get_JES_keys(jes_year)
             jes_sources_id = systematic.split("_")
             if len(jes_sources_id) == 2:
                 jes_sources_id = jes_sources_id[1]
@@ -1654,7 +1776,7 @@ def puwei(nPU, correct_map, weights, syst=False):
             weights.add("puweight", correct_map["LUM"][central_key](nPU))
 
 
-def btagSFs(jet, correct_map, weights, SFtype, syst=False):
+def btagSFs(event, correct_map, weights, SFtype, syst=False):
     """
     Apply b-tagging scale factors (SFs) to a single jet.
 
@@ -1662,7 +1784,7 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
     It can optionally apply systematic variations.
 
     Parameters:
-    jet (dict): A dictionary containing the properties of the jet.
+    event (dict): A dictionary containing the properties of the event.
     correct_map (dict): A dictionary containing correction factors and settings for b-tagging scale factors.x
     weights (coffea.weight.Weight): An instance of coffea's Weight class to store the calculated weights.
     SFtype (str): The type of scale factor to apply. Only shape-based C, B are supported.
@@ -1675,6 +1797,7 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
     KeyError: If required keys are missing in the correct_map.
     ValueError: If the SFtype is not recognized or supported.
     """
+    jet = event.SelJet
     if SFtype.endswith("C"):
         systlist = [
             "Extrap",
@@ -1713,13 +1836,13 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
         for nj in range(ak.num(alljet.pt)[0]):
             jet = alljet[:, nj]
             masknone = ak.is_none(jet.pt)
-            jet.btagDeepFlavCvL = ak.fill_none(jet.btagDeepFlavCvL, 0.0)
-            jet.btagDeepFlavCvB = ak.fill_none(jet.btagDeepFlavCvB, 0.0)
-            jet.btagDeepCvL = ak.fill_none(jet.btagDeepCvL, 0.0)
-            jet.btagDeepCvB = ak.fill_none(jet.btagDeepCvB, 0.0)
             jet.hadronFlavour = ak.fill_none(jet.hadronFlavour, 0)
-            if "correctionlib" in str(type(correct_map["ctag"])):
+            if "ctag" in correct_map.keys() and "correctionlib" in str(
+                type(correct_map["ctag"])
+            ):
                 if SFtype == "DeepJetC":
+                    jet.btagDeepFlavCvL = ak.fill_none(jet.btagDeepFlavCvL, 0.0)
+                    jet.btagDeepFlavCvB = ak.fill_none(jet.btagDeepFlavCvB, 0.0)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -1751,7 +1874,9 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
                                 jet.btagDeepFlavCvB,
                             ),
                         )
-                if SFtype == "DeepCSVC":
+                elif SFtype == "DeepCSVC":
+                    jet.btagDeepCvL = ak.fill_none(jet.btagDeepCvL, 0.0)
+                    jet.btagDeepCvB = ak.fill_none(jet.btagDeepCvB, 0.0)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -1782,8 +1907,50 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
                             jet.btagDeepCvB,
                         ),
                     )
-            if "correctionlib" in str(type(correct_map["btag"])):
+                elif SFtype == "UParTAK4BC":
+                    jet_2Dbin = ak.fill_none(jet.btagUParTAK42Dbin, 0)
+                    jet_eta = ak.fill_none(jet.eta, 0)
+                    jet_pt = ak.fill_none(jet.pt, 0)
+                    tmp_sfs = np.where(
+                        masknone,
+                        1.0,
+                        correct_map["ctag"][correct_map["BTV_cfg"]].evaluate(
+                            "central",
+                            jet.hadronFlavour,
+                            jet_2Dbin,
+                            jet_eta,
+                            jet_pt,
+                        ),
+                    )
+                    if syst:
+                        tmp_sfs_up = np.where(
+                            masknone,
+                            1.0,
+                            correct_map["ctag"][correct_map["BTV_cfg"]].evaluate(
+                                f"up_{systlist[i]}",
+                                jet.hadronFlavour,
+                                jet_2Dbin,
+                                jet_eta,
+                                jet_pt,
+                            ),
+                        )
+                        tmp_sfs_down = np.where(
+                            masknone,
+                            1.0,
+                            correct_map["ctag"][correct_map["BTV_cfg"]].evaluate(
+                                f"down_{systlist[i]}",
+                                jet.hadronFlavour,
+                                jet_2Dbin,
+                                jet_eta,
+                                jet_pt,
+                            ),
+                        )
+            elif "btag" in correct_map.keys() and "correctionlib" in str(
+                type(correct_map["btag"])
+            ):
                 if SFtype == "DeepJetB":
+                    jet.btagDeepFlavCvL = ak.fill_none(jet.btagDeepFlavCvL, 0.0)
+                    jet.btagDeepFlavCvB = ak.fill_none(jet.btagDeepFlavCvB, 0.0)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -1815,7 +1982,9 @@ def btagSFs(jet, correct_map, weights, SFtype, syst=False):
                                 jet.btagDeepFlavCvB,
                             ),
                         )
-                if SFtype == "DeepCSVB":
+                elif SFtype == "DeepCSVB":
+                    jet.btagDeepCvL = ak.fill_none(jet.btagDeepCvL, 0.0)
+                    jet.btagDeepCvB = ak.fill_none(jet.btagDeepCvB, 0.0)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -1873,9 +2042,6 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
     allele = ele if ele.ndim > 1 else ak.singletons(ele)
 
     for sf in correct_map["EGM_cfg"].keys():
-        # if sf.split(" ")[1] == "2024":
-        #     sf = sf.replace("2024", "2024Prompt")
-
         ## Only apply SFs for lepton pass HLT filter
         if not isHLT and "Trig" in sf:
             continue
@@ -2253,12 +2419,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
 
         sfname = sf.split(" ")[0]
         if syst:
-            weights.add(
-                sfname,
-                ak.ravel(sfs_alle),
-                ak.ravel(sfs_alle_up),
-                ak.ravel(sfs_alle_down),
-            )
+            weights.add(sfname, sfs_alle, sfs_alle_up, sfs_alle_down)
         else:
             weights.add(sfname, sfs_alle)
 
@@ -2830,13 +2991,13 @@ def common_shifts(self, events):
     if "roccor" in self.SF_map.keys():
         shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
     elif "muonSS" in self.SF_map.keys():
-        shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, False)
+        shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, True)
     else:
         for shift in shifts:
             shift[0]["Muon"] = events.Muon
 
     if "electronSS" in self.SF_map.keys():
-        shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, False)
+        shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, True)
     else:
         for shift in shifts:
             shift[0]["Electron"] = events.Electron
@@ -2900,14 +3061,17 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                 syst_wei,
             )
         if "MUO" in SF_map.keys() and "SelMuon" in pruned_ev.fields:
-            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, False)
+            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, True)
         if "EGM" in SF_map.keys() and "SelElectron" in pruned_ev.fields:
-            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, False)
-        if "BTV" in SF_map.keys() and "SelJet" in pruned_ev.fields:
-            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepJetC", syst_wei)
-            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepJetB", syst_wei)
-            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepCSVB", syst_wei)
-            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepCSVC", syst_wei)
+            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, True)
+        if (
+            "ctag" in SF_map.keys() or "btag" in SF_map.keys()
+        ) and "SelJet" in pruned_ev.fields:
+            btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", syst_wei)
+            # btagSFs(pruned_ev, SF_map, weights, "DeepJetC", syst_wei)
+            # btagSFs(pruned_ev, SF_map, weights, "DeepJetB", syst_wei)
+            # btagSFs(pruned_ev, SF_map, weights, "DeepCSVB", syst_wei)
+            # btagSFs(pruned_ev, SF_map, weights, "DeepCSVC", syst_wei)
 
     return weights
 

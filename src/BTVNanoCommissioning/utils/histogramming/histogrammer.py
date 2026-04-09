@@ -82,13 +82,6 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
     Returns:
     None
     """
-    exclude_btv = [
-        "DeepCSVC",
-        "DeepCSVB",
-        "DeepJetB",
-        "DeepJetC",
-    ]  # exclude b-tag SFs for btag inputs
-    # define Jet flavor
 
     # Reduce the jet to the correct dimension in the plot
     found4jets = False
@@ -152,10 +145,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 and histname in pruned_ev.SelJet.fields
             ):
                 temp_weights = flatten(
-                    ak.broadcast_arrays(
-                        weights.partial_weight(exclude=exclude_btv),
-                        pruned_ev.SelJet["pt"],
-                    )[0]
+                    ak.broadcast_arrays(weight, pruned_ev.SelJet["pt"])[0]
                 )
                 temp_syst = np.full(len(temp_weights), syst[0])
                 h.fill(
@@ -163,10 +153,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     flatten(genflavor),
                     flatten(pruned_ev.SelJet[histname]),
                     weight=flatten(
-                        ak.broadcast_arrays(
-                            weights.partial_weight(exclude=exclude_btv),
-                            pruned_ev.SelJet["pt"],
-                        )[0]
+                        ak.broadcast_arrays(weight, pruned_ev.SelJet["pt"])[0]
                     ),
                 )
             # PFcands histograms
@@ -183,10 +170,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         ),
                         flatten(pruned_ev.PFCands[histname.replace("PFCands_", "")]),
                         weight=flatten(
-                            ak.broadcast_arrays(
-                                weights.partial_weight(exclude=exclude_btv),
-                                pruned_ev.PFCands["pt"],
-                            )[0]
+                            ak.broadcast_arrays(weight, pruned_ev.PFCands["pt"])[0]
                         ),
                     )
                 else:
@@ -199,10 +183,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                         ),
                         flatten(pruned_ev.PFCands[histname.replace("PFCands_", "")]),
                         weight=flatten(
-                            ak.broadcast_arrays(
-                                weights.partial_weight(exclude=exclude_btv),
-                                pruned_ev.PFCands["pt"],
-                            )[0]
+                            ak.broadcast_arrays(weight, pruned_ev.PFCands["pt"])[0]
                         ),
                     )
             # Leading lepton histograms
@@ -249,7 +230,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     flatten(pruned_ev.SelMuon[histname.replace("mu_", "")]),
                     weight=weight,
                 )
-            # Negatively charged lepton histograms-in DY workflow
+            # Negatively charged lepton histograms in DY workflow
             elif (
                 "negl_" in histname
                 and histname.replace("negl_", "") in pruned_ev.negl.fields
@@ -259,7 +240,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     flatten(pruned_ev.negl[histname.replace("negl_", "")]),
                     weight=weight,
                 )
-            # Posively charged lepton histograms-in DY workflow
+            # Posively charged lepton histograms in DY workflow
             elif (
                 "posl_" in histname
                 and histname.replace("posl_", "") in pruned_ev.posl.fields
@@ -279,6 +260,22 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 )
             elif "njet" == histname:
                 output["njet"].fill(syst, pruned_ev.njet, weight=weight)
+            elif "nbjet" == histname:
+                output["nbjet"].fill(syst, pruned_ev.nbjet, weight=weight)
+            elif "ncjet" == histname:
+                output["ncjet"].fill(syst, pruned_ev.ncjet, weight=weight)
+            elif "top_pt" == histname and "TT" in pruned_ev.metadata["dataset"]:
+                top_mask = (pruned_ev.GenPart.pdgId == 6) & pruned_ev.GenPart.hasFlags(
+                    ["isLastCopy"]
+                )
+                top_pt = pruned_ev.GenPart[top_mask][:, 0].pt
+                output["top_pt"].fill(syst, top_pt, weight=weight)
+            elif "antitop_pt" == histname and "TT" in pruned_ev.metadata["dataset"]:
+                antitop_mask = (
+                    pruned_ev.GenPart.pdgId == -6
+                ) & pruned_ev.GenPart.hasFlags(["isLastCopy"])
+                antitop_pt = pruned_ev.GenPart[antitop_mask][:, 0].pt
+                output["antitop_pt"].fill(syst, antitop_pt, weight=weight)
             elif "npv" == histname:
                 output["npv"].fill(syst, pruned_ev.PV.npvsGood, weight=weight)
             # Jet kinematics & deltaR between jet and lepton
@@ -289,23 +286,31 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     if f"jet{i}" not in histname:
                         continue
                     if nj == 1:
-                        sel_jet, flav = pruned_ev.SelJet, genflavor
+                        sel_jet, flav, wgt = pruned_ev.SelJet, genflavor, weight
                     else:
-                        sel_jet, flav = pruned_ev.SelJet[:, i], genflavor[:, i]
+                        mask_njets = ak.count(pruned_ev.SelJet.pt, axis=1) >= (i + 1)
+                        temp_SelJet = pruned_ev.SelJet[mask_njets]
+                        temp_genflavor = genflavor[mask_njets]
+                        temp_weight = weight[mask_njets]
+                        sel_jet, flav, wgt = (
+                            temp_SelJet[:, i],
+                            temp_genflavor[:, i],
+                            temp_weight,
+                        )
                     if str(i) in histname:
                         if "dr_mujet" in histname:
                             h.fill(
                                 syst,
                                 flatten(flav),
                                 flatten(sel_jet.delta_r(pruned_ev.SelMuon)),
-                                weight=weight,
+                                weight=wgt,
                             )
                         else:
                             h.fill(
                                 syst,
                                 flatten(flav),
                                 flatten(sel_jet[histname.replace(f"jet{i}_", "")]),
-                                weight=weight,
+                                weight=wgt,
                             )
                 # fill positively tagged jets, negatively tagged jets, and inclusive jets, binned in pt
                 if histname.endswith("_postag_jet_pt") or histname.endswith(
@@ -360,19 +365,18 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                             syst=syst,
                             flav=flav,
                             discr=seljet[histname.replace(f"_{i}", "")],
-                            weight=weights.partial_weight(exclude=exclude_btv),
+                            weight=weight,
                         )
                 elif histname in seljets.fields:
                     # No jet index suffix (nj=1) - fill directly
                     discr = seljets[histname]
                     flat_discr = flatten(discr)
-                    wgt = weights.partial_weight(exclude=exclude_btv)
                     temp_syst = np.full(len(flat_discr), syst[0])
                     h.fill(
                         syst=temp_syst,
                         flav=flatten(flavs),
                         discr=flat_discr,
-                        weight=flatten(ak.broadcast_arrays(wgt, discr)[0]),
+                        weight=flatten(ak.broadcast_arrays(weight, discr)[0]),
                     )
 
         if "dr_poslnegl" in output.keys():
@@ -470,10 +474,19 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             output["dilep_mass"].fill(
                 syst, flatten(pruned_ev.dilep.mass), weight=weight
             )
+            output["dilep_ptratio"].fill(
+                syst,
+                genflavor,
+                flatten(pruned_ev.dilep.pt / pruned_ev.SelJet.pt),
+                weight=weight,
+            )
 
         if "MET_pt" in output.keys():
             output["MET_pt"].fill(syst, flatten(pruned_ev.MET.pt), weight=weight)
             output["MET_phi"].fill(syst, flatten(pruned_ev.MET.phi), weight=weight)
+
+        if "w_mt" in pruned_ev.fields:
+            output["w_mt"].fill(syst, flatten(pruned_ev.w_mt), weight=weight)
 
         # ttbar dilepton kin workflow
         if "kindisc" in output.keys():
@@ -483,11 +496,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 jet_syst,
                 flat_flav,
                 flatten(pruned_ev.kindisc),
-                weight=flatten(
-                    ak.broadcast_arrays(
-                        weights.partial_weight(exclude=exclude_btv), pruned_ev.kindisc
-                    )[0]
-                ),
+                weight=flatten(ak.broadcast_arrays(weight, pruned_ev.kindisc)[0]),
             )
             output["close_mlj"].fill(
                 jet_syst,

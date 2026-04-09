@@ -3,8 +3,10 @@ import sys
 import json
 import argparse
 import time
+from copy import deepcopy
 
 import numpy as np
+import awkward as ak
 
 import uproot
 from coffea.util import load, save
@@ -26,7 +28,6 @@ def validate_dataset_structure(fileset, max_files_per_sample=None):
     """Check dataset files and return a filtered fileset with only valid files."""
     import uproot
     import logging
-    from copy import deepcopy
 
     if max_files_per_sample is not None and max_files_per_sample <= 0:
         max_files_per_sample = None
@@ -83,6 +84,12 @@ def validate_dataset_structure(fileset, max_files_per_sample=None):
                 if missing:
                     print(
                         f"WARNING: File missing critical branches {missing}: {filename}"
+                    )
+                    continue
+                if not any(met in branches for met in optional_met_branches):
+                    print(
+                        "WARNING: File missing MET branch; expected one of "
+                        f"{optional_met_branches}: {filename}"
                     )
                     continue
 
@@ -152,9 +159,6 @@ def retry_handler(exception, task_record):
 
 
 ## From condor/submitter.py https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/9edb9ed6bb0b28730b8de9e5aa1142ec4fdf74b7/condor/submitter.py
-# create t
-
-
 def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
     import tarfile
 
@@ -419,11 +423,10 @@ if __name__ == "__main__":
         index = args.samplejson.rfind("/") + 1
         sample_json = args.samplejson[index:]
         histoutdir = (
-            f"{outdirprefix}hists_{args.workflow}_{sample_json.rstrip('.json')}"
+            f"{outdirprefix}hists_{args.workflow}_{sample_json.replace('.json', '')}"
         )
-        outdir = f"{outdirprefix}arrays_{args.workflow}_{sample_json.rstrip('.json')}"
-        coffeaoutput = (
-            f'{histoutdir}/hists_{args.workflow}_{(sample_json).rstrip(".json")}.coffea'
+        outdir = (
+            f"{outdirprefix}arrays_{args.workflow}_{sample_json.replace('.json', '')}"
         )
     if not args.noHist:
         os.system(f"mkdir -p {histoutdir}")
