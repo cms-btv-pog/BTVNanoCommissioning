@@ -142,6 +142,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
             if syst == "nominal" or syst not in list(weights.variations)
             else weights.weight(modifier=syst)
         )
+        syst_perjet = syst
         syst = np.full(len(weight), syst)
         # Loop over the histograms
         for histname, h in output.items():
@@ -312,7 +313,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     "_negtag_jet_pt"
                 ):
                     h.fill(
-                        syst,
+                        syst_perjet,
                         flatten(pruned_ev[histname.replace("_pt", "")].flavor),
                         flatten(pruned_ev[histname.replace("_pt", "")].pt),
                         weight=flatten(
@@ -323,7 +324,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                     )
                 elif histname.endswith("jet_pt") and "AllSelJet" in pruned_ev.fields:
                     h.fill(
-                        syst,
+                        syst_perjet,
                         flatten(pruned_ev["AllSelJet"].flavor),
                         flatten(pruned_ev["AllSelJet"].pt),
                         weight=flatten(
