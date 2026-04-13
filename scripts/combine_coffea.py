@@ -24,6 +24,7 @@ files = [item for sublist in files for item in sublist]
 
 output = {}
 
+keys = set()
 for f in tqdm.tqdm(files, desc="Combining coffea files"):
     try:
         data = load(f)
@@ -31,6 +32,8 @@ for f in tqdm.tqdm(files, desc="Combining coffea files"):
         print(f"Error loading {f}: {e}")
         continue
     for key in data:
+        print(f"Processing key: {key} from file: {f}")
+        keys.add(key)
         if key not in output:
             output[key] = data[key]
         else:
@@ -58,3 +61,6 @@ for f in tqdm.tqdm(files, desc="Combining coffea files"):
 
 pathlib.Path(args.output).parent.mkdir(parents=True, exist_ok=True)
 save(output, args.output)
+
+sortkeys = sorted(keys)
+print(f"Combined {len(files)} files with keys: {sortkeys} into {args.output}")
