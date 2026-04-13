@@ -340,16 +340,16 @@ def load_SF(year, campaign, syst=False):
 
         ## Rochester muon momentum correction (Run 2)
         elif SF == "roccor":
-            if "2016postVFP_UL" == campaign:
+            if "2016postVFP-UL" == campaign:
                 filename = "RoccoR2016bUL.txt"
-            elif "2016preVFP_UL" in campaign:
+            elif "2016preVFP-UL" in campaign:
                 filename = "RoccoR2016aUL.txt"
-            elif "2017_UL" in campaign:
+            elif "2017-UL" in campaign:
                 filename = "RoccoR2017UL.txt"
-            if "2018_UL" in campaign:
+            if "2018-UL" in campaign:
                 filename = "RoccoR2018UL.txt"
 
-            full_path = "src/BTVNanoCommissioning/data/LSF/roccor/" + filename
+            full_path = "src/BTVNanoCommissioning/data/MUO/roccor/" + filename
             rochester_data = txt_converters.convert_rochester_file(
                 full_path, loaduncs=True
             )
@@ -359,7 +359,7 @@ def load_SF(year, campaign, syst=False):
         elif SF == "JME":
             if "name" in config[campaign]["JME"].keys():
                 if not os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{campaign_map()[campaign]}/latest/jec_compiled_{config[campaign]['JME']['name']}.pkl.gz"
+                    f"src/BTVNanoCommissioning/data/JME/{_cvmfs_dir(campaign, 'JMAR')}/latest/jec_compiled_{config[campaign]['JME']['name']}.pkl.gz"
                 ):
                     _compile_jec_(
                         year,
@@ -758,6 +758,8 @@ def get_MET_corr_keys():
         "area",
         "EmEF",
         "muonSubtrFactor",
+        "muonSubtrDeltaPhi",
+        "muonSubtrDeltaEta",
         "Genpt",
         "rho",
         "EventID",
@@ -773,37 +775,92 @@ def calc_T1_MET(
     systematic=False,
 ):
     """
-    Correction taken from here: https://cms-jerc.web.cern.ch/Type1MET/
-    Systematic taken from here: https://cms-talk.web.cern.ch/t/unclustered-met-uncertainty-2022-2023-nanoaodv12/141752/5
+    Type-1 MET correction following the recipe from:
+      https://cms-jerc.web.cern.ch/Type1MET/
+    Reference talk (JME General, 2 Feb 2026, Fikri):
+      https://indico.cern.ch/event/1644923/#5-met-type-1-correction-comput
+
+    Expects the following pre-computed fields on shifted_jets
+    (set by JME_shifts before calling this function):
+      - pt_noMuL1:        muon-subtracted raw pT × L1FastJet
+      - pt_noMu_fullcorr: muon-subtracted raw pT × L1L2L3Res (× JER/JES-syst)
+    CMS Talk discussion:
+      https://cms-talk.web.cern.ch/t/unclustered-met-uncertainty-2022-2023-nanoaodv12/141752/5
     """
 
     MET_x_baseline = met_raw.pt * np.cos(met_raw.phi)
     MET_y_baseline = met_raw.pt * np.sin(met_raw.phi)
+
     if campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
         jet_mask = (
-            (shifted_jets["pt"] > 15.0)
+            (shifted_jets["pt_noMu_fullcorr"] > 15.0)
             & (abs(shifted_jets["eta"]) < 5.2)
             & (shifted_jets["EmEF"] < 0.9)
         )
     else:  # NanoAODv12
-        jet_mask = (shifted_jets["pt"] > 15.0) & (abs(shifted_jets["eta"]) < 5.2)
-    sel_jet = shifted_jets[jet_mask]
-    jet_pt_L1 = sel_jet["pt_raw"] * (1.0 - sel_jet["muonSubtrFactor"])
-    delta_pt = sel_jet["pt"] - jet_pt_L1
-    MET_x_shifts = delta_pt * np.cos(sel_jet["phi"])
-    MET_y_shifts = delta_pt * np.sin(sel_jet["phi"])
+        jet_mask = (shifted_jets["pt_noMu_fullcorr"] > 15.0) & (
+            abs(shifted_jets["eta"]) < 5.2
+        )
+
+    delta_pt = (
+        shifted_jets["pt_noMu_fullcorr"][jet_mask] - shifted_jets["pt_noMuL1"][jet_mask]
+    )
+    try:
+        # NanoAODv15: use muon-subtracted phi (phi + muonSubtrDeltaPhi)
+        jet_phi = shifted_jets["phi_noMuRaw"][jet_mask]
+    except Exception:
+        # Fallback for older NanoAOD versions without muonSubtrDeltaPhi
+        jet_phi = shifted_jets["phi"][jet_mask]
+
+    MET_x_shifts = delta_pt * np.cos(jet_phi)
+    MET_y_shifts = delta_pt * np.sin(jet_phi)
     MET_x = MET_x_baseline - ak.sum(MET_x_shifts, axis=-1)
     MET_y = MET_y_baseline - ak.sum(MET_y_shifts, axis=-1)
     pt_miss_final = np.sqrt(MET_x * MET_x + MET_y * MET_y)
     phi_miss_final = np.arctan2(MET_y, MET_x)
 
     if systematic:
-        pt_unclustered_up = met_nano.ptUnclusteredUp / met_nano.pt * pt_miss_final
-        pt_unclustered_down = met_nano.ptUnclusteredDown / met_nano.pt * pt_miss_final
-        phi_unclustered_up = met_nano.phiUnclusteredUp / met_nano.phi * phi_miss_final
-        phi_unclustered_down = (
-            met_nano.phiUnclusteredDown / met_nano.phi * phi_miss_final
-        )
+        if hasattr(met_nano, "ptUnclusteredUp"):
+            # NanoAODv9 and earlier: extract the unclustered delta from NanoAOD
+            # by comparing the shifted MET to the nominal MET in x/y components,
+            # then apply that same delta to our recomputed MET.
+            met_nano_x = met_nano.pt * np.cos(met_nano.phi)
+            met_nano_y = met_nano.pt * np.sin(met_nano.phi)
+            dx = (
+                met_nano.ptUnclusteredUp * np.cos(met_nano.phiUnclusteredUp)
+                - met_nano_x
+            )
+            dy = (
+                met_nano.ptUnclusteredUp * np.sin(met_nano.phiUnclusteredUp)
+                - met_nano_y
+            )
+            pt_unclustered_up = np.sqrt((MET_x + dx) ** 2 + (MET_y + dy) ** 2)
+            phi_unclustered_up = np.arctan2(MET_y + dy, MET_x + dx)
+            dx_dn = (
+                met_nano.ptUnclusteredDown * np.cos(met_nano.phiUnclusteredDown)
+                - met_nano_x
+            )
+            dy_dn = (
+                met_nano.ptUnclusteredDown * np.sin(met_nano.phiUnclusteredDown)
+                - met_nano_y
+            )
+            pt_unclustered_down = np.sqrt((MET_x + dx_dn) ** 2 + (MET_y + dy_dn) ** 2)
+            phi_unclustered_down = np.arctan2(MET_y + dy_dn, MET_x + dx_dn)
+        elif hasattr(met_nano, "MetUnclustEnUpDeltaX"):
+            # NanoAODv12+: directional x/y shifts for unclustered energy
+            dx = met_nano.MetUnclustEnUpDeltaX
+            dy = met_nano.MetUnclustEnUpDeltaY
+            pt_unclustered_up = np.sqrt((MET_x + dx) ** 2 + (MET_y + dy) ** 2)
+            pt_unclustered_down = np.sqrt((MET_x - dx) ** 2 + (MET_y - dy) ** 2)
+            phi_unclustered_up = np.arctan2(MET_y + dy, MET_x + dx)
+            phi_unclustered_down = np.arctan2(MET_y - dy, MET_x - dx)
+        else:
+            # Fallback: isotropic approximation from sumPtUnclustered
+            delta = np.sqrt(met_nano.sumPtUnclustered)
+            pt_unclustered_up = np.sqrt((MET_x + delta) ** 2 + (MET_y + delta) ** 2)
+            pt_unclustered_down = np.sqrt((MET_x - delta) ** 2 + (MET_y - delta) ** 2)
+            phi_unclustered_up = np.arctan2(MET_y + delta, MET_x + delta)
+            phi_unclustered_down = np.arctan2(MET_y - delta, MET_x - delta)
         return (
             pt_miss_final,
             phi_miss_final,
@@ -888,6 +945,14 @@ def JME_shifts(
             nocorrjet["pt_raw"] = (1 - events.Jet["rawFactor"]) * events.Jet["pt"]
             nocorrjet["mass_raw"] = (1 - events.Jet["rawFactor"]) * events.Jet["mass"]
             nocorrjet["EmEF"] = events.Jet["chEmEF"] + events.Jet["neEmEF"]
+            if "muonSubtrDeltaPhi" in events.Jet.fields:
+                nocorrjet["muonSubtrDeltaPhi"] = events.Jet["muonSubtrDeltaPhi"]
+            else:
+                nocorrjet["muonSubtrDeltaPhi"] = ak.zeros_like(nocorrjet.pt)
+            if "muonSubtrDeltaEta" in events.Jet.fields:
+                nocorrjet["muonSubtrDeltaEta"] = events.Jet["muonSubtrDeltaEta"]
+            else:
+                nocorrjet["muonSubtrDeltaEta"] = ak.zeros_like(nocorrjet.pt)
             if not isRealData:
                 genjetidx = ak.where(
                     events.Jet.genJetIdx == -1, 0, events.Jet.genJetIdx
@@ -920,6 +985,17 @@ def JME_shifts(
             nocorrt1metjet["run"] = ak.broadcast_arrays(
                 events.run, events.CorrT1METJet.rawPt
             )[0]
+            if "muonSubtrDeltaPhi" not in nocorrt1metjet.fields:
+                nocorrt1metjet["muonSubtrDeltaPhi"] = ak.zeros_like(
+                    events.CorrT1METJet.rawPt
+                )
+            if "muonSubtrDeltaEta" not in nocorrt1metjet.fields:
+                nocorrt1metjet["muonSubtrDeltaEta"] = ak.zeros_like(
+                    events.CorrT1METJet.rawPt
+                )
+            # adding dummy value of 0 will still pass the EmEF < 0.9 cut
+            if "EmEF" not in nocorrt1metjet.fields:
+                nocorrt1metjet["EmEF"] = ak.zeros_like(events.CorrT1METJet.rawPt)
 
             keys_keep = get_MET_corr_keys()
             t1jets_1 = nocorrjet[[key for key in nocorrjet.fields if key in keys_keep]]
@@ -933,14 +1009,37 @@ def JME_shifts(
             j, nj = ak.flatten(jets), ak.num(jets)
             t1j, nt1j = ak.flatten(t1jets), ak.num(t1jets)
 
-            ## store the original met info
-            nocorrmet = events.PuppiMET if int(year) > 2020 else events.MET
-            met = copy.copy(nocorrmet)
+            ## Pre-compute muon-subtracted Type-1 MET quantities on flat t1 jets.
+            ## These are constant: L1 and L1L2L3Res evaluated at pt_noMuRaw.
+            t1j["pt_noMuRaw"] = t1j["pt_raw"] * (1.0 - t1j["muonSubtrFactor"])
+            t1j["phi_noMuRaw"] = t1j["phi"] + t1j["muonSubtrDeltaPhi"]
+            t1j["eta_noMuRaw"] = t1j["eta"] + t1j["muonSubtrDeltaEta"]
+            L1corr = correct_map["JME"][f"{jecname}_L1FastJet_AK4PFPuppi"]
+            t1j["pt_noMuL1"] = t1j["pt_noMuRaw"] * L1corr.evaluate(
+                np.array(t1j["area"]),
+                np.array(t1j["eta_noMuRaw"]),
+                np.array(t1j["pt_noMuRaw"]),
+                np.array(t1j["rho"]),
+            )
 
-            ## raw MET
-            met_raw = events.RawPuppiMET if int(year) > 2020 else events.RawMET
-            ## NanoAOD MET
-            met_nano = events.PuppiMET if int(year) > 2020 else events.MET
+            ## store the original met info (nocorrmet), raw met, nanoaod met
+            if campaign in [
+                "2016preVFP-UL",
+                "2016postVFP-UL",
+                "2017-UL",
+                "2018-UL",
+                "Summer24",
+                "Winter25",
+                "Prompt25",
+            ]:  # for nanoaodv15
+                nocorrmet = events.PuppiMET
+                met_raw = events.RawPuppiMET
+                met_nano = events.PuppiMET
+            else:
+                nocorrmet = events.MET
+                met_raw = events.RawMET
+                met_nano = events.MET
+            met = copy.copy(nocorrmet)
 
             ## JES/JEC
             JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
@@ -981,11 +1080,49 @@ def JME_shifts(
             JECflatCorrFactor_t1 = JECcorr.evaluate(*JEC_input_t1)
             t1j["pt_JECnom"] = t1j["pt"] * JECflatCorrFactor_t1
 
+            ## Compound L1L2L3Res at muon-subtracted raw pT (for Type-1 MET)
+            JEC_input_t1_nomu = get_corr_inputs(t1j, JECcorr)
+            # Override pT and eta with muon-subtracted values
+            pt_idx_t1 = next(
+                i
+                for i, inp in enumerate(JECcorr.inputs)
+                if inp.name.replace("Jet", "").replace("Pt", "pt") == "pt"
+            )
+            JEC_input_t1_nomu[pt_idx_t1] = np.array(t1j["pt_noMuRaw"])
+            eta_idx_t1 = next(
+                i
+                for i, inp in enumerate(JECcorr.inputs)
+                if inp.name.replace("Jet", "").replace("Eta", "eta") == "eta"
+            )
+            JEC_input_t1_nomu[eta_idx_t1] = np.array(t1j["eta_noMuRaw"])
+            if year == "2024":
+                JEC_input_t1_nomu[pt_idx_t1] = np.clip(
+                    JEC_input_t1_nomu[pt_idx_t1], 30, None
+                )
+            if isRealData:
+                run_idx = next(
+                    (i for i, inp in enumerate(JECcorr.inputs) if inp.name == "run"),
+                    None,
+                )
+                if run_idx is not None:
+                    _run_edges = _get_jec_run_edges(correct_map, jecname)
+                    if _run_edges is not None:
+                        lo, hi = _run_edges
+                        JEC_input_t1_nomu[run_idx] = np.clip(
+                            JEC_input_t1_nomu[run_idx], lo, hi
+                        )
+            t1j["pt_noMu_JEC"] = t1j["pt_noMuRaw"] * JECcorr.evaluate(
+                *JEC_input_t1_nomu
+            )
+
             if isRealData:
                 ## Only JEC/JES applied to data, no JER
                 jets["pt"] = ak.unflatten(j["pt_JECnom"], nj)
                 jets["mass"] = ak.unflatten(j["mass_JECnom"], nj)
                 t1jets["pt"] = ak.unflatten(t1j["pt_JECnom"], nt1j)
+                t1jets["pt_noMuL1"] = ak.unflatten(t1j["pt_noMuL1"], nt1j)
+                t1jets["phi_noMuRaw"] = ak.unflatten(t1j["phi_noMuRaw"], nt1j)
+                t1jets["pt_noMu_fullcorr"] = ak.unflatten(t1j["pt_noMu_JEC"], nt1j)
                 met_pt, met_phi = calc_T1_MET(met_raw, met_nano, t1jets, campaign)
                 met["pt"] = met_pt
                 met["phi"] = met_phi
@@ -1003,6 +1140,11 @@ def JME_shifts(
                 jer_smear_nom_t1 = get_JER(correct_map, jername, t1j, "nom")
                 t1j["pt_JECnom_JERnom"] = t1j["pt_JECnom"] * jer_smear_nom_t1
                 t1jets["pt"] = ak.unflatten(t1j["pt_JECnom_JERnom"], nt1j)
+                t1jets["pt_noMuL1"] = ak.unflatten(t1j["pt_noMuL1"], nt1j)
+                t1jets["phi_noMuRaw"] = ak.unflatten(t1j["phi_noMuRaw"], nt1j)
+                t1jets["pt_noMu_fullcorr"] = ak.unflatten(
+                    t1j["pt_noMu_JEC"] * jer_smear_nom_t1, nt1j
+                )
                 (
                     met_pt,
                     met_phi,
@@ -1010,7 +1152,13 @@ def JME_shifts(
                     pt_unclustered_down,
                     phi_unclustered_up,
                     phi_unclustered_down,
-                ) = calc_T1_MET(met_raw, met_nano, t1jets, campaign, True)
+                ) = calc_T1_MET(
+                    met_raw,
+                    met_nano,
+                    t1jets,
+                    campaign,
+                    True,
+                )
                 met["pt"] = met_pt
                 met["phi"] = met_phi
 
@@ -1046,10 +1194,18 @@ def JME_shifts(
                             np.float32,
                         )
                         t1j["pt"] = t1j[f"pt_JECnom_JER{var}"]
+                        _t1jets_var = ak.unflatten(t1j, nt1j)
+                        _t1jets_var["pt_noMuL1"] = ak.unflatten(t1j["pt_noMuL1"], nt1j)
+                        _t1jets_var["phi_noMuRaw"] = ak.unflatten(
+                            t1j["phi_noMuRaw"], nt1j
+                        )
+                        _t1jets_var["pt_noMu_fullcorr"] = ak.unflatten(
+                            t1j["pt_noMu_JEC"] * jer_smear_var_t1, nt1j
+                        )
                         met_pt_JECnom_JERvar, met_phi_JECnom_JERvar = calc_T1_MET(
                             met_raw,
                             met_nano,
-                            ak.unflatten(t1j, nt1j),
+                            _t1jets_var,
                             campaign,
                         )
 
@@ -1149,11 +1305,26 @@ def JME_shifts(
                                     np.float32,
                                 )
                                 t1j["pt"] = t1j[f"pt_JEC{jes_syst}{var}_JERnom"]
+                                _t1jets_jesvar = ak.unflatten(t1j, nt1j)
+                                _t1jets_jesvar["pt_noMuL1"] = ak.unflatten(
+                                    t1j["pt_noMuL1"], nt1j
+                                )
+                                _t1jets_jesvar["phi_noMuRaw"] = ak.unflatten(
+                                    t1j["phi_noMuRaw"], nt1j
+                                )
+                                # JES syst factor = (1 + fac*jesunc), applied to
+                                # both the nominal JEC and the muon-subtracted JEC
+                                _t1jets_jesvar["pt_noMu_fullcorr"] = ak.unflatten(
+                                    t1j["pt_noMu_JEC"]
+                                    * (1 + fac * jesunc_t1)
+                                    * jer_smear_nom_t1,
+                                    nt1j,
+                                )
                                 met_pt_JECvar_JERnom, met_phi_JECvar_JERnom = (
                                     calc_T1_MET(
                                         met_raw,
                                         met_nano,
-                                        ak.unflatten(t1j, nt1j),
+                                        _t1jets_jesvar,
                                         campaign,
                                     )
                                 )
@@ -1226,12 +1397,12 @@ def JME_shifts(
 
         else:
             if isRealData:
-                if "2016preVFP_UL" == campaign:
+                if "2016preVFP-UL" == campaign:
                     if "2016B" in dataset or "2016C" in dataset or "2016D" in dataset:
                         jecname = "BCD"
                     elif "2016E" in dataset or "2016F" in dataset:
                         jecname = "EF"
-                elif "2016postVFP_UL" == campaign:
+                elif "2016postVFP-UL" == campaign:
                     jecname = "FGH"
                 elif campaign == "Rereco17_94X":
                     jecname = ""

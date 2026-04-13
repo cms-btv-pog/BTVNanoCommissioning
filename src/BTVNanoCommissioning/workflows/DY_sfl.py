@@ -70,7 +70,10 @@ class NanoProcessor(processor.ProcessorABC):
 
         isMu = False
         if "DYM" in self.selMod:
-            triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
+            if self._year in ["2016"]:
+                triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ"]
+            else:
+                triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
             isMu = True
         elif "DYE" in self.selMod:
             triggers = ["Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"]
