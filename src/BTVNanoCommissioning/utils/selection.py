@@ -293,7 +293,7 @@ btag_wp_dict = {
                 "XT": 0.6777,
                 "XXT": 0.9219,
             },
-            "c": { #placeholder
+            "c": {  # placeholder
                 "No": [0.0, 0.0],
                 "L": [0.1, 0.1],  # CvL, then CvB
                 "M": [0.5, 0.5],
@@ -312,7 +312,7 @@ btag_wp_dict = {
                 "XT": 0.6872,
                 "XXT": 0.9353,
             },
-            "c": { #placeholder
+            "c": {  # placeholder
                 "No": [0.0, 0.0],
                 "L": [0.1, 0.1],  # CvL, then CvB
                 "M": [0.5, 0.5],
@@ -331,7 +331,7 @@ btag_wp_dict = {
                 "XT": 0.7274,
                 "XXT": 0.9666,
             },
-            "c": { #placeholder
+            "c": {  # placeholder
                 "No": [0.0, 0.0],
                 "L": [0.1, 0.1],  # CvL, then CvB
                 "M": [0.5, 0.5],
@@ -340,7 +340,7 @@ btag_wp_dict = {
             },
         },
     },
-    "2018_2018-UL": { #correct, the format is year_campaign
+    "2018_2018-UL": {  # correct, the format is year_campaign
         "UParTAK4": {
             "b": {
                 "No": 0.0,
@@ -350,7 +350,7 @@ btag_wp_dict = {
                 "XT": 0.6992,
                 "XXT": 0.9655,
             },
-            "c": { #placeholder
+            "c": {  # placeholder
                 "No": [0.0, 0.0],
                 "L": [0.1, 0.1],  # CvL, then CvB
                 "M": [0.5, 0.5],

@@ -45,11 +45,10 @@ correction_config = {
             "Scale",
             "SmearAndSyst",
         ],
-        "roccor":  "",
-
+        "roccor": "",
         "cvmfs_override": {
-            "MUO": "Run2-2016preVFP-UL-NanoAODv9",    # Nanov15 unavailable
-            "muonSS": "Run2-2016preVFP-UL-NanoAODv9", # Nanov15 unavailable
+            "MUO": "Run2-2016preVFP-UL-NanoAODv9",  # Nanov15 unavailable
+            "muonSS": "Run2-2016preVFP-UL-NanoAODv9",  # Nanov15 unavailable
             "EGM": "Run2-2016preVFP-UL-NanoAODv15",
             "electronSS": "Run2-2016preVFP-UL-NanoAODv15",
         },
@@ -77,11 +76,10 @@ correction_config = {
             "Scale",
             "SmearAndSyst",
         ],
-        "roccor":  "",
-
+        "roccor": "",
         "cvmfs_override": {
-            "MUO": "Run2-2016postVFP-UL-NanoAODv9",    # Nanov15 unavailable
-            "muonSS": "Run2-2016postVFP-UL-NanoAODv9", # Nanov15 unavailable
+            "MUO": "Run2-2016postVFP-UL-NanoAODv9",  # Nanov15 unavailable
+            "muonSS": "Run2-2016postVFP-UL-NanoAODv9",  # Nanov15 unavailable
             "EGM": "Run2-2016postVFP-UL-NanoAODv15",
             "electronSS": "Run2-2016postVFP-UL-NanoAODv15",
         },
@@ -111,11 +109,10 @@ correction_config = {
             "Scale",
             "SmearAndSyst",
         ],
-        "roccor":  "",
-
+        "roccor": "",
         "cvmfs_override": {
-            "MUO": "Run2-2017-UL-NanoAODv9",    # Nanov15 unavailable
-            "muonSS": "Run2-2017-UL-NanoAODv9", # Nanov15 unavailable
+            "MUO": "Run2-2017-UL-NanoAODv9",  # Nanov15 unavailable
+            "muonSS": "Run2-2017-UL-NanoAODv9",  # Nanov15 unavailable
             "EGM": "Run2-2017-UL-NanoAODv15",
             "electronSS": "Run2-2017-UL-NanoAODv15",
         },
@@ -144,11 +141,10 @@ correction_config = {
             "Scale",
             "SmearAndSyst",
         ],
-        "roccor":  "",
-
+        "roccor": "",
         "cvmfs_override": {
-            "MUO": "Run2-2018-UL-NanoAODv9",    # Nanov15 unavailable
-            "muonSS": "Run2-2018-UL-NanoAODv9", # Nanov15 unavailable
+            "MUO": "Run2-2018-UL-NanoAODv9",  # Nanov15 unavailable
+            "muonSS": "Run2-2018-UL-NanoAODv9",  # Nanov15 unavailable
             "EGM": "Run2-2018-UL-NanoAODv15",
             "electronSS": "Run2-2018-UL-NanoAODv15",
         },

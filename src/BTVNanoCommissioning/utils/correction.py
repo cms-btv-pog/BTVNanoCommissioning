@@ -784,7 +784,7 @@ def calc_T1_MET(
     (set by JME_shifts before calling this function):
       - pt_noMuL1:        muon-subtracted raw pT × L1FastJet
       - pt_noMu_fullcorr: muon-subtracted raw pT × L1L2L3Res (× JER/JES-syst)
-    CMS Talk discussion: 
+    CMS Talk discussion:
       https://cms-talk.web.cern.ch/t/unclustered-met-uncertainty-2022-2023-nanoaodv12/141752/5
     """
 
@@ -798,12 +798,13 @@ def calc_T1_MET(
             & (shifted_jets["EmEF"] < 0.9)
         )
     else:  # NanoAODv12
-        jet_mask = (
-            (shifted_jets["pt_noMu_fullcorr"] > 15.0)
-            & (abs(shifted_jets["eta"]) < 5.2)
+        jet_mask = (shifted_jets["pt_noMu_fullcorr"] > 15.0) & (
+            abs(shifted_jets["eta"]) < 5.2
         )
 
-    delta_pt = shifted_jets["pt_noMu_fullcorr"][jet_mask] - shifted_jets["pt_noMuL1"][jet_mask]
+    delta_pt = (
+        shifted_jets["pt_noMu_fullcorr"][jet_mask] - shifted_jets["pt_noMuL1"][jet_mask]
+    )
     try:
         # NanoAODv15: use muon-subtracted phi (phi + muonSubtrDeltaPhi)
         jet_phi = shifted_jets["phi_noMuRaw"][jet_mask]
@@ -843,9 +844,7 @@ def calc_T1_MET(
                 met_nano.ptUnclusteredDown * np.sin(met_nano.phiUnclusteredDown)
                 - met_nano_y
             )
-            pt_unclustered_down = np.sqrt(
-                (MET_x + dx_dn) ** 2 + (MET_y + dy_dn) ** 2
-            )
+            pt_unclustered_down = np.sqrt((MET_x + dx_dn) ** 2 + (MET_y + dy_dn) ** 2)
             phi_unclustered_down = np.arctan2(MET_y + dy_dn, MET_x + dx_dn)
         elif hasattr(met_nano, "MetUnclustEnUpDeltaX"):
             # NanoAODv12+: directional x/y shifts for unclustered energy
@@ -859,9 +858,7 @@ def calc_T1_MET(
             # Fallback: isotropic approximation from sumPtUnclustered
             delta = np.sqrt(met_nano.sumPtUnclustered)
             pt_unclustered_up = np.sqrt((MET_x + delta) ** 2 + (MET_y + delta) ** 2)
-            pt_unclustered_down = np.sqrt(
-                (MET_x - delta) ** 2 + (MET_y - delta) ** 2
-            )
+            pt_unclustered_down = np.sqrt((MET_x - delta) ** 2 + (MET_y - delta) ** 2)
             phi_unclustered_up = np.arctan2(MET_y + delta, MET_x + delta)
             phi_unclustered_down = np.arctan2(MET_y - delta, MET_x - delta)
         return (
@@ -998,9 +995,7 @@ def JME_shifts(
                 )
             # adding dummy value of 0 will still pass the EmEF < 0.9 cut
             if "EmEF" not in nocorrt1metjet.fields:
-                nocorrt1metjet["EmEF"] = ak.zeros_like(
-                    events.CorrT1METJet.rawPt
-                )
+                nocorrt1metjet["EmEF"] = ak.zeros_like(events.CorrT1METJet.rawPt)
 
             keys_keep = get_MET_corr_keys()
             t1jets_1 = nocorrjet[[key for key in nocorrjet.fields if key in keys_keep]]
@@ -1028,7 +1023,15 @@ def JME_shifts(
             )
 
             ## store the original met info (nocorrmet), raw met, nanoaod met
-            if campaign in ["2016preVFP-UL", "2016postVFP-UL", "2017-UL", "2018-UL", "Summer24", "Winter25", "Prompt25"]: #for nanoaodv15
+            if campaign in [
+                "2016preVFP-UL",
+                "2016postVFP-UL",
+                "2017-UL",
+                "2018-UL",
+                "Summer24",
+                "Winter25",
+                "Prompt25",
+            ]:  # for nanoaodv15
                 nocorrmet = events.PuppiMET
                 met_raw = events.RawPuppiMET
                 met_nano = events.PuppiMET
@@ -1081,12 +1084,14 @@ def JME_shifts(
             JEC_input_t1_nomu = get_corr_inputs(t1j, JECcorr)
             # Override pT and eta with muon-subtracted values
             pt_idx_t1 = next(
-                i for i, inp in enumerate(JECcorr.inputs)
+                i
+                for i, inp in enumerate(JECcorr.inputs)
                 if inp.name.replace("Jet", "").replace("Pt", "pt") == "pt"
             )
             JEC_input_t1_nomu[pt_idx_t1] = np.array(t1j["pt_noMuRaw"])
             eta_idx_t1 = next(
-                i for i, inp in enumerate(JECcorr.inputs)
+                i
+                for i, inp in enumerate(JECcorr.inputs)
                 if inp.name.replace("Jet", "").replace("Eta", "eta") == "eta"
             )
             JEC_input_t1_nomu[eta_idx_t1] = np.array(t1j["eta_noMuRaw"])
@@ -1117,12 +1122,8 @@ def JME_shifts(
                 t1jets["pt"] = ak.unflatten(t1j["pt_JECnom"], nt1j)
                 t1jets["pt_noMuL1"] = ak.unflatten(t1j["pt_noMuL1"], nt1j)
                 t1jets["phi_noMuRaw"] = ak.unflatten(t1j["phi_noMuRaw"], nt1j)
-                t1jets["pt_noMu_fullcorr"] = ak.unflatten(
-                    t1j["pt_noMu_JEC"], nt1j
-                )
-                met_pt, met_phi = calc_T1_MET(
-                    met_raw, met_nano, t1jets, campaign
-                )
+                t1jets["pt_noMu_fullcorr"] = ak.unflatten(t1j["pt_noMu_JEC"], nt1j)
+                met_pt, met_phi = calc_T1_MET(met_raw, met_nano, t1jets, campaign)
                 met["pt"] = met_pt
                 met["phi"] = met_phi
             else:
@@ -1152,7 +1153,11 @@ def JME_shifts(
                     phi_unclustered_up,
                     phi_unclustered_down,
                 ) = calc_T1_MET(
-                    met_raw, met_nano, t1jets, campaign, True,
+                    met_raw,
+                    met_nano,
+                    t1jets,
+                    campaign,
+                    True,
                 )
                 met["pt"] = met_pt
                 met["phi"] = met_phi
@@ -1191,7 +1196,9 @@ def JME_shifts(
                         t1j["pt"] = t1j[f"pt_JECnom_JER{var}"]
                         _t1jets_var = ak.unflatten(t1j, nt1j)
                         _t1jets_var["pt_noMuL1"] = ak.unflatten(t1j["pt_noMuL1"], nt1j)
-                        _t1jets_var["phi_noMuRaw"] = ak.unflatten(t1j["phi_noMuRaw"], nt1j)
+                        _t1jets_var["phi_noMuRaw"] = ak.unflatten(
+                            t1j["phi_noMuRaw"], nt1j
+                        )
                         _t1jets_var["pt_noMu_fullcorr"] = ak.unflatten(
                             t1j["pt_noMu_JEC"] * jer_smear_var_t1, nt1j
                         )
