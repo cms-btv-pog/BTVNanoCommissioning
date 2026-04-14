@@ -195,7 +195,8 @@ if __name__ == "__main__":
 
     # Handle voms proxy
     proxy_file = args.voms
-    if not proxy_file: proxy_file = get_proxy_path()
+    if not proxy_file:
+        proxy_file = get_proxy_path()
     os.system(f"scp {proxy_file} proxy")
     print(f"Copied proxy file {proxy_file} to local directory.")
 

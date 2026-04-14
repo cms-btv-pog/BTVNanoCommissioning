@@ -191,10 +191,20 @@ def load_SF(year, campaign, syst=False):
                 if "ele" in e and "_json" not in e
             }
             ## muon
+            # TODO: temporary fix to protect against malformed edges (e.g. "Infinity" instead of "inf").
             _muo_cvmfs = _cvmfs_dir(campaign, "MUO")
-            _mu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{_muo_cvmfs}/latest/muon_Z.json.gz"
-            if not os.path.exists(_mu_path):
-                _mu_path = f"src/BTVNanoCommissioning/data/MUO/{_muo_cvmfs}/latest/muon_Z.json.gz"
+            _mu_cvmfs = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{_muo_cvmfs}/latest/muon_Z.json.gz"
+            _mu_local = (
+                f"src/BTVNanoCommissioning/data/MUO/{_muo_cvmfs}/latest/muon_Z.json.gz"
+            )
+            if year == "2025" and os.path.exists(_mu_local):
+                # Workaround: the 2025 CVMFS muon_Z.json.gz (updated Apr 13 2026)
+                # contains "Infinity" bin edges that correctionlib cannot parse.
+                # Use the repo-bundled local copy until the upstream JSON is fixed.
+                # https://cms-talk.web.cern.ch/t/muon-z-json-gz-for-run3-25prompt-uses-infinity-string-bin-edges/144027
+                _mu_path = _mu_local
+            else:
+                _mu_path = _mu_cvmfs if os.path.exists(_mu_cvmfs) else _mu_local
             if os.path.exists(_mu_path):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(_mu_path)
             ## electron
@@ -2822,7 +2832,7 @@ def add_ps_weight(weights, ps_weights, isSyst=False):
     down_fsr = np.ones(len(weights.weight()))
 
     if ps_weights is not None and isSyst != False:
-        if len(ps_weights[0]) == 4:
+        if len(ps_weights[0]) >= 4:
             up_isr = ps_weights[:, 0]
             down_isr = ps_weights[:, 2]
             up_fsr = ps_weights[:, 1]

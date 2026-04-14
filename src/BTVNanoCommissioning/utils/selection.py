@@ -249,7 +249,8 @@ def jet_cut(events, campaign, ptmin=180, ptmax=1e5, absetamin=0, absetamax=2.5):
 def MET_filters(events, campaign):
     # apply MET filter
     metfilter = ak.ones_like(events.run, dtype=bool)
-    for flag in met_filters[campaign]["data" if "Run" else "mc"]:
+    isRealData = not hasattr(events, "genWeight")
+    for flag in met_filters[campaign]["data" if isRealData else "mc"]:
         metfilter = events.Flag[flag] & metfilter
     ## Flag_ecalBadCalibFilter
     badjet = (
@@ -584,6 +585,25 @@ btag_wp_dict = {
             },
         },
     },
+    "2025_Prompt25": {
+        "UParTAK4": {
+            "b": {
+                "No": 0.0,
+                "L": 0.0246,
+                "M": 0.1272,
+                "T": 0.4648,
+                "XT": 0.6298,
+                "XXT": 0.9739,
+            },
+            "c": {
+                "No": [0.0, 0.0],
+                "L": [0.086, 0.233],  # CvL, then CvB
+                "M": [0.291, 0.457],
+                "T": [0.650, 0.421],
+                "XT": [0.810, 0.736],
+            },
+        },
+    },
 }
 
 
@@ -653,6 +673,7 @@ met_filters = {
             "HBHENoiseIsoFilter",
             "EcalDeadCellTriggerPrimitiveFilter",
             "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
             "eeBadScFilter",
         ],
         "mc": [
@@ -662,6 +683,7 @@ met_filters = {
             "HBHENoiseIsoFilter",
             "EcalDeadCellTriggerPrimitiveFilter",
             "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
             "eeBadScFilter",
         ],
     },
@@ -828,6 +850,7 @@ met_filters = {
             "BadPFMuonDzFilter",
             "hfNoisyHitsFilter",
             "eeBadScFilter",
+            "ecalBadCalibFilter",
         ],
         "mc": [
             "goodVertices",
@@ -837,6 +860,29 @@ met_filters = {
             "BadPFMuonDzFilter",
             "hfNoisyHitsFilter",
             "eeBadScFilter",
+            "ecalBadCalibFilter",
+        ],
+    },
+    "Prompt25": {
+        "data": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+            "ecalBadCalibFilter",
+        ],
+        "mc": [
+            "goodVertices",
+            "globalSuperTightHalo2016Filter",
+            "EcalDeadCellTriggerPrimitiveFilter",
+            "BadPFMuonFilter",
+            "BadPFMuonDzFilter",
+            "hfNoisyHitsFilter",
+            "eeBadScFilter",
+            "ecalBadCalibFilter",
         ],
     },
     "prompt_dataMC": {
