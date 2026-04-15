@@ -91,7 +91,7 @@ def get_prescale(
     runs = json.load(open(lumimask))
     runs = list(runs.keys())
     if test:
-        runs = runs[: min(len(runs), 10)]
+        runs = runs[: min(len(runs), 100)]
 
     outcsv = f"src/BTVNanoCommissioning/data/Prescales/HLTinfo_{HLT}_run{min(runs)}_{max(runs)}.csv"
     if force or not os.path.exists(outcsv):
@@ -269,3 +269,4 @@ if __name__ == "__main__":
             "w",
         ) as f:
             f.write(cset.model_dump_json(exclude_unset=True))
+        print(f"Dumped prescales in {dumpfile}.")
