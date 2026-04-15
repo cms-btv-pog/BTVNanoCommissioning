@@ -1874,10 +1874,14 @@ def direct_das_query(dataset_name, campaign_pattern):
 def main(args):
 
     if args.from_workflow:
-        for sample in predefined_sample[args.from_workflow].keys():
+        for sample, datasets in predefined_sample[args.from_workflow].items():
             if args.doOnly is not None:
                 if sample != args.doOnly:
                     continue
+            print(f"\n📂 \033[1m{sample}\033[0m:")
+            for i, dataset in enumerate(datasets):
+                connector = "└──" if i == len(datasets) - 1 else "├──"
+                print(f"   {connector} 📄 {dataset}")
             if (
                 os.path.exists(
                     f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json"

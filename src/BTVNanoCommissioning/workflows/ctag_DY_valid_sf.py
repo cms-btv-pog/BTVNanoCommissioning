@@ -256,6 +256,29 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
 
+        # MET
+        if (
+            "Run3" in self._campaign
+            or "Summer22" in self._campaign
+            or "Summer23" in self._campaign
+            or "Summer24" in self._campaign
+        ):
+            pruned_ev["MET_pt"] = pruned_ev.PuppiMET.pt
+            pruned_ev["MET_phi"] = pruned_ev.PuppiMET.phi
+        else:
+            pruned_ev["MET_pt"] = pruned_ev.MET.pt
+            pruned_ev["MET_phi"] = pruned_ev.MET.phi
+
+        # Dijet properties
+        two_jets_mask = ak.num(pruned_ev.SelJet) >= 2
+        dijet = ak.mask(pruned_ev.SelJet, two_jets_mask)[:, 0] + ak.mask(
+            pruned_ev.SelJet, two_jets_mask
+        )[:, 1]
+        pruned_ev["dijet_pt"] = ak.fill_none(dijet.pt, -1.0)
+        pruned_ev["dijet_eta"] = ak.fill_none(dijet.eta, -99.0)
+        pruned_ev["dijet_phi"] = ak.fill_none(dijet.phi, -99.0)
+        pruned_ev["dijet_mass"] = ak.fill_none(dijet.mass, -1.0)
+
         pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
         pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
