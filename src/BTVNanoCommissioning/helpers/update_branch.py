@@ -33,11 +33,16 @@ def missing_branch(events):
 
     """
     # Function implementation here
-    events["fixedGridRhoFastjetAll"] = (
-        events.fixedGridRhoFastjetAll
-        if hasattr(events, "fixedGridRhoFastjetAll")
-        else events.Rho.fixedGridRhoFastjetAll
-    )
+    if hasattr(events, "fixedGridRhoFastjetAll"):
+        pass  # already a top-level branch, nothing to do
+    elif hasattr(events, "Rho") and hasattr(events.Rho, "fixedGridRhoFastjetAll"):
+        events["fixedGridRhoFastjetAll"] = events.Rho.fixedGridRhoFastjetAll
+    else:
+        raise AttributeError(
+            "fixedGridRhoFastjetAll not found as top-level branch or under Rho collection. "
+            "This branch is required for JEC corrections. "
+            "Check that the input NanoAOD file contains Rho_fixedGridRhoFastjetAll."
+        )
     ## calculate missing nodes
 
     if not hasattr(events.Jet, "btagDeepFlavB"):

@@ -1941,7 +1941,7 @@ def main(args):
                     if campaign_input == "0":
                         camp_idxs = []
                         break
-                    if campaign_input.lower() == "all":
+                    if campaign_input.strip().lower() == "all":
                         camp_idxs = list(range(len(dataset)))
                         break
                     cont = False

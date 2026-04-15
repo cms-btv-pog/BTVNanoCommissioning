@@ -20,32 +20,6 @@ correction_config = {
             "mu_Iso NUM_TightRelIso_DEN_TightIDandIPCut_pt_abseta": "RunBCDEF_MuISOSF.histo.root",
         },
     },
-    "2017-UL": {
-        "DC": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.txt",
-        "LUM": None,
-        "JME": {
-            "MC": "Summer20UL17_V1 Summer19UL17_JRV3",
-            "Run2017B": "Summer20UL17_RunB_V1",
-            "Run2017C": "Summer20UL17_RunC_V1",
-            "Run2017D": "Summer20UL17_RunD_V1",
-            "Run2017E": "Summer20UL17_RunE_V1",
-            "Run2017F": "Summer20UL17_RunF_V1",
-        },
-        "JME_path": "src/BTVNanoCommissioning/data/JME/2017-UL/jet_jerc.json.gz",
-        "BTV": {"deepCSV": "shape", "deepJet": "shape"},
-        "EGM": {
-            "ele_ID 2017 UL-Electron-ID-SF": "wp90iso",
-            "ele_Reco 2017 UL-Electron-ID-SF": "RecoAbove20",
-        },
-        "MUO": {
-            "mu_Reco 2017_UL": "NUM_TrackerMuons_DEN_genTracks",
-            "mu_HLT 2017_UL": "NUM_IsoMu27_DEN_CutBasedIdTight_and_PFIsoTight",
-            "mu_ID 2017_UL": "NUM_TightID_DEN_TrackerMuons",
-            "mu_Iso 2017_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
-            "mu_ID_low *": "Efficiency_muon_trackerMuon_Run2017_UL_ID.histo.json",
-            "mu_Reco_low *": "Efficiency_muon_generalTracks_Run2017_UL_trackerMuon.histo.json",
-        },
-    },
     "2016preVFP-UL": {
         "DC": "Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt",
         "LUM": None,
@@ -58,15 +32,25 @@ correction_config = {
             "Run2016F": "Summer20UL16APV_RunEF_V1",
         },
         "JME_path": "src/BTVNanoCommissioning/data/JME/2016preVFP-UL/jet_jerc.json.gz",
-        "BTV": {"deepCSV": "shape", "deepJet": "shape"},
-        "EGM": {
-            "ele_ID 2016preVFP UL-Electron-ID-SF": "wp90iso",
-            "ele_Reco 2016preVFP UL-Electron-ID-SF": "RecoAbove20",
-        },
         "MUO": {
-            "mu_Reco 2016preVFP_UL": "NUM_TrackerMuons_DEN_genTracks",
-            "mu_ID 2016preVFP_UL": "NUM_TightID_DEN_TrackerMuons",
-            "mu_Iso 2016preVFP_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
+        },
+        "EGM": {
+            "ele_Reco 2016 Electron-ID-SF": "",
+            "ele_ID 2016 Electron-ID-SF": "wp80iso",
+        },
+        "muonSS": "",
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        "roccor": "",
+        "cvmfs_override": {
+            "MUO": "Run2-2016preVFP-UL-NanoAODv9",  # Nanov15 unavailable
+            "muonSS": "Run2-2016preVFP-UL-NanoAODv9",  # Nanov15 unavailable
+            "EGM": "Run2-2016preVFP-UL-NanoAODv15",
+            "electronSS": "Run2-2016preVFP-UL-NanoAODv15",
         },
     },
     "2016postVFP-UL": {
@@ -79,20 +63,63 @@ correction_config = {
             "Run2016H": "Summer20UL16_RunFGH_V1",
         },
         "JME_path": "src/BTVNanoCommissioning/data/JME/2016postVFP-UL/jet_jerc.json.gz",
-        "BTV": {"deepCSV": "shape", "deepJet": "shape"},
-        "EGM": {
-            "ele_ID 2016postVFP UL-Electron-ID-SF": "wp90iso",
-            "ele_Reco 2016postVFP UL-Electron-ID-SF": "RecoAbove20",
-        },
         "MUO": {
-            "mu_Reco 2016postVFP_UL": "NUM_TrackerMuons_DEN_genTracks",
-            "mu_ID 2016postVFP_UL": "NUM_TightID_DEN_TrackerMuons",
-            "mu_Iso 2016postVFP_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
+        },
+        "EGM": {
+            "ele_Reco 2016 Electron-ID-SF": "",
+            "ele_ID 2016 Electron-ID-SF": "wp80iso",
+        },
+        "muonSS": "",
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        "roccor": "",
+        "cvmfs_override": {
+            "MUO": "Run2-2016postVFP-UL-NanoAODv9",  # Nanov15 unavailable
+            "muonSS": "Run2-2016postVFP-UL-NanoAODv9",  # Nanov15 unavailable
+            "EGM": "Run2-2016postVFP-UL-NanoAODv15",
+            "electronSS": "Run2-2016postVFP-UL-NanoAODv15",
+        },
+    },
+    "2017-UL": {
+        "DC": "Cert_294927-306462_13TeV_UL2017_Collisions17_MuonJSON.txt",
+        "LUM": None,
+        "JME": {
+            "MC": "Summer20UL17_V1 Summer19UL17_JRV3",
+            "Run2017B": "Summer20UL17_RunB_V1",
+            "Run2017C": "Summer20UL17_RunC_V1",
+            "Run2017D": "Summer20UL17_RunD_V1",
+            "Run2017E": "Summer20UL17_RunE_V1",
+            "Run2017F": "Summer20UL17_RunF_V1",
+        },
+        "JME_path": "src/BTVNanoCommissioning/data/JME/2017-UL/jet_jerc.json.gz",
+        "MUO": {
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
+        },
+        "EGM": {
+            "ele_Reco 2017 Electron-ID-SF": "",
+            "ele_ID 2017 Electron-ID-SF": "wp80iso",
+        },
+        "muonSS": "",
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        "roccor": "",
+        "cvmfs_override": {
+            "MUO": "Run2-2017-UL-NanoAODv9",  # Nanov15 unavailable
+            "muonSS": "Run2-2017-UL-NanoAODv9",  # Nanov15 unavailable
+            "EGM": "Run2-2017-UL-NanoAODv15",
+            "electronSS": "Run2-2017-UL-NanoAODv15",
         },
     },
     "2018-UL": {
         "DC": "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt",
-        "LUM": None,
+        "LUM": "puweight_2018_UL.HLTPFJet40.histo",
         "JME": {
             "MC": "Summer20UL18_V1 Summer19UL18_JRV2",
             "Run2018A": "Summer20UL18_RunA_V1",
@@ -101,15 +128,25 @@ correction_config = {
             "Run2018D": "Summer20UL18_RunD_V1",
         },
         "JME_path": "src/BTVNanoCommissioning/data/JME/2018-UL/jet_jerc.json.gz",
-        "BTV": {"deepCSV": "shape", "deepJet": "shape"},
-        "EGM": {
-            "ele_ID 2018 UL-Electron-ID-SF": "wp90iso",
-            "ele_Reco 2018 UL-Electron-ID-SF": "RecoAbove20",
-        },
         "MUO": {
-            "mu_Reco 2018_UL": "NUM_TrackerMuons_DEN_genTracks",
-            "mu_ID 2018_UL": "NUM_TightID_DEN_TrackerMuons",
-            "mu_Iso 2018_UL": "NUM_TightRelIso_DEN_TightIDandIPCut",
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
+        },
+        "EGM": {
+            "ele_Reco 2018 Electron-ID-SF": "",
+            "ele_ID 2018 Electron-ID-SF": "wp80iso",
+        },
+        "muonSS": "",
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        "roccor": "",
+        "cvmfs_override": {
+            "MUO": "Run2-2018-UL-NanoAODv9",  # Nanov15 unavailable
+            "muonSS": "Run2-2018-UL-NanoAODv9",  # Nanov15 unavailable
+            "EGM": "Run2-2018-UL-NanoAODv15",
+            "electronSS": "Run2-2018-UL-NanoAODv15",
         },
     },
     "Winter22Run3": {
@@ -181,8 +218,8 @@ correction_config = {
         "DC": "Cert_Collisions2023_366442_370790_Golden.json",
         "LUM": "puwei_Summer23.histo.root",
         "JME": {
-            "MC": "Summer23Prompt23_V2 Summer23Prompt23_RunCv1234_JRV1",
-            "Run2023C": "Summer23Prompt23_V2",
+            "MC": "Summer23Prompt23_V3 Summer23Prompt23_RunCv1234_JRV1",
+            "Run2023C": "Summer23Prompt23_V3",
         },
         "jetveto": {"Summer23Prompt23_RunC_V1": "jetvetomap"},
         "JPCalib": {
@@ -263,33 +300,56 @@ correction_config = {
             "SmearAndSyst",
         ],
     },
-    "Winter25": {
+    "Prompt25": {
         "DC": "Cert_Collisions2025_391658_398860_Golden.json",
         "LUM": "puWeights2025.json.gz",
+        # Year-dependent JES regrouped uncertainties use the MC JEC campaign year,
+        # not the data year.  Summer24 JECs have "_2024_" in the correction names.
+        "JES_MC_year": "2024",
         "JME": {
-            # TODO: JER are a placeholder for now (December 2025)
-            "MC": "Winter25Prompt25_V2 Summer23BPixPrompt23_RunD_JRV1",
-            "Run2025B": "Winter25Prompt25_V2",
-            "Run2025C": "Winter25Prompt25_V2",
-            "Run2025D": "Winter25Prompt25_V2",
-            "Run2025E": "Winter25Prompt25_V2",
-            "Run2025F": "Winter25Prompt25_V2",
-            "Run2025G": "Winter25Prompt25_V2",
+            # MC: use Summer24 MC truth JECs from the Summer24 CVMFS era
+            # JER: placeholder from Summer23BPix until dedicated 2025 JER is derived.
+            "MC": "Summer24Prompt24_V2 Summer23BPixPrompt23_RunD_JRV1",
+            "Run2025C": "Winter25Prompt25_V3",
+            "Run2025D": "Winter25Prompt25_V3",
+            "Run2025E": "Winter25Prompt25_V3",
+            "Run2025F": "Winter25Prompt25_V3",
+            "Run2025G": "Winter25Prompt25_V3",
         },
-        "jetveto": {"Winter25Prompt25_RunCDE_V1": "jetvetomap"},
-        # "MUO": {
-        #     "mu_ID": "NUM_TightID_DEN_TrackerMuons",
-        #     "mu_Iso": "NUM_TightPFIso_DEN_TightID",
-        # },
-        # "EGM": {
-        #     "ele_Reco 2024 Electron-ID-SF": "",
-        #     "ele_ID 2024 Electron-ID-SF": "wp80iso",
-        # },
-        # "muonSS": "",
-        # "electronSS": [
-        #     "Scale",
-        #     "SmearAndSyst",
-        # ],
+        "jetveto": {"Winter25Prompt25_RunCDEFG_V1": "jetvetomap"},
+        "MUO": {
+            "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+            "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+        },
+        "EGM": {
+            "ele_Reco 2024 Electron-ID-SF": "",
+            "ele_ID 2024 Electron-ID-SF": "wp80iso",
+        },
+        # Muon scale & smearing: reuse 2024 from Run3-24CDE...Summer24
+        "muonSS": "",
+        # Electron scale & smearing: use 2025 SaS from Run3-25Prompt-Summer24
+        "electronSS": [
+            "Scale",
+            "SmearAndSyst",
+        ],
+        # Per-POG CVMFS path overrides.
+        # JME: data L2L3Residual from Winter25 JME era.
+        # JME_MC: MC truth JECs must come from the Summer24 era (L2Relative differs).
+        # jetveto: jetvetomap from Winter25 JME era.
+        # MUO: 2025 SFs available (muon_Z.json.gz under muo_SF25_Z_and_highpt/,
+        #       copied to local data/ fallback.
+        # muonSS: no 2025 muon scale/smearing yet, reuse Summer24.
+        # EGM: no 2025 electron ID SFs yet (electron.json.gz), reuse Summer24.
+        # electronSS: 2025 SaS available.
+        "cvmfs_override": {
+            "JME": "Run3-25Prompt-Winter25-NanoAODv15",
+            "JME_MC": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
+            "jetveto": "Run3-25Prompt-Winter25-NanoAODv15",
+            "MUO": "Run3-25Prompt-Summer24-NanoAODv15",
+            "muonSS": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
+            "EGM": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
+            "electronSS": "Run3-25Prompt-Summer24-NanoAODv15",
+        },
     },
     "prompt_dataMC": {"DC": "$PROMPT_DATAMC"},
 }
