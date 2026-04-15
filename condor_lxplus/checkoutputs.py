@@ -45,6 +45,7 @@ with open(f"{jobdir}/arguments.json") as f:
     args = json.load(f)
 outdir = args["outputDir"]
 
+
 def check_job(n, outdir):
     outfile = f"{outdir}/hists_{n}/hists_{n}.coffea"
     if not os.path.isfile(outfile):
@@ -137,7 +138,9 @@ with open(f"{jobdir}/resubmit.jdl", "w") as jdlnew:
     for line in jdl:
         towrite = line.replace("jobnum_list.txt", "jobnum_list_resubmit.txt")
         if updatexrootd:
-            towrite = towrite.replace("split_samples.json", "split_samples_resubmit.json")
+            towrite = towrite.replace(
+                "split_samples.json", "split_samples_resubmit.json"
+            )
         if "+JobFlavour" in line and current_flavour:
             towrite = towrite.replace(f'"{current_flavour}"', f'"{next_flavour}"')
         jdlnew.write(towrite)

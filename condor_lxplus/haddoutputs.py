@@ -5,10 +5,20 @@ from rich import print
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import argparse
-parser = argparse.ArgumentParser(description="Create hadd commands and submission scripts.")
+
+parser = argparse.ArgumentParser(
+    description="Create hadd commands and submission scripts."
+)
 parser.add_argument("outputdir", help="Output directory containing array results")
-parser.add_argument("--condor", "-c", action="store_true", help="Automatically run the final condor command")
-parser.add_argument("-n", "--ncpu", type=int, default=2, help="Number of CPUs for hadd parallelism")
+parser.add_argument(
+    "--condor",
+    "-c",
+    action="store_true",
+    help="Automatically run the final condor command",
+)
+parser.add_argument(
+    "-n", "--ncpu", type=int, default=2, help="Number of CPUs for hadd parallelism"
+)
 args = parser.parse_args()
 
 outputdir = os.path.abspath(args.outputdir)
@@ -16,7 +26,7 @@ outputdir = os.path.abspath(args.outputdir)
 arraydirs = [i for i in os.listdir(outputdir) if i.startswith("arrays_")]
 systlist = list(set([i.split("/")[-1] for i in glob(f"{outputdir}/arrays_*/*")]))
 
-if "/hadd" not in outputdir:        
+if "/hadd" not in outputdir:
     root_files = glob(f"{outputdir}/hadd/**/*.root", recursive=True)
 else:
     root_files = glob(f"{outputdir}/**/*.root", recursive=True)
@@ -24,11 +34,14 @@ if not root_files:
     check = False
 else:
     check = True
-    print(f"[cyan]Found[/] [bold cyan]{len(root_files)}[/] [cyan].root files in[/] [bold white]{outputdir}[/][cyan]. Checking if all files are valid.[/]")
+    print(
+        f"[cyan]Found[/] [bold cyan]{len(root_files)}[/] [cyan].root files in[/] [bold white]{outputdir}[/][cyan]. Checking if all files are valid.[/]"
+    )
 
 if check:
     import uproot
-    cmdlist = []    
+
+    cmdlist = []
 
     hadd_sh = f"{outputdir}/dohadd.sh"
     if os.path.exists(hadd_sh):
@@ -50,7 +63,7 @@ if check:
         filepath = next((p for p in parts if p.endswith(".root")), None)
         if not filepath:
             return None
-        
+
         is_fine = os.path.exists(filepath)
         if is_fine:
             try:
@@ -67,7 +80,9 @@ if check:
 
     with alive_bar(len(expected_cmds), title="Checking root files") as bar:
         with ThreadPoolExecutor(max_workers=16) as executor:
-            futures = {executor.submit(check_root_file, cmd): cmd for cmd in expected_cmds}
+            futures = {
+                executor.submit(check_root_file, cmd): cmd for cmd in expected_cmds
+            }
             for future in as_completed(futures):
                 res = future.result()
                 if res:
@@ -77,13 +92,14 @@ if check:
     if len(cmdlist) == 0:
         print("[green][b]All files are fine![/][/]")
         exit()
-    
+
     print(f"\n[red][b]Found {len(cmdlist)} incomplete/corrupt files![/][/]\n")
     haddfile = f"{outputdir}/dohadd_retry.sh"
     retry_suffix = "_retry"
 
 else:
     cmdlist = []
+
     def create_cmds(syst):
         samplist = list(
             set([i.split("/")[-1] for i in glob(f"{outputdir}/arrays_*/{syst}/*")])
@@ -92,7 +108,9 @@ else:
         os.makedirs(newoutdir, exist_ok=True)
         local_cmds = []
         for samp in samplist:
-            local_cmds.append(f"hadd -j {args.ncpu} -v 0 {newoutdir}/{samp}.root {outputdir}/arrays_*/{syst}/{samp}/*.root")
+            local_cmds.append(
+                f"hadd -j {args.ncpu} -v 0 {newoutdir}/{samp}.root {outputdir}/arrays_*/{syst}/{samp}/*.root"
+            )
         return local_cmds
 
     with alive_bar(len(systlist), title="Creating hadd commands") as bar:
@@ -103,7 +121,9 @@ else:
                 bar()
 
     if len(cmdlist) == 0:
-        print("[red][b]Found zero files to hadd. Are you pointing to the right output directory?[/][/]")
+        print(
+            "[red][b]Found zero files to hadd. Are you pointing to the right output directory?[/][/]"
+        )
         exit()
 
     haddfile = f"{outputdir}/dohadd.sh"
@@ -126,16 +146,20 @@ os.system("mkdir -p " + current_dir)
 suffix = os.path.basename(outputdir.rstrip("/")) + retry_suffix
 hadd_sh = f"{current_dir}/hadd_wrapper_{suffix}.sh"
 hadd_sub = f"{current_dir}/hadd_{suffix}.sub"
-haddfile_copy = f"{current_dir}/{os.path.basename(haddfile).replace('.sh', '')}_{suffix}.sh"
+haddfile_copy = (
+    f"{current_dir}/{os.path.basename(haddfile).replace('.sh', '')}_{suffix}.sh"
+)
 shutil.copy(haddfile, haddfile_copy)
 
 os.system(f"mkdir -p {current_dir}/hadd_logs")
 
 with open(hadd_sh, "w") as f:
     f.write("#!/bin/bash\n")
-    f.write("source /cvmfs/sft.cern.ch/lcg/views/LCG_105/x86_64-el9-gcc11-opt/setup.sh\n")
+    f.write(
+        "source /cvmfs/sft.cern.ch/lcg/views/LCG_105/x86_64-el9-gcc11-opt/setup.sh\n"
+    )
     f.write("LINE_NUM=$(($1 + 1))\n")
-    f.write("COMMAND=$(sed -n \"${LINE_NUM}p\" $2)\n")
+    f.write('COMMAND=$(sed -n "${LINE_NUM}p" $2)\n')
     f.write('echo "Executing: $COMMAND"\n')
     f.write('eval "$COMMAND"\n')
 os.chmod(hadd_sh, 0o755)

@@ -86,7 +86,11 @@ class NanoProcessor(processor.ProcessorABC):
                 muonpTratioCut = 0.8
             isolepdz, isolepdxy, isolepsip3d = 0.01, 0.002, 2
         elif "WcE" in self.selMod or "semittE" in self.selMod:
-            triggers = ["Ele32_WPTight_Gsf", "Ele32_WPTight_Gsf_L1DoubleEG", "Ele30_WPTight_Gsf"]
+            triggers = [
+                "Ele32_WPTight_Gsf",
+                "Ele32_WPTight_Gsf_L1DoubleEG",
+                "Ele30_WPTight_Gsf",
+            ]
             isEle = True
             dxySigcut = 0.0
             muNeEmSum = 1.0
@@ -671,7 +675,7 @@ class NanoProcessor(processor.ProcessorABC):
                 systematics,
                 dataset,
                 isRealData,
-                schema="CFM"
+                schema="CFM",
             )
 
         return {dataset: output}

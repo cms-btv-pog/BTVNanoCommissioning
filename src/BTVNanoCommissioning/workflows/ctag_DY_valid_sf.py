@@ -271,9 +271,10 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Dijet properties
         two_jets_mask = ak.num(pruned_ev.SelJet) >= 2
-        dijet = ak.mask(pruned_ev.SelJet, two_jets_mask)[:, 0] + ak.mask(
-            pruned_ev.SelJet, two_jets_mask
-        )[:, 1]
+        dijet = (
+            ak.mask(pruned_ev.SelJet, two_jets_mask)[:, 0]
+            + ak.mask(pruned_ev.SelJet, two_jets_mask)[:, 1]
+        )
         pruned_ev["dijet_pt"] = ak.fill_none(dijet.pt, -1.0)
         pruned_ev["dijet_eta"] = ak.fill_none(dijet.eta, -99.0)
         pruned_ev["dijet_phi"] = ak.fill_none(dijet.phi, -99.0)
