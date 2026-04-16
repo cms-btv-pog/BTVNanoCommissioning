@@ -33,14 +33,6 @@ from BTVNanoCommissioning.workflows.ctag_DY_valid_sf import (
     NanoProcessor as CTAGDYValidSFProcessor,
 )
 
-# 2D pseudo-continuous
-from BTVNanoCommissioning.workflows._2D_ttsemilep_valid_sf import (
-    NanoProcessor as _2DTTsemilepValidSFProcessor,
-)
-from BTVNanoCommissioning.workflows._2D_Wc_valid_sf import (
-    NanoProcessor as _2DWcValidSFProcessor,
-)
-
 # QCD
 from BTVNanoCommissioning.workflows.QCD_validation import (
     NanoProcessor as QCDValidProcessor,
@@ -72,9 +64,6 @@ workflows["validation"] = ValidationProcessor
 
 # TTBar
 workflows["ttdilep_sf"] = partial(TTdilepValidSFProcessor, selectionModifier="tt_dilep")
-workflows["2D_emu_ttdilep_sf"] = partial(
-    TTdilepValidSFProcessor, selectionModifier="ttdilep_sf_2D"
-)
 workflows["ttsemilep_sf"] = partial(
     TTsemilepValidSFProcessor, selectionModifier="tt_semilep"
 )
@@ -99,12 +88,6 @@ workflows["ctag_ttsemilep_noMuVeto_sf"] = partial(
 workflows["ectag_ttsemilep_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="semittE"
 )
-workflows["2D_e_ttsemilep_sf"] = partial(
-    _2DTTsemilepValidSFProcessor, selectionModifier="semittE_2D"
-)
-workflows["2D_mu_ttsemilep_sf"] = partial(
-    _2DTTsemilepValidSFProcessor, selectionModifier="semittM_2D"
-)
 
 workflows["sf_ttsemilep_tnp"] = TTsemilepTnPSFProcessor
 
@@ -117,9 +100,7 @@ workflows["ctag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="W
 workflows["ctag_Wc_noMuVeto_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="WcM_noMuVeto"
 )
-workflows["2D_mu_Wc_sf"] = partial(_2DWcValidSFProcessor, selectionModifier="WcM_2D")
 workflows["ectag_Wc_sf"] = partial(CTAGWcTTValidSFProcessor, selectionModifier="WcE")
-workflows["2D_e_Wc_sf"] = partial(_2DWcValidSFProcessor, selectionModifier="WcE_2D")
 workflows["ctag_Wc_WP_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="cutbased_WcM"
 )
@@ -130,14 +111,10 @@ workflows["ectag_Wc_WP_sf"] = partial(
 # DY
 workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM_ctag")
 workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE_ctag")
-workflows["2D_mu_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM_2D")
-workflows["2D_e_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE_2D")
-
 
 # DY light jet SF with negative tag method
 workflows["DY_sfl"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYM")
 workflows["eDY_sfl"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYE")
-
 
 # Tutorial
 workflows["example"] = ExampleProcessor
