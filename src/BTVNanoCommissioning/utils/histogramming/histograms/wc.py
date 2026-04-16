@@ -1,6 +1,6 @@
 import hist as Hist
 
-from BTVNanoCommissioning.utils.selection import btag_wp_dict
+from BTVNanoCommissioning.utils.selection import wp_dict
 
 
 def get_histograms(axes, **kwargs):
@@ -114,8 +114,9 @@ def get_histograms(axes, **kwargs):
 
     for obj in obj_list:
         if "mujet" in obj and cutbased:
-            for tagger in btag_wp_dict[year + "_" + campaign].keys():
-                for wp in btag_wp_dict[year + "_" + campaign][tagger]["c"].keys():
+            wps = wp_dict(year, campaign)
+            for tagger in wps.keys():
+                for wp in wps[tagger]["c"].keys():
                     if not "No" in wp:
                         hists[f"{obj}_pt_{tagger}{wp}"] = Hist.Hist(
                             axes["syst"],
