@@ -3195,13 +3195,13 @@ def common_shifts(self, events):
     if "roccor" in self.SF_map.keys():
         shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, False)
     elif "muonSS" in self.SF_map.keys():
-        shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, True)
+        shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, False)
     else:
         for shift in shifts:
             shift[0]["Muon"] = events.Muon
 
     if "electronSS" in self.SF_map.keys():
-        shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, True)
+        shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, False)
     else:
         for shift in shifts:
             shift[0]["Electron"] = events.Electron
@@ -3265,17 +3265,14 @@ def weight_manager(pruned_ev, SF_map, isSyst):
                 syst_wei,
             )
         if "MUO" in SF_map.keys() and "SelMuon" in pruned_ev.fields:
-            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, True)
+            muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, False)
         if "EGM" in SF_map.keys() and "SelElectron" in pruned_ev.fields:
-            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, True)
-        if (
-            "ctag" in SF_map.keys() or "btag" in SF_map.keys()
-        ) and "SelJet" in pruned_ev.fields:
-            btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", syst_wei)
-            # btagSFs(pruned_ev, SF_map, weights, "DeepJetC", syst_wei)
-            # btagSFs(pruned_ev, SF_map, weights, "DeepJetB", syst_wei)
-            # btagSFs(pruned_ev, SF_map, weights, "DeepCSVB", syst_wei)
-            # btagSFs(pruned_ev, SF_map, weights, "DeepCSVC", syst_wei)
+            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, False)
+        if "BTV" in SF_map.keys() and "SelJet" in pruned_ev.fields:
+            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepJetC", syst_wei)
+            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepJetB", syst_wei)
+            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepCSVB", syst_wei)
+            btagSFs(pruned_ev.SelJet, SF_map, weights, "DeepCSVC", syst_wei)
 
     return weights
 
