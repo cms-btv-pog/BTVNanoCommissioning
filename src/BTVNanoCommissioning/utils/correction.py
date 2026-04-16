@@ -2027,7 +2027,7 @@ def puwei(nPU, correct_map, weights, syst=False):
             weights.add("puweight", correct_map["LUM"][central_key](nPU))
 
 
-def btagSFs(event, correct_map, weights, SFtype, syst=False):
+def btagSFs(jet, correct_map, weights, SFtype, syst=False):
     """
     Apply b-tagging scale factors (SFs) to a single jet.
 
@@ -2035,7 +2035,7 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
     It can optionally apply systematic variations.
 
     Parameters:
-    event (dict): A dictionary containing the properties of the event.
+    jet (dict): A dictionary containing the properties of the jet.
     correct_map (dict): A dictionary containing correction factors and settings for b-tagging scale factors.x
     weights (coffea.weight.Weight): An instance of coffea's Weight class to store the calculated weights.
     SFtype (str): The type of scale factor to apply. Only shape-based C, B are supported.
@@ -2048,7 +2048,6 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
     KeyError: If required keys are missing in the correct_map.
     ValueError: If the SFtype is not recognized or supported.
     """
-    jet = event.SelJet
     if SFtype.endswith("C"):
         systlist = [
             "Extrap",
@@ -2087,13 +2086,13 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
         for nj in range(ak.num(alljet.pt)[0]):
             jet = alljet[:, nj]
             masknone = ak.is_none(jet.pt)
+            jet.btagDeepFlavCvL = ak.fill_none(jet.btagDeepFlavCvL, 0.0)
+            jet.btagDeepFlavCvB = ak.fill_none(jet.btagDeepFlavCvB, 0.0)
+            jet.btagDeepCvL = ak.fill_none(jet.btagDeepCvL, 0.0)
+            jet.btagDeepCvB = ak.fill_none(jet.btagDeepCvB, 0.0)
             jet.hadronFlavour = ak.fill_none(jet.hadronFlavour, 0)
-            if "ctag" in correct_map.keys() and "correctionlib" in str(
-                type(correct_map["ctag"])
-            ):
+            if "correctionlib" in str(type(correct_map["ctag"])):
                 if SFtype == "DeepJetC":
-                    jet.btagDeepFlavCvL = ak.fill_none(jet.btagDeepFlavCvL, 0.0)
-                    jet.btagDeepFlavCvB = ak.fill_none(jet.btagDeepFlavCvB, 0.0)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -2125,9 +2124,7 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                                 jet.btagDeepFlavCvB,
                             ),
                         )
-                elif SFtype == "DeepCSVC":
-                    jet.btagDeepCvL = ak.fill_none(jet.btagDeepCvL, 0.0)
-                    jet.btagDeepCvB = ak.fill_none(jet.btagDeepCvB, 0.0)
+                if SFtype == "DeepCSVC":
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -2158,50 +2155,8 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                             jet.btagDeepCvB,
                         ),
                     )
-                elif SFtype == "UParTAK4BC":
-                    jet_2Dbin = ak.fill_none(jet.btagUParTAK42Dbin, 0)
-                    jet_eta = ak.fill_none(jet.eta, 0)
-                    jet_pt = ak.fill_none(jet.pt, 0)
-                    tmp_sfs = np.where(
-                        masknone,
-                        1.0,
-                        correct_map["ctag"][correct_map["BTV_cfg"]].evaluate(
-                            "central",
-                            jet.hadronFlavour,
-                            jet_2Dbin,
-                            jet_eta,
-                            jet_pt,
-                        ),
-                    )
-                    if syst:
-                        tmp_sfs_up = np.where(
-                            masknone,
-                            1.0,
-                            correct_map["ctag"][correct_map["BTV_cfg"]].evaluate(
-                                f"up_{systlist[i]}",
-                                jet.hadronFlavour,
-                                jet_2Dbin,
-                                jet_eta,
-                                jet_pt,
-                            ),
-                        )
-                        tmp_sfs_down = np.where(
-                            masknone,
-                            1.0,
-                            correct_map["ctag"][correct_map["BTV_cfg"]].evaluate(
-                                f"down_{systlist[i]}",
-                                jet.hadronFlavour,
-                                jet_2Dbin,
-                                jet_eta,
-                                jet_pt,
-                            ),
-                        )
-            elif "btag" in correct_map.keys() and "correctionlib" in str(
-                type(correct_map["btag"])
-            ):
+            if "correctionlib" in str(type(correct_map["btag"])):
                 if SFtype == "DeepJetB":
-                    jet.btagDeepFlavCvL = ak.fill_none(jet.btagDeepFlavCvL, 0.0)
-                    jet.btagDeepFlavCvB = ak.fill_none(jet.btagDeepFlavCvB, 0.0)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -2233,9 +2188,7 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                                 jet.btagDeepFlavCvB,
                             ),
                         )
-                elif SFtype == "DeepCSVB":
-                    jet.btagDeepCvL = ak.fill_none(jet.btagDeepCvL, 0.0)
-                    jet.btagDeepCvB = ak.fill_none(jet.btagDeepCvB, 0.0)
+                if SFtype == "DeepCSVB":
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
