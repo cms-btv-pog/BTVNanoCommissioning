@@ -40,13 +40,13 @@ def _cvmfs_dir(campaign, pog):
     This allows campaigns like Winter25 to route MUO/EGM to a different CVMFS era
     than the default one derived from the campaign name.
     """
-    overrides = config.get(campaign, {}).get("cvmfs_override", {})
+    overrides = config.get(campaign, {}).get("default", {}).get("cvmfs_override", {})
     if pog in overrides:
         return overrides[pog]
     return campaign_map()[campaign]
 
 
-def load_SF(year, campaign, syst=False):
+def load_SF(year, campaign, selMod="default", syst=False):
     """
     Load scale factors (SF) for a given year and campaign.
 
@@ -70,6 +70,8 @@ def load_SF(year, campaign, syst=False):
     Parameters:
     year (str): The year for which to load the scale factors.
     campaign (str): The name of the campaign for which to load the scale factors.
+    selMod (str, optional): The unique selection modifier of the workflow for which to load the scale
+        factors. Default is "default".
     syst (bool, optional): A flag to indicate whether to load systematic variations. Default is False.
 
     Returns:
@@ -83,7 +85,13 @@ def load_SF(year, campaign, syst=False):
     # read the configuration file to get the correct SFs
     correct_map = {"campaign": campaign}
 
-    for SF in config[campaign].keys():
+    conf = copy.copy(config[campaign]["default"])
+    if selMod != "default":
+        for key in conf.keys():
+            if key in config[campaign][selMod].keys():
+                conf[key] = copy.copy(config[campaign][selMod][key])
+
+    for SF in conf.keys():
         if SF == "DC":
             continue
 
@@ -105,9 +113,7 @@ def load_SF(year, campaign, syst=False):
             ## Otherwise custom files
             else:
                 _pu_path = f"BTVNanoCommissioning.data.LUM.{campaign}"
-                with importlib.resources.path(
-                    _pu_path, config[campaign]["LUM"]
-                ) as filename:
+                with importlib.resources.path(_pu_path, conf["LUM"]) as filename:
                     if str(filename).endswith(".json.gz"):
                         correct_map["LUM"] = correctionlib.CorrectionSet.from_file(
                             str(filename)
@@ -120,17 +126,17 @@ def load_SF(year, campaign, syst=False):
 
         ## btag weight
         elif SF == "BTV":
-            if "btag" in config[campaign]["BTV"].keys() and config[campaign]["BTV"][
-                "btag"
-            ].endswith(".json.gz"):
+            if "btag" in conf["BTV"].keys() and conf["BTV"]["btag"].endswith(
+                ".json.gz"
+            ):
                 correct_map["btag"] = correctionlib.CorrectionSet.from_file(
                     importlib.resources.path(
                         f"BTVNanoCommissioning.data.BTV.{campaign}", filename
                     )
                 )
-            if "ctag" in config[campaign]["BTV"].keys() and config[campaign]["BTV"][
-                "ctag"
-            ].endswith(".json.gz"):
+            if "ctag" in conf["BTV"].keys() and conf["BTV"]["ctag"].endswith(
+                ".json.gz"
+            ):
                 correct_map["btag"] = correctionlib.CorrectionSet.from_file(
                     importlib.resources.path(
                         f"BTVNanoCommissioning.data.BTV.{campaign}", filename
@@ -149,11 +155,11 @@ def load_SF(year, campaign, syst=False):
             else:
                 correct_map["btag"] = {}
                 correct_map["ctag"] = {}
-                correct_map["BTV_cfg"] = config[campaign]["BTV"]
+                correct_map["BTV_cfg"] = conf["BTV"]
                 _btag_path = f"BTVNanoCommissioning.data.BTV.{campaign}"
-                for tagger in config[campaign]["BTV"]:
+                for tagger in conf["BTV"]:
                     with importlib.resources.path(
-                        _btag_path, config[campaign]["BTV"][tagger]
+                        _btag_path, conf["BTV"][tagger]
                     ) as filename:
                         if "B" in tagger:
                             if filename.endswith(".json.gz"):
@@ -182,13 +188,11 @@ def load_SF(year, campaign, syst=False):
         elif SF == "MUO" or SF == "EGM":
             correct_map["MUO_cfg"] = {
                 mu: f
-                for mu, f in config[campaign]["MUO"].items()
+                for mu, f in conf["MUO"].items()
                 if "mu" in mu and "_json" not in mu
             }
             correct_map["EGM_cfg"] = {
-                e: f
-                for e, f in config[campaign]["EGM"].items()
-                if "ele" in e and "_json" not in e
+                e: f for e, f in conf["EGM"].items() if "ele" in e and "_json" not in e
             }
             ## muon
             _muo_cvmfs = _cvmfs_dir(campaign, "MUO")
@@ -211,30 +215,24 @@ def load_SF(year, campaign, syst=False):
                         _ele_path
                     )
             ## json
-            if any(
-                np.char.find(np.array(list(config[campaign]["MUO"].keys())), "mu_json")
-                != -1
-            ):
+            if any(np.char.find(np.array(list(conf["MUO"].keys())), "mu_json") != -1):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/data/MUO/{_muo_cvmfs}/latest/{config[campaign]['MUO']['mu_json']}"
+                    f"src/BTVNanoCommissioning/data/MUO/{_muo_cvmfs}/latest/{conf['MUO']['mu_json']}"
                 )
-            if any(
-                np.char.find(np.array(list(config[campaign]["EGM"].keys())), "ele_json")
-                != -1
-            ):
+            if any(np.char.find(np.array(list(conf["EGM"].keys())), "ele_json") != -1):
                 correct_map["EGM"] = correctionlib.CorrectionSet.from_file(
-                    f"src/BTVNanoCommissioning/data/EGM/{_egm_cvmfs}/latest/{config[campaign]['EGM']['ele_json']}"
+                    f"src/BTVNanoCommissioning/data/EGM/{_egm_cvmfs}/latest/{conf['EGM']['ele_json']}"
                 )
 
             ## check if any custom corrections needed
             # FIXME: (some low pT muons not supported in CMS analysis corrections at the moment)
             if (
-                "histo.json" in "\t".join(list(config[campaign]["MUO"].values()))
-                or "histo.txt" in "\t".join(list(config[campaign]["MUO"].values()))
-                or "histo.root" in "\t".join(list(config[campaign]["MUO"].values()))
-                or "histo.json" in "\t".join(list(config[campaign]["EGM"].values()))
-                or "histo.txt" in "\t".join(list(config[campaign]["EGM"].values()))
-                or "histo.root" in "\t".join(list(config[campaign]["EGM"].values()))
+                "histo.json" in "\t".join(list(conf["MUO"].values()))
+                or "histo.txt" in "\t".join(list(conf["MUO"].values()))
+                or "histo.root" in "\t".join(list(conf["MUO"].values()))
+                or "histo.json" in "\t".join(list(conf["EGM"].values()))
+                or "histo.txt" in "\t".join(list(conf["EGM"].values()))
+                or "histo.root" in "\t".join(list(conf["EGM"].values()))
             ):
                 _mu_path = f"BTVNanoCommissioning.data.MUO.{campaign}"
                 ext = extractor()
@@ -336,7 +334,7 @@ def load_SF(year, campaign, syst=False):
                 correct_map["electronSS"] = correctionlib.CorrectionSet.from_file(
                     _ele_path
                 )
-            correct_map["electronSS_cfg"] = config[campaign]["electronSS"]
+            correct_map["electronSS_cfg"] = conf["electronSS"]
 
         ## Rochester muon momentum correction (Run 2)
         elif SF == "roccor":
@@ -357,32 +355,30 @@ def load_SF(year, campaign, syst=False):
 
         ## JME corrections
         elif SF == "JME":
-            if "name" in config[campaign]["JME"].keys():
+            if "name" in conf["JME"].keys():
                 if not os.path.exists(
-                    f"src/BTVNanoCommissioning/data/JME/{campaign_map()[campaign]}/latest/jec_compiled_{config[campaign]['JME']['name']}.pkl.gz"
+                    f"src/BTVNanoCommissioning/data/JME/{campaign_map()[campaign]}/latest/jec_compiled_{conf['JME']['name']}.pkl.gz"
                 ):
                     _compile_jec_(
                         year,
                         campaign,
-                        config[campaign]["JME"],
-                        f"jec_compiled_{config[campaign]['JME']['name']}",
+                        conf["JME"],
+                        f"jec_compiled_{conf['JME']['name']}",
                     )
 
                 correct_map["JME"] = _load_jmefactory(
                     year,
                     campaign,
-                    f"jec_compiled_{config[campaign]['JME']['name']}.pkl.gz",
+                    f"jec_compiled_{conf['JME']['name']}.pkl.gz",
                 )
-            elif "JME_path" in config[campaign] and os.path.exists(
-                config[campaign]["JME_path"]
-            ):
+            elif "JME_path" in conf and os.path.exists(conf["JME_path"]):
                 # Custom JME path (e.g. preliminary Puppi JEC for Run 2 NanoAODv15)
                 correct_map["JME"] = correctionlib.CorrectionSet.from_file(
-                    config[campaign]["JME_path"]
+                    conf["JME_path"]
                 )
-                correct_map["JME_cfg"] = config[campaign]["JME"]
+                correct_map["JME_cfg"] = conf["JME"]
                 # FIXME need to store the JSON path in case we want to parse the run binning edges for ad-hoc JEC run clamp fix (see _get_jec_run_edges)
-                correct_map["JME_json_path"] = config[campaign]["JME_path"]
+                correct_map["JME_json_path"] = conf["JME_path"]
                 for dataset in correct_map["JME_cfg"].keys():
                     if (
                         np.all(
@@ -430,7 +426,7 @@ def load_SF(year, campaign, syst=False):
                     correct_map["JME"] = correctionlib.CorrectionSet.from_file(
                         _jme_path
                     )
-                correct_map["JME_cfg"] = config[campaign]["JME"]
+                correct_map["JME_cfg"] = conf["JME"]
                 # FIXME need to store the JSON path in case we want to parse the run binning edges for ad-hoc JEC run clamp fix (see _get_jec_run_edges)
                 correct_map["JME_json_path"] = _jme_path
                 for dataset in correct_map["JME_cfg"].keys():
@@ -450,16 +446,12 @@ def load_SF(year, campaign, syst=False):
             if os.path.exists(
                 f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{_cvmfs_dir(campaign, 'JMAR')}/latest/jmar.json.gz"
             ):
-                correct_map["JMAR_cfg"] = {
-                    j: f for j, f in config[campaign]["JMAR"].items()
-                }
+                correct_map["JMAR_cfg"] = {j: f for j, f in conf["JMAR"].items()}
                 correct_map["JMAR"] = correctionlib.CorrectionSet.from_file(
                     f"/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/{_cvmfs_dir(campaign, 'JMAR')}/latest/jmar.json.gz"
                 )
         elif SF == "jetveto":
-            correct_map["jetveto_cfg"] = {
-                j: f for j, f in config[campaign]["jetveto"].items()
-            }
+            correct_map["jetveto_cfg"] = {j: f for j, f in conf["jetveto"].items()}
 
             isRootFile = False
             for val in correct_map["jetveto_cfg"].values():
@@ -478,7 +470,7 @@ def load_SF(year, campaign, syst=False):
                     ext.add_weight_sets(
                         [
                             f"{run} {stack.enter_context(importlib.resources.path(f'BTVNanoCommissioning.data.JME.{campaign}', file))}"
-                            for run, file in config[campaign]["jetveto"].items()
+                            for run, file in conf["jetveto"].items()
                         ]
                     )
                     ext.finalize()
@@ -504,12 +496,14 @@ def load_lumi(campaign):
     FileNotFoundError: If the luminosity mask file does not exist.
     """
 
-    _lumi_path = f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/latest/{config[campaign]["DC"]}'
+    _lumi_path = f'/cvmfs/cms-griddata.cern.ch/cat/metadata/DC/Collisions{campaign[-2:]}/latest/{config[campaign]["default"]["DC"]}'
     if os.path.exists(_lumi_path):
         return LumiMask(_lumi_path)
     else:
         _lumi_path = "BTVNanoCommissioning.data.DC"
-        with importlib.resources.path(_lumi_path, config[campaign]["DC"]) as filename:
+        with importlib.resources.path(
+            _lumi_path, config[campaign]["default"]["DC"]
+        ) as filename:
             return LumiMask(filename)
 
 
@@ -665,7 +659,7 @@ sf_jersmear = cset_jersmear["JERSmear"]
 
 
 # JEC/JES sources for the full set according to
-# https://cms-jerc.web.cern.ch/Recommendations/#case-i
+# https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1
 def get_JES_keys(year: int | str) -> dict[str, set]:
     return {
         "full": {
@@ -711,6 +705,20 @@ def get_JES_keys(year: int | str) -> dict[str, set]:
             f"Regrouped_RelativeSample_{year}",
         },
         "total": {"Total"},
+    }
+
+
+# JER systematic eta bins according to
+# https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-resolution_1
+def get_JER_bins():
+    return {
+        "split": {
+            "eta0to1p93": [0.0, 1.93],
+            "eta1p93to2p5": [1.93, 2.5],
+        },
+        "total": {
+            "Total": [0.0, 2.5],
+        },
     }
 
 
@@ -765,6 +773,14 @@ def get_MET_corr_keys():
     ]
 
 
+def fixPhiRange(phi):
+    if phi < -np.pi:
+        phi = phi + 2.0 * np.pi
+    if phi > np.pi:
+        phi = phi - 2.0 * np.pi
+    return phi
+
+
 def calc_T1_MET(
     met_raw,
     met_nano,
@@ -796,6 +812,7 @@ def calc_T1_MET(
     MET_y = MET_y_baseline - ak.sum(MET_y_shifts, axis=-1)
     pt_miss_final = np.sqrt(MET_x * MET_x + MET_y * MET_y)
     phi_miss_final = np.arctan2(MET_y, MET_x)
+    phi_miss_final = ak.Array([fixPhiRange(_phi) for _phi in phi_miss_final])
 
     if systematic:
         pt_unclustered_up = met_nano.ptUnclusteredUp / met_nano.pt * pt_miss_final
@@ -804,6 +821,13 @@ def calc_T1_MET(
         phi_unclustered_down = (
             met_nano.phiUnclusteredDown / met_nano.phi * phi_miss_final
         )
+        phi_unclustered_up = ak.Array(
+            [fixPhiRange(_phi) for _phi in phi_unclustered_up]
+        )
+        phi_unclustered_down = ak.Array(
+            [fixPhiRange(_phi) for _phi in phi_unclustered_down]
+        )
+
         return (
             pt_miss_final,
             phi_miss_final,
@@ -849,17 +873,27 @@ def JME_shifts(
     ValueError: If the campaign is not recognized or supported.
     """
     dataset = events.metadata["dataset"]
+
     # Year-dependent JES uncertainty names (e.g. Regrouped_Absolute_YYYY)
     # must use the MC JEC campaign year, not the data year.  When MC JECs are
     # borrowed from a different era (e.g. Summer24 JECs for Winter25 data),
     # the config can set "JES_MC_year" to override.
-    jes_year = config.get(campaign, {}).get("JES_MC_year", year)
+    jes_year = config.get(campaign, {}).get("default", {}).get("JES_MC_year", year)
+
+    if not isRealData and systematic != False:
+        jerc_id_arr = systematic.split("_")
+        jes_sources = get_JES_keys(jes_year)
+        if len(jerc_id_arr) >= 2 and jerc_id_arr[0] == "JEC":
+            jes_sources_id = jerc_id_arr[1]
+        else:
+            jes_sources_id = "reduced"  # Default case
+        jer_split = get_JER_bins()
+        if len(jerc_id_arr) == 4 and jerc_id_arr[2] == "JER":
+            jer_split_id = jerc_id_arr[3]
+        else:
+            jer_split_id = "total"  # Default case
+
     jecname = ""
-    syst_list = [
-        i.split("_")[3]
-        for i in correct_map["JME"].keys()
-        if "MC" in i and "L1" not in i and "L2" not in i and "L3" not in i
-    ]
     if "JME" in correct_map.keys():
         ## correctionlib
         if "JME_cfg" in correct_map.keys():
@@ -957,7 +991,7 @@ def JME_shifts(
                 tmp_pt_t1 = np.clip(tmp_pt_t1, 30, None)
                 JEC_input_t1[2] = tmp_pt_t1
 
-            # #FIXME Ad-hoc fix: clamp run number for data L2L3Residual boundary bug.
+            # FIXME Ad-hoc fix: clamp run number for data L2L3Residual boundary bug.
             # correctionlib uses half-open [low, high) bins, so the last run in
             # each era is excluded.  Clamp to (first_edge, last_edge - 1) so
             # that boundary runs still get a valid correction.
@@ -1017,13 +1051,6 @@ def JME_shifts(
                 ## JES/JEC & JER systematics
                 if systematic != False:
                     unc_jets, unc_met = {}, {}
-                    jes_sources = get_JES_keys(jes_year)
-                    jes_sources_id = systematic.split("_")
-                    if len(jes_sources_id) == 2:
-                        jes_sources_id = jes_sources_id[1]
-                    else:
-                        jes_sources_id = "reduced"
-
                     for var in ["up", "down"]:
                         fac = 1.0 if var == "up" else -1.0
 
@@ -1046,33 +1073,72 @@ def JME_shifts(
                             np.float32,
                         )
                         t1j["pt"] = t1j[f"pt_JECnom_JER{var}"]
-                        met_pt_JECnom_JERvar, met_phi_JECnom_JERvar = calc_T1_MET(
-                            met_raw,
-                            met_nano,
-                            ak.unflatten(t1j, nt1j),
-                            campaign,
-                        )
 
-                        ## JER uncertainty
-                        unc_jets[f"JER{var}"] = copy.copy(nocorrjet)
-                        unc_jets[f"JER{var}"]["pt"] = ak.values_astype(
-                            ak.unflatten(j[f"pt_JECnom_JER{var}"], nj),
-                            np.float32,
-                        )
-                        unc_jets[f"JER{var}"]["mass"] = ak.values_astype(
-                            ak.unflatten(j[f"mass_JECnom_JER{var}"], nj),
-                            np.float32,
-                        )
+                        ## loop over JER uncertainties
+                        if jer_split_id in jer_split.keys():
+                            jer_bins = jer_split[jer_split_id]
+                            for jer_bin_name in jer_bins.keys():
+                                jer_bin_low = jer_bins[jer_bin_name][0]
+                                jer_bin_high = jer_bins[jer_bin_name][1]
 
-                        unc_met[f"JER{var}"] = copy.copy(nocorrmet)
-                        unc_met[f"JER{var}"]["pt"] = ak.values_astype(
-                            met_pt_JECnom_JERvar,
-                            np.float32,
-                        )
-                        unc_met[f"JER{var}"]["phi"] = ak.values_astype(
-                            met_phi_JECnom_JERvar,
-                            np.float32,
-                        )
+                                jer_shifted_pt = np.where(
+                                    (j["eta"] >= jer_bin_low)
+                                    & (j["eta"] < jer_bin_high),
+                                    j[f"pt_JECnom_JER{var}"],
+                                    j["pt_JECnom_JERnom"],
+                                )
+                                jer_shifted_mass = np.where(
+                                    (j["eta"] >= jer_bin_low)
+                                    & (j["eta"] < jer_bin_high),
+                                    j[f"mass_JECnom_JER{var}"],
+                                    j["mass_JECnom_JERnom"],
+                                )
+                                t1j["pt"] = np.where(
+                                    (t1j["eta"] >= jer_bin_low)
+                                    & (t1j["eta"] < jer_bin_high),
+                                    t1j[f"pt_JECnom_JER{var}"],
+                                    t1j["pt_JECnom_JERnom"],
+                                )
+                                met_pt_JECnom_JERvar, met_phi_JECnom_JERvar = (
+                                    calc_T1_MET(
+                                        met_raw,
+                                        met_nano,
+                                        ak.unflatten(t1j, nt1j),
+                                        campaign,
+                                    )
+                                )
+
+                                unc_jets[f"JER{jer_bin_name}{var}"] = copy.copy(
+                                    nocorrjet
+                                )
+                                unc_jets[f"JER{jer_bin_name}{var}"]["pt"] = (
+                                    ak.values_astype(
+                                        ak.unflatten(jer_shifted_pt, nj),
+                                        np.float32,
+                                    )
+                                )
+                                unc_jets[f"JER{jer_bin_name}{var}"]["mass"] = (
+                                    ak.values_astype(
+                                        ak.unflatten(jer_shifted_mass, nj),
+                                        np.float32,
+                                    )
+                                )
+
+                                unc_met[f"JER{jer_bin_name}{var}"] = copy.copy(
+                                    nocorrmet
+                                )
+                                unc_met[f"JER{jer_bin_name}{var}"]["pt"] = (
+                                    ak.values_astype(
+                                        met_pt_JECnom_JERvar,
+                                        np.float32,
+                                    )
+                                )
+                                unc_met[f"JER{jer_bin_name}{var}"]["phi"] = (
+                                    ak.values_astype(
+                                        met_phi_JECnom_JERvar,
+                                        np.float32,
+                                    )
+                                )
 
                         ## unclustered MET uncertainty
                         if var == "up":
@@ -1081,17 +1147,6 @@ def JME_shifts(
                         else:
                             shifted_met_pt = pt_unclustered_down
                             shifted_met_phi = phi_unclustered_down
-
-                        def fixPhiRange(phi):
-                            if phi < -np.pi:
-                                phi = phi + 2.0 * np.pi
-                            if phi > np.pi:
-                                phi = phi - 2.0 * np.pi
-                            return phi
-
-                        shifted_met_phi = ak.Array(
-                            [fixPhiRange(_phi) for _phi in shifted_met_phi]
-                        )
 
                         unc_met[f"MET_UnclusteredEnergy{var}"] = copy.copy(nocorrmet)
                         unc_met[f"MET_UnclusteredEnergy{var}"]["pt"] = ak.values_astype(
@@ -1191,18 +1246,20 @@ def JME_shifts(
                                     )
                                 )
 
-                    jets["JER"] = ak.zip(
-                        {
-                            "up": unc_jets["JERup"],
-                            "down": unc_jets["JERdown"],
-                        }
-                    )
-                    met["JER"] = ak.zip(
-                        {
-                            "up": unc_met["JERup"],
-                            "down": unc_met["JERdown"],
-                        }
-                    )
+                    if jer_split_id in jer_split.keys():
+                        for jer_bin_name in jer_split[jer_split_id]:
+                            jets[f"JER_{jer_bin_name}"] = ak.zip(
+                                {
+                                    "up": unc_jets[f"JER{jer_bin_name}up"],
+                                    "down": unc_jets[f"JER{jer_bin_name}down"],
+                                }
+                            )
+                            met[f"JER_{jer_bin_name}"] = ak.zip(
+                                {
+                                    "up": unc_met[f"JER{jer_bin_name}up"],
+                                    "down": unc_met[f"JER{jer_bin_name}down"],
+                                }
+                            )
                     met["MET_UnclusteredEnergy"] = ak.zip(
                         {
                             "up": unc_met["MET_UnclusteredEnergyup"],
@@ -1278,29 +1335,25 @@ def JME_shifts(
                         "UESDown",
                     ),
                 ]
-            if "JER" in jets.fields:
-                shifts += [
-                    (
-                        {
-                            "Jet": jets.JER.up,
-                            "MET": met.JER.up,
-                        },
-                        "JERUp",
-                    ),
-                    (
-                        {
-                            "Jet": jets.JER.down,
-                            "MET": met.JER.down,
-                        },
-                        "JERDown",
-                    ),
-                ]
-            jes_sources = get_JES_keys(jes_year)
-            jes_sources_id = systematic.split("_")
-            if len(jes_sources_id) == 2:
-                jes_sources_id = jes_sources_id[1]
-            else:
-                jes_sources_id = "reduced"
+            if jer_split_id in jer_split.keys():
+                for jer_bin_name in jer_split[jer_split_id]:
+                    if f"JER_{jer_bin_name}" in jets.fields:
+                        shifts += [
+                            (
+                                {
+                                    "Jet": jets[f"JER_{jer_bin_name}"]["up"],
+                                    "MET": met[f"JER_{jer_bin_name}"]["up"],
+                                },
+                                f"JER{jer_bin_name}Up",
+                            ),
+                            (
+                                {
+                                    "Jet": jets[f"JER_{jer_bin_name}"]["down"],
+                                    "MET": met[f"JER_{jer_bin_name}"]["down"],
+                                },
+                                f"JER{jer_bin_name}Down",
+                            ),
+                        ]
             if jes_sources_id in jes_sources.keys():
                 for jes_syst in jes_sources[jes_sources_id]:
                     if f"JES_{jes_syst}" in jets.fields:
@@ -1581,7 +1634,7 @@ def EGM_shifts(shifts, correct_map, events, isRealData, systematic=False):
     events_run = ak.flatten(ak.broadcast_arrays(events.run, ele.eta)[0])
     ele_etaSC = (
         ak.flatten(ele.superclusterEta)
-        if "Summer24" in correct_map["campaign"]
+        if correct_map["campaign"] in ["Summer24", "Winter25", "Prompt25"]
         else ak.flatten(ele.eta + ele.deltaEtaSC)
     )
     ele_r9 = ak.flatten(ele.r9)
@@ -2771,24 +2824,24 @@ class JPCalibHandler(object):
             isRealData: whether the dataset is real data
             dataset: dataset name from events.metadata["dataset"]
         """
-        if "JPCalib" not in config[campaign].keys():
+        if "JPCalib" not in config[campaign]["default"].keys():
             templates = uproot.open(
                 "src/BTVNanoCommissioning/data/JPCalib/Summer22Run3/calibeHistoWrite_MC2022_NANO130X_v2.root"
             )
         else:
             if isRealData:
                 if isSyst is not False:
-                    filename = config[campaign]["JPCalib"]["MC"]
+                    filename = config[campaign]["default"]["JPCalib"]["MC"]
                 else:
                     filename = "default"
-                    for key in config[campaign]["JPCalib"]:
+                    for key in config[campaign]["default"]["JPCalib"]:
                         if key in dataset:
-                            filename = config[campaign]["JPCalib"][key]
+                            filename = config[campaign]["default"]["JPCalib"][key]
                             break
                     if filename == "default":
                         raise ValueError(f"No JPCalib file found for dataset {dataset}")
             else:
-                filename = config[campaign]["JPCalib"]["MC"]
+                filename = config[campaign]["default"]["JPCalib"]["MC"]
 
             templates = uproot.open(
                 f"src/BTVNanoCommissioning/data/JPCalib/{campaign}/{filename}"

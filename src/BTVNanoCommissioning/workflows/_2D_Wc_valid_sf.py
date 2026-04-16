@@ -44,9 +44,9 @@ class NanoProcessor(processor.ProcessorABC):
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
-        ## Load corrections
-        self.SF_map = load_SF(self._year, self._campaign)
         self.selMod = selectionModifier
+        ## Load corrections
+        self.SF_map = load_SF(self._year, self._campaign, self.selMod)
 
     @property
     def accumulator(self):
@@ -556,9 +556,7 @@ class NanoProcessor(processor.ProcessorABC):
                         flatten(genflavor),
                         flatten(ak.broadcast_arrays(osss, sjets["pt"])[0]),
                         flatten(sjets[histname]),
-                        weight=flatten(
-                            ak.broadcast_arrays(weight, sjets["pt"])[0]
-                        ),
+                        weight=flatten(ak.broadcast_arrays(weight, sjets["pt"])[0]),
                     )
                 elif (
                     "PFCands" in events.fields
@@ -570,9 +568,7 @@ class NanoProcessor(processor.ProcessorABC):
                         flatten(ak.broadcast_arrays(smflav, spfcands["pt"])[0]),
                         flatten(ak.broadcast_arrays(osss, spfcands["pt"])[0]),
                         flatten(spfcands[histname.replace("PFCands_", "")]),
-                        weight=flatten(
-                            ak.broadcast_arrays(weight, spfcands["pt"])[0]
-                        ),
+                        weight=flatten(ak.broadcast_arrays(weight, spfcands["pt"])[0]),
                     )
                 elif "jet_" in histname and "mu" not in histname:
                     h.fill(

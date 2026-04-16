@@ -210,7 +210,7 @@ def ele_promptmvaid(events, campaign):
     # https://indico.cern.ch/event/1575017/contributions/6635248/attachments/3115862/5524310/EGammaAug08.pdf
     ele_etaSC = (
         events.Electron.eta + events.Electron.deltaEtaSC
-        if "Summer24" not in campaign and "Prompt25" not in campaign
+        if campaign not in ["Summer24", "Winter25", "Prompt25"]
         else events.Electron.superclusterEta
     )
     elemask = (

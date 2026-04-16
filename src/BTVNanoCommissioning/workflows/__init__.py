@@ -100,10 +100,10 @@ workflows["ectag_ttsemilep_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="semittE"
 )
 workflows["2D_e_ttsemilep_sf"] = partial(
-    _2DTTsemilepValidSFProcessor, selectionModifier="semittE"
+    _2DTTsemilepValidSFProcessor, selectionModifier="semittE_2D"
 )
 workflows["2D_mu_ttsemilep_sf"] = partial(
-    _2DTTsemilepValidSFProcessor, selectionModifier="semittM"
+    _2DTTsemilepValidSFProcessor, selectionModifier="semittM_2D"
 )
 
 workflows["sf_ttsemilep_tnp"] = TTsemilepTnPSFProcessor
@@ -128,8 +128,8 @@ workflows["ectag_Wc_WP_sf"] = partial(
 )
 
 # DY
-workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
-workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
+workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM_ctag")
+workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE_ctag")
 workflows["2D_mu_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM_2D")
 workflows["2D_e_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE_2D")
 

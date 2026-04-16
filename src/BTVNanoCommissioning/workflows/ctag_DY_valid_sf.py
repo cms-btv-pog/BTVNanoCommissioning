@@ -34,7 +34,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
-        selectionModifier="DYM",
+        selectionModifier="DYM_ctag",
     ):
         self._year = year
         self._campaign = campaign
@@ -46,7 +46,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.chunksize = chunksize
         self.selMod = selectionModifier
         # Load corrections
-        self.SF_map = load_SF(self._year, self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign, self.selMod)
 
     @property
     def accumulator(self):
