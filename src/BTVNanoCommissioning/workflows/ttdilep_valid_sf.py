@@ -20,14 +20,14 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 ## load histograms & selctions for this workflow
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
-    histo_writter,
+    histo_writer,
 )
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
     jet_id,
-    mu_idiso,
-    ele_cuttightid,
+    mu_promptmvaid,
+    ele_promptmvaid,
     btag_wp,
 )
 
@@ -42,6 +42,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
+        selectionModifier="tt_dilep",
     ):
         self._year = year
         self._campaign = campaign
@@ -51,8 +52,9 @@ class NanoProcessor(processor.ProcessorABC):
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
+        self.selMod = selectionModifier
         ## Load corrections
-        self.SF_map = load_SF(self._year, self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign, self.selMod)
 
     @property
     def accumulator(self):
@@ -125,7 +127,7 @@ class NanoProcessor(processor.ProcessorABC):
         ## Muon cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
         events.Muon = events.Muon[
-            (events.Muon.pt > 30) & mu_idiso(events, self._campaign)
+            (events.Muon.pt > 25) & mu_promptmvaid(events, self._campaign)
         ]
         events.Muon = ak.pad_none(events.Muon, 1, axis=1)
         req_muon = ak.count(events.Muon.pt, axis=1) == 1
@@ -133,7 +135,7 @@ class NanoProcessor(processor.ProcessorABC):
         ## Electron cuts
         # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
         events.Electron = events.Electron[
-            (events.Electron.pt > 30) & ele_cuttightid(events, self._campaign)
+            (events.Electron.pt > 25) & ele_promptmvaid(events, self._campaign)
         ]
         events.Electron = ak.pad_none(events.Electron, 1, axis=1)
         req_ele = ak.count(events.Electron.pt, axis=1) == 1
@@ -218,7 +220,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Configure histograms
         if not self.noHist:
-            output = histo_writter(
+            output = histo_writer(
                 pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
             )
         # Output arrays

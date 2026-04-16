@@ -205,6 +205,23 @@ def ele_mvatightid(events, campaign):
     return elemask
 
 
+def ele_promptmvaid(events, campaign):
+    # https://indico.cern.ch/event/1575017/contributions/6635248/attachments/3115862/5524310/EGammaAug08.pdf
+    ele_etaSC = (
+        events.Electron.eta + events.Electron.deltaEtaSC
+        if campaign not in ["Summer24", "Winter25", "Prompt25"]
+        else events.Electron.superclusterEta
+    )
+    elemask = (
+        (abs(ele_etaSC) < 1.4442) | ((abs(ele_etaSC) > 1.566) & (abs(ele_etaSC) < 2.5))
+    ) & (
+        events.Electron.promptMVA >= 0.9
+        if "Summer24" in campaign or "Prompt25" in campaign
+        else 0.3
+    )
+    return elemask
+
+
 def softmu_mask(events, campaign, dxySigCut=0):
     softmumask = (
         (events.Muon.pt < 25)
@@ -222,6 +239,19 @@ def mu_idiso(events, campaign):
         (abs(events.Muon.eta) < 2.4)
         & (events.Muon.tightId > 0.5)
         & (events.Muon.pfRelIso04_all <= 0.15)
+    )
+    return mumask
+
+
+def mu_promptmvaid(events, campaign):
+    # https://muon-wiki.docs.cern.ch/guidelines/recommendations/#prompt-mva-formerly-tth-mva
+    # https://muon-wiki.docs.cern.ch/guidelines/recommendations/#muon-isolation
+    # https://cms-talk.web.cern.ch/t/prompt-mva-sfs-definition/132578
+    # https://indico.cern.ch/event/1351304/contributions/5688794/attachments/2765665/4817340/CarlosVico_Muon_mvaTTH_24nov2023.pdf (slide 5 for WP)
+    mumask = (
+        (abs(events.Muon.eta) < 2.4)
+        & (events.Muon.tightId > 0.5)
+        & (events.Muon.promptMVA > 0.64)
     )
     return mumask
 
