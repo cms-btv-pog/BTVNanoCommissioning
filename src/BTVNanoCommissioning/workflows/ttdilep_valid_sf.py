@@ -128,7 +128,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Muon cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
-        if self.campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
+        if self._campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
             events.Muon = events.Muon[
                 (events.Muon.pt > 25) & mu_promptmvaid(events, self._campaign)
             ]
@@ -141,7 +141,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Electron cuts
         # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
-        if self.campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
+        if self._campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
             events.Electron = events.Electron[
                 (events.Electron.pt > 25) & ele_promptmvaid(events, self._campaign)
             ]
