@@ -227,8 +227,8 @@ correction_config = {
             "DC": "Cert_Collisions2023_366442_370790_Golden.json",
             "LUM": "puwei_Summer23.histo.root",
             "JME": {
-                "MC": "Summer23Prompt23_V2 Summer23Prompt23_RunCv1234_JRV1",
-                "Run2023C": "Summer23Prompt23_V2",
+                "MC": "Summer23Prompt23_V3 Summer23Prompt23_RunCv1234_JRV1",
+                "Run2023C": "Summer23Prompt23_V3",
             },
             "jetveto": {"Summer23Prompt23_RunC_V1": "jetvetomap"},
             "JPCalib": {
