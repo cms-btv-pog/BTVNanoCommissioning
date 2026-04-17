@@ -20,7 +20,9 @@ hep.style.use("CMS")
 hep.style.use("CMS")
 
 
-parser = argparse.ArgumentParser(description="Make plots with systematics from coffea files.")
+parser = argparse.ArgumentParser(
+    description="Make plots with systematics from coffea files."
+)
 parser.add_argument(
     "-i",
     "--input",
@@ -154,7 +156,9 @@ parser.add_argument(
     help="Specify mergemap as dict: `{merge1:[dataset1,dataset2]...}`. Also works with a json file containing a dict.",
 )
 parser.add_argument(
-    "--log", action="store_true", help="Save an additional plot with log scale on y axis (default = False)."
+    "--log",
+    action="store_true",
+    help="Save an additional plot with log scale on y axis (default = False).",
 )
 
 
