@@ -20,7 +20,7 @@ hep.style.use("CMS")
 hep.style.use("CMS")
 
 
-parser = argparse.ArgumentParser(description="Make templates from coffea files.")
+parser = argparse.ArgumentParser(description="Make plots with systematics from coffea files.")
 parser.add_argument(
     "-i",
     "--input",
@@ -154,7 +154,7 @@ parser.add_argument(
     help="Specify mergemap as dict: `{merge1:[dataset1,dataset2]...}`. Also works with a json file containing a dict.",
 )
 parser.add_argument(
-    "--log", action="store_true", help="Log scale on y axis (default = False)."
+    "--log", action="store_true", help="Save an additional plot with log scale on y axis (default = False)."
 )
 
 
@@ -250,7 +250,7 @@ def jes_year(campaign):
         return "2023BPix"
     if campaign == "Summer24":
         return "2024"
-    if campaign == "Summer25":
+    if campaign == "Prompt25":
         return "2025"
     return campaign
 
