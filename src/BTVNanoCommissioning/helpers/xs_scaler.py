@@ -217,7 +217,7 @@ def collate(merged_output, mergemap):
     for group, names in mergemap.items():
         out[group] = accumulate(
             [
-                copy.deepcopy(v)
+                v
                 for k, v in merged_output.items()
                 if k.split("_FNAME_")[0] in names
             ]

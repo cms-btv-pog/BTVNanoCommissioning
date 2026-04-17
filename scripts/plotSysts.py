@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 import numpy as np
 import glob, json, argparse, math, copy, os, warnings
+import gc
 
 from BTVNanoCommissioning.utils.plot_utils import (
     sample_mergemap,
@@ -331,7 +332,7 @@ def plot_band(ax, unc_up, unc_down, edges, label):
 
 
 def plot_systs(
-    inputs,
+    collated,
     variable,
     workflow,
     campaign,
@@ -343,14 +344,6 @@ def plot_systs(
     outdir,
     scale=1.0,
 ):
-    inputs = scaleSumW(inputs, lumi)
-    mergemap["data"] = [m for m in inputs.keys() if "Run" in m]
-    collated = collate(inputs, mergemap)
-    collated = {
-        key: value for key, value in collated.items() if isinstance(collated[key], dict)
-    }
-    print("Samples:", collated.keys())
-
     h_mc = collated["mc"][variable]
     h_data = collated["data"][variable]
 
@@ -612,7 +605,7 @@ def plot_systs(
             h_up = collated["mc"][f"{variable}_UEPS_FSRUp"][axis_up]
             h_down = collated["mc"][f"{variable}_UEPS_FSRDown"][axis_down]
         # For W+c workflows
-        if "_Wc_" in workflow:
+        if "_Wc_" in workflow and "ttbar" not in syst:
             h_up = do_osss(osss, h_up)
             h_down = do_osss(osss, h_down)
 
@@ -862,6 +855,14 @@ if __name__ == "__main__":
     mergemap["mc"] = mclist
     mergemap["data"] = datalist
 
+    inputs = scaleSumW(inputs, args.lumi)
+    mergemap["data"] = [m for m in inputs.keys() if "Run" in m]
+    collated = collate(inputs, mergemap)
+    collated = {
+        key: value for key, value in collated.items() if isinstance(collated[key], dict)
+    }
+    print("Samples:", collated.keys())
+
     vars = args.vars.strip().split(",")
 
     outdir = f"{args.outdir}/{args.campaign}/{args.workflow}_/"
@@ -870,7 +871,7 @@ if __name__ == "__main__":
 
     for var in vars:
         data_over_mc = plot_systs(
-            inputs,
+            collated,
             var,
             args.workflow,
             args.campaign,
@@ -883,7 +884,7 @@ if __name__ == "__main__":
         )
         if "top_pt" not in var:
             plot_systs(
-                inputs,
+                collated,
                 var,
                 args.workflow,
                 args.campaign,
