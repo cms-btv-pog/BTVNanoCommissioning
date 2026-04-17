@@ -28,6 +28,8 @@ from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_promptmvaid,
     ele_promptmvaid,
+    mu_idiso,
+    ele_cuttightid,
     btag_wp,
 )
 
@@ -126,17 +128,28 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Muon cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
-        events.Muon = events.Muon[
-            (events.Muon.pt > 25) & mu_promptmvaid(events, self._campaign)
-        ]
+        if self.campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
+            events.Muon = events.Muon[
+                (events.Muon.pt > 25) & mu_promptmvaid(events, self._campaign)
+            ]
+        else:
+            events.Muon = events.Muon[
+                (events.Muon.pt > 25) & mu_idiso(events, self._campaign)
+            ]
         events.Muon = ak.pad_none(events.Muon, 1, axis=1)
         req_muon = ak.count(events.Muon.pt, axis=1) == 1
 
         ## Electron cuts
         # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
-        events.Electron = events.Electron[
-            (events.Electron.pt > 25) & ele_promptmvaid(events, self._campaign)
-        ]
+        if self.campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
+            events.Electron = events.Electron[
+                (events.Electron.pt > 25) & ele_promptmvaid(events, self._campaign)
+            ]
+        else:
+            events.Electron = events.Electron[
+                (events.Electron.pt > 25) & ele_cuttightid(events, self._campaign)
+            ]
+
         events.Electron = ak.pad_none(events.Electron, 1, axis=1)
         req_ele = ak.count(events.Electron.pt, axis=1) == 1
 
