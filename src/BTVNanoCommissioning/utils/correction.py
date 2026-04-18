@@ -87,9 +87,10 @@ def load_SF(year, campaign, selMod="default", syst=False):
 
     conf = copy.copy(config[campaign]["default"])
     if selMod != "default":
-        for key in conf.keys():
-            if key in config[campaign][selMod].keys():
-                conf[key] = copy.copy(config[campaign][selMod][key])
+        if selMod in config[campaign].keys():
+            for key in conf.keys():
+                if key in config[campaign][selMod].keys():
+                    conf[key] = copy.copy(config[campaign][selMod][key])
 
     for SF in conf.keys():
         if SF == "DC":
