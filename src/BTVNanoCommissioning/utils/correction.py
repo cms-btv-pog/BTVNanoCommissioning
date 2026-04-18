@@ -196,8 +196,8 @@ def load_SF(year, campaign, selMod="default", syst=False):
                 e: f for e, f in conf["EGM"].items() if "ele" in e and "_json" not in e
             }
             ## muon
-            _mu_cvmfs = _cvmfs_dir(campaign, "MUO")
-            _mu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{_mu_cvmfs}/latest/muon_Z.json.gz"
+            _muo_cvmfs = _cvmfs_dir(campaign, "MUO")
+            _mu_path = f"/cvmfs/cms-griddata.cern.ch/cat/metadata/MUO/{_muo_cvmfs}/latest/muon_Z.json.gz"
             if os.path.exists(_mu_path):
                 correct_map["MUO"] = correctionlib.CorrectionSet.from_file(_mu_path)
             ## electron
