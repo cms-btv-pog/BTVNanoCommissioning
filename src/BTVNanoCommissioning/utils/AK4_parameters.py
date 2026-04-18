@@ -431,20 +431,77 @@ correction_config = {
             # JME: data L2L3Residual from Winter25 JME era.
             # JME_MC: MC truth JECs must come from the Summer24 era (L2Relative differs).
             # jetveto: jetvetomap from Winter25 JME era.
-            # MUO: 2025 SFs available (muon_Z.json.gz under muo_SF25_Z_and_highpt/,
-            #       copied to local data/ fallback.
             # muonSS: no 2025 muon scale/smearing yet, reuse Summer24.
             # EGM: no 2025 electron ID SFs yet (electron.json.gz), reuse Summer24.
-            # electronSS: 2025 SaS available.
             "cvmfs_override": {
                 "JME": "Run3-25Prompt-Winter25-NanoAODv15",
                 "JME_MC": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
                 "jetveto": "Run3-25Prompt-Winter25-NanoAODv15",
-                "MUO": "Run3-25Prompt-Summer24-NanoAODv15",
                 "muonSS": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
                 "EGM": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
-                "electronSS": "Run3-25Prompt-Summer24-NanoAODv15",
             },
+        },
+        "DYM_2D": {
+            "MUO": {
+                "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+                "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+                # TODO: need to derive double lepton trigger SFs
+                # "mu_Trig": "",
+            },
+        },
+        "DYE_2D": {
+            "EGM": {
+                "ele_Reco 2024Prompt Electron-ID-SF": "",
+                "ele_ID 2024Prompt Electron-ID-SF": "wp80iso",
+                # TODO: need to derive double lepton trigger SFs
+                # "ele_Trig 2024Prompt Electron-HLT-SF": "",
+            },
+        },
+        "WcM_2D": {
+            "MUO": {
+                "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+                "mu_Iso": "NUM_TightPFIso_DEN_TightID",
+                "mu_Trig": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",
+            },
+        },
+        "WcE_2D": {
+            "EGM": {
+                "ele_Reco 2024Prompt Electron-ID-SF": "",
+                "ele_ID 2024Prompt Electron-ID-SF": "wp80iso",
+                "ele_Trig 2024Prompt Electron-HLT-SF": "HLT_SF_Ele30_MVAiso80ID",
+            },
+        },
+        "ttdilep_sf_2D": {
+            "MUO": {
+                "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+                "mu_Iso": "NUM_promptMVA_WP64ID_DEN_TightID",
+                # TODO: need to derive double lepton trigger SFs with prompt MVA
+                # "mu_Trig": "",
+            },
+            "EGM": {
+                "ele_Reco 2024Prompt Electron-ID-SF": "",
+                "ele_ID 2024Prompt Electron-ID-SF": "PromptMVA-Tight",
+                # TODO: need to derive double lepton trigger SFs with prompt MVA
+                # "ele_Trig 2024Prompt Electron-HLT-SF": "",
+            },
+        },
+        "semittM_2D": {
+            "MUO": {
+                "mu_ID": "NUM_TightID_DEN_TrackerMuons",
+                "mu_Iso": "NUM_promptMVA_WP64ID_DEN_TightID",
+                # TODO: need to derive single lepton trigger SFs with prompt MVA
+                "mu_Trig": "NUM_IsoMu24_DEN_CutBasedIdTight_and_PFIsoTight",  # for now
+            },
+            # "BTV": ["ctag", "UParTAK4_pseudocontinuous"],
+        },
+        "semittE_2D": {
+            "EGM": {
+                "ele_Reco 2024Prompt Electron-ID-SF": "",
+                "ele_ID 2024Prompt Electron-ID-SF": "PromptMVA-Tight",
+                # TODO: need to derive single lepton trigger SFs with prompt MVA
+                "ele_Trig 2024Prompt Electron-HLT-SF": "HLT_SF_Ele30_MVAiso80ID",  # for now
+            },
+            # "BTV": ["ctag", "UParTAK4_pseudocontinuous"],
         },
     },
     "prompt_dataMC": {
