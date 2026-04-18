@@ -71,7 +71,7 @@ workflows = {}
 workflows["validation"] = ValidationProcessor
 
 # TTBar
-workflows["ttdilep_sf"] = TTdilepValidSFProcessor
+workflows["ttdilep_sf"] = partial(TTdilepValidSFProcessor, selectionModifier="tt_dilep")
 workflows["2D_emu_ttdilep_sf"] = partial(
     TTdilepValidSFProcessor, selectionModifier="ttdilep_sf_2D"
 )
