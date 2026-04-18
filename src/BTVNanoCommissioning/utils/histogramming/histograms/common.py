@@ -163,7 +163,7 @@ def _get_discriminators(axes, **kwargs):
             continue
 
         disc_axes = {
-            "btag": Hist.axis.Regular(50, 0, 1, name="discr", label=d),
+            "btag": Hist.axis.Regular(50, 0.0, 1, name="discr", label=d),
             "Bprob": Hist.axis.Regular(50, 0, 10, name="discr", label=d),
             "Res": Hist.axis.Regular(40, 0, 1, name="discr", label=d),
             "Corr": Hist.axis.Regular(40, 0, 2, name="discr", label=d),

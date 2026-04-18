@@ -98,10 +98,10 @@ def get_main_parser():
             "Summer23",
             "Summer23BPix",
             "Summer24",
-            "2018_UL",
-            "2017_UL",
-            "2016preVFP_UL",
-            "2016postVFP_UL",
+            "2018-UL",
+            "2017-UL",
+            "2016preVFP-UL",
+            "2016postVFP-UL",
             "CAMPAIGN_prompt_dataMC",
         ],
         help="Dataset campaign, change the corresponding correction files",
@@ -110,7 +110,16 @@ def get_main_parser():
         "--isSyst",
         default=False,
         type=str,
-        choices=[False, "all", "weight_only", "JERC_split", "JP_MC"],
+        choices=[
+            "False",
+            "all",
+            "weight_only",
+            "JEC_full",
+            "JEC_reduced",
+            "JEC_reduced_JER_split",
+            "JEC_total",
+            "JP_MC",
+        ],
         help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
@@ -194,7 +203,9 @@ if __name__ == "__main__":
     os.mkdir(job_dir + "/log")
 
     # Handle voms proxy
-    proxy_file = get_proxy_path()
+    proxy_file = args.voms
+    if not proxy_file:
+        proxy_file = get_proxy_path()
     os.system(f"scp {proxy_file} proxy")
     print(f"Copied proxy file {proxy_file} to local directory.")
 
@@ -271,7 +282,7 @@ Arguments = $(JOBNUM) {base_dir} {outputDir} {envpath}
 request_cpus = 1
 request_memory = 2000
 
-+JobFlavour = "longlunch"
++JobFlavour = "workday"
 
 Log        = {log_dir}/job.log_$(Cluster)
 Output     = {log_dir}/job.out_$(Cluster)-$(Process)

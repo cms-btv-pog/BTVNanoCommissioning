@@ -70,7 +70,10 @@ class NanoProcessor(processor.ProcessorABC):
 
         isMu = False
         if "DYM" in self.selMod:
-            triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
+            if self._year in ["2016"]:
+                triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ"]
+            else:
+                triggers = ["Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass8"]
             isMu = True
         elif "DYE" in self.selMod:
             triggers = ["Ele23_Ele12_CaloIdL_TrackIdL_IsoVL"]
@@ -246,11 +249,14 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["AllSelJet"] = event_jet[event_level]  # untouched by histo_writter
 
         for tagger, tag_obj in btag_wp_dict[f"{self._year}_{self._campaign}"].items():
+            neg_branch = f"btagNeg{tagger}B"
+            if neg_branch not in event_jet.fields:
+                continue  # btagNeg* branches only exist in BTVNano
             for stringency, wp in tag_obj["b"].items():
                 if stringency == "No":
                     continue
                 mask_postag = event_jet[f"btag{tagger}B"] > wp
-                mask_negtag = event_jet[f"btagNeg{tagger}B"] > wp
+                mask_negtag = event_jet[neg_branch] > wp
                 postag_jet = event_jet[mask_postag][event_level]
                 negtag_jet = event_jet[mask_negtag][event_level]
                 key = f"{tagger}{stringency}"

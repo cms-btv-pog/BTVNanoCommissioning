@@ -38,7 +38,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
-        selectionModifier="semittE",
+        selectionModifier="semittE_2D",
     ):
         self._year = year
         self._campaign = campaign
@@ -48,10 +48,9 @@ class NanoProcessor(processor.ProcessorABC):
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
-        ## Load corrections
-        self.SF_map = load_SF(self._year, self._campaign)
-        ## Add selection for ttbar semileptonic
         self.selMod = selectionModifier
+        ## Load corrections
+        self.SF_map = load_SF(self._year, self._campaign, self.selMod)
 
     @property
     def accumulator(self):
@@ -72,11 +71,11 @@ class NanoProcessor(processor.ProcessorABC):
         isRealData = not hasattr(events, "genWeight")
 
         objs = ["MET", "jet0", "jet1", "jet2", "jet3"]
-        if self.selMod == "semittE":
+        if self.selMod == "semittE_2D":
             objs.append("ele")
             chn = "ele"
             triggers = ["Ele30_WPTight_Gsf"]
-        elif self.selMod == "semittM":
+        elif self.selMod == "semittM_2D":
             objs.append("mu")
             chn = "mu"
             triggers = ["IsoMu24"]
@@ -132,11 +131,11 @@ class NanoProcessor(processor.ProcessorABC):
         req_trig = HLT_helper(events, triggers)
 
         ## Lepton cuts
-        if self.selMod == "semittE":
+        if self.selMod == "semittE_2D":
             event_iso_lep = events.Electron[
                 (events.Electron.pt > 32) & ele_promptmvaid(events, self._campaign)
             ]
-        elif self.selMod == "semittM":
+        elif self.selMod == "semittM_2D":
             event_iso_lep = events.Muon[
                 (events.Muon.pt > 26) & mu_promptmvaid(events, self._campaign)
             ]
@@ -150,9 +149,9 @@ class NanoProcessor(processor.ProcessorABC):
 
         # DY -> mumu veto
         event_iso_lep = ak.pad_none(event_iso_lep, 1, axis=1)
-        if self.selMod == "semittE":
+        if self.selMod == "semittE_2D":
             req_DYveto = np.ones(len(events), dtype="bool")
-        elif self.selMod == "semittM":
+        elif self.selMod == "semittM_2D":
             event_di_mu = event_soft_mu + event_iso_lep[:, 0]
             req_DYveto = (event_di_mu.mass > 12) & (
                 (event_di_mu.mass < 81) | (event_di_mu.mass > 101)
@@ -244,9 +243,9 @@ class NanoProcessor(processor.ProcessorABC):
 
         pruned_ev = events[event_level]
         pruned_ev["SelJet"] = event_jet[event_level][:, :4]
-        if self.selMod == "semittE":
+        if self.selMod == "semittE_2D":
             pruned_ev["SelElectron"] = event_iso_lep[event_level][:, 0]
-        elif self.selMod == "semittM":
+        elif self.selMod == "semittM_2D":
             pruned_ev["SelMuon"] = event_iso_lep[event_level][:, 0]
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
         b_jet_mask = btag_wp(

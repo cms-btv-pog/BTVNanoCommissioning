@@ -5,6 +5,7 @@ import mplhep as hep
 import hist
 from coffea.util import load
 from matplotlib.offsetbox import AnchoredText
+import gc
 
 plt.style.use(hep.style.ROOT)
 
