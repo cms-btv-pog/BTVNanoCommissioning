@@ -175,7 +175,7 @@ python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json
 - `[skip ci]`: not running ci at all in the commit message
 - `ci:skip array` : remove `--isArray` option
 - `ci:skip syst` : remove `--isSyst all` option
-- `ci:JEC_reduced` : change systematic option to split JERC uncertainty sources `--isSyst JEC_reduced`
+- `ci:JEC_reduced` : change systematic option to split JEC uncertainty sources `--isSyst JEC_reduced`
 - `ci:weight_only` : change systematic option to weight only variations `--isSyst weight_only`
 
 <details><summary>Set CI in your github account</summary>
