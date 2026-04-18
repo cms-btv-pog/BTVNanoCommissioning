@@ -270,6 +270,7 @@ periodic_release        = True
 should_transfer_files   = YES
 when_to_transfer_output = ON_EXIT_OR_EVICT
 transfer_input_files    = {transfer_input_files}
+JobBatchName            = {batch_name}
 transfer_output_files   = .success
 
 Queue JOBNUM from {jobnum_file}
@@ -279,6 +280,7 @@ Queue JOBNUM from {jobnum_file}
         log_dir=f"{base_dir}/{job_dir}/log",
         transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt"
         + ("" if args.remoteRepo else f",{base_dir}/BTVNanoCommissioning.tar.gz"),
+        batch_name=args.jobName,
         jobnum_file=f"{base_dir}/{job_dir}/jobnum_list.txt",
     )
     with open(os.path.join(job_dir, "submit.jdl"), "w") as f:
