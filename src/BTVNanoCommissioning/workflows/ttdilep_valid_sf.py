@@ -1,8 +1,5 @@
-import collections, awkward as ak, numpy as np
-import os
-import uproot
+import awkward as ak, numpy as np
 from coffea import processor
-from coffea.analysis_tools import Weights
 
 # functions to load SFs, corrections
 from BTVNanoCommissioning.utils.correction import (
@@ -14,7 +11,7 @@ from BTVNanoCommissioning.utils.correction import (
 )
 
 # user helper function
-from BTVNanoCommissioning.helpers.func import flatten, update, dump_lumi, PFCand_link
+from BTVNanoCommissioning.helpers.func import update, dump_lumi, PFCand_link
 from BTVNanoCommissioning.helpers.update_branch import missing_branch
 
 ## load histograms & selctions for this workflow
@@ -30,7 +27,6 @@ from BTVNanoCommissioning.utils.selection import (
     ele_promptmvaid,
     mu_idiso,
     ele_cuttightid,
-    btag_wp,
 )
 
 
