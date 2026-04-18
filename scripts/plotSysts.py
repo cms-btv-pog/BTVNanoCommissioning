@@ -428,6 +428,7 @@ def plot_systs(
             ax=axs[0],
             xerr=False,
             flow="none",
+            ms=12.0,
         )
 
     # Add black line to ratio plots
