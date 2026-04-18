@@ -1,5 +1,6 @@
 import awkward as ak
 import numpy as np
+from BTVNanoCommissioning.helpers.func import campaign_map
 
 
 def HLT_helper(events, triggers):
