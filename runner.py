@@ -152,9 +152,6 @@ def retry_handler(exception, task_record):
 
 
 ## From condor/submitter.py https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/9edb9ed6bb0b28730b8de9e5aa1142ec4fdf74b7/condor/submitter.py
-# create t
-
-
 def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
     import tarfile
 
@@ -240,9 +237,10 @@ def config_parser(parser):
             "False",
             "all",
             "weight_only",
-            "JERC_full",
-            "JERC_reduced",
-            "JERC_total",
+            "JEC_full",
+            "JEC_reduced",
+            "JEC_reduced_JER_split",
+            "JEC_total",
             "JP_MC",
         ],
         help="Run with systematics (default: %(default)s)",

@@ -61,8 +61,6 @@ if [ ! -f $WORKDIR/BTVNanoCommissioning.tar.gz ]; then
 else
     tar xaf $WORKDIR/BTVNanoCommissioning.tar.gz
 fi
-rm -rf src/BTVNanoCommissioning/jsonpog-integration
-ln -s /cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration src/BTVNanoCommissioning/jsonpog-integration  # link jsonpog-integration
 
 pip install -e .
 
