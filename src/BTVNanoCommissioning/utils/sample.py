@@ -251,7 +251,6 @@ predefined_sample = {
             "TTtoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "WtoLNu-4Jets_TuneCP5_13p6TeV_madgraphMLM-pythia8",
             "TTto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
-            "DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TbarWplustoLNu2Q_TuneCP5_13p6TeV_powheg-pythia8",
             # 2024
@@ -275,7 +274,7 @@ predefined_sample = {
             "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "WZ_TuneCP5_13p6TeV_pythia8",
-            "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
+            # "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZ_TuneCP5_13p6TeV_pythia8",
             "TWminusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -309,7 +308,7 @@ predefined_sample = {
             "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
             "WZ_TuneCP5_13p6TeV_pythia8",
-            "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
+            # "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             "ZZ_TuneCP5_13p6TeV_pythia8",
             "TWminusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
@@ -385,10 +384,10 @@ predefined_sample = {
         "minor_MC": [
             "DYto2L-2Jets_MLL-10to50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
             "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
-            "TbarWplusto2L2Nu_TuneCP5_13p6TeV_powheg-pythia8",
+            "WW_TuneCP5_13p6TeV_pythia8",
             "WZ_TuneCP5_13p6TeV_pythia8",
             "ZZ_TuneCP5_13p6TeV_pythia8",
-            "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
+            # "TTto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TWminusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             "TbarWplusto4Q_TuneCP5_13p6TeV_powheg-pythia8",
             # 2024

@@ -83,10 +83,14 @@ class NanoProcessor(processor.ProcessorABC):
             ### remove muNeEmSum and loosen muon EF for noMuVeto
             if "noMuVeto" in self.selMod:
                 muNeEmSum = 1.0
-                muonpTratioCut = 0.6
+                muonpTratioCut = 0.8
             isolepdz, isolepdxy, isolepsip3d = 0.01, 0.002, 2
         elif "WcE" in self.selMod or "semittE" in self.selMod:
-            triggers = ["Ele32_WPTight_Gsf_L1DoubleEG"]
+            triggers = [
+                "Ele32_WPTight_Gsf",
+                "Ele32_WPTight_Gsf_L1DoubleEG",
+                "Ele30_WPTight_Gsf",
+            ]
             isEle = True
             dxySigcut = 0.0
             muNeEmSum = 1.0
@@ -184,8 +188,8 @@ class NanoProcessor(processor.ProcessorABC):
         iso_lepindx = iso_lepindx[:, 0]
 
         ## Jet cuts
-        if "DeepJet_nsv" in events.Jet.fields:
-            jet_sel = jet_sel & (events.Jet.DeepJet_nsv > 0)
+        # if "DeepJet_nsv" in events.Jet.fields:
+        #     jet_sel = jet_sel & (events.Jet.DeepJet_nsv > 0)
         event_jet = events.Jet[jet_sel]
         nseljet = ak.count(event_jet.pt, axis=1)
         if "Wc" in self.selMod:
@@ -217,7 +221,6 @@ class NanoProcessor(processor.ProcessorABC):
                     ak.all(
                         events.Jet.metric_table(soft_muon) <= 0.4,
                         axis=2,
-                        mask_identity=True,
                     )
                 )
                 & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
@@ -288,7 +291,12 @@ class NanoProcessor(processor.ProcessorABC):
             },
             with_name="PtEtaPhiMLorentzVector",
         )
-        if "Run3" not in self._campaign:
+        if (
+            "Run3" not in self._campaign
+            and "Summer22" not in self._campaign
+            and "Summer23" not in self._campaign
+            and "Summer24" not in self._campaign
+        ):
             MET = ak.zip(
                 {
                     "pt": events.MET.pt,
@@ -408,11 +416,19 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["njet"] = njet
         pruned_ev["W_transmass"] = wm
         pruned_ev["W_pt"] = wp
+        pruned_ev["W_eta"] = sw.eta
+        pruned_ev["W_phi"] = sw.phi
+        pruned_ev["W_mass"] = sw.mass
         pruned_ev["dilep_mass"] = sdilep.mass
         pruned_ev["dilep_pt"] = sdilep.pt
         if "PFCands" in events.fields:
             pruned_ev.PFCands = spfcands
         # Add custom variables
+        top = sw + smuon_jet
+        pruned_ev["top_pt"] = top.pt
+        pruned_ev["top_eta"] = top.eta
+        pruned_ev["top_phi"] = top.phi
+        pruned_ev["top_mass"] = top.mass
 
         pruned_ev["dr_mujet_softmu"] = ssmu.delta_r(smuon_jet)
         pruned_ev["dr_mujet_lep1"] = shmu.delta_r(smuon_jet)
@@ -659,16 +675,7 @@ class NanoProcessor(processor.ProcessorABC):
                 systematics,
                 dataset,
                 isRealData,
-                doOnly=[
-                    "SelJet",
-                    "njet",
-                    "PuppiMET",
-                    "dilep_mass",
-                    "SoftMuon_dxySig",
-                    "MuonJet_muneuEF",
-                    "soft_l_ptratio",
-                    "osss",
-                ],
+                schema="CFM",
             )
 
         return {dataset: output}
