@@ -1942,7 +1942,7 @@ def main(args):
                     if campaign_input.strip() == "all":
                         camp_idxs = list(range(len(campaigns)))
                         break
-
+                    cont = False
                     for camp_idx in campaign_input.split(","):
                         try:
                             idx = int(camp_idx) - 1
