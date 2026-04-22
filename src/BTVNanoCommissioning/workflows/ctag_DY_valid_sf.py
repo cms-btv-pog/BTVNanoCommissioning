@@ -15,7 +15,7 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogramming.histograms.qgtag import qg_writer
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
-    histo_writter,
+    histo_writer,
 )
 from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
@@ -37,7 +37,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
-        selectionModifier="DYM",
+        selectionModifier="DYM_ctag",
     ):
         self._year = year
         self._campaign = campaign
@@ -312,7 +312,7 @@ class NanoProcessor(processor.ProcessorABC):
         # Configure histograms
         if not self.noHist:
             if "QG" not in self.selMod:
-                output = histo_writter(
+                output = histo_writer(
                     pruned_ev, output, weights, systematics, self.isSyst, self.SF_map
                 )
             else:

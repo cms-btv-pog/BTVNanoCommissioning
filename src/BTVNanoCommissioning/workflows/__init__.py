@@ -33,7 +33,7 @@ from BTVNanoCommissioning.workflows.ctag_DY_valid_sf import (
     NanoProcessor as CTAGDYValidSFProcessor,
 )
 
-##QCD
+# QCD
 from BTVNanoCommissioning.workflows.QCD_validation import (
     NanoProcessor as QCDValidProcessor,
 )
@@ -41,13 +41,13 @@ from BTVNanoCommissioning.workflows.QCD_soft_mu_validation import (
     NanoProcessor as QCDsmuValidProcessor,
 )
 
-## BTA - for SFs
+# BTA - for SFs
 from BTVNanoCommissioning.workflows.BTA_producer import (
     NanoProcessor as BTA_processor,
 )
 from BTVNanoCommissioning.workflows.BTA_ttbar_producer import (
     NanoProcessor as BTA_ttbar_processor,
-)  # ttbar -kinFit
+)  # ttbar - kinFit
 
 ## QG
 from BTVNanoCommissioning.workflows.dijet import (
@@ -72,7 +72,7 @@ workflows = {}
 workflows["validation"] = ValidationProcessor
 
 # TTBar
-workflows["ttdilep_sf"] = TTdilepValidSFProcessor
+workflows["ttdilep_sf"] = partial(TTdilepValidSFProcessor, selectionModifier="tt_dilep")
 workflows["ttsemilep_sf"] = partial(
     TTsemilepValidSFProcessor, selectionModifier="tt_semilep"
 )
@@ -81,7 +81,6 @@ workflows["sf_ttdilep_kin"] = TTdilepKinSFProcessor
 workflows["c_ttsemilep_sf"] = partial(
     TTsemilepValidSFProcessor, selectionModifier="c_tt_semilep"
 )
-
 workflows["emctag_ttdilep_sf"] = CTAGEMDilepttValidSFProcessor
 workflows["ctag_ttdilep_sf"] = partial(
     CTAGDilepttValidSFProcessor, selectionModifier="dilepttM"
@@ -101,7 +100,7 @@ workflows["ectag_ttsemilep_sf"] = partial(
 
 workflows["sf_ttsemilep_tnp"] = TTsemilepTnPSFProcessor
 
-##QCD
+# QCD
 workflows["QCD_sf"] = QCDValidProcessor
 workflows["QCD_smu_sf"] = QCDsmuValidProcessor
 
@@ -119,8 +118,8 @@ workflows["ectag_Wc_WP_sf"] = partial(
 )
 
 # DY
-workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM")
-workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE")
+workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM_ctag")
+workflows["ectag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYE_ctag")
 
 
 # QG
@@ -133,7 +132,6 @@ workflows["QG_photonjet"] = QGtagPhotonjetProcessor
 # DY light jet SF with negative tag method
 workflows["DY_sfl"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYM")
 workflows["eDY_sfl"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYE")
-
 
 # Tutorial
 workflows["example"] = ExampleProcessor
