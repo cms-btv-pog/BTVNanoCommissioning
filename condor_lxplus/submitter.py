@@ -60,14 +60,12 @@ def get_condor_submitter_parser(parser):
         help="If specified, access BTVNanoCommissioning from a remote tarball (downloaded via https), instead of from a transferred sandbox",
     )
     parser.add_argument(
-        "--noSpool",
-        action="store_true",
-        help="Submit condor jobs without spooling."
+        "--noSpool", action="store_true", help="Submit condor jobs without spooling."
     )
     parser.add_argument(
         "--nCPU",
         default=1,
-        help="Number of CPUs to request for condor. RAM of the job scales as 2Gb*nCPU"
+        help="Number of CPUs to request for condor. RAM of the job scales as 2Gb*nCPU",
     )
     return parser
 
@@ -216,7 +214,7 @@ if __name__ == "__main__":
     if args.voms is not None:
         if not os.path.exists(args.voms):
             raise Exception(f"Provided voms proxy path {args.voms} does not exist.")
-        shutil.copy(args.voms, os.path.join(job_dir+"/..", "proxy"))
+        shutil.copy(args.voms, os.path.join(job_dir + "/..", "proxy"))
         print(f"Copied provided proxy file {args.voms} to local directory.")
     else:
         proxy_file = get_proxy_path()
@@ -225,7 +223,11 @@ if __name__ == "__main__":
 
     # Find conda/mamba environment
     envpath = "/eos/home-m/milee/miniforge3/envs/btv_coffea/bin"
-    pathvarlist = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea" in i or "envs/BTVCOFFEA" in i]
+    pathvarlist = [
+        i
+        for i in os.environ["PATH"].split(":")
+        if "envs/btv_coffea" in i or "envs/BTVCOFFEA" in i
+    ]
     if len(pathvarlist) == 0:
         print(
             f"You did not source the btv_coffea conda/mamba environment. Proceed with the central conda environment:\n{envpath} ?"

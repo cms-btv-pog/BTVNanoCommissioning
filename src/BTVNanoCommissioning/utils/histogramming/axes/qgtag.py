@@ -8,10 +8,9 @@ axes = {
     "syst": hist.axis.StrCategory([], name="syst", growth=True),
     "pt": hist.axis.Variable(
         # np.geomspace(20, 6800, 50), name="pt", label=" $p_{T}$ [GeV]"
-        np.array(
-            [20, 30, 50, 70, 100, 140, 200, 300, 600, 1000, 2000, 4000, 6800]
-        ), name="pt", label=" $p_{T}$ [GeV]"
-
+        np.array([20, 30, 50, 70, 100, 140, 200, 300, 600, 1000, 2000, 4000, 6800]),
+        name="pt",
+        label=" $p_{T}$ [GeV]",
     ),
     "jpt": hist.axis.Regular(300, 0, 3000, name="pt", label=" $p_{T}$ [GeV]"),
     "softlpt": hist.axis.Regular(25, 0, 25, name="pt", label=" $p_{T}$ [GeV]"),

@@ -7,13 +7,15 @@ import numpy as np, pandas as pd
 
 ### NOTICE The scripts only works on lxplus...
 
-parser = argparse.ArgumentParser(description="Create prescale weights on lxplus using brilcalc")
+parser = argparse.ArgumentParser(
+    description="Create prescale weights on lxplus using brilcalc"
+)
 
 parser.add_argument(
     "-l",
     "--lumimask",
     default="src/BTVNanoCommissioning/data/DC/Cert_Collisions2022_355100_362760_Golden.json",
-    help="Lumimask to generate prescale weights. TIP: use DCS-only lumimasks to avoid issues with missing runs."
+    help="Lumimask to generate prescale weights. TIP: use DCS-only lumimasks to avoid issues with missing runs.",
 )
 parser.add_argument(
     "-H",
@@ -80,7 +82,7 @@ def process_run(run_input):
         )
         df["# run"] = int(run)
         df["hltpath/prescval"] = f"HLT_{trg}_v99999"
-        df["totprescval"] = 1.0 
+        df["totprescval"] = 1.0
         df["cmsls"] = 1
 
         return df

@@ -47,15 +47,21 @@ for f in tqdm.tqdm(files, desc="Combining coffea files"):
                             output[key][subkey] += data[key][subkey]
                         except ValueError as e:
                             print(f"ValueError combining {key}[{subkey}] from {f}")
-                            print(f"Output type: {type(output[key][subkey])}, Data type: {type(data[key][subkey])}")
-                            print(f"Output value: {output[key][subkey]},\nData value: {data[key][subkey]}")
+                            print(
+                                f"Output type: {type(output[key][subkey])}, Data type: {type(data[key][subkey])}"
+                            )
+                            print(
+                                f"Output value: {output[key][subkey]},\nData value: {data[key][subkey]}"
+                            )
                             print(f"Error: {e}")
             else:
                 try:
                     output[key] += data[key]
                 except ValueError as e:
                     print(f"ValueError combining {key} from {f}")
-                    print(f"Output type: {type(output[key])}, Data type: {type(data[key])}")
+                    print(
+                        f"Output type: {type(output[key])}, Data type: {type(data[key])}"
+                    )
                     print(f"Output value: {output[key]},\nData value: {data[key]}")
                     print(f"Error: {e}")
 
