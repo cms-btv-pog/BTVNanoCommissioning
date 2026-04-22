@@ -45,7 +45,14 @@ done
 OPTS="$OPTS --output ${ARGS[output]//.coffea/_$JOBID.coffea}"  # add a suffix to output file name
 OPTS="$OPTS --json $WORKDIR/sample.json"  # use the sample json for this JOBID
 OPTS="$OPTS --worker $NTHREADS"  # use number of worker = 1
-OPTS="$OPTS --executor futures --overwrite --outputdir $OUTPUTDIR"
+
+if [ $NTHREADS -gt 1 ]; then
+    OPTS="$OPTS --executor futures"
+else
+    OPTS="$OPTS --executor iterative"
+fi
+
+OPTS="$OPTS --overwrite --outputdir $OUTPUTDIR"
 
 # Launch
 echo "Now launching: python runner.py $OPTS"
