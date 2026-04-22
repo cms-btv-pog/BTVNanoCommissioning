@@ -65,9 +65,9 @@ def get_condor_submitter_parser(parser):
         help="Submit condor jobs without spooling."
     )
     parser.add_argument(
-        "--nThreads",
+        "--nCPU",
         default=1,
-        help="Number of CPUs to request for condor. RAM of the job scales as 2Gb*nThreads"
+        help="Number of CPUs to request for condor. RAM of the job scales as 2Gb*nCPU"
     )
     return parser
 
@@ -315,7 +315,7 @@ Queue JOBNUM from {jobnum_file}
         base_dir=base_dir,
         outputDir=args.outputDir,
         envpath=envpath,
-        nthreads=args.nThreads,
+        nthreads=args.nCPU,
         log_dir=f"{base_dir}/{job_dir}/log",
         transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt",
         jobnum_file=f"{base_dir}/{job_dir}/jobnum_list.txt",
