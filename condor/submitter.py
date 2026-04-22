@@ -23,11 +23,18 @@ def get_condor_submitter_parser(parser):
         required=True,
     )
     parser.add_argument(
+        "-nCPU",
+        "--nCPU",
+        default=1,
+        type=int,
+        help="Number of CPUs to request for each condor job (default: %(default)s). Job memory scales as nCPU*3GB, adjust if necessary.",
+    )
+    parser.add_argument(
         "-n",
         "--condorFileSize",
         type=int,
         default=50,
-        help="Number of files proceed per condor job",
+        help="Number of files proceed per condor job (default: %(default)s)",
     )
     parser.add_argument(
         "--outputDir",
@@ -169,15 +176,13 @@ if __name__ == "__main__":
         skip_tar = False
         if os.path.exists("BTVNanoCommissioning.tar.gz"):
             user_input = input(
-                "BTVNanoCommissioning.tar.gz already exists, skip the tarring? (y/n): "
+                "BTVNanoCommissioning.tar.gz already exists, skip the tarring? ([y]/n): "
             )
-            if user_input.lower() == "y":
+            if user_input.lower() != "n":
                 skip_tar = True
-            elif user_input.lower() == "n":
+            else:
                 skip_tar = False
                 os.remove("BTVNanoCommissioning.tar.gz")
-            else:
-                raise Exception("Invalid input, exiting")
 
         if not skip_tar:
             jobdirs = [d for d in os.listdir(base_dir) if d.startswith("jobs_")]
@@ -190,8 +195,8 @@ if __name__ == "__main__":
     # Create job dir
     job_dir = f"jobs_{args.jobName}"
     if os.path.exists(job_dir):
-        user_input = input("Job directory already exists, overwrite? (y/n): ")
-        if user_input.lower() == "y":
+        user_input = input("Job directory already exists, overwrite? ([y]/n): ")
+        if user_input.lower() != "n":
             shutil.rmtree(job_dir)
         else:
             raise Exception("Job exiting...")
@@ -253,10 +258,9 @@ if __name__ == "__main__":
 Executable = {executable}
 
 
-Arguments = $(JOBNUM)
+Arguments = $(JOBNUM) $(request_cpus)
 
-request_cpus = 1
-request_memory = 2000
+request_cpus = {nCPU}
 use_x509userproxy = true
 
 +JobFlavour = "{jobqueue}"
@@ -280,6 +284,7 @@ Queue JOBNUM from {jobnum_file}
         log_dir=f"{base_dir}/{job_dir}/log",
         transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt"
         + ("" if args.remoteRepo else f",{base_dir}/BTVNanoCommissioning.tar.gz"),
+        nCPU=args.nCPU,
         batch_name=args.jobName,
         jobnum_file=f"{base_dir}/{job_dir}/jobnum_list.txt",
     )
