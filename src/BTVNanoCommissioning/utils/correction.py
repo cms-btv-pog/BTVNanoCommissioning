@@ -11,6 +11,10 @@ import numpy as np
 import awkward as ak
 import uproot
 import correctionlib
+try:
+    import onnxruntime as ort
+except Exception:
+    ort = None
 
 from coffea.lookup_tools import extractor, txt_converters, rochester_lookup
 from coffea.lumi_tools import LumiMask
@@ -30,6 +34,10 @@ from BTVNanoCommissioning.helpers.func import (
     campaign_map,
 )
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
+
+
+_TTBAR_REWEIGHT_CACHE = {}
+_TTBAR_REWEIGHT_WARNINGS = set()
 
 
 def _cvmfs_dir(campaign, pog):
@@ -666,7 +674,7 @@ sf_jersmear = cset_jersmear["JERSmear"]
 
 # JEC/JES sources for the full set according to
 # https://cms-jerc.web.cern.ch/Recommendations/#case-i
-def get_JES_keys(year: int | str) -> dict[str, set]:
+def get_JES_keys(year):
     return {
         "full": {
             "AbsoluteMPFBias",
@@ -2641,6 +2649,621 @@ def top_pT_reweighting(gen):
     )
 
 
+def _warn_once(tag, message):
+    if tag in _TTBAR_REWEIGHT_WARNINGS:
+        return
+    warnings.warn(message)
+    _TTBAR_REWEIGHT_WARNINGS.add(tag)
+
+
+def _is_run2_campaign(campaign):
+    if campaign is None:
+        return False
+    return "-UL" in campaign or campaign.startswith("UL")
+
+
+def _safe_rapidity(pt, eta, mass):
+    pz = pt * np.sinh(eta)
+    e = np.sqrt(np.maximum((pt * np.cosh(eta)) ** 2 + mass**2, 1e-12))
+    num = np.maximum(e + pz, 1e-12)
+    den = np.maximum(e - pz, 1e-12)
+    return 0.5 * np.log(num / den)
+
+
+def _get_hdamp_ml_sessions(campaign):
+    cache_key = f"hdamp::{campaign}"
+    if cache_key in _TTBAR_REWEIGHT_CACHE:
+        return _TTBAR_REWEIGHT_CACHE[cache_key]
+
+    if ort is None:
+        _warn_once(
+            "missing_onnxruntime",
+            "onnxruntime is not available. hdamp ML reweighting will be disabled.",
+        )
+        _TTBAR_REWEIGHT_CACHE[cache_key] = None
+        return None
+
+    pkg = "BTVNanoCommissioning.data.TTBAR_REWEIGHT.hdamp_ml"
+    if _is_run2_campaign(campaign):
+        up_fn = "mymodel12_hdamp_up_13TeV.onnx"
+        dn_fn = "mymodel12_hdamp_down_13TeV.onnx"
+    else:
+        up_fn = "mymodel12_hdamp_up_13.6TeV.onnx"
+        dn_fn = "mymodel12_hdamp_down_13.6TeV.onnx"
+
+    try:
+        with contextlib.ExitStack() as stack:
+            up_path = stack.enter_context(importlib.resources.path(pkg, up_fn))
+            dn_path = stack.enter_context(importlib.resources.path(pkg, dn_fn))
+
+            sess_up = ort.InferenceSession(str(up_path), providers=["CPUExecutionProvider"])
+            sess_dn = ort.InferenceSession(str(dn_path), providers=["CPUExecutionProvider"])
+
+            payload = {
+                "up": sess_up,
+                "dn": sess_dn,
+                "input_up": sess_up.get_inputs()[0].name,
+                "input_dn": sess_dn.get_inputs()[0].name,
+                "output_up": sess_up.get_outputs()[0].name,
+                "output_dn": sess_dn.get_outputs()[0].name,
+            }
+    except Exception as exc:
+        _warn_once(
+            "hdamp_model_load_failed",
+            f"Could not load hdamp ML ONNX models: {exc}. Falling back to nominal weights.",
+        )
+        payload = None
+
+    _TTBAR_REWEIGHT_CACHE[cache_key] = payload
+    return payload
+
+
+def _genpart_has_flag(genpart, flag_name):
+    # NanoEvents GenParticle has `hasFlags`; fallback to statusFlags bit decoding
+    # for plain awkward arrays used in tests or lightweight contexts.
+    if hasattr(genpart, "hasFlags"):
+        return genpart.hasFlags([flag_name])
+
+    bit_map = {
+        "isFirstCopy": _FIRST_COPY_BIT,
+        "isLastCopy": _LAST_COPY_BIT,
+    }
+    bit = bit_map.get(flag_name)
+    if bit is None or "statusFlags" not in genpart.fields:
+        return ak.zeros_like(genpart.pdgId, dtype=bool)
+    return (genpart.statusFlags & bit) != 0
+
+
+def _build_hdamp_ml_inputs(genpart):
+    n_events = len(genpart)
+    x = np.zeros((n_events, 2, 6), dtype=np.float32)
+
+    # Prefer first copy for NanoAOD; fall back to last copy if unavailable.
+    top = genpart[(genpart.pdgId == 6) & _genpart_has_flag(genpart, "isFirstCopy")]
+    antitop = genpart[(genpart.pdgId == -6) & _genpart_has_flag(genpart, "isFirstCopy")]
+    if ak.all(ak.num(top, axis=1) == 0) or ak.all(ak.num(antitop, axis=1) == 0):
+        top = genpart[(genpart.pdgId == 6) & _genpart_has_flag(genpart, "isLastCopy")]
+        antitop = genpart[(genpart.pdgId == -6) & _genpart_has_flag(genpart, "isLastCopy")]
+
+    top = ak.firsts(top)
+    antitop = ak.firsts(antitop)
+    valid = (~ak.is_none(top)) & (~ak.is_none(antitop))
+
+    top_pt = ak.to_numpy(np.maximum(ak.fill_none(top.pt, 1.0), 1e-6))
+    antitop_pt = ak.to_numpy(np.maximum(ak.fill_none(antitop.pt, 1.0), 1e-6))
+    top_eta = ak.to_numpy(ak.fill_none(top.eta, 0.0))
+    antitop_eta = ak.to_numpy(ak.fill_none(antitop.eta, 0.0))
+    top_phi = ak.to_numpy(ak.fill_none(top.phi, 0.0))
+    antitop_phi = ak.to_numpy(ak.fill_none(antitop.phi, 0.0))
+    top_mass = ak.to_numpy(np.maximum(ak.fill_none(top.mass, 172.5), 1e-6))
+    antitop_mass = ak.to_numpy(np.maximum(ak.fill_none(antitop.mass, 172.5), 1e-6))
+
+    top_y = _safe_rapidity(top_pt, top_eta, top_mass)
+    antitop_y = _safe_rapidity(antitop_pt, antitop_eta, antitop_mass)
+
+    top_px = top_pt * np.cos(top_phi)
+    top_py = top_pt * np.sin(top_phi)
+    antitop_px = antitop_pt * np.cos(antitop_phi)
+    antitop_py = antitop_pt * np.sin(antitop_phi)
+    ttbar_pt = np.sqrt((top_px + antitop_px) ** 2 + (top_py + antitop_py) ** 2)
+
+    x[:, 0, 0] = np.log10(top_pt)
+    x[:, 0, 1] = top_y
+    x[:, 0, 2] = top_phi
+    x[:, 0, 3] = top_mass / 243.9517
+    x[:, 0, 4] = 0.1
+    x[:, 0, 5] = 1.379
+
+    x[:, 1, 0] = np.log10(antitop_pt)
+    x[:, 1, 1] = antitop_y
+    x[:, 1, 2] = antitop_phi
+    x[:, 1, 3] = antitop_mass / 243.9517
+    x[:, 1, 4] = 0.2
+    x[:, 1, 5] = 1.379
+
+    finite_mask = np.all(np.isfinite(x.reshape(n_events, -1)), axis=1)
+    apply_mask = ak.to_numpy(valid) & finite_mask & (ttbar_pt < 1000.0)
+    return x, apply_mask
+
+
+def _infer_hdamp_ratio(session, input_name, output_name, x):
+    out = session.run([output_name], {input_name: x})[0]
+    out = np.asarray(out)
+    if out.ndim == 1:
+        ratio = out
+    elif out.shape[-1] >= 2:
+        denom = np.maximum(out[..., 1], 1e-8)
+        ratio = out[..., 0] / denom
+    else:
+        ratio = out.reshape(-1)
+    ratio = np.where(np.isfinite(ratio), ratio, 1.0)
+    ratio = np.where((ratio > 0.0) & (ratio < 100.0), ratio, 1.0)
+    return ratio.astype(np.float64)
+
+
+def add_hdamp_ml_weight(weights, pruned_ev, campaign, isSyst=False):
+    nom = np.ones(len(weights.weight()), dtype=np.float64)
+
+    if "GenPart" not in pruned_ev.fields:
+        _warn_once(
+            "no_genpart_for_hdamp_ml",
+            "GenPart is missing; hdamp ML weights set to nominal.",
+        )
+        if isSyst is not False:
+            weights.add("hdampML", nom, nom, nom)
+        else:
+            weights.add("hdampML", nom)
+        return
+
+    sessions = _get_hdamp_ml_sessions(campaign)
+    if sessions is None:
+        if isSyst is not False:
+            weights.add("hdampML", nom, nom, nom)
+        else:
+            weights.add("hdampML", nom)
+        return
+
+    x, apply_mask = _build_hdamp_ml_inputs(pruned_ev.GenPart)
+    up = nom.copy()
+    dn = nom.copy()
+
+    if np.any(apply_mask):
+        x_sel = x[apply_mask]
+        up_sel = _infer_hdamp_ratio(
+            sessions["up"], sessions["input_up"], sessions["output_up"], x_sel
+        )
+        dn_sel = _infer_hdamp_ratio(
+            sessions["dn"], sessions["input_dn"], sessions["output_dn"], x_sel
+        )
+        up[apply_mask] = up_sel
+        dn[apply_mask] = dn_sel
+
+    if isSyst is not False:
+        weights.add("hdampML", nom, up, dn)
+    else:
+        weights.add("hdampML", nom)
+
+
+_FIRST_COPY_BIT = 1 << 12
+_LAST_COPY_BIT = 1 << 13
+_LEPTON_IDS = {11, 13}
+_B_HADRONS = {
+    511,
+    521,
+    531,
+    541,
+    5122,
+    5112,
+    5132,
+    5232,
+    5332,
+}
+_C_HADRONS = {
+    411,
+    421,
+    431,
+    4122,
+    4132,
+    4232,
+    4332,
+}
+
+
+def _extract_tgraph_xy(obj):
+    # uproot model for TGraph
+    try:
+        x = np.asarray(obj.member("fX"), dtype=np.float64)
+        y = np.asarray(obj.member("fY"), dtype=np.float64)
+    except Exception:
+        # fallback for different uproot model wrappers
+        x = np.asarray(getattr(obj, "values", lambda: ([], []))()[0], dtype=np.float64)
+        y = np.asarray(getattr(obj, "values", lambda: ([], []))()[1], dtype=np.float64)
+    if len(x) == 0:
+        return np.array([0.0, 1.0], dtype=np.float64), np.array([1.0, 1.0], dtype=np.float64)
+    order = np.argsort(x)
+    return x[order], y[order]
+
+
+def _graph_eval(xy, values):
+    x, y = xy
+    vals = np.asarray(values, dtype=np.float64)
+    out = np.interp(vals, x, y, left=y[0], right=y[-1])
+    out = np.where(np.isfinite(out), out, 1.0)
+    return out
+
+
+def _load_frag_decay_maps():
+    cache_key = "frag_decay_maps"
+    if cache_key in _TTBAR_REWEIGHT_CACHE:
+        return _TTBAR_REWEIGHT_CACHE[cache_key]
+
+    pkg = "BTVNanoCommissioning.data.TTBAR_REWEIGHT.frag_decay"
+    payload = None
+    try:
+        with contextlib.ExitStack() as stack:
+            bfrag_path = stack.enter_context(importlib.resources.path(pkg, "bfragweights.root"))
+            cfrag_path = stack.enter_context(importlib.resources.path(pkg, "cfragweights.root"))
+            bdec_path = stack.enter_context(importlib.resources.path(pkg, "bdecayweights.root"))
+            cdec_path = stack.enter_context(importlib.resources.path(pkg, "cdecayweights.root"))
+
+            with uproot.open(str(bfrag_path)) as fb, uproot.open(str(cfrag_path)) as fc:
+                b_bl_up = _extract_tgraph_xy(fb["fragCP5BLup_smooth"])
+                b_bl_dn = _extract_tgraph_xy(fb["fragCP5BLdown_smooth"])
+                b_pet = _extract_tgraph_xy(fb["fragCP5Peterson_smooth"])
+
+                c_bl_up = _extract_tgraph_xy(fc["fragCP5BLup_smooth"])
+                c_bl_dn = _extract_tgraph_xy(fc["fragCP5BLdown_smooth"])
+                c_pet = _extract_tgraph_xy(fc["fragCP5Peterson_smooth"])
+
+            with uproot.open(str(bdec_path)) as fbdec, uproot.open(str(cdec_path)) as fcdec:
+                bdec_up = _extract_tgraph_xy(fbdec["semilepbrup"])
+                bdec_dn = _extract_tgraph_xy(fbdec["semilepbrdown"])
+                cdec_up = _extract_tgraph_xy(fcdec["semilepbrup"])
+                cdec_dn = _extract_tgraph_xy(fcdec["semilepbrdown"])
+
+            payload = {
+                "b_bl_up": b_bl_up,
+                "b_bl_dn": b_bl_dn,
+                "b_pet": b_pet,
+                "c_bl_up": c_bl_up,
+                "c_bl_dn": c_bl_dn,
+                "c_pet": c_pet,
+                "bdec_up": bdec_up,
+                "bdec_dn": bdec_dn,
+                "cdec_up": cdec_up,
+                "cdec_dn": cdec_dn,
+            }
+    except Exception as exc:
+        _warn_once(
+            "frag_decay_load_failed",
+            f"Could not load fragmentation/decay weight files: {exc}. Falling back to nominal weights.",
+        )
+        payload = None
+
+    _TTBAR_REWEIGHT_CACHE[cache_key] = payload
+    return payload
+
+
+def _build_children(mothers, n):
+    children = [[] for _ in range(n)]
+    for i, m in enumerate(mothers):
+        if m is not None and m >= 0 and m < n:
+            children[m].append(i)
+    return children
+
+
+def _descends_from(idx, ancestor, mothers):
+    cur = idx
+    nmax = len(mothers) + 5
+    steps = 0
+    while cur is not None and cur >= 0 and steps < nmax:
+        if cur == ancestor:
+            return True
+        cur = mothers[cur] if cur < len(mothers) else -1
+        steps += 1
+    return False
+
+
+def _has_lepton_descendant(idx, children, pdg_ids):
+    stack = [idx]
+    seen = set()
+    while stack:
+        cur = stack.pop()
+        if cur in seen:
+            continue
+        seen.add(cur)
+        for ch in children[cur]:
+            if abs(int(pdg_ids[ch])) in _LEPTON_IDS:
+                return True
+            stack.append(ch)
+    return False
+
+
+def _p4_from_pt_eta_phi_m(pt, eta, phi, mass):
+    px = pt * np.cos(phi)
+    py = pt * np.sin(phi)
+    pz = pt * np.sinh(eta)
+    e = np.sqrt(max((pt * np.cosh(eta)) ** 2 + mass**2, 1e-12))
+    return px, py, pz, e
+
+
+def _dot4(p4a, p4b):
+    return p4a[3] * p4b[3] - (p4a[0] * p4b[0] + p4a[1] * p4b[1] + p4a[2] * p4b[2])
+
+
+def _compute_x_had(had_p4, top_p4, w_mass, top_mass):
+    mt2 = max(top_mass * top_mass, 1e-12)
+    w = (w_mass * w_mass) / mt2
+    if abs(1.0 - w) < 1e-6:
+        return None
+    xE = (2.0 * _dot4(had_p4, top_p4)) / mt2
+    x = xE / (1.0 - w)
+    if not np.isfinite(x):
+        return None
+    return float(x)
+
+
+def _pick_heaviest_hadron(genpart, hadron_ids):
+    n_evt = len(genpart)
+    out = []
+
+    gp = genpart
+    pdg_all = ak.to_list(gp.pdgId)
+    mother_all = ak.to_list(gp.genPartIdxMother)
+    status_all = ak.to_list(gp.statusFlags)
+    pt_all = ak.to_list(gp.pt)
+    eta_all = ak.to_list(gp.eta)
+    phi_all = ak.to_list(gp.phi)
+    mass_all = ak.to_list(gp.mass)
+
+    for ievt in range(n_evt):
+        pdg = pdg_all[ievt]
+        mother = mother_all[ievt]
+        status = status_all[ievt]
+        pt = pt_all[ievt]
+        eta = eta_all[ievt]
+        phi = phi_all[ievt]
+        mass = mass_all[ievt]
+        n = len(pdg)
+
+        children = _build_children(mother, n)
+
+        top_idx = None
+        atop_idx = None
+        for i in range(n):
+            if pdg[i] == 6 and (status[i] & _LAST_COPY_BIT):
+                top_idx = i
+                break
+        for i in range(n):
+            if pdg[i] == -6 and (status[i] & _LAST_COPY_BIT):
+                atop_idx = i
+                break
+        # fallback if status flag missing
+        if top_idx is None:
+            for i in range(n):
+                if pdg[i] == 6:
+                    top_idx = i
+                    break
+        if atop_idx is None:
+            for i in range(n):
+                if pdg[i] == -6:
+                    atop_idx = i
+                    break
+
+        top_w_idx = None
+        atop_w_idx = None
+        if top_idx is not None:
+            top_w_children = [c for c in children[top_idx] if abs(int(pdg[c])) == 24]
+            if len(top_w_children) > 0:
+                top_w_idx = top_w_children[0]
+        if atop_idx is not None:
+            atop_w_children = [c for c in children[atop_idx] if abs(int(pdg[c])) == 24]
+            if len(atop_w_children) > 0:
+                atop_w_idx = atop_w_children[0]
+
+        top_had = None
+        atop_had = None
+        top_had_pt = -1.0
+        atop_had_pt = -1.0
+
+        for i in range(n):
+            apid = abs(int(pdg[i]))
+            if apid not in hadron_ids:
+                continue
+            # prefer first-copy hadrons if available
+            if status[i] & _FIRST_COPY_BIT == 0:
+                continue
+
+            if top_idx is not None and _descends_from(i, top_idx, mother):
+                if pt[i] > top_had_pt:
+                    top_had = i
+                    top_had_pt = pt[i]
+            if atop_idx is not None and _descends_from(i, atop_idx, mother):
+                if pt[i] > atop_had_pt:
+                    atop_had = i
+                    atop_had_pt = pt[i]
+
+        # fallback without first-copy requirement
+        if top_had is None or atop_had is None:
+            for i in range(n):
+                apid = abs(int(pdg[i]))
+                if apid not in hadron_ids:
+                    continue
+                if top_had is None and top_idx is not None and _descends_from(i, top_idx, mother):
+                    if pt[i] > top_had_pt:
+                        top_had = i
+                        top_had_pt = pt[i]
+                if atop_had is None and atop_idx is not None and _descends_from(i, atop_idx, mother):
+                    if pt[i] > atop_had_pt:
+                        atop_had = i
+                        atop_had_pt = pt[i]
+
+        evt = {
+            "top_idx": top_idx,
+            "atop_idx": atop_idx,
+            "top_w_idx": top_w_idx,
+            "atop_w_idx": atop_w_idx,
+            "top_had": top_had,
+            "atop_had": atop_had,
+            "pdg": pdg,
+            "mother": mother,
+            "children": children,
+            "pt": pt,
+            "eta": eta,
+            "phi": phi,
+            "mass": mass,
+        }
+        out.append(evt)
+
+    return out
+
+
+def add_fragmentation_decay_weights(weights, pruned_ev, isSyst=False):
+    nom = np.ones(len(weights.weight()), dtype=np.float64)
+    n_evt = len(nom)
+
+    if "GenPart" not in pruned_ev.fields:
+        _warn_once(
+            "no_genpart_for_frag_decay",
+            "GenPart is missing; fragmentation/decay weights set to nominal.",
+        )
+        for label in ["bfragBL", "bfragPeterson", "cfragBL", "cfragPeterson", "bdecay", "cdecay"]:
+            if isSyst is not False:
+                weights.add(label, nom, nom, nom)
+            else:
+                weights.add(label, nom)
+        return
+
+    maps = _load_frag_decay_maps()
+    if maps is None:
+        for label in ["bfragBL", "bfragPeterson", "cfragBL", "cfragPeterson", "bdecay", "cdecay"]:
+            if isSyst is not False:
+                weights.add(label, nom, nom, nom)
+            else:
+                weights.add(label, nom)
+        return
+
+    bfrag_up = nom.copy()
+    bfrag_dn = nom.copy()
+    bpet_up = nom.copy()
+    bpet_dn = nom.copy()
+    cfrag_up = nom.copy()
+    cfrag_dn = nom.copy()
+    cpet_up = nom.copy()
+    cpet_dn = nom.copy()
+    bdec_up = nom.copy()
+    bdec_dn = nom.copy()
+    cdec_up = nom.copy()
+    cdec_dn = nom.copy()
+
+    b_evt = _pick_heaviest_hadron(pruned_ev.GenPart, _B_HADRONS)
+    c_evt = _pick_heaviest_hadron(pruned_ev.GenPart, _C_HADRONS)
+
+    # C-fragmentation proxy warning (approximate topology reconstruction in NanoAOD)
+    _warn_once(
+        "cfrag_proxy_warning",
+        "c-fragmentation reweighting in NanoAOD uses an approximate hadron-top ancestry reconstruction.",
+    )
+
+    for ievt in range(n_evt):
+        for label, evt in (("b", b_evt[ievt]), ("c", c_evt[ievt])):
+            pdg = evt["pdg"]
+            pt = evt["pt"]
+            eta = evt["eta"]
+            phi = evt["phi"]
+            mass = evt["mass"]
+            children = evt["children"]
+
+            tidx = evt["top_idx"]
+            aidx = evt["atop_idx"]
+            twidx = evt["top_w_idx"]
+            awidx = evt["atop_w_idx"]
+            h1 = evt["top_had"]
+            h2 = evt["atop_had"]
+
+            if None in (tidx, aidx, twidx, awidx, h1, h2):
+                continue
+
+            top_p4 = _p4_from_pt_eta_phi_m(pt[tidx], eta[tidx], phi[tidx], mass[tidx])
+            atop_p4 = _p4_from_pt_eta_phi_m(pt[aidx], eta[aidx], phi[aidx], mass[aidx])
+            h1_p4 = _p4_from_pt_eta_phi_m(pt[h1], eta[h1], phi[h1], mass[h1])
+            h2_p4 = _p4_from_pt_eta_phi_m(pt[h2], eta[h2], phi[h2], mass[h2])
+
+            x1 = _compute_x_had(h1_p4, top_p4, mass[twidx], mass[tidx])
+            x2 = _compute_x_had(h2_p4, atop_p4, mass[awidx], mass[aidx])
+            if x1 is None or x2 is None:
+                continue
+
+            # follow guidance to keep weight nominal outside trained domain
+            if x1 > 1.2 or x2 > 1.2:
+                continue
+
+            xv = np.array([x1, x2], dtype=np.float64)
+
+            if label == "b":
+                w_up = _graph_eval(maps["b_bl_up"], xv)
+                w_dn = _graph_eval(maps["b_bl_dn"], xv)
+                w_pet = _graph_eval(maps["b_pet"], xv)
+                bfrag_up[ievt] = float(np.prod(w_up))
+                bfrag_dn[ievt] = float(np.prod(w_dn))
+                bpet_up[ievt] = float(np.prod(w_pet))
+                bpet_dn[ievt] = 1.0 / max(bpet_up[ievt], 1e-6)
+
+                # decay: sign(pdgId) encodes semi-leptonic vs non-semi-leptonic in weight graph
+                h1_semi = _has_lepton_descendant(h1, children, pdg)
+                h2_semi = _has_lepton_descendant(h2, children, pdg)
+                pid1 = abs(int(pdg[h1])) if h1_semi else -abs(int(pdg[h1]))
+                pid2 = abs(int(pdg[h2])) if h2_semi else -abs(int(pdg[h2]))
+                bdec_up[ievt] = float(
+                    _graph_eval(maps["bdec_up"], np.array([pid1], dtype=np.float64))[0]
+                    * _graph_eval(maps["bdec_up"], np.array([pid2], dtype=np.float64))[0]
+                )
+                bdec_dn[ievt] = float(
+                    _graph_eval(maps["bdec_dn"], np.array([pid1], dtype=np.float64))[0]
+                    * _graph_eval(maps["bdec_dn"], np.array([pid2], dtype=np.float64))[0]
+                )
+            else:
+                w_up = _graph_eval(maps["c_bl_up"], xv)
+                w_dn = _graph_eval(maps["c_bl_dn"], xv)
+                w_pet = _graph_eval(maps["c_pet"], xv)
+                cfrag_up[ievt] = float(np.prod(w_up))
+                cfrag_dn[ievt] = float(np.prod(w_dn))
+                cpet_up[ievt] = float(np.prod(w_pet))
+                cpet_dn[ievt] = 1.0 / max(cpet_up[ievt], 1e-6)
+
+                h1_semi = _has_lepton_descendant(h1, children, pdg)
+                h2_semi = _has_lepton_descendant(h2, children, pdg)
+                pid1 = abs(int(pdg[h1])) if h1_semi else -abs(int(pdg[h1]))
+                pid2 = abs(int(pdg[h2])) if h2_semi else -abs(int(pdg[h2]))
+                cdec_up[ievt] = float(
+                    _graph_eval(maps["cdec_up"], np.array([pid1], dtype=np.float64))[0]
+                    * _graph_eval(maps["cdec_up"], np.array([pid2], dtype=np.float64))[0]
+                )
+                cdec_dn[ievt] = float(
+                    _graph_eval(maps["cdec_dn"], np.array([pid1], dtype=np.float64))[0]
+                    * _graph_eval(maps["cdec_dn"], np.array([pid2], dtype=np.float64))[0]
+                )
+
+    # protect against pathological values
+    for arr in [bfrag_up, bfrag_dn, bpet_up, bpet_dn, cfrag_up, cfrag_dn, cpet_up, cpet_dn, bdec_up, bdec_dn, cdec_up, cdec_dn]:
+        arr[:] = np.where(np.isfinite(arr) & (arr > 0.0) & (arr < 100.0), arr, 1.0)
+
+    if isSyst is not False:
+        weights.add("bfragBL", nom, bfrag_up, bfrag_dn)
+        weights.add("bfragPeterson", nom, bpet_up, bpet_dn)
+        weights.add("cfragBL", nom, cfrag_up, cfrag_dn)
+        weights.add("cfragPeterson", nom, cpet_up, cpet_dn)
+        weights.add("bdecay", nom, bdec_up, bdec_dn)
+        weights.add("cdecay", nom, cdec_up, cdec_dn)
+    else:
+        weights.add("bfragBL", nom)
+        weights.add("bfragPeterson", nom)
+        weights.add("cfragBL", nom)
+        weights.add("cfragPeterson", nom)
+        weights.add("bdecay", nom)
+        weights.add("cdecay", nom)
+
+
 # Jennet adds PS weights
 # https://github.com/andrzejnovak/boostedhiggs/blob/master/boostedhiggs/corrections.py#L88-L108
 def add_ps_weight(weights, ps_weights, isSyst=False):
@@ -2970,7 +3593,7 @@ def common_shifts(self, events):
 
 
 # common weights
-def weight_manager(pruned_ev, SF_map, isSyst):
+def weight_manager(pruned_ev, SF_map, isSyst, ttbar_reweights=None, campaign=None):
     """
     Example for Scaling Factors (SFs):
     ```python
@@ -3003,6 +3626,16 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         )
     else:
         weights.add("ttbar_weight", nom)
+
+    # Additional ttbar reweighting hooks (enabled via runner flag/environment)
+    if ttbar_reweights is None:
+        ttbar_reweights = os.environ.get("BTV_TTBAR_REWEIGHTS", "none")
+
+    is_ttbar = "TT" in pruned_ev.metadata.get("dataset", "")
+    if is_ttbar and ttbar_reweights in ("hdamp_ml", "full"):
+        add_hdamp_ml_weight(weights, pruned_ev, campaign=campaign, isSyst=isSyst)
+    if is_ttbar and ttbar_reweights == "full":
+        add_fragmentation_decay_weights(weights, pruned_ev, isSyst=isSyst)
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
         syst_wei = True if isSyst != False else False
