@@ -84,10 +84,11 @@ def get_main_parser():
             "Summer23",
             "Summer23BPix",
             "Summer24",
-            "2018_UL",
-            "2017_UL",
-            "2016preVFP_UL",
-            "2016postVFP_UL",
+            "Prompt25",
+            "2018-UL",
+            "2017-UL",
+            "2016preVFP-UL",
+            "2016postVFP-UL",
             "CAMPAIGN_prompt_dataMC",
         ],
         help="Dataset campaign, change the corresponding correction files",
@@ -100,9 +101,10 @@ def get_main_parser():
             "False",
             "all",
             "weight_only",
-            "JERC_full",
-            "JERC_reduced",
-            "JERC_total",
+            "JEC_full",
+            "JEC_reduced",
+            "JEC_reduced_JER_split",
+            "JEC_total",
             "JP_MC",
         ],
         help="Run with systematics (default: %(default)s)",
@@ -263,9 +265,13 @@ Log        = {log_dir}/job.log_$(Cluster)
 Output     = {log_dir}/job.out_$(Cluster)-$(Process)
 Error      = {log_dir}/job.err_$(Cluster)-$(Process)
 
+max_retries             = 10
+periodic_release        = True
 should_transfer_files   = YES
 when_to_transfer_output = ON_EXIT_OR_EVICT
 transfer_input_files    = {transfer_input_files}
+JobBatchName            = {batch_name}
+transfer_output_files   = .success
 
 Queue JOBNUM from {jobnum_file}
 """.format(
@@ -274,6 +280,7 @@ Queue JOBNUM from {jobnum_file}
         log_dir=f"{base_dir}/{job_dir}/log",
         transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt"
         + ("" if args.remoteRepo else f",{base_dir}/BTVNanoCommissioning.tar.gz"),
+        batch_name=args.jobName,
         jobnum_file=f"{base_dir}/{job_dir}/jobnum_list.txt",
     )
     with open(os.path.join(job_dir, "submit.jdl"), "w") as f:
