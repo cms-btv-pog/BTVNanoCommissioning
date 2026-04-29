@@ -21,3 +21,4 @@ dependencies:
   - pip:
     - coffea==0.7.31
     - correctionlib==2.7.0
+    - onnxruntime

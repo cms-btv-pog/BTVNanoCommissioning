@@ -11,6 +11,10 @@ import numpy as np
 import awkward as ak
 import uproot
 import correctionlib
+try:
+    import onnxruntime as ort
+except Exception:
+    ort = None
 
 from coffea.lookup_tools import extractor, txt_converters, rochester_lookup
 from coffea.lumi_tools import LumiMask
@@ -30,6 +34,9 @@ from BTVNanoCommissioning.helpers.func import (
     campaign_map,
 )
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
+
+
+_TTBAR_REWEIGHT_CACHE = {}
 
 
 def _cvmfs_dir(campaign, pog):
@@ -516,7 +523,7 @@ def load_lumi(campaign):
 _jec_run_edge_cache = {}
 
 
-def _get_jec_run_edges(correct_map, jecname):
+def _get_jec_run_edges(correct_map, jecname, jet_algo="AK4PFPuppi"):
     """Return (lo, hi) run clamp range from L2L3Residual bin edges.
 
     Parses the JME JSON to find the run binning edges directly.
@@ -525,15 +532,16 @@ def _get_jec_run_edges(correct_map, jecname):
     Returns None if no run-binned L2L3Residual exists.
     The result is cached per jecname.
     """
-    if jecname in _jec_run_edge_cache:
-        return _jec_run_edge_cache[jecname]
+    cache_key = (jecname, jet_algo)
+    if cache_key in _jec_run_edge_cache:
+        return _jec_run_edge_cache[cache_key]
 
     jme_json_path = correct_map.get("JME_json_path")
     if jme_json_path is None:
-        _jec_run_edge_cache[jecname] = None
+        _jec_run_edge_cache[cache_key] = None
         return None
 
-    l2l3_name = f"{jecname}_L2L3Residual_AK4PFPuppi"
+    l2l3_name = f"{jecname}_L2L3Residual_{jet_algo}"
     result = None
     with gzip.open(jme_json_path, "rt") as f:
         for corr in json.load(f).get("corrections", []):
@@ -551,7 +559,7 @@ def _get_jec_run_edges(correct_map, jecname):
                 result = (edges[0], edges[-1] - 1)
             break
 
-    _jec_run_edge_cache[jecname] = result
+    _jec_run_edge_cache[cache_key] = result
     return result
 
 
@@ -659,7 +667,7 @@ sf_jersmear = cset_jersmear["JERSmear"]
 
 # JEC/JES sources for the full set according to
 # https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1
-def get_JES_keys(year: int | str) -> dict[str, set]:
+def get_JES_keys(year):
     return {
         "full": {
             "AbsoluteMPFBias",
@@ -726,6 +734,7 @@ def get_JER(
     jername,
     j,
     jersyst,
+    jet_algo="AK4PFPuppi",
 ):
     """
     Retrieve JER for each jet pt shift.
@@ -736,11 +745,11 @@ def get_JER(
     j (jets): jet collection
     """
 
-    JERSF = correct_map["JME"][f"{jername}_ScaleFactor_AK4PFPuppi"]
+    JERSF = correct_map["JME"][f"{jername}_ScaleFactor_{jet_algo}"]
     JERSF_input = get_corr_inputs(j, JERSF, jersyst)
     j["JERSF"] = JERSF.evaluate(*JERSF_input)
 
-    JERptres = correct_map["JME"][f"{jername}_PtResolution_AK4PFPuppi"]
+    JERptres = correct_map["JME"][f"{jername}_PtResolution_{jet_algo}"]
     JERptres_input = get_corr_inputs(j, JERptres)
     j["JER"] = JERptres.evaluate(*JERptres_input)
 
@@ -772,6 +781,56 @@ def get_MET_corr_keys():
         "EventID",
         "run",
     ]
+
+
+def _infer_jec_jet_algo(correct_map, jecname):
+    """Infer jet algorithm suffix (e.g. AK4PFPuppi, AK4PFchs) from JEC compound keys."""
+    preferred_algos = ["AK4PFPuppi", "AK4PFchs"]
+    compound_map = correct_map["JME"].compound
+
+    for algo in preferred_algos:
+        key = f"{jecname}_L1L2L3Res_{algo}"
+        if key in compound_map.keys():
+            return algo
+
+    available = [
+        k
+        for k in compound_map.keys()
+        if k.startswith(f"{jecname}_L1L2L3Res_")
+    ]
+    if len(available) > 0:
+        return available[0].replace(f"{jecname}_L1L2L3Res_", "")
+
+    raise KeyError(
+        f"No L1L2L3Res JEC key found for '{jecname}'. "
+        f"Available matches: {available}"
+    )
+
+
+def _resolve_jecname(correct_map, jecname):
+    """Resolve configured JEC era name to an available L1L2L3Res prefix.
+
+    Some configs use data-era strings containing a run token (e.g. ``..._RunCD_V3_DATA``)
+    while the JSON can store the corresponding key without that token (e.g. ``..._V3_DATA``).
+    """
+    compound_map = correct_map["JME"].compound
+    if any(k.startswith(f"{jecname}_L1L2L3Res_") for k in compound_map.keys()):
+        return jecname
+
+    candidates = []
+    if "_Run" in jecname:
+        candidates.append(re.sub(r"_Run[^_]+", "", jecname))
+
+    for cand in candidates:
+        if any(k.startswith(f"{cand}_L1L2L3Res_") for k in compound_map.keys()):
+            warnings.warn(
+                f"Configured JEC name '{jecname}' not found, using '{cand}' instead.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            return cand
+
+    return jecname
 
 
 def fixPhiRange(phi):
@@ -982,6 +1041,9 @@ def JME_shifts(
                 jecname = correct_map["JME_cfg"]["MC"].split(" ")[0] + "_MC"
                 jername = correct_map["JME_cfg"]["MC"].split(" ")[1] + "_MC"
 
+            jecname = _resolve_jecname(correct_map, jecname)
+            jet_algo = _infer_jec_jet_algo(correct_map, jecname)
+
             ## store the original jet info
             nocorrjet = events.Jet
             nocorrjet["pt_nano"] = ak.values_astype(events.Jet["pt"], np.float32)
@@ -1058,24 +1120,38 @@ def JME_shifts(
             t1j["pt_noMuRaw"] = t1j["pt_raw"] * (1.0 - t1j["muonSubtrFactor"])
             t1j["phi_noMuRaw"] = t1j["phi"] + t1j["muonSubtrDeltaPhi"]
             t1j["eta_noMuRaw"] = t1j["eta"] + t1j["muonSubtrDeltaEta"]
-            L1corr = correct_map["JME"][f"{jecname}_L1FastJet_AK4PFPuppi"]
-            t1j["pt_noMuL1"] = t1j["pt_noMuRaw"] * L1corr.evaluate(
-                np.array(t1j["area"]),
-                np.array(t1j["eta_noMuRaw"]),
-                np.array(t1j["pt_noMuRaw"]),
-                np.array(t1j["rho"]),
-            )
+
+            # Type-1 MET recipe depends on jet algorithm:
+            # - AK4PFPuppi (PUPPI MET): L2L3-only, no L1 subtraction
+            # - AK4PFchs  (PF MET): L1L2L3 - L1
+            # See: https://cms-jerc.web.cern.ch/Type1MET/
+            if jet_algo == "AK4PFPuppi":
+                t1j["pt_noMuL1"] = t1j["pt_noMuRaw"]
+            else:
+                l1_key = f"{jecname}_L1FastJet_{jet_algo}"
+                if l1_key in correct_map["JME"].keys():
+                    L1corr = correct_map["JME"][l1_key]
+                    t1j["pt_noMuL1"] = t1j["pt_noMuRaw"] * L1corr.evaluate(
+                        np.array(t1j["area"]),
+                        np.array(t1j["eta_noMuRaw"]),
+                        np.array(t1j["pt_noMuRaw"]),
+                        np.array(t1j["rho"]),
+                    )
+                else:
+                    warnings.warn(
+                        f"Missing {l1_key}; falling back to no L1 subtraction for Type-1 MET.",
+                        RuntimeWarning,
+                        stacklevel=2,
+                    )
+                    t1j["pt_noMuL1"] = t1j["pt_noMuRaw"]
 
             ## store the original met info (nocorrmet), raw met, nanoaod met
-            if campaign in [
-                "2016preVFP-UL",
-                "2016postVFP-UL",
-                "2017-UL",
-                "2018-UL",
-                "Summer24",
-                "Winter25",
-                "Prompt25",
-            ]:  # for nanoaodv15
+            ## Use MET object matching the JEC jet algorithm.
+            if (
+                jet_algo == "AK4PFPuppi"
+                and hasattr(events, "PuppiMET")
+                and hasattr(events, "RawPuppiMET")
+            ):
                 nocorrmet = events.PuppiMET
                 met_raw = events.RawPuppiMET
                 met_nano = events.PuppiMET
@@ -1086,7 +1162,7 @@ def JME_shifts(
             met = copy.copy(nocorrmet)
 
             ## JES/JEC
-            JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
+            JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_{jet_algo}"]
             JEC_input = get_corr_inputs(j, JECcorr)
             JEC_input_t1 = get_corr_inputs(t1j, JECcorr)
 
@@ -1111,7 +1187,7 @@ def JME_shifts(
                     None,
                 )
                 if run_idx is not None:
-                    _run_edges = _get_jec_run_edges(correct_map, jecname)
+                    _run_edges = _get_jec_run_edges(correct_map, jecname, jet_algo)
                     if _run_edges is not None:
                         lo, hi = _run_edges
                         JEC_input[run_idx] = np.clip(JEC_input[run_idx], lo, hi)
@@ -1149,7 +1225,7 @@ def JME_shifts(
                     None,
                 )
                 if run_idx is not None:
-                    _run_edges = _get_jec_run_edges(correct_map, jecname)
+                    _run_edges = _get_jec_run_edges(correct_map, jecname, jet_algo)
                     if _run_edges is not None:
                         lo, hi = _run_edges
                         JEC_input_t1_nomu[run_idx] = np.clip(
@@ -1174,14 +1250,16 @@ def JME_shifts(
                 ## apply nominal JER to nominal JES/JEC
                 j["pt"] = j["pt_JECnom"]
                 j["mass"] = j["mass_JECnom"]
-                jer_smear_nom = get_JER(correct_map, jername, j, "nom")
+                jer_smear_nom = get_JER(correct_map, jername, j, "nom", jet_algo)
                 j["pt_JECnom_JERnom"] = j["pt_JECnom"] * jer_smear_nom
                 j["mass_JECnom_JERnom"] = j["mass_JECnom"] * jer_smear_nom
                 jets["pt"] = ak.unflatten(j["pt_JECnom_JERnom"], nj)
                 jets["mass"] = ak.unflatten(j["mass_JECnom_JERnom"], nj)
 
                 t1j["pt"] = t1j["pt_JECnom"]
-                jer_smear_nom_t1 = get_JER(correct_map, jername, t1j, "nom")
+                jer_smear_nom_t1 = get_JER(
+                    correct_map, jername, t1j, "nom", jet_algo
+                )
                 t1j["pt_JECnom_JERnom"] = t1j["pt_JECnom"] * jer_smear_nom_t1
                 t1jets["pt"] = ak.unflatten(t1j["pt_JECnom_JERnom"], nt1j)
                 t1jets["pt_noMuL1"] = ak.unflatten(t1j["pt_noMuL1"], nt1j)
@@ -1215,7 +1293,9 @@ def JME_shifts(
                         ## apply up/down JER to nominal JES/JEC
                         j["pt"] = j["pt_JECnom"]
                         j["mass"] = j["mass_JECnom"]
-                        jer_smear_var = get_JER(correct_map, jername, j, var)
+                        jer_smear_var = get_JER(
+                            correct_map, jername, j, var, jet_algo
+                        )
                         j[f"pt_JECnom_JER{var}"] = ak.values_astype(
                             j["pt_JECnom"] * jer_smear_var,
                             np.float32,
@@ -1225,7 +1305,9 @@ def JME_shifts(
                             np.float32,
                         )
                         t1j["pt"] = t1j["pt_JECnom"]
-                        jer_smear_var_t1 = get_JER(correct_map, jername, t1j, var)
+                        jer_smear_var_t1 = get_JER(
+                            correct_map, jername, t1j, var, jet_algo
+                        )
                         t1j[f"pt_JECnom_JER{var}"] = ak.values_astype(
                             t1j["pt_JECnom"] * jer_smear_var_t1,
                             np.float32,
@@ -1336,7 +1418,7 @@ def JME_shifts(
                         if jes_sources_id in jes_sources.keys():
                             for jes_syst in jes_sources[jes_sources_id]:
                                 jesuncmap = correct_map["JME"][
-                                    f"{jecname}_{jes_syst}_AK4PFPuppi"
+                                    f"{jecname}_{jes_syst}_{jet_algo}"
                                 ]
                                 jesunc = jesuncmap.evaluate(j.eta, j.pt_JECnom)
                                 jesunc_t1 = jesuncmap.evaluate(t1j.eta, t1j.pt_JECnom)
@@ -1358,7 +1440,9 @@ def JME_shifts(
                                 ## apply nominal JER to up/down JES/JEC
                                 j["pt"] = j[f"pt_JEC{jes_syst}{var}"]
                                 j["mass"] = j[f"mass_JEC{jes_syst}{var}"]
-                                jer_smear_nom = get_JER(correct_map, jername, j, "nom")
+                                jer_smear_nom = get_JER(
+                                    correct_map, jername, j, "nom", jet_algo
+                                )
                                 j[f"pt_JEC{jes_syst}{var}_JERnom"] = ak.values_astype(
                                     j[f"pt_JEC{jes_syst}{var}"] * jer_smear_nom,
                                     np.float32,
@@ -1369,7 +1453,7 @@ def JME_shifts(
                                 )
                                 t1j["pt"] = t1j[f"pt_JEC{jes_syst}{var}"]
                                 jer_smear_nom_t1 = get_JER(
-                                    correct_map, jername, t1j, "nom"
+                                    correct_map, jername, t1j, "nom", jet_algo
                                 )
                                 t1j[f"pt_JEC{jes_syst}{var}_JERnom"] = ak.values_astype(
                                     t1j[f"pt_JEC{jes_syst}{var}"] * jer_smear_nom_t1,
@@ -2881,6 +2965,378 @@ def top_pT_reweighting(gen):
     )
 
 
+def _get_hdamp_ml_sessions(campaign):
+    cache_key = f"hdamp::{campaign}"
+    if cache_key in _TTBAR_REWEIGHT_CACHE:
+        return _TTBAR_REWEIGHT_CACHE[cache_key]
+
+    if ort is None:
+        warnings.warn("onnxruntime not available; hdamp ML reweighting disabled.", stacklevel=2)
+        _TTBAR_REWEIGHT_CACHE[cache_key] = None
+        return None
+
+    pkg = "BTVNanoCommissioning.data.TTBAR_REWEIGHT.hdamp_ml"
+    suffix = "13TeV" if (campaign and ("-UL" in campaign or campaign.startswith("UL"))) else "13.6TeV"
+    try:
+        with contextlib.ExitStack() as stack:
+            up_path = stack.enter_context(importlib.resources.path(pkg, f"mymodel12_hdamp_up_{suffix}.onnx"))
+            dn_path = stack.enter_context(importlib.resources.path(pkg, f"mymodel12_hdamp_down_{suffix}.onnx"))
+            sess_up = ort.InferenceSession(str(up_path), providers=["CPUExecutionProvider"])
+            sess_dn = ort.InferenceSession(str(dn_path), providers=["CPUExecutionProvider"])
+            payload = {
+                "up": (sess_up, sess_up.get_inputs()[0].name, sess_up.get_outputs()[0].name),
+                "dn": (sess_dn, sess_dn.get_inputs()[0].name, sess_dn.get_outputs()[0].name),
+            }
+    except Exception as exc:
+        warnings.warn(f"Could not load hdamp ML ONNX models: {exc}. Using nominal weights.", stacklevel=2)
+        payload = None
+
+    _TTBAR_REWEIGHT_CACHE[cache_key] = payload
+    return payload
+
+
+# Mass normalisation constant used by the hdamp ML model during training
+_HDAMP_MASS_NORM = 243.9517
+
+
+def add_hdamp_ml_weight(weights, pruned_ev, campaign, isSyst=False):
+    nom = np.ones(len(weights.weight()), dtype=np.float64)
+    n = len(nom)
+
+    def _add(up=None, dn=None):
+        if isSyst is not False and up is not None:
+            weights.add("hdampML", nom, up, dn)
+        else:
+            weights.add("hdampML", nom)
+
+    if "GenPart" not in pruned_ev.fields:
+        warnings.warn("GenPart missing; hdamp ML weights set to nominal.", stacklevel=2)
+        return _add()
+
+    sessions = _get_hdamp_ml_sessions(campaign)
+    if sessions is None:
+        return _add()
+
+    gp = pruned_ev.GenPart
+    # Prefer first-copy tops; fall back to last copy. hasFlags is the NanoEvents API;
+    # fall back to statusFlags bit test for plain awkward arrays (e.g. in unit tests).
+    def _flag(gp_, name):
+        if hasattr(gp_, "hasFlags"):
+            return gp_.hasFlags([name])
+        bit = {"isFirstCopy": _FIRST_COPY_BIT, "isLastCopy": _LAST_COPY_BIT}.get(name)
+        return (gp_.statusFlags & bit) != 0 if bit and "statusFlags" in gp_.fields else ak.zeros_like(gp_.pdgId, dtype=bool)
+
+    def _tops(pid, flag):
+        return ak.firsts(gp[(gp.pdgId == pid) & _flag(gp, flag)])
+
+    top  = _tops( 6, "isFirstCopy")
+    atop = _tops(-6, "isFirstCopy")
+    if ak.all(ak.is_none(top)) or ak.all(ak.is_none(atop)):
+        top  = _tops( 6, "isLastCopy")
+        atop = _tops(-6, "isLastCopy")
+
+    valid = (~ak.is_none(top)) & (~ak.is_none(atop))
+
+    def _f(arr, fill):
+        return ak.to_numpy(ak.fill_none(arr, fill))
+
+    t_pt  = np.maximum(_f(top.pt,    1.0), 1e-6);  t_eta  = _f(top.eta,   0.0)
+    t_phi = _f(top.phi,   0.0);                     t_m    = np.maximum(_f(top.mass,   172.5), 1e-6)
+    at_pt = np.maximum(_f(atop.pt,   1.0), 1e-6);  at_eta = _f(atop.eta,  0.0)
+    at_phi = _f(atop.phi, 0.0);                     at_m   = np.maximum(_f(atop.mass,  172.5), 1e-6)
+
+    ttbar_pt = np.sqrt((t_pt * np.cos(t_phi) + at_pt * np.cos(at_phi))**2 +
+                       (t_pt * np.sin(t_phi) + at_pt * np.sin(at_phi))**2)
+
+    # Build (n, 2, 6) feature tensor; rapidity = 0.5*ln((E+pz)/(E-pz))
+    def _rap(pt, eta, m):
+        E  = np.sqrt((pt * np.cosh(eta))**2 + m**2)
+        pz = pt * np.sinh(eta)
+        return 0.5 * np.log(np.maximum((E + pz) / np.maximum(E - pz, 1e-10), 1e-10))
+
+    x = np.zeros((n, 2, 6), dtype=np.float32)
+    x[:, 0] = np.stack([np.log10(t_pt),  _rap(t_pt,  t_eta,  t_m),  t_phi,
+                         t_m  / _HDAMP_MASS_NORM, np.full(n, 0.1), np.full(n, 1.379)], axis=1)
+    x[:, 1] = np.stack([np.log10(at_pt), _rap(at_pt, at_eta, at_m), at_phi,
+                         at_m / _HDAMP_MASS_NORM, np.full(n, 0.2), np.full(n, 1.379)], axis=1)
+
+    apply_mask = (ak.to_numpy(valid)
+                  & np.all(np.isfinite(x.reshape(n, -1)), axis=1)
+                  & (ttbar_pt < 1000.0))
+
+    up, dn = nom.copy(), nom.copy()
+    if np.any(apply_mask):
+        x_sel = x[apply_mask]
+
+        def _infer(sess, iname, oname):
+            out = np.asarray(sess.run([oname], {iname: x_sel})[0])
+            if out.ndim > 1 and out.shape[-1] >= 2:
+                out = out[..., 0] / np.maximum(out[..., 1], 1e-8)
+            else:
+                out = out.reshape(-1)
+            return np.where(np.isfinite(out) & (out > 0) & (out < 100), out, 1.0).astype(np.float64)
+
+        up[apply_mask] = _infer(*sessions["up"])
+        dn[apply_mask] = _infer(*sessions["dn"])
+
+    _add(up, dn)
+
+
+_FIRST_COPY_BIT = 1 << 12
+_LAST_COPY_BIT = 1 << 13
+_LEPTON_IDS = {11, 13}
+_B_HADRONS = {
+    511,
+    521,
+    531,
+    541,
+    5122,
+    5112,
+    5132,
+    5232,
+    5332,
+}
+_C_HADRONS = {
+    411,
+    421,
+    431,
+    4122,
+    4132,
+    4232,
+    4332,
+}
+
+
+def _load_frag_decay_maps():
+    """Load TGraph weight files once and return a dict of interpolation callables."""
+    cache_key = "frag_decay_maps"
+    if cache_key in _TTBAR_REWEIGHT_CACHE:
+        return _TTBAR_REWEIGHT_CACHE[cache_key]
+
+    def _tgraph_fn(obj):
+        """Return a callable f(values) -> np.ndarray that interpolates a TGraph."""
+        try:
+            x = np.asarray(obj.member("fX"), dtype=np.float64)
+            y = np.asarray(obj.member("fY"), dtype=np.float64)
+        except Exception:
+            x, y = np.array([0.0, 1.0]), np.array([1.0, 1.0])
+        if len(x) == 0:
+            x, y = np.array([0.0, 1.0]), np.array([1.0, 1.0])
+        order = np.argsort(x)
+        xs, ys = x[order], y[order]
+        def _eval(values):
+            out = np.interp(np.asarray(values, dtype=np.float64), xs, ys, left=ys[0], right=ys[-1])
+            return np.where(np.isfinite(out), out, 1.0)
+        return _eval
+
+    pkg = "BTVNanoCommissioning.data.TTBAR_REWEIGHT.frag_decay"
+    payload = None
+    try:
+        with contextlib.ExitStack() as stack:
+            bfrag_path = stack.enter_context(importlib.resources.path(pkg, "bfragweights.root"))
+            cfrag_path = stack.enter_context(importlib.resources.path(pkg, "cfragweights.root"))
+            bdec_path  = stack.enter_context(importlib.resources.path(pkg, "bdecayweights.root"))
+            cdec_path  = stack.enter_context(importlib.resources.path(pkg, "cdecayweights.root"))
+
+            with uproot.open(str(bfrag_path)) as fb, uproot.open(str(cfrag_path)) as fc:
+                with uproot.open(str(bdec_path)) as fbdec, uproot.open(str(cdec_path)) as fcdec:
+                    payload = {
+                        "b_bl_up": _tgraph_fn(fb["fragCP5BLup_smooth"]),
+                        "b_bl_dn": _tgraph_fn(fb["fragCP5BLdown_smooth"]),
+                        "b_pet":   _tgraph_fn(fb["fragCP5Peterson_smooth"]),
+                        "c_bl_up": _tgraph_fn(fc["fragCP5BLup_smooth"]),
+                        "c_bl_dn": _tgraph_fn(fc["fragCP5BLdown_smooth"]),
+                        "c_pet":   _tgraph_fn(fc["fragCP5Peterson_smooth"]),
+                        "bdec_up": _tgraph_fn(fbdec["semilepbrup"]),
+                        "bdec_dn": _tgraph_fn(fbdec["semilepbrdown"]),
+                        "cdec_up": _tgraph_fn(fcdec["semilepbrup"]),
+                        "cdec_dn": _tgraph_fn(fcdec["semilepbrdown"]),
+                    }
+    except Exception as exc:
+        warnings.warn(
+            f"Could not load fragmentation/decay weight files: {exc}. Falling back to nominal weights.",
+            stacklevel=2,
+        )
+
+    _TTBAR_REWEIGHT_CACHE[cache_key] = payload
+    return payload
+
+
+def _find_top_hadron_pair(pdg, mother, status, pt, mass, eta, phi, children, hadron_ids):
+    """
+    For one event, find the heaviest B/C hadron pair descended from t and tbar.
+    Returns (tidx, w_mass, hid, h_semilep, aidx, aw_mass, ahid, ah_semilep) or None.
+    """
+    n = len(pdg)
+
+    def _descends_from(idx, ancestor):
+        cur, steps = idx, 0
+        while cur is not None and cur >= 0 and steps < n + 5:
+            if cur == ancestor:
+                return True
+            cur = mother[cur] if cur < n else -1
+            steps += 1
+        return False
+
+    def _has_lepton_descendant(idx):
+        stack, seen = [idx], set()
+        while stack:
+            cur = stack.pop()
+            if cur in seen: continue
+            seen.add(cur)
+            for ch in children[cur]:
+                if abs(int(pdg[ch])) in _LEPTON_IDS: return True
+                stack.append(ch)
+        return False
+
+    # Last-copy top/antitop, with pdgId-only fallback
+    tidx = next((i for i in range(n) if pdg[i] ==  6 and (status[i] & _LAST_COPY_BIT)), None)
+    aidx = next((i for i in range(n) if pdg[i] == -6 and (status[i] & _LAST_COPY_BIT)), None)
+    if tidx is None: tidx = next((i for i in range(n) if pdg[i] ==  6), None)
+    if aidx is None: aidx = next((i for i in range(n) if pdg[i] == -6), None)
+    if tidx is None or aidx is None:
+        return None
+
+    # W boson mass from first W child of each top
+    w_m  = next((mass[c] for c in children[tidx] if abs(pdg[c]) == 24), None)
+    aw_m = next((mass[c] for c in children[aidx] if abs(pdg[c]) == 24), None)
+    if w_m is None or aw_m is None:
+        return None
+
+    # Heaviest first-copy hadron descended from each top; fall back to any copy
+    def _best_hadron(root_idx):
+        for require_first in (True, False):
+            best_i, best_pt = None, -1.0
+            for i in range(n):
+                if abs(int(pdg[i])) not in hadron_ids: continue
+                if require_first and not (status[i] & _FIRST_COPY_BIT): continue
+                if _descends_from(i, root_idx) and pt[i] > best_pt:
+                    best_i, best_pt = i, pt[i]
+            if best_i is not None:
+                return best_i
+        return None
+
+    hid, ahid = _best_hadron(tidx), _best_hadron(aidx)
+    if hid is None or ahid is None:
+        return None
+
+    return (tidx, w_m,  hid,  _has_lepton_descendant(hid),
+            aidx, aw_m, ahid, _has_lepton_descendant(ahid))
+
+
+def add_fragmentation_decay_weights(weights, pruned_ev, isSyst=False):
+    LABELS = ["bfragBL", "bfragPeterson", "cfragBL", "cfragPeterson", "bdecay", "cdecay"]
+    nom = np.ones(len(weights.weight()), dtype=np.float64)
+    n_evt = len(nom)
+
+    def _commit(pairs=None):
+        if isSyst is not False and pairs is not None:
+            for lbl, (up, dn) in zip(LABELS, pairs):
+                weights.add(lbl, nom, up, dn)
+        else:
+            for lbl in LABELS:
+                weights.add(lbl, nom)
+
+    if "GenPart" not in pruned_ev.fields:
+        warnings.warn("GenPart missing; fragmentation/decay weights set to nominal.", stacklevel=2)
+        return _commit()
+
+    maps = _load_frag_decay_maps()
+    if maps is None:
+        return _commit()
+
+    warnings.warn(
+        "c-fragmentation reweighting uses approximate hadron-top ancestry reconstruction in NanoAOD.",
+        stacklevel=2,
+    )
+
+    # Convert awkward arrays to plain lists once for all events
+    gp = pruned_ev.GenPart
+    pdg_all    = ak.to_list(gp.pdgId)
+    mother_all = ak.to_list(gp.genPartIdxMother)
+    status_all = ak.to_list(gp.statusFlags)
+    pt_all     = ak.to_list(gp.pt)
+    eta_all    = ak.to_list(gp.eta)
+    phi_all    = ak.to_list(gp.phi)
+    mass_all   = ak.to_list(gp.mass)
+
+    arrs = {k: np.ones(n_evt, dtype=np.float64) for k in
+            ["bfu", "bfd", "bpu", "bpd", "bdu", "bdd",
+             "cfu", "cfd", "cpu", "cpd", "cdu", "cdd"]}
+
+    # x_had = 2*(p_had · p_top) / (m_top^2 - m_W^2)  (Lorentz-invariant fragmentation variable)
+    def _x_had(hpt, heta, hphi, hm, tpt, teta, tphi, tm, wm):
+        denom = tm**2 - wm**2
+        if abs(denom) < 1e-6:
+            return None
+        E_h = np.sqrt((hpt * np.cosh(heta))**2 + hm**2)
+        E_t = np.sqrt((tpt * np.cosh(teta))**2 + tm**2)
+        dot = (E_h * E_t
+               - hpt * np.cos(hphi) * tpt * np.cos(tphi)
+               - hpt * np.sin(hphi) * tpt * np.sin(tphi)
+               - hpt * np.sinh(heta) * tpt * np.sinh(teta))
+        x = 2.0 * dot / denom
+        return float(x) if np.isfinite(x) else None
+
+    for ievt in range(n_evt):
+        pdg    = pdg_all[ievt];    mother = mother_all[ievt];  status = status_all[ievt]
+        pt     = pt_all[ievt];     eta    = eta_all[ievt];     phi    = phi_all[ievt]
+        mass   = mass_all[ievt]
+        n_gp   = len(pdg)
+        children = [[] for _ in range(n_gp)]
+        for i, m in enumerate(mother):
+            if m is not None and 0 <= m < n_gp:
+                children[m].append(i)
+
+        for hadron_ids, pf in ((_B_HADRONS, "b"), (_C_HADRONS, "c")):
+            res = _find_top_hadron_pair(pdg, mother, status, pt, mass, eta, phi, children, hadron_ids)
+            if res is None:
+                continue
+            tidx, w_m, hid, h_sl, aidx, aw_m, ahid, ah_sl = res
+
+            x1 = _x_had(pt[hid],  eta[hid],  phi[hid],  mass[hid],
+                        pt[tidx], eta[tidx], phi[tidx], mass[tidx], w_m)
+            x2 = _x_had(pt[ahid], eta[ahid], phi[ahid], mass[ahid],
+                        pt[aidx], eta[aidx], phi[aidx], mass[aidx], aw_m)
+            if x1 is None or x2 is None or x1 > 1.2 or x2 > 1.2:
+                continue
+
+            xv   = np.array([x1, x2], dtype=np.float64)
+            # sign of pdgId encodes semi-leptonic decay for the decay weight lookup
+            pid1 = abs(int(pdg[hid]))  if h_sl  else -abs(int(pdg[hid]))
+            pid2 = abs(int(pdg[ahid])) if ah_sl else -abs(int(pdg[ahid]))
+            pids = np.array([pid1, pid2], dtype=np.float64)
+
+            if pf == "b":
+                arrs["bfu"][ievt] = float(np.prod(maps["b_bl_up"](xv)))
+                arrs["bfd"][ievt] = float(np.prod(maps["b_bl_dn"](xv)))
+                w_pet = float(np.prod(maps["b_pet"](xv)))
+                arrs["bpu"][ievt] = w_pet
+                arrs["bpd"][ievt] = 1.0 / max(w_pet, 1e-6)
+                arrs["bdu"][ievt] = float(np.prod(maps["bdec_up"](pids)))
+                arrs["bdd"][ievt] = float(np.prod(maps["bdec_dn"](pids)))
+            else:
+                arrs["cfu"][ievt] = float(np.prod(maps["c_bl_up"](xv)))
+                arrs["cfd"][ievt] = float(np.prod(maps["c_bl_dn"](xv)))
+                w_pet = float(np.prod(maps["c_pet"](xv)))
+                arrs["cpu"][ievt] = w_pet
+                arrs["cpd"][ievt] = 1.0 / max(w_pet, 1e-6)
+                arrs["cdu"][ievt] = float(np.prod(maps["cdec_up"](pids)))
+                arrs["cdd"][ievt] = float(np.prod(maps["cdec_dn"](pids)))
+
+    for a in arrs.values():
+        a[:] = np.where(np.isfinite(a) & (a > 0) & (a < 100), a, 1.0)
+
+    _commit([
+        (arrs["bfu"], arrs["bfd"]),
+        (arrs["bpu"], arrs["bpd"]),
+        (arrs["cfu"], arrs["cfd"]),
+        (arrs["cpu"], arrs["cpd"]),
+        (arrs["bdu"], arrs["bdd"]),
+        (arrs["cdu"], arrs["cdd"]),
+    ])
+
+
 # Jennet adds PS weights
 # https://github.com/andrzejnovak/boostedhiggs/blob/master/boostedhiggs/corrections.py#L88-L108
 def add_ps_weight(weights, ps_weights, isSyst=False):
@@ -3210,7 +3666,7 @@ def common_shifts(self, events):
 
 
 # common weights
-def weight_manager(pruned_ev, SF_map, isSyst):
+def weight_manager(pruned_ev, SF_map, isSyst, ttbar_reweights=None, campaign=None):
     """
     Example for Scaling Factors (SFs):
     ```python
@@ -3230,11 +3686,17 @@ def weight_manager(pruned_ev, SF_map, isSyst):
     if "LHEScaleWeight" in pruned_ev.fields:
         add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
 
-    if "TT" in pruned_ev.metadata["dataset"]:
+    is_mc = "genWeight" in pruned_ev.fields
+    has_genpart = "GenPart" in pruned_ev.fields
+    dataset_name = pruned_ev.metadata.get("dataset", "")
+    is_ttbar_mc = is_mc and has_genpart and ("TT" in dataset_name)
+
+    if is_ttbar_mc:
         nom = top_pT_reweighting(pruned_ev.GenPart)
     else:
         nom = ak.ones_like(weights.weight())
-    if isSyst != False and "GenPart" in pruned_ev.fields:
+
+    if isSyst != False and is_ttbar_mc:
         weights.add(
             "ttbar_weight",
             nom,
@@ -3243,6 +3705,16 @@ def weight_manager(pruned_ev, SF_map, isSyst):
         )
     else:
         weights.add("ttbar_weight", nom)
+
+    # Additional ttbar reweighting hooks (enabled via runner flag/environment)
+    # Apply only to MC ttbar samples.
+    if ttbar_reweights is None:
+        ttbar_reweights = os.environ.get("BTV_TTBAR_REWEIGHTS", "none")
+
+    if is_ttbar_mc and ttbar_reweights in ("hdamp_ml", "full"):
+        add_hdamp_ml_weight(weights, pruned_ev, campaign=campaign, isSyst=isSyst)
+    if is_ttbar_mc and ttbar_reweights == "full":
+        add_fragmentation_decay_weights(weights, pruned_ev, isSyst=isSyst)
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
         syst_wei = True if isSyst != False else False
