@@ -37,7 +37,6 @@ from BTVNanoCommissioning.utils.AK4_parameters import correction_config as confi
 
 
 _TTBAR_REWEIGHT_CACHE = {}
-_TTBAR_REWEIGHT_WARNINGS = set()
 
 
 def _cvmfs_dir(campaign, pog):
@@ -2966,39 +2965,18 @@ def top_pT_reweighting(gen):
     )
 
 
-def _warn_once(tag, message):
-    if tag in _TTBAR_REWEIGHT_WARNINGS:
-        return
-    warnings.warn(message)
-    _TTBAR_REWEIGHT_WARNINGS.add(tag)
-
-
-def _is_run2_campaign(campaign):
-    if campaign is None:
-        return False
-    return "-UL" in campaign or campaign.startswith("UL")
-
-
-def _safe_rapidity(pt, eta, mass):
-    pz = pt * np.sinh(eta)
-    e = np.sqrt(np.maximum((pt * np.cosh(eta)) ** 2 + mass**2, 1e-12))
-    num = np.maximum(e + pz, 1e-12)
-    den = np.maximum(e - pz, 1e-12)
-    return 0.5 * np.log(num / den)
-
-
 def _get_hdamp_ml_sessions(campaign):
     cache_key = f"hdamp::{campaign}"
     if cache_key in _TTBAR_REWEIGHT_CACHE:
         return _TTBAR_REWEIGHT_CACHE[cache_key]
 
     if ort is None:
-        _warn_once("missing_onnxruntime", "onnxruntime not available; hdamp ML reweighting disabled.")
+        warnings.warn("onnxruntime not available; hdamp ML reweighting disabled.", stacklevel=2)
         _TTBAR_REWEIGHT_CACHE[cache_key] = None
         return None
 
     pkg = "BTVNanoCommissioning.data.TTBAR_REWEIGHT.hdamp_ml"
-    suffix = "13TeV" if _is_run2_campaign(campaign) else "13.6TeV"
+    suffix = "13TeV" if (campaign and ("-UL" in campaign or campaign.startswith("UL"))) else "13.6TeV"
     try:
         with contextlib.ExitStack() as stack:
             up_path = stack.enter_context(importlib.resources.path(pkg, f"mymodel12_hdamp_up_{suffix}.onnx"))
@@ -3010,7 +2988,7 @@ def _get_hdamp_ml_sessions(campaign):
                 "dn": (sess_dn, sess_dn.get_inputs()[0].name, sess_dn.get_outputs()[0].name),
             }
     except Exception as exc:
-        _warn_once("hdamp_model_load_failed", f"Could not load hdamp ML ONNX models: {exc}. Using nominal weights.")
+        warnings.warn(f"Could not load hdamp ML ONNX models: {exc}. Using nominal weights.", stacklevel=2)
         payload = None
 
     _TTBAR_REWEIGHT_CACHE[cache_key] = payload
@@ -3032,7 +3010,7 @@ def add_hdamp_ml_weight(weights, pruned_ev, campaign, isSyst=False):
             weights.add("hdampML", nom)
 
     if "GenPart" not in pruned_ev.fields:
-        _warn_once("no_genpart_for_hdamp_ml", "GenPart missing; hdamp ML weights set to nominal.")
+        warnings.warn("GenPart missing; hdamp ML weights set to nominal.", stacklevel=2)
         return _add()
 
     sessions = _get_hdamp_ml_sessions(campaign)
@@ -3175,9 +3153,9 @@ def _load_frag_decay_maps():
                         "cdec_dn": _tgraph_fn(fcdec["semilepbrdown"]),
                     }
     except Exception as exc:
-        _warn_once(
-            "frag_decay_load_failed",
+        warnings.warn(
             f"Could not load fragmentation/decay weight files: {exc}. Falling back to nominal weights.",
+            stacklevel=2,
         )
 
     _TTBAR_REWEIGHT_CACHE[cache_key] = payload
@@ -3260,15 +3238,17 @@ def add_fragmentation_decay_weights(weights, pruned_ev, isSyst=False):
                 weights.add(lbl, nom)
 
     if "GenPart" not in pruned_ev.fields:
-        _warn_once("no_genpart_for_frag_decay", "GenPart missing; fragmentation/decay weights set to nominal.")
+        warnings.warn("GenPart missing; fragmentation/decay weights set to nominal.", stacklevel=2)
         return _commit()
 
     maps = _load_frag_decay_maps()
     if maps is None:
         return _commit()
 
-    _warn_once("cfrag_proxy_warning",
-               "c-fragmentation reweighting uses approximate hadron-top ancestry reconstruction in NanoAOD.")
+    warnings.warn(
+        "c-fragmentation reweighting uses approximate hadron-top ancestry reconstruction in NanoAOD.",
+        stacklevel=2,
+    )
 
     # Convert awkward arrays to plain lists once for all events
     gp = pruned_ev.GenPart
@@ -3283,6 +3263,20 @@ def add_fragmentation_decay_weights(weights, pruned_ev, isSyst=False):
     arrs = {k: np.ones(n_evt, dtype=np.float64) for k in
             ["bfu", "bfd", "bpu", "bpd", "bdu", "bdd",
              "cfu", "cfd", "cpu", "cpd", "cdu", "cdd"]}
+
+    # x_had = 2*(p_had · p_top) / (m_top^2 - m_W^2)  (Lorentz-invariant fragmentation variable)
+    def _x_had(hpt, heta, hphi, hm, tpt, teta, tphi, tm, wm):
+        denom = tm**2 - wm**2
+        if abs(denom) < 1e-6:
+            return None
+        E_h = np.sqrt((hpt * np.cosh(heta))**2 + hm**2)
+        E_t = np.sqrt((tpt * np.cosh(teta))**2 + tm**2)
+        dot = (E_h * E_t
+               - hpt * np.cos(hphi) * tpt * np.cos(tphi)
+               - hpt * np.sin(hphi) * tpt * np.sin(tphi)
+               - hpt * np.sinh(heta) * tpt * np.sinh(teta))
+        x = 2.0 * dot / denom
+        return float(x) if np.isfinite(x) else None
 
     for ievt in range(n_evt):
         pdg    = pdg_all[ievt];    mother = mother_all[ievt];  status = status_all[ievt]
@@ -3299,20 +3293,6 @@ def add_fragmentation_decay_weights(weights, pruned_ev, isSyst=False):
             if res is None:
                 continue
             tidx, w_m, hid, h_sl, aidx, aw_m, ahid, ah_sl = res
-
-            # x_had = 2*(p_had · p_top) / (m_top^2 - m_W^2)  (Lorentz-invariant fragmentation variable)
-            def _x_had(hpt, heta, hphi, hm, tpt, teta, tphi, tm, wm):
-                denom = tm**2 - wm**2
-                if abs(denom) < 1e-6:
-                    return None
-                E_h = np.sqrt((hpt * np.cosh(heta))**2 + hm**2)
-                E_t = np.sqrt((tpt * np.cosh(teta))**2 + tm**2)
-                dot = (E_h * E_t
-                       - hpt * np.cos(hphi) * tpt * np.cos(tphi)
-                       - hpt * np.sin(hphi) * tpt * np.sin(tphi)
-                       - hpt * np.sinh(heta) * tpt * np.sinh(teta))
-                x = 2.0 * dot / denom
-                return float(x) if np.isfinite(x) else None
 
             x1 = _x_had(pt[hid],  eta[hid],  phi[hid],  mass[hid],
                         pt[tidx], eta[tidx], phi[tidx], mass[tidx], w_m)
