@@ -524,7 +524,7 @@ def load_lumi(campaign):
 _jec_run_edge_cache = {}
 
 
-def _get_jec_run_edges(correct_map, jecname):
+def _get_jec_run_edges(correct_map, jecname, jet_algo="AK4PFPuppi"):
     """Return (lo, hi) run clamp range from L2L3Residual bin edges.
 
     Parses the JME JSON to find the run binning edges directly.
@@ -533,15 +533,16 @@ def _get_jec_run_edges(correct_map, jecname):
     Returns None if no run-binned L2L3Residual exists.
     The result is cached per jecname.
     """
-    if jecname in _jec_run_edge_cache:
-        return _jec_run_edge_cache[jecname]
+    cache_key = (jecname, jet_algo)
+    if cache_key in _jec_run_edge_cache:
+        return _jec_run_edge_cache[cache_key]
 
     jme_json_path = correct_map.get("JME_json_path")
     if jme_json_path is None:
-        _jec_run_edge_cache[jecname] = None
+        _jec_run_edge_cache[cache_key] = None
         return None
 
-    l2l3_name = f"{jecname}_L2L3Residual_AK4PFPuppi"
+    l2l3_name = f"{jecname}_L2L3Residual_{jet_algo}"
     result = None
     with gzip.open(jme_json_path, "rt") as f:
         for corr in json.load(f).get("corrections", []):
@@ -559,7 +560,7 @@ def _get_jec_run_edges(correct_map, jecname):
                 result = (edges[0], edges[-1] - 1)
             break
 
-    _jec_run_edge_cache[jecname] = result
+    _jec_run_edge_cache[cache_key] = result
     return result
 
 
@@ -667,7 +668,7 @@ sf_jersmear = cset_jersmear["JERSmear"]
 
 # JEC/JES sources for the full set according to
 # https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1
-def get_JES_keys(year: int | str) -> dict[str, set]:
+def get_JES_keys(year):
     return {
         "full": {
             "AbsoluteMPFBias",
@@ -734,6 +735,7 @@ def get_JER(
     jername,
     j,
     jersyst,
+    jet_algo="AK4PFPuppi",
 ):
     """
     Retrieve JER for each jet pt shift.
@@ -744,11 +746,11 @@ def get_JER(
     j (jets): jet collection
     """
 
-    JERSF = correct_map["JME"][f"{jername}_ScaleFactor_AK4PFPuppi"]
+    JERSF = correct_map["JME"][f"{jername}_ScaleFactor_{jet_algo}"]
     JERSF_input = get_corr_inputs(j, JERSF, jersyst)
     j["JERSF"] = JERSF.evaluate(*JERSF_input)
 
-    JERptres = correct_map["JME"][f"{jername}_PtResolution_AK4PFPuppi"]
+    JERptres = correct_map["JME"][f"{jername}_PtResolution_{jet_algo}"]
     JERptres_input = get_corr_inputs(j, JERptres)
     j["JER"] = JERptres.evaluate(*JERptres_input)
 
@@ -780,6 +782,56 @@ def get_MET_corr_keys():
         "EventID",
         "run",
     ]
+
+
+def _infer_jec_jet_algo(correct_map, jecname):
+    """Infer jet algorithm suffix (e.g. AK4PFPuppi, AK4PFchs) from JEC compound keys."""
+    preferred_algos = ["AK4PFPuppi", "AK4PFchs"]
+    compound_map = correct_map["JME"].compound
+
+    for algo in preferred_algos:
+        key = f"{jecname}_L1L2L3Res_{algo}"
+        if key in compound_map.keys():
+            return algo
+
+    available = [
+        k
+        for k in compound_map.keys()
+        if k.startswith(f"{jecname}_L1L2L3Res_")
+    ]
+    if len(available) > 0:
+        return available[0].replace(f"{jecname}_L1L2L3Res_", "")
+
+    raise KeyError(
+        f"No L1L2L3Res JEC key found for '{jecname}'. "
+        f"Available matches: {available}"
+    )
+
+
+def _resolve_jecname(correct_map, jecname):
+    """Resolve configured JEC era name to an available L1L2L3Res prefix.
+
+    Some configs use data-era strings containing a run token (e.g. ``..._RunCD_V3_DATA``)
+    while the JSON can store the corresponding key without that token (e.g. ``..._V3_DATA``).
+    """
+    compound_map = correct_map["JME"].compound
+    if any(k.startswith(f"{jecname}_L1L2L3Res_") for k in compound_map.keys()):
+        return jecname
+
+    candidates = []
+    if "_Run" in jecname:
+        candidates.append(re.sub(r"_Run[^_]+", "", jecname))
+
+    for cand in candidates:
+        if any(k.startswith(f"{cand}_L1L2L3Res_") for k in compound_map.keys()):
+            warnings.warn(
+                f"Configured JEC name '{jecname}' not found, using '{cand}' instead.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            return cand
+
+    return jecname
 
 
 def fixPhiRange(phi):
@@ -990,6 +1042,9 @@ def JME_shifts(
                 jecname = correct_map["JME_cfg"]["MC"].split(" ")[0] + "_MC"
                 jername = correct_map["JME_cfg"]["MC"].split(" ")[1] + "_MC"
 
+            jecname = _resolve_jecname(correct_map, jecname)
+            jet_algo = _infer_jec_jet_algo(correct_map, jecname)
+
             ## store the original jet info
             nocorrjet = events.Jet
             nocorrjet["pt_nano"] = ak.values_astype(events.Jet["pt"], np.float32)
@@ -1066,24 +1121,38 @@ def JME_shifts(
             t1j["pt_noMuRaw"] = t1j["pt_raw"] * (1.0 - t1j["muonSubtrFactor"])
             t1j["phi_noMuRaw"] = t1j["phi"] + t1j["muonSubtrDeltaPhi"]
             t1j["eta_noMuRaw"] = t1j["eta"] + t1j["muonSubtrDeltaEta"]
-            L1corr = correct_map["JME"][f"{jecname}_L1FastJet_AK4PFPuppi"]
-            t1j["pt_noMuL1"] = t1j["pt_noMuRaw"] * L1corr.evaluate(
-                np.array(t1j["area"]),
-                np.array(t1j["eta_noMuRaw"]),
-                np.array(t1j["pt_noMuRaw"]),
-                np.array(t1j["rho"]),
-            )
+
+            # Type-1 MET recipe depends on jet algorithm:
+            # - AK4PFPuppi (PUPPI MET): L2L3-only, no L1 subtraction
+            # - AK4PFchs  (PF MET): L1L2L3 - L1
+            # See: https://cms-jerc.web.cern.ch/Type1MET/
+            if jet_algo == "AK4PFPuppi":
+                t1j["pt_noMuL1"] = t1j["pt_noMuRaw"]
+            else:
+                l1_key = f"{jecname}_L1FastJet_{jet_algo}"
+                if l1_key in correct_map["JME"].keys():
+                    L1corr = correct_map["JME"][l1_key]
+                    t1j["pt_noMuL1"] = t1j["pt_noMuRaw"] * L1corr.evaluate(
+                        np.array(t1j["area"]),
+                        np.array(t1j["eta_noMuRaw"]),
+                        np.array(t1j["pt_noMuRaw"]),
+                        np.array(t1j["rho"]),
+                    )
+                else:
+                    warnings.warn(
+                        f"Missing {l1_key}; falling back to no L1 subtraction for Type-1 MET.",
+                        RuntimeWarning,
+                        stacklevel=2,
+                    )
+                    t1j["pt_noMuL1"] = t1j["pt_noMuRaw"]
 
             ## store the original met info (nocorrmet), raw met, nanoaod met
-            if campaign in [
-                "2016preVFP-UL",
-                "2016postVFP-UL",
-                "2017-UL",
-                "2018-UL",
-                "Summer24",
-                "Winter25",
-                "Prompt25",
-            ]:  # for nanoaodv15
+            ## Use MET object matching the JEC jet algorithm.
+            if (
+                jet_algo == "AK4PFPuppi"
+                and hasattr(events, "PuppiMET")
+                and hasattr(events, "RawPuppiMET")
+            ):
                 nocorrmet = events.PuppiMET
                 met_raw = events.RawPuppiMET
                 met_nano = events.PuppiMET
@@ -1094,7 +1163,7 @@ def JME_shifts(
             met = copy.copy(nocorrmet)
 
             ## JES/JEC
-            JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_AK4PFPuppi"]
+            JECcorr = correct_map["JME"].compound[f"{jecname}_L1L2L3Res_{jet_algo}"]
             JEC_input = get_corr_inputs(j, JECcorr)
             JEC_input_t1 = get_corr_inputs(t1j, JECcorr)
 
@@ -1119,7 +1188,7 @@ def JME_shifts(
                     None,
                 )
                 if run_idx is not None:
-                    _run_edges = _get_jec_run_edges(correct_map, jecname)
+                    _run_edges = _get_jec_run_edges(correct_map, jecname, jet_algo)
                     if _run_edges is not None:
                         lo, hi = _run_edges
                         JEC_input[run_idx] = np.clip(JEC_input[run_idx], lo, hi)
@@ -1157,7 +1226,7 @@ def JME_shifts(
                     None,
                 )
                 if run_idx is not None:
-                    _run_edges = _get_jec_run_edges(correct_map, jecname)
+                    _run_edges = _get_jec_run_edges(correct_map, jecname, jet_algo)
                     if _run_edges is not None:
                         lo, hi = _run_edges
                         JEC_input_t1_nomu[run_idx] = np.clip(
@@ -1182,14 +1251,16 @@ def JME_shifts(
                 ## apply nominal JER to nominal JES/JEC
                 j["pt"] = j["pt_JECnom"]
                 j["mass"] = j["mass_JECnom"]
-                jer_smear_nom = get_JER(correct_map, jername, j, "nom")
+                jer_smear_nom = get_JER(correct_map, jername, j, "nom", jet_algo)
                 j["pt_JECnom_JERnom"] = j["pt_JECnom"] * jer_smear_nom
                 j["mass_JECnom_JERnom"] = j["mass_JECnom"] * jer_smear_nom
                 jets["pt"] = ak.unflatten(j["pt_JECnom_JERnom"], nj)
                 jets["mass"] = ak.unflatten(j["mass_JECnom_JERnom"], nj)
 
                 t1j["pt"] = t1j["pt_JECnom"]
-                jer_smear_nom_t1 = get_JER(correct_map, jername, t1j, "nom")
+                jer_smear_nom_t1 = get_JER(
+                    correct_map, jername, t1j, "nom", jet_algo
+                )
                 t1j["pt_JECnom_JERnom"] = t1j["pt_JECnom"] * jer_smear_nom_t1
                 t1jets["pt"] = ak.unflatten(t1j["pt_JECnom_JERnom"], nt1j)
                 t1jets["pt_noMuL1"] = ak.unflatten(t1j["pt_noMuL1"], nt1j)
@@ -1223,7 +1294,9 @@ def JME_shifts(
                         ## apply up/down JER to nominal JES/JEC
                         j["pt"] = j["pt_JECnom"]
                         j["mass"] = j["mass_JECnom"]
-                        jer_smear_var = get_JER(correct_map, jername, j, var)
+                        jer_smear_var = get_JER(
+                            correct_map, jername, j, var, jet_algo
+                        )
                         j[f"pt_JECnom_JER{var}"] = ak.values_astype(
                             j["pt_JECnom"] * jer_smear_var,
                             np.float32,
@@ -1233,7 +1306,9 @@ def JME_shifts(
                             np.float32,
                         )
                         t1j["pt"] = t1j["pt_JECnom"]
-                        jer_smear_var_t1 = get_JER(correct_map, jername, t1j, var)
+                        jer_smear_var_t1 = get_JER(
+                            correct_map, jername, t1j, var, jet_algo
+                        )
                         t1j[f"pt_JECnom_JER{var}"] = ak.values_astype(
                             t1j["pt_JECnom"] * jer_smear_var_t1,
                             np.float32,
@@ -1344,7 +1419,7 @@ def JME_shifts(
                         if jes_sources_id in jes_sources.keys():
                             for jes_syst in jes_sources[jes_sources_id]:
                                 jesuncmap = correct_map["JME"][
-                                    f"{jecname}_{jes_syst}_AK4PFPuppi"
+                                    f"{jecname}_{jes_syst}_{jet_algo}"
                                 ]
                                 jesunc = jesuncmap.evaluate(j.eta, j.pt_JECnom)
                                 jesunc_t1 = jesuncmap.evaluate(t1j.eta, t1j.pt_JECnom)
@@ -1366,7 +1441,9 @@ def JME_shifts(
                                 ## apply nominal JER to up/down JES/JEC
                                 j["pt"] = j[f"pt_JEC{jes_syst}{var}"]
                                 j["mass"] = j[f"mass_JEC{jes_syst}{var}"]
-                                jer_smear_nom = get_JER(correct_map, jername, j, "nom")
+                                jer_smear_nom = get_JER(
+                                    correct_map, jername, j, "nom", jet_algo
+                                )
                                 j[f"pt_JEC{jes_syst}{var}_JERnom"] = ak.values_astype(
                                     j[f"pt_JEC{jes_syst}{var}"] * jer_smear_nom,
                                     np.float32,
@@ -1377,7 +1454,7 @@ def JME_shifts(
                                 )
                                 t1j["pt"] = t1j[f"pt_JEC{jes_syst}{var}"]
                                 jer_smear_nom_t1 = get_JER(
-                                    correct_map, jername, t1j, "nom"
+                                    correct_map, jername, t1j, "nom", jet_algo
                                 )
                                 t1j[f"pt_JEC{jes_syst}{var}_JERnom"] = ak.values_astype(
                                     t1j[f"pt_JEC{jes_syst}{var}"] * jer_smear_nom_t1,
@@ -3853,11 +3930,17 @@ def weight_manager(pruned_ev, SF_map, isSyst, ttbar_reweights=None, campaign=Non
     if "LHEScaleWeight" in pruned_ev.fields:
         add_scalevar_weight(weights, pruned_ev.LHEScaleWeight, isSyst)
 
-    if "TT" in pruned_ev.metadata["dataset"]:
+    is_mc = "genWeight" in pruned_ev.fields
+    has_genpart = "GenPart" in pruned_ev.fields
+    dataset_name = pruned_ev.metadata.get("dataset", "")
+    is_ttbar_mc = is_mc and has_genpart and ("TT" in dataset_name)
+
+    if is_ttbar_mc:
         nom = top_pT_reweighting(pruned_ev.GenPart)
     else:
         nom = ak.ones_like(weights.weight())
-    if isSyst != False and "GenPart" in pruned_ev.fields:
+
+    if isSyst != False and is_ttbar_mc:
         weights.add(
             "ttbar_weight",
             nom,
@@ -3868,13 +3951,13 @@ def weight_manager(pruned_ev, SF_map, isSyst, ttbar_reweights=None, campaign=Non
         weights.add("ttbar_weight", nom)
 
     # Additional ttbar reweighting hooks (enabled via runner flag/environment)
+    # Apply only to MC ttbar samples.
     if ttbar_reweights is None:
         ttbar_reweights = os.environ.get("BTV_TTBAR_REWEIGHTS", "none")
 
-    is_ttbar = "TT" in pruned_ev.metadata.get("dataset", "")
-    if is_ttbar and ttbar_reweights in ("hdamp_ml", "full"):
+    if is_ttbar_mc and ttbar_reweights in ("hdamp_ml", "full"):
         add_hdamp_ml_weight(weights, pruned_ev, campaign=campaign, isSyst=isSyst)
-    if is_ttbar and ttbar_reweights == "full":
+    if is_ttbar_mc and ttbar_reweights == "full":
         add_fragmentation_decay_weights(weights, pruned_ev, isSyst=isSyst)
 
     if "hadronFlavour" in pruned_ev.Jet.fields:
