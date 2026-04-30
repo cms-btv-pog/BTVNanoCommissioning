@@ -25,6 +25,7 @@ from BTVNanoCommissioning.utils.selection import (
     jet_id,
     mu_promptmvaid,
     ele_promptmvaid,
+    ele_mvatightid,
     mu_idiso,
     ele_cuttightid,
     MET_filters,
@@ -149,9 +150,14 @@ class NanoProcessor(processor.ProcessorABC):
                 (events.Electron.pt > 25) & ele_promptmvaid(events, self._campaign)
             ]
         else:
-            events.Electron = events.Electron[
-                (events.Electron.pt > 25) & ele_cuttightid(events, self._campaign)
-            ]
+            if self.selMod == "ttdilep_sf_2D":
+                events.Electron = events.Electron[
+                    (events.Electron.pt > 25) & ele_mvatightid(events, self._campaign)
+                ]
+            else:
+                events.Electron = events.Electron[
+                    (events.Electron.pt > 25) & ele_cuttightid(events, self._campaign)
+                ]
         events.Electron = ak.pad_none(events.Electron, 1, axis=1)
         req_ele = ak.count(events.Electron.pt, axis=1) == 1
 

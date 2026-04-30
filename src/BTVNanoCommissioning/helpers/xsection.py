@@ -748,6 +748,24 @@ xsection = [
         "comment": "GenXSecAnalyzer and https://twiki.cern.ch/twiki/bin/viewauth/CMS/MATRIXCrossSectionsat13p6TeV",
     },
     # ----------------------------------------------------------------------- #
+    # Binned by jets: NLO                                                      #
+    # ----------------------------------------------------------------------- #
+    {
+        "process_name": "WtoLNu-2Jets_0J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "55760.0",
+        "energy": "13.6",
+    },
+    {
+        "process_name": "WtoLNu-2Jets_1J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "9529.0",
+        "energy": "13.6",
+    },
+    {
+        "process_name": "WtoLNu-2Jets_2J_TuneCP5_13p6TeV_amcatnloFXFX-pythia8",
+        "cross_section": "3532.0",
+        "energy": "13.6",
+    },
+    # ----------------------------------------------------------------------- #
     # Binned by lepton: LO                                                    #
     # ----------------------------------------------------------------------- #
     {

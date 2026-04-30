@@ -18,9 +18,9 @@ from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
     jet_id,
-    # mu_idiso,
+    mu_idiso,
     mu_promptmvaid,
-    # ele_mvatightid,
+    ele_mvatightid,
     ele_promptmvaid,
     MET_filters,
     btag_wp,
@@ -132,13 +132,23 @@ class NanoProcessor(processor.ProcessorABC):
 
         ## Lepton cuts
         if self.selMod == "semittE_2D":
-            event_iso_lep = events.Electron[
-                (events.Electron.pt > 32) & ele_promptmvaid(events, self._campaign)
-            ]
+            if self._campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
+                event_iso_lep = events.Electron[
+                    (events.Electron.pt > 32) & ele_promptmvaid(events, self._campaign)
+                ]
+            else:
+                event_iso_lep = events.Electron[
+                    (events.Electron.pt > 32) & ele_mvatightid(events, self._campaign)
+                ]
         elif self.selMod == "semittM_2D":
-            event_iso_lep = events.Muon[
-                (events.Muon.pt > 26) & mu_promptmvaid(events, self._campaign)
-            ]
+            if self._campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
+                event_iso_lep = events.Muon[
+                    (events.Muon.pt > 26) & mu_promptmvaid(events, self._campaign)
+                ]
+            else:
+                event_iso_lep = events.Muon[
+                    (events.Muon.pt > 26) & mu_idiso(events, self._campaign)
+                ]
             event_soft_mu = events.Muon[
                 (events.Muon.pt > 5)
                 & (abs(events.Muon.eta) < 2.5)
@@ -177,11 +187,12 @@ class NanoProcessor(processor.ProcessorABC):
         req_jets = n_jet >= 4
 
         # b-tagged jets requirement
+        tagger = "UParTAK4" if self._campaign in ["Summer24", "Winter25", "Prompt25"] else "PNet"
         mask_bjets = btag_wp(
-            event_jet, self._year, self._campaign, "UParTAK4", "b", "M"
+            event_jet, self._year, self._campaign, tagger, "b", "M"
         )
         mask_cjets = btag_wp(
-            event_jet, self._year, self._campaign, "UParTAK4", "c", "M"
+            event_jet, self._year, self._campaign, tagger, "c", "M"
         )
         n_bjets = ak.count(event_jet[mask_bjets].pt, axis=1)
         n_cjets = ak.count(event_jet[mask_cjets].pt, axis=1)
@@ -249,10 +260,10 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["SelMuon"] = event_iso_lep[event_level][:, 0]
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
         b_jet_mask = btag_wp(
-            event_jet[event_level], self._year, self._campaign, "UParTAK4", "b", "M"
+            event_jet[event_level], self._year, self._campaign, tagger, "b", "M"
         )
         c_jet_mask = btag_wp(
-            event_jet[event_level], self._year, self._campaign, "UParTAK4", "c", "M"
+            event_jet[event_level], self._year, self._campaign, tagger, "c", "M"
         )
         pruned_ev["nbjet"] = ak.count(event_jet[event_level].pt[b_jet_mask], axis=1)
         pruned_ev["ncjet"] = ak.count(event_jet[event_level].pt[c_jet_mask], axis=1)

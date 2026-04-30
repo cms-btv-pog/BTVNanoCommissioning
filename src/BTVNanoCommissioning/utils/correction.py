@@ -2065,6 +2065,10 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
             "lfstats1",
             "lfstats2",
         ]
+    if SFtype.endswith("BC"):
+        systlist = [
+            "Total",
+        ]
     sfs_up_all, sfs_down_all = {}, {}
     alljet = jet if jet.ndim > 1 else ak.singletons(jet)
     for i, sys in enumerate(systlist):
@@ -2147,10 +2151,16 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                             jet.btagDeepCvB,
                         ),
                     )
-                elif SFtype == "UParTAK4BC":
-                    jet_2Dbin = ak.fill_none(jet.btagUParTAK42Dbin, 0)
+                elif SFtype == "UParTAK4BC" or SFtype == "PNetBC":
+                    if SFtype == "UParTAK4BC":
+                        jet_2Dbin = ak.fill_none(jet.btagUParTAK42Dbin, 0)
+                    elif SFtype == "PNetBC":
+                        jet_2Dbin = ak.fill_none(jet.btagPNet2Dbin, 0)
                     jet_eta = ak.fill_none(jet.eta, 0)
                     jet_pt = ak.fill_none(jet.pt, 0)
+                    if SFtype == "PNetBC":
+                        jet_2Dbin = ak.where(jet_2Dbin == -1, 0, jet_2Dbin)
+                        masknone = masknone | (jet_2Dbin == -1)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -3308,6 +3318,7 @@ def weight_manager(pruned_ev, SF_map, isSyst):
             "ctag" in SF_map.keys() or "btag" in SF_map.keys()
         ) and "SelJet" in pruned_ev.fields:
             btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", syst_wei)
+            # btagSFs(pruned_ev, SF_map, weights, "PNetBC", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepJetC", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepJetB", syst_wei)
             # btagSFs(pruned_ev, SF_map, weights, "DeepCSVB", syst_wei)
