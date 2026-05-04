@@ -355,12 +355,12 @@ correction_config = {
                 "mu_Iso": "NUM_TightPFIso_DEN_TightID",
             },
             "EGM": {
-                "ele_Reco 2024 Electron-ID-SF": "",
-                "ele_ID 2024 Electron-ID-SF": "wp80iso",
+                "ele_Reco 2025 Electron-ID-SF": "",
+                "ele_ID 2025 Electron-ID-SF": "wp80iso",
             },
-            # Muon scale & smearing: reuse 2024 from Run3-24CDE...Summer24
+            # Muon scale & smearing
             "muonSS": "",
-            # Electron scale & smearing: use 2025 SaS from Run3-25Prompt-Summer24
+            # Electron scale & smearing
             "electronSS": [
                 "Scale",
                 "SmearAndSyst",
@@ -369,14 +369,10 @@ correction_config = {
             # JME: data L2L3Residual from Winter25 JME era.
             # JME_MC: MC truth JECs must come from the Summer24 era (L2Relative differs).
             # jetveto: jetvetomap from Winter25 JME era.
-            # muonSS: no 2025 muon scale/smearing yet, reuse Summer24.
-            # EGM: no 2025 electron ID SFs yet (electron.json.gz), reuse Summer24.
             "cvmfs_override": {
                 "JME": "Run3-25Prompt-Winter25-NanoAODv15",
                 "JME_MC": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
                 "jetveto": "Run3-25Prompt-Winter25-NanoAODv15",
-                "muonSS": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
-                "EGM": "Run3-24CDEReprocessingFGHIPrompt-Summer24-NanoAODv15",
             },
         },
     },
