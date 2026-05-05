@@ -148,7 +148,7 @@ def missing_branch(events, campaign=None):
             events.Jet,
             {"btagRobustParTAK4CvNotB": jets.btagRobustParTAK4CvNotB},
         )
-    for tagger in ("UParTAK4"):
+    for tagger in ("UParTAK4",):
         bvc_name = f"btag{tagger}BvC"
         cvb_name = f"btag{tagger}CvB"
         if not hasattr(events.Jet, bvc_name) and hasattr(events.Jet, cvb_name):
