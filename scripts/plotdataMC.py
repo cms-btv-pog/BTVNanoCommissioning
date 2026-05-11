@@ -211,9 +211,10 @@ for index, discr in enumerate(var_set):
     try:
         if not isinstance(collated["mc"][discr], hist.hist.Hist):
             continue
-    except:
-        print(f"{discr} not found. Variable must be in", collated["mc"].keys())
-        sys.exit(1)
+    except KeyError as e:
+        raise Exception(
+            f"{discr} not found. Variable must be in", collated["mc"].keys()
+        ) from e
     ## remove empty
     if (
         discr not in collated["mc"].keys()
