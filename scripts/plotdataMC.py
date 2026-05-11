@@ -1,13 +1,10 @@
 import numpy as np
-import argparse, os, arrow, glob, re, sys
+import argparse, os, glob, re
 import matplotlib.pyplot as plt
 import mplhep as hep
 import hist
 from coffea.util import load
 from matplotlib.offsetbox import AnchoredText
-import gc
-
-plt.style.use(hep.style.ROOT)
 
 from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
@@ -24,6 +21,8 @@ from BTVNanoCommissioning.utils.plot_utils import (
     sample_mergemap,
     color_map,
 )
+
+plt.style.use(hep.style.ROOT)
 
 bininfo = get_definitions()
 SV_bininfo = get_definitions(include_definitions=["SV"])
