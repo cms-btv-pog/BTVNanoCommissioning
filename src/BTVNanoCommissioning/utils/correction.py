@@ -659,7 +659,9 @@ sf_jersmear = cset_jersmear["JERSmear"]
 
 # JEC/JES sources for the full set according to
 # https://cms-jerc.web.cern.ch/Recommendations/#jet-energy-scale_1
-def get_JES_keys(year: int | str) -> dict[str, set]:
+def get_JES_keys(year: int | str, campaign: str) -> dict[str, set]:
+    if campaign == "2016preVFP-UL":
+        year = "2016APV"
     return {
         "full": {
             "AbsoluteMPFBias",
@@ -949,7 +951,7 @@ def JME_shifts(
 
     if not isRealData and systematic != False:
         jerc_id_arr = systematic.split("_")
-        jes_sources = get_JES_keys(jes_year)
+        jes_sources = get_JES_keys(jes_year, campaign)
         if len(jerc_id_arr) >= 2 and jerc_id_arr[0] == "JEC":
             jes_sources_id = jerc_id_arr[1]
         else:

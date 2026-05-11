@@ -1,5 +1,19 @@
 xsection_13TeV = [
     {
+        "process_name": "DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
+        "cross_section": "20460",
+        "DAS": "DYJetsToLL_M-10to50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
+        "energy": "13",
+        "comment": "Automatically Computed",
+    },
+    {
+        "process_name": "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
+        "cross_section": "6404",
+        "DAS": "DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8",
+        "energy": "13",
+        "comment": "Automatically Computed",
+    },
+    {
         "id": "61641f28294617432cff1379",
         "process_name": "QCD_Pt-30to50_EMEnriched_TuneCP5_13TeV_pythia8",
         "cross_section": "6447000.0",
