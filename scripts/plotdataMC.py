@@ -203,7 +203,7 @@ elif "*" in args.variable:
             if re.match(
                 f"^{args.variable.split('*')[0]}.*{args.variable.split('*')[1]}$", var
             )
-            != None
+            is not None
         ]
 else:
     var_set = args.variable.split(",")
