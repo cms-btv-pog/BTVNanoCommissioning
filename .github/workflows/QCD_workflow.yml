@@ -132,8 +132,8 @@ jobs:
         fi
         if [[ $string == *"ci:skip syst"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all//g')
-        elif [[ $string == *"ci:JERC_reduced"* ]]; then
-            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_reduced/g')
+        elif [[ $string == *"ci:JEC_reduced"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JEC_reduced/g')
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
@@ -147,8 +147,8 @@ jobs:
         fi
         if [[ $string == *"ci:skip syst"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all//g')
-        elif [[ $string == *"ci:JERC_reduced"* ]]; then
-            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_reduced/g')
+        elif [[ $string == *"ci:JEC_reduced"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JEC_reduced/g')
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
