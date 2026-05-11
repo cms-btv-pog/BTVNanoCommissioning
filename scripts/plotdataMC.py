@@ -642,41 +642,29 @@ for index, discr in enumerate(var_set):
     name = "all"
     if args.split == "sample":
         name += "_sample"
-    try:
-        hep.mpl_magic(ax=ax)
-    except RuntimeError as e:
-        print(f"Warning: {e}")
-        print("Using soft_fail=True for legend placement")
-        try:
-            # Try with soft_fail=True
-            hep.mpl_magic(ax=ax, soft_fail=True)
-        except Exception as e2:
-            print(f"Still failed: {e2}")
-            # Continue anyway - the plot will still be usable
+    hep.mpl_magic(ax=ax, soft_fail=True)
     if args.log:
         name += "_log"
+        savefig_basepath = (
+            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}"
+        )
         print(
             "creating:",
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
+            f"{savefig_basepath}.png",
         )
         ax.set_yscale("log")
         ax.set_ylim(bottom=0.1)
-        hep.mpl_magic(ax=ax)
-        fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
-        )
-        fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
-        )
+        hep.mpl_magic(ax=ax, soft_fail=True)
+        fig.savefig(f"{savefig_basepath}.pdf")
+        fig.savefig(f"{savefig_basepath}.png")
     else:
+        savefig_basepath = (
+            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}"
+        )
         print(
             "creating:",
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
+            f"{savefig_basepath}.png",
         )
-        fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
-        )
-        fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
-        )
+        fig.savefig(f"{savefig_basepath}.pdf")
+        fig.savefig(f"{savefig_basepath}.png")
     plt.close(fig)
