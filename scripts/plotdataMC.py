@@ -643,12 +643,12 @@ for index, discr in enumerate(var_set):
     if args.split == "sample":
         name += "_sample"
     hep.mpl_magic(ax=ax, soft_fail=True)
+    if args.log:
+        name += "_log"
     savefig_basepath = (
         f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}"
     )
     if args.log:
-        name += "_log"
-        savefig_basepath = f"{savefig_basepath}_log"
         print(
             "creating:",
             f"{savefig_basepath}.png",
