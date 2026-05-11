@@ -1,13 +1,10 @@
 import numpy as np
-import argparse, os, arrow, glob, re, sys
+import argparse, os, glob, re
 import matplotlib.pyplot as plt
 import mplhep as hep
 import hist
 from coffea.util import load
 from matplotlib.offsetbox import AnchoredText
-import gc
-
-plt.style.use(hep.style.ROOT)
 
 from BTVNanoCommissioning.workflows import workflows
 from BTVNanoCommissioning.helpers.xs_scaler import collate, scaleSumW
@@ -24,6 +21,8 @@ from BTVNanoCommissioning.utils.plot_utils import (
     sample_mergemap,
     color_map,
 )
+
+plt.style.use(hep.style.ROOT)
 
 bininfo = get_definitions()
 SV_bininfo = get_definitions(include_definitions=["SV"])
@@ -203,7 +202,7 @@ elif "*" in args.variable:
             if re.match(
                 f"^{args.variable.split('*')[0]}.*{args.variable.split('*')[1]}$", var
             )
-            != None
+            is not None
         ]
 else:
     var_set = args.variable.split(",")
@@ -211,9 +210,10 @@ for index, discr in enumerate(var_set):
     try:
         if not isinstance(collated["mc"][discr], hist.hist.Hist):
             continue
-    except:
-        print(f"{discr} not found. Variable must be in", collated["mc"].keys())
-        sys.exit(1)
+    except KeyError as e:
+        raise Exception(
+            f"{discr} not found. Variable must be in", collated["mc"].keys()
+        ) from e
     ## remove empty
     if (
         discr not in collated["mc"].keys()
@@ -642,41 +642,27 @@ for index, discr in enumerate(var_set):
     name = "all"
     if args.split == "sample":
         name += "_sample"
-    try:
-        hep.mpl_magic(ax=ax)
-    except RuntimeError as e:
-        print(f"Warning: {e}")
-        print("Using soft_fail=True for legend placement")
-        try:
-            # Try with soft_fail=True
-            hep.mpl_magic(ax=ax, soft_fail=True)
-        except Exception as e2:
-            print(f"Still failed: {e2}")
-            # Continue anyway - the plot will still be usable
+    hep.mpl_magic(ax=ax, soft_fail=True)
     if args.log:
         name += "_log"
+    savefig_basepath = (
+        f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}"
+    )
+    if args.log:
         print(
             "creating:",
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
+            f"{savefig_basepath}.png",
         )
         ax.set_yscale("log")
         ax.set_ylim(bottom=0.1)
-        hep.mpl_magic(ax=ax)
-        fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
-        )
-        fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
-        )
+        hep.mpl_magic(ax=ax, soft_fail=True)
+        fig.savefig(f"{savefig_basepath}.pdf")
+        fig.savefig(f"{savefig_basepath}.png")
     else:
         print(
             "creating:",
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png",
+            f"{savefig_basepath}.png",
         )
-        fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.pdf"
-        )
-        fig.savefig(
-            f"plot/{args.phase}_{args.ext}/unc_{discr}_inclusive{scale}_{name}.png"
-        )
+        fig.savefig(f"{savefig_basepath}.pdf")
+        fig.savefig(f"{savefig_basepath}.png")
     plt.close(fig)

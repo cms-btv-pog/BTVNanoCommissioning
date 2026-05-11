@@ -18,6 +18,7 @@ dependencies:
   - arrow
   - dask-jobqueue
   - alive-progress
+  - mplhep>=1.0.0
   - pip:
     - coffea==0.7.31
     - correctionlib==2.7.0
