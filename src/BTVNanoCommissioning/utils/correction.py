@@ -36,7 +36,6 @@ from BTVNanoCommissioning.helpers.func import (
 )
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
 
-
 _TTBAR_REWEIGHT_CACHE = {}
 
 
@@ -172,9 +171,9 @@ def load_SF(year, campaign, selMod="default", syst=False):
                     ) as filename:
                         if "B" in tagger:
                             if filename.endswith(".json.gz"):
-                                correct_map[
-                                    "btag"
-                                ] = correctionlib.CorrectionSet.from_file(filename)
+                                correct_map["btag"] = (
+                                    correctionlib.CorrectionSet.from_file(filename)
+                                )
                             else:
                                 correct_map["btag"][tagger] = BTagScaleFactor(
                                     filename,
@@ -183,9 +182,9 @@ def load_SF(year, campaign, selMod="default", syst=False):
                                 )
                         else:
                             if filename.endswith(".json.gz"):
-                                correct_map[
-                                    "ctag"
-                                ] = correctionlib.CorrectionSet.from_file(filename)
+                                correct_map["ctag"] = (
+                                    correctionlib.CorrectionSet.from_file(filename)
+                                )
                             else:
                                 correct_map["ctag"][tagger] = BTagScaleFactor(
                                     filename,
@@ -1361,33 +1360,33 @@ def JME_shifts(
                                 unc_jets[f"JER{jer_bin_name}{var}"] = copy.copy(
                                     nocorrjet
                                 )
-                                unc_jets[f"JER{jer_bin_name}{var}"][
-                                    "pt"
-                                ] = ak.values_astype(
-                                    ak.unflatten(jer_shifted_pt, nj),
-                                    np.float32,
+                                unc_jets[f"JER{jer_bin_name}{var}"]["pt"] = (
+                                    ak.values_astype(
+                                        ak.unflatten(jer_shifted_pt, nj),
+                                        np.float32,
+                                    )
                                 )
-                                unc_jets[f"JER{jer_bin_name}{var}"][
-                                    "mass"
-                                ] = ak.values_astype(
-                                    ak.unflatten(jer_shifted_mass, nj),
-                                    np.float32,
+                                unc_jets[f"JER{jer_bin_name}{var}"]["mass"] = (
+                                    ak.values_astype(
+                                        ak.unflatten(jer_shifted_mass, nj),
+                                        np.float32,
+                                    )
                                 )
 
                                 unc_met[f"JER{jer_bin_name}{var}"] = copy.copy(
                                     nocorrmet
                                 )
-                                unc_met[f"JER{jer_bin_name}{var}"][
-                                    "pt"
-                                ] = ak.values_astype(
-                                    met_pt_JECnom_JERvar,
-                                    np.float32,
+                                unc_met[f"JER{jer_bin_name}{var}"]["pt"] = (
+                                    ak.values_astype(
+                                        met_pt_JECnom_JERvar,
+                                        np.float32,
+                                    )
                                 )
-                                unc_met[f"JER{jer_bin_name}{var}"][
-                                    "phi"
-                                ] = ak.values_astype(
-                                    met_phi_JECnom_JERvar,
-                                    np.float32,
+                                unc_met[f"JER{jer_bin_name}{var}"]["phi"] = (
+                                    ak.values_astype(
+                                        met_phi_JECnom_JERvar,
+                                        np.float32,
+                                    )
                                 )
 
                         ## unclustered MET uncertainty
@@ -1403,11 +1402,11 @@ def JME_shifts(
                             shifted_met_pt,
                             np.float32,
                         )
-                        unc_met[f"MET_UnclusteredEnergy{var}"][
-                            "phi"
-                        ] = ak.values_astype(
-                            shifted_met_phi,
-                            np.float32,
+                        unc_met[f"MET_UnclusteredEnergy{var}"]["phi"] = (
+                            ak.values_astype(
+                                shifted_met_phi,
+                                np.float32,
+                            )
                         )
 
                         ## loop over JES/JEC uncertainties
@@ -1483,35 +1482,35 @@ def JME_shifts(
 
                                 ## JES/JEC uncertainty
                                 unc_jets[f"JES_{jes_syst}{var}"] = copy.copy(nocorrjet)
-                                unc_jets[f"JES_{jes_syst}{var}"][
-                                    "pt"
-                                ] = ak.values_astype(
-                                    ak.unflatten(
-                                        j[f"pt_JEC{jes_syst}{var}_JERnom"], nj
-                                    ),
-                                    np.float32,
+                                unc_jets[f"JES_{jes_syst}{var}"]["pt"] = (
+                                    ak.values_astype(
+                                        ak.unflatten(
+                                            j[f"pt_JEC{jes_syst}{var}_JERnom"], nj
+                                        ),
+                                        np.float32,
+                                    )
                                 )
-                                unc_jets[f"JES_{jes_syst}{var}"][
-                                    "mass"
-                                ] = ak.values_astype(
-                                    ak.unflatten(
-                                        j[f"mass_JEC{jes_syst}{var}_JERnom"], nj
-                                    ),
-                                    np.float32,
+                                unc_jets[f"JES_{jes_syst}{var}"]["mass"] = (
+                                    ak.values_astype(
+                                        ak.unflatten(
+                                            j[f"mass_JEC{jes_syst}{var}_JERnom"], nj
+                                        ),
+                                        np.float32,
+                                    )
                                 )
 
                                 unc_met[f"JES_{jes_syst}{var}"] = copy.copy(nocorrmet)
-                                unc_met[f"JES_{jes_syst}{var}"][
-                                    "pt"
-                                ] = ak.values_astype(
-                                    met_pt_JECvar_JERnom,
-                                    np.float32,
+                                unc_met[f"JES_{jes_syst}{var}"]["pt"] = (
+                                    ak.values_astype(
+                                        met_pt_JECvar_JERnom,
+                                        np.float32,
+                                    )
                                 )
-                                unc_met[f"JES_{jes_syst}{var}"][
-                                    "phi"
-                                ] = ak.values_astype(
-                                    met_phi_JECvar_JERnom,
-                                    np.float32,
+                                unc_met[f"JES_{jes_syst}{var}"]["phi"] = (
+                                    ak.values_astype(
+                                        met_phi_JECvar_JERnom,
+                                        np.float32,
+                                    )
                                 )
 
                     if jer_split_id in jer_split.keys():
