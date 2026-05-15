@@ -158,8 +158,8 @@ You can simply include a workflow by adding the entries with name
         fi
         if [[ $string == *"ci:skip syst"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all//g')
-        elif [[ $string == *"ci:JERC_reduced"* ]]; then
-            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JERC_reduced/g')
+        elif [[ $string == *"ci:JEC_reduced"* ]]; then
+            opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst JEC_reduced/g')
         elif [[ $string == *"ci:weight_only"* ]]; then
             opts=$(echo "$opts" | sed 's/--isSyst all/--isSyst weight_only/g') 
         fi
@@ -175,7 +175,7 @@ python runner.py --workflow emctag_ttdilep_sf --json metadata/test_bta_run3.json
 - `[skip ci]`: not running ci at all in the commit message
 - `ci:skip array` : remove `--isArray` option
 - `ci:skip syst` : remove `--isSyst all` option
-- `ci:JERC_reduced` : change systematic option to split JERC uncertainty sources `--isSyst JERC_reduced`
+- `ci:JEC_reduced` : change systematic option to split JEC uncertainty sources `--isSyst JEC_reduced`
 - `ci:weight_only` : change systematic option to weight only variations `--isSyst weight_only`
 
 <details><summary>Set CI in your github account</summary>

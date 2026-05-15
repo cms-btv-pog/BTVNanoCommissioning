@@ -38,6 +38,8 @@ def scaleSumW(output, lumi):
 
     for sample, accu in merged_output.items():
         scaled[sample] = {}
+        if "sumw" not in accu.keys():
+            continue
         for key, h_obj in accu.items():
             scaled[sample]["sumw"] = merged_output[sample]["sumw"]
             if isinstance(h_obj, hist.Hist):
@@ -216,11 +218,7 @@ def collate(merged_output, mergemap):
     merged_output = merge_output(merged_output)
     for group, names in mergemap.items():
         out[group] = accumulate(
-            [
-                copy.deepcopy(v)
-                for k, v in merged_output.items()
-                if k.split("_FNAME_")[0] in names
-            ]
+            [v for k, v in merged_output.items() if k.split("_FNAME_")[0] in names]
         )
     return out
 
