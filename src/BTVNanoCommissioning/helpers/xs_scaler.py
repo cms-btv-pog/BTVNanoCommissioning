@@ -24,7 +24,7 @@ def scale_xs(hist, lumi, events):
     return hist
 
 
-def scaleSumW(output, lumi):
+def scaleSumW(output, lumi, syst_shapes=True):
     scaled = {}
     xs_dict = {}
     for obj in xsection + xsection_13TeV:
@@ -34,6 +34,23 @@ def scaleSumW(output, lumi):
             xs_dict[obj["process_name"]] = xs_dict[obj["process_name"]] * float(
                 obj["kFactor"]
             )
+    # Maps output histogram suffix -> sumw accumulator key used for normalisation.
+    # When syst_shapes=False every variation is normalised with the nominal sumw instead.
+    syst_sumw_map = {
+        "PDF_weightUp": "PDF_sumwUp",
+        "PDF_weightDown": "PDF_sumwDown",
+        "aS_weightUp": "aS_sumwUp",
+        "aS_weightDown": "aS_sumwDown",
+        "scalevar_muRUp": "muR_sumwUp",
+        "scalevar_muRDown": "muR_sumwDown",
+        "scalevar_muFUp": "muF_sumwUp",
+        "scalevar_muFDown": "muF_sumwDown",
+        "UEPS_ISRUp": "ISR_sumwUp",
+        "UEPS_ISRDown": "ISR_sumwDown",
+        "UEPS_FSRUp": "FSR_sumwUp",
+        "UEPS_FSRDown": "FSR_sumwDown",
+    }
+
     merged_output = merge_output(output)
 
     for sample, accu in merged_output.items():
@@ -42,131 +59,38 @@ def scaleSumW(output, lumi):
             continue
         for key, h_obj in accu.items():
             scaled[sample]["sumw"] = merged_output[sample]["sumw"]
-            if isinstance(h_obj, hist.Hist):
-                h = copy.deepcopy(h_obj)
-                h_PDF_weightUp = copy.deepcopy(h_obj)
-                h_PDF_weightDown = copy.deepcopy(h_obj)
-                h_aS_weightUp = copy.deepcopy(h_obj)
-                h_aS_weightDown = copy.deepcopy(h_obj)
-                h_scalevar_muRUp = copy.deepcopy(h_obj)
-                h_scalevar_muRDown = copy.deepcopy(h_obj)
-                h_scalevar_muFUp = copy.deepcopy(h_obj)
-                h_scalevar_muFDown = copy.deepcopy(h_obj)
-                h_PS_ISRUp = copy.deepcopy(h_obj)
-                h_PS_ISRDown = copy.deepcopy(h_obj)
-                h_PS_FSRUp = copy.deepcopy(h_obj)
-                h_PS_FSRDown = copy.deepcopy(h_obj)
+            if not isinstance(h_obj, hist.Hist):
+                continue
 
-                if sample in xs_dict.keys():
-                    for syst in ["PDF", "aS", "PDFaS", "muR", "muF", "ISR", "FSR"]:
-                        for var in ["Up", "Down"]:
-                            key_reweight = f"{syst}_sumw{var}"
-                            if key_reweight in merged_output[sample].keys():
-                                scaled[sample][key_reweight] = merged_output[sample][
-                                    key_reweight
-                                ]
-                            else:
-                                scaled[sample][key_reweight] = merged_output[sample][
-                                    "sumw"
-                                ]
-                                print(f"WARNING: {key_reweight} not found!")
+            if sample in xs_dict.keys():
+                xs = xs_dict[sample] * lumi
+                nominal_sumw = merged_output[sample]["sumw"]
 
-                    h = h * xs_dict[sample] * lumi / merged_output[sample]["sumw"]
-                    h_PDF_weightUp = (
-                        h_PDF_weightUp
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["PDF_sumwUp"]
-                    )
-                    h_PDF_weightDown = (
-                        h_PDF_weightDown
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["PDF_sumwDown"]
-                    )
-                    h_aS_weightUp = (
-                        h_aS_weightUp
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["aS_sumwUp"]
-                    )
-                    h_aS_weightDown = (
-                        h_aS_weightDown
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["aS_sumwDown"]
-                    )
-                    h_scalevar_muRUp = (
-                        h_scalevar_muRUp
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["muR_sumwUp"]
-                    )
-                    h_scalevar_muRDown = (
-                        h_scalevar_muRDown
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["muR_sumwDown"]
-                    )
-                    h_scalevar_muFUp = (
-                        h_scalevar_muFUp
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["muF_sumwUp"]
-                    )
-                    h_scalevar_muFDown = (
-                        h_scalevar_muFDown
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["muF_sumwDown"]
-                    )
-                    h_PS_ISRUp = (
-                        h_PS_ISRUp
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["ISR_sumwUp"]
-                    )
-                    h_PS_ISRDown = (
-                        h_PS_ISRDown
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["ISR_sumwDown"]
-                    )
-                    h_PS_FSRUp = (
-                        h_PS_FSRUp
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["FSR_sumwUp"]
-                    )
-                    h_PS_FSRDown = (
-                        h_PS_FSRDown
-                        * xs_dict[sample]
-                        * lumi
-                        / scaled[sample]["FSR_sumwDown"]
-                    )
+                # Collect per-syst sumw accumulators (fall back to nominal if missing)
+                for syst in ["PDF", "aS", "PDFaS", "muR", "muF", "ISR", "FSR"]:
+                    for var in ["Up", "Down"]:
+                        key_reweight = f"{syst}_sumw{var}"
+                        if key_reweight in merged_output[sample].keys():
+                            scaled[sample][key_reweight] = merged_output[sample][
+                                key_reweight
+                            ]
+                        else:
+                            scaled[sample][key_reweight] = nominal_sumw
+                            print(f"WARNING: {key_reweight} not found!")
+
+                scaled[sample][key] = copy.deepcopy(h_obj) * xs / nominal_sumw
+
+                for suffix, sumw_key in syst_sumw_map.items():
+                    sumw = scaled[sample][sumw_key] if syst_shapes else nominal_sumw
+                    scaled[sample][f"{key}_{suffix}"] = copy.deepcopy(h_obj) * xs / sumw
+            else:
+                if ("data" in sample) or ("Run" in sample) or ("Double" in sample):
+                    scaled[sample][key] = copy.deepcopy(h_obj)
                 else:
-                    if ("data" in sample) or ("Run" in sample) or ("Double" in sample):
-                        h = h
-                    else:
-                        raise KeyError(
-                            sample,
-                            "is not found in xsection.py. If you're using 13TeV samples, please use xsection_13TeV.py",
-                        )
-
-                scaled[sample][key] = h
-                if sample in xs_dict.keys():
-                    scaled[sample][f"{key}_PDF_weightUp"] = h_PDF_weightUp
-                    scaled[sample][f"{key}_PDF_weightDown"] = h_PDF_weightDown
-                    scaled[sample][f"{key}_aS_weightUp"] = h_aS_weightUp
-                    scaled[sample][f"{key}_aS_weightDown"] = h_aS_weightDown
-                    scaled[sample][f"{key}_scalevar_muRUp"] = h_scalevar_muRUp
-                    scaled[sample][f"{key}_scalevar_muRDown"] = h_scalevar_muRDown
-                    scaled[sample][f"{key}_scalevar_muFUp"] = h_scalevar_muFUp
-                    scaled[sample][f"{key}_scalevar_muFDown"] = h_scalevar_muFDown
-                    scaled[sample][f"{key}_UEPS_ISRUp"] = h_PS_ISRUp
-                    scaled[sample][f"{key}_UEPS_ISRDown"] = h_PS_ISRDown
-                    scaled[sample][f"{key}_UEPS_FSRUp"] = h_PS_FSRUp
-                    scaled[sample][f"{key}_UEPS_FSRDown"] = h_PS_FSRDown
+                    raise KeyError(
+                        sample,
+                        "is not found in xsection.py. If you're using 13TeV samples, please use xsection_13TeV.py",
+                    )
     return scaled
 
 

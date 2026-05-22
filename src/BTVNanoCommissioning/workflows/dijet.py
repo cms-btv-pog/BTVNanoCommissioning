@@ -48,7 +48,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
-        selectionModifier="DiPFJetAve",
+        selectionModifier="PFJet",
     ):
         self._year = year
         self._campaign = campaign
