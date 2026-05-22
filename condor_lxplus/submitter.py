@@ -59,6 +59,14 @@ def get_condor_submitter_parser(parser):
         default=None,
         help="If specified, access BTVNanoCommissioning from a remote tarball (downloaded via https), instead of from a transferred sandbox",
     )
+    parser.add_argument(
+        "--noSpool", action="store_true", help="Submit condor jobs without spooling."
+    )
+    parser.add_argument(
+        "--nCPU",
+        default=1,
+        help="Number of CPUs to request for condor. RAM of the job scales as 2Gb*nCPU",
+    )
     return parser
 
 
@@ -203,15 +211,23 @@ if __name__ == "__main__":
     os.mkdir(job_dir + "/log")
 
     # Handle voms proxy
-    proxy_file = args.voms
-    if not proxy_file:
+    if args.voms is not None:
+        if not os.path.exists(args.voms):
+            raise Exception(f"Provided voms proxy path {args.voms} does not exist.")
+        shutil.copy(args.voms, os.path.join(job_dir + "/..", "proxy"))
+        print(f"Copied provided proxy file {args.voms} to local directory.")
+    else:
         proxy_file = get_proxy_path()
-    os.system(f"scp {proxy_file} proxy")
-    print(f"Copied proxy file {proxy_file} to local directory.")
+        os.system(f"scp {proxy_file} proxy")
+        print(f"Copied proxy file {proxy_file} to local directory.")
 
     # Find conda/mamba environment
     envpath = "/eos/home-m/milee/miniforge3/envs/btv_coffea/bin"
-    pathvarlist = [i for i in os.environ["PATH"].split(":") if "envs/btv_coffea" in i]
+    pathvarlist = [
+        i
+        for i in os.environ["PATH"].split(":")
+        if "envs/btv_coffea" in i or "envs/BTVCOFFEA" in i
+    ]
     if len(pathvarlist) == 0:
         print(
             f"You did not source the btv_coffea conda/mamba environment. Proceed with the central conda environment:\n{envpath} ?"
@@ -277,10 +293,9 @@ if __name__ == "__main__":
 Executable = {executable}
 
 
-Arguments = $(JOBNUM) {base_dir} {outputDir} {envpath}
+Arguments = $(JOBNUM) {base_dir} {outputDir} {envpath} {nthreads}
 
-request_cpus = 1
-request_memory = 2000
+request_cpus = {nthreads}
 
 +JobFlavour = "workday"
 
@@ -291,7 +306,10 @@ Error      = {log_dir}/job.err_$(Cluster)-$(Process)
 should_transfer_files   = YES
 when_to_transfer_output = ON_EXIT_OR_EVICT
 transfer_input_files    = {transfer_input_files}
-transfer_output_files   = .success
+
+on_exit_remove   = (ExitBySignal == False) && (ExitCode == 0)
+max_retries      = 3
+requirements     = (Machine =!= split(LastRemoteHost, "@")[1])
 
 Queue JOBNUM from {jobnum_file}
 """.format(
@@ -299,6 +317,7 @@ Queue JOBNUM from {jobnum_file}
         base_dir=base_dir,
         outputDir=args.outputDir,
         envpath=envpath,
+        nthreads=args.nCPU,
         log_dir=f"{base_dir}/{job_dir}/log",
         transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt",
         jobnum_file=f"{base_dir}/{job_dir}/jobnum_list.txt",
@@ -312,6 +331,10 @@ Queue JOBNUM from {jobnum_file}
         )
         spool = "-spool"
     else:
+        spool = ""
+
+    if args.noSpool:
+        print("Submitting without spooling due to --noSpool option.")
         spool = ""
     if args.submit:
         os.system(f"condor_submit {spool} {job_dir}/submit.jdl")

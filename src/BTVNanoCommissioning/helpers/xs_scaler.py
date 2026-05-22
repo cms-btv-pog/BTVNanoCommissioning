@@ -38,6 +38,8 @@ def scaleSumW(output, lumi):
 
     for sample, accu in merged_output.items():
         scaled[sample] = {}
+        if "sumw" not in accu.keys():
+            continue
         for key, h_obj in accu.items():
             scaled[sample]["sumw"] = merged_output[sample]["sumw"]
             if isinstance(h_obj, hist.Hist):
