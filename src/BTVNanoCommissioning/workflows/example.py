@@ -192,7 +192,13 @@ class NanoProcessor(processor.ProcessorABC):
         #     Output       #
         ####################
         # Configure SFs - read pruned objects from the pruned_ev and apply SFs and call the systematics
-        weights = weight_manager(pruned_ev, self.SF_map, self.isSyst)
+        weights = weight_manager(
+            pruned_ev,
+            self.SF_map,
+            self.isSyst,
+            ttbar_reweights=getattr(self, "ttbar_reweights", "none"),
+            campaign=self._campaign,
+        )
         # Configure systematics shifts
         if shift_name is None:
             systematics = ["nominal"] + list(

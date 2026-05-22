@@ -1,6 +1,7 @@
 #!/bin/bash -x
 
 JOBID=$1
+NCPU=$2
 
 export HOME=`pwd`
 if [ -d /afs/cern.ch/user/${USER:0:1}/$USER ]; then
@@ -86,8 +87,16 @@ for key in  isArray noHist overwrite skipbadfiles; do
 done
 OPTS="$OPTS --output ${ARGS[output]//.coffea/_$JOBID.coffea}"  # add a suffix to output file name
 OPTS="$OPTS --json sample.json"  # use the sample json for this JOBID
-OPTS="$OPTS --worker 1"  # use number of worker = 1
-OPTS="$OPTS --executor iterative"
+
+# Check the number of CPUs requested and set the worker accordingly.
+# If nCPU > 1, use futures executor with nCPU workers. If nCPU = 1, use iterative executor with 1 worker.
+if [ $NCPU -gt 1 ]; then
+    OPTS="$OPTS --worker $NCPU"  # use number of worker = nCPU
+    OPTS="$OPTS --executor futures"
+else
+    OPTS="$OPTS --worker 1"  # use number of worker = 1
+    OPTS="$OPTS --executor iterative"
+fi
 
 # Launch
 echo "Now launching: python runner.py $OPTS"

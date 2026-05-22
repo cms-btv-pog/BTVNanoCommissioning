@@ -245,6 +245,16 @@ def config_parser(parser):
         ],
         help="Run with systematics (default: %(default)s)",
     )
+    parser.add_argument(
+        "--ttbar-reweights",
+        default="none",
+        choices=["none", "hdamp_ml", "full"],
+        help=(
+            "Enable additional ttbar event reweights in correction.py. "
+            "'hdamp_ml' applies hdamp ONNX up/down; 'full' additionally reserves "
+            "hooks for frag/decay reweights."
+        ),
+    )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
     parser.add_argument(
         "--noHist", action="store_true", help="Not output coffea histogram"
@@ -401,6 +411,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.isSyst == "False":
         args.isSyst = False
+    os.environ["BTV_TTBAR_REWEIGHTS"] = args.ttbar_reweights
     print("Running with the following options:")
     print(args)
     ogoutput = args.output
@@ -526,6 +537,7 @@ if __name__ == "__main__":
         args.noHist,
         args.chunk,
     )
+    setattr(processor_instance, "ttbar_reweights", args.ttbar_reweights)
 
     if args.skip_structure_validation:
         print("Skipping dataset structure validation (--skip-structure-validation).")
