@@ -211,6 +211,8 @@ def get_xrootd_sites_map():
             except:
                 continue
             for site in data:
+                if "rse" not in site.keys():
+                    continue
                 if site["type"] != "DISK":
                     continue
                 if site["rse"] == None:

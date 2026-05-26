@@ -1006,7 +1006,7 @@ def JME_shifts(
 
     if not isRealData and systematic != False:
         jerc_id_arr = systematic.split("_")
-        jes_sources = get_JES_keys(jes_year)
+        jes_sources = get_JES_keys(jes_year, campaign)
         if len(jerc_id_arr) >= 2 and jerc_id_arr[0] == "JEC":
             jes_sources_id = jerc_id_arr[1]
         else:

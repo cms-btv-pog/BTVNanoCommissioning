@@ -34,7 +34,8 @@ correction_config = {
                 "Run2016E": "Summer20UL16APVNanoV15_V1",
                 "Run2016F": "Summer20UL16APVNanoV15_V1",
             },
-            "JME_path": "src/BTVNanoCommissioning/data/JME/2016preVFP-UL/jet_jerc.json.gz",
+            "jetveto": {"Summer19UL16_V1": "jetvetomap"},
+            "JME_path": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016preVFP-UL-NanoAODv15/latest/jet_jerc.json.gz",
             "MUO": {
                 "mu_ID": "NUM_TightID_DEN_TrackerMuons",
                 "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
@@ -54,6 +55,7 @@ correction_config = {
                 "muonSS": "Run2-2016preVFP-UL-NanoAODv9",  # Nanov15 unavailable
                 "EGM": "Run2-2016preVFP-UL-NanoAODv15",
                 "electronSS": "Run2-2016preVFP-UL-NanoAODv15",
+                "jetveto": "Run2-2016preVFP-UL-NanoAODv15",
             },
         },
     },
@@ -67,7 +69,8 @@ correction_config = {
                 "Run2016G": "Summer20UL16NanoV15_V1",
                 "Run2016H": "Summer20UL16NanoV15_V1",
             },
-            "JME_path": "src/BTVNanoCommissioning/data/JME/2016postVFP-UL/jet_jerc.json.gz",
+            "jetveto": {"Summer19UL16_V1": "jetvetomap"},
+            "JME_path": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2016postVFP-UL-NanoAODv15/latest/jet_jerc.json.gz",
             "MUO": {
                 "mu_ID": "NUM_TightID_DEN_TrackerMuons",
                 "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
@@ -87,6 +90,7 @@ correction_config = {
                 "muonSS": "Run2-2016postVFP-UL-NanoAODv9",  # Nanov15 unavailable
                 "EGM": "Run2-2016postVFP-UL-NanoAODv15",
                 "electronSS": "Run2-2016postVFP-UL-NanoAODv15",
+                "jetveto": "Run2-2016postVFP-UL-NanoAODv15",
             },
         },
     },
@@ -102,7 +106,8 @@ correction_config = {
                 "Run2017E": "Summer20UL17NanoV15_V1",
                 "Run2017F": "Summer20UL17NanoV15_V1",
             },
-            "JME_path": "src/BTVNanoCommissioning/data/JME/2017-UL/jet_jerc.json.gz",
+            "jetveto": {"Summer19UL17_V1": "jetvetomap"},
+            "JME_path": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2017-UL-NanoAODv15/latest/jet_jerc.json.gz",
             "MUO": {
                 "mu_ID": "NUM_TightID_DEN_TrackerMuons",
                 "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
@@ -122,6 +127,7 @@ correction_config = {
                 "muonSS": "Run2-2017-UL-NanoAODv9",  # Nanov15 unavailable
                 "EGM": "Run2-2017-UL-NanoAODv15",
                 "electronSS": "Run2-2017-UL-NanoAODv15",
+                "jetveto": "Run2-2017-UL-NanoAODv15",
             },
         },
     },
@@ -136,7 +142,8 @@ correction_config = {
                 "Run2018C": "Summer20UL18NanoV15_V1",
                 "Run2018D": "Summer20UL18NanoV15_V1",
             },
-            "JME_path": "src/BTVNanoCommissioning/data/JME/2018-UL/jet_jerc.json.gz",
+            "jetveto": {"Summer19UL18_V1": "jetvetomap"},
+            "JME_path": "/cvmfs/cms-griddata.cern.ch/cat/metadata/JME/Run2-2018-UL-NanoAODv15/latest/jet_jerc.json.gz",
             "MUO": {
                 "mu_ID": "NUM_TightID_DEN_TrackerMuons",
                 "mu_Iso": "NUM_TightRelIso_DEN_TightIDandIPCut",
@@ -156,6 +163,7 @@ correction_config = {
                 "muonSS": "Run2-2018-UL-NanoAODv9",  # Nanov15 unavailable
                 "EGM": "Run2-2018-UL-NanoAODv15",
                 "electronSS": "Run2-2018-UL-NanoAODv15",
+                "jetveto": "Run2-2018-UL-NanoAODv15",
             },
         },
     },
