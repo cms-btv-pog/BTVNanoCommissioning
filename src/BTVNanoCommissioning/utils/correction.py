@@ -17,6 +17,11 @@ try:
 except Exception:
     ort = None
 
+try:
+    import onnxruntime as ort
+except Exception:
+    ort = None
+
 from coffea.lookup_tools import extractor, txt_converters, rochester_lookup
 from coffea.lumi_tools import LumiMask
 from coffea.jetmet_tools.CorrectedMETFactory import corrected_polar_met
@@ -35,6 +40,9 @@ from BTVNanoCommissioning.helpers.func import (
     campaign_map,
 )
 from BTVNanoCommissioning.utils.AK4_parameters import correction_config as config
+
+_TTBAR_REWEIGHT_CACHE = {}
+
 
 _TTBAR_REWEIGHT_CACHE = {}
 
