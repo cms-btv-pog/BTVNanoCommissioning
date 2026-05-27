@@ -1874,10 +1874,14 @@ def direct_das_query(dataset_name, campaign_pattern):
 def main(args):
 
     if args.from_workflow:
-        for sample in predefined_sample[args.from_workflow].keys():
+        for sample, datasets in predefined_sample[args.from_workflow].items():
             if args.doOnly is not None:
                 if sample != args.doOnly:
                     continue
+            print(f"\n📂 \033[1m{sample}\033[0m:")
+            for i, dataset in enumerate(datasets):
+                connector = "└──" if i == len(datasets) - 1 else "├──"
+                print(f"   {connector} 📄 {dataset}")
             if (
                 os.path.exists(
                     f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json"
@@ -1933,12 +1937,14 @@ def main(args):
                         print(f"  {i+1}: {d}")
                     campaigns = [d.split("/")[2] for d in dataset]
                     campaign_input = input(
-                        f"{l} is which campaign? [Enter integer corresponding to above list. Use ',' for multiple or 'all']: "
+                        f"{l} is which campaign? [Enter integer corresponding to above list. Use ',' for multiple, '0' for none, or 'all' for all]: "
                     )
                     camp_idxs = []
-
-                    if campaign_input.strip() == "all":
-                        camp_idxs = list(range(len(campaigns)))
+                    if campaign_input == "0":
+                        camp_idxs = []
+                        break
+                    if campaign_input.strip().lower() == "all":
+                        camp_idxs = list(range(len(dataset)))
                         break
                     cont = False
                     for camp_idx in campaign_input.split(","):

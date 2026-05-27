@@ -185,11 +185,18 @@ if __name__ == "__main__":
                 os.remove("BTVNanoCommissioning.tar.gz")
 
         if not skip_tar:
-            jobdirs = [d for d in os.listdir(base_dir) if d.startswith("jobs_")]
+            exclude_list = ["jsonpog-integration", "BTVNanoCommissioning.egg-info"]
+            for d in os.listdir(base_dir):
+                if (
+                    d.startswith("jobs_")
+                    or d.startswith("arrays_")
+                    or d.startswith("hists_")
+                ):
+                    exclude_list.append(d)
             make_tarfile(
                 "BTVNanoCommissioning.tar.gz",
                 base_dir,
-                exclude_dirs=["BTVNanoCommissioning.egg-info"] + jobdirs,
+                exclude_dirs=exclude_list,
             )
 
     # Create job dir
