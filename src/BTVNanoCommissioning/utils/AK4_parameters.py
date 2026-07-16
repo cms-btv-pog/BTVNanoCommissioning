@@ -244,7 +244,7 @@ correction_config = {
             "DC": "Cert_Collisions2023_366442_370790_Golden.json",
             "LUM": "puwei_Summer23.histo.root",
             "JME": {
-                "MC": "Summer23Prompt23_V4 Summer23Prompt23_RunCv1234_JRV2",
+                "MC": "Summer23Prompt23_V4 Summer23Prompt23_RunCv1234_JRV3",
                 "Run2023C": "Summer23Prompt23_V4",
             },
             "jetveto": {"Summer23Prompt23_RunC_V1": "jetvetomap"},
@@ -275,7 +275,7 @@ correction_config = {
             "DC": "Cert_Collisions2023_366442_370790_Golden.json",
             "LUM": "puwei_Summer23BPix.histo.root",
             "JME": {
-                "MC": "Summer23BPixPrompt23_V4 Summer23BPixPrompt23_RunD_JRV2",
+                "MC": "Summer23BPixPrompt23_V4 Summer23BPixPrompt23_RunD_JRV3",
                 "Run2023D": "Summer23BPixPrompt23_V4",
             },
             "JES_MC_year": "2023BPix",
@@ -350,7 +350,7 @@ correction_config = {
             # not the data year.  Summer24 JECs have "_2024_" in the correction names.
             "JES_MC_year": "2024",
             "JME": {
-                "MC": "Summer24Prompt24_V3 Summer24Prompt25_JRV1",
+                "MC": "Summer24Prompt24_V5 Summer24Prompt25_JRV2",
                 "Run2025C": "Winter25Prompt25_V3",
                 "Run2025D": "Winter25Prompt25_V3",
                 "Run2025E": "Winter25Prompt25_V3",
