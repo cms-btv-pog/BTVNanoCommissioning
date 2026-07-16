@@ -16,8 +16,11 @@ axes = {
     "softlpt": hist.axis.Regular(25, 0, 25, name="pt", label=" $p_{T}$ [GeV]"),
     "mass": hist.axis.Regular(50, 0, 300, name="mass", label=" mass [GeV]"),
     "bdt": hist.axis.Regular(50, 0, 1, name="bdt", label=" BDT discriminant"),
-    "eta": hist.axis.Variable([-5.131, -4.7, -3.0, -2.5, -1.3, 0.0, 1.3, 2.5, 3.0, 4.7, 5.131],
-        name="eta", label=" $\eta$"),
+    "eta": hist.axis.Variable(
+        [-5.131, -4.7, -3.0, -2.5, -1.3, 0.0, 1.3, 2.5, 3.0, 4.7, 5.131],
+        name="eta",
+        label=" $\eta$",
+    ),
     "phi": hist.axis.Regular(30, -3, 3, name="phi", label="$\phi$"),
     "mt": hist.axis.Regular(30, 0, 300, name="mt", label=" $m_{T}$ [GeV]"),
     "iso": hist.axis.Regular(30, 0, 0.05, name="pfRelIso03_all", label="Rel. Iso"),
