@@ -128,20 +128,8 @@ class NanoProcessor(processor.ProcessorABC):
                 self.selectionModifier, "is not a valid selection modifier."
             )
 
-        # Redefine triggers to match the jet selection
-        events.Jet = ak.pad_none(events.Jet, 2)
-
-        # Sort the jets by pt
+        # Sort the jets by pt (the corrections applied above can reorder them)
         events.Jet = events.Jet[ak.argsort(events.Jet.pt, axis=1, ascending=False)]
-
-        for trg in triggers:
-            events.HLT[trg] = (
-                events.HLT[trg]
-                & ((events.Jet[:, 0].pt >= triggers[trg][0]))
-                & ((events.Jet[:, 0].pt < triggers[trg][1]))
-            )
-
-        req_trig = HLT_helper(events, list(triggers.keys()))
 
         req_metfilter = MET_filters(events, self._campaign)
 
@@ -159,11 +147,34 @@ class NanoProcessor(processor.ProcessorABC):
             jet_puid = ak.ones_like(jet_sel)
 
         jet_sel = jet_sel & jet_puid
-        event_jet = ak.mask(events.Jet, jet_sel)
-        event_jet = ak.pad_none(event_jet, 3)
-        events.Jet = ak.pad_none(
-            events.Jet, 3
-        )  # Make sure that the shape is consistent
+
+        # Index with the selection rather than ak.mask: masking leaves the failing
+        # jets in place as None, so slots 0/1/2 kept pointing at the leading
+        # *unselected* jets and the event was then dropped by None propagation
+        # instead of falling back on the leading selected jets.
+        event_jet = ak.pad_none(events.Jet[jet_sel], 3)
+
+        # Validate the paths against the sample (raises if none of them exist).
+        # The returned OR is unused: each path is pt-binned individually below.
+        HLT_helper(events, list(triggers.keys()))
+
+        # NB: `events.HLT[trg] = ...` writes into a temporary copy of the HLT
+        # record and is silently discarded, leaving the pt binning with no effect.
+        # Keep the binned decisions in a local dict instead.
+        trig_pass = {}
+        for trg in triggers:
+            if not hasattr(events.HLT, trg):
+                continue
+            trig_pass[trg] = ak.fill_none(
+                events.HLT[trg]
+                & (event_jet[:, 0].pt >= triggers[trg][0])
+                & (event_jet[:, 0].pt < triggers[trg][1]),
+                False,
+            )
+
+        req_trig = np.zeros(len(events), dtype="bool")
+        for trg_pass in trig_pass.values():
+            req_trig = req_trig | trg_pass
 
         req_leadjet = event_jet[:, 0].pt < ptmax
         req_jet = ak.count(event_jet.pt, axis=1) > 1
@@ -262,38 +273,36 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev = events[event_level]
 
         # Central jet, Forward jet, Random jet, Selected two jets
+        # Built from the *selected* jets, so the stored objects are the ones the
+        # cuts above were evaluated on.
+        pruned_sel_jet = event_jet[event_level]
         pruned_ev["CenJet"] = ak.where(
-            np.abs(pruned_ev.Jet[:, 0].eta) < np.abs(pruned_ev.Jet[:, 1].eta),
-            pruned_ev.Jet[:, 0],
-            pruned_ev.Jet[:, 1],
+            np.abs(pruned_sel_jet[:, 0].eta) < np.abs(pruned_sel_jet[:, 1].eta),
+            pruned_sel_jet[:, 0],
+            pruned_sel_jet[:, 1],
         )
         pruned_ev["FwdJet"] = ak.where(
-            np.abs(pruned_ev.Jet[:, 0].eta) > np.abs(pruned_ev.Jet[:, 1].eta),
-            pruned_ev.Jet[:, 0],
-            pruned_ev.Jet[:, 1],
+            np.abs(pruned_sel_jet[:, 0].eta) > np.abs(pruned_sel_jet[:, 1].eta),
+            pruned_sel_jet[:, 0],
+            pruned_sel_jet[:, 1],
         )
         pruned_ev["RndJet"] = ak.where(
             np.random.randint(0, 2, size=len(pruned_ev)) == 0,
-            pruned_ev.Jet[:, 0],
-            pruned_ev.Jet[:, 1],
+            pruned_sel_jet[:, 0],
+            pruned_sel_jet[:, 1],
         )
         pruned_ev["LeadJet"] = ak.where(
-            pruned_ev.Jet[:, 0].pt > pruned_ev.Jet[:, 1].pt,
-            pruned_ev.Jet[:, 0],
-            pruned_ev.Jet[:, 1],
+            pruned_sel_jet[:, 0].pt > pruned_sel_jet[:, 1].pt,
+            pruned_sel_jet[:, 0],
+            pruned_sel_jet[:, 1],
         )
         pruned_ev["SubleadJet"] = ak.where(
-            pruned_ev.Jet[:, 0].pt < pruned_ev.Jet[:, 1].pt,
-            pruned_ev.Jet[:, 0],
-            pruned_ev.Jet[:, 1],
+            pruned_sel_jet[:, 0].pt < pruned_sel_jet[:, 1].pt,
+            pruned_sel_jet[:, 0],
+            pruned_sel_jet[:, 1],
         )
-        pruned_ev["SubleadJet"] = ak.where(
-            pruned_ev.Jet[:, 0].pt < pruned_ev.Jet[:, 1].pt,
-            pruned_ev.Jet[:, 0],
-            pruned_ev.Jet[:, 1],
-        )
-        pruned_ev["SelJet"] = pruned_ev.Jet[:, :2]
-        pruned_ev["njet"] = ak.count(pruned_ev.Jet.pt, axis=1)
+        pruned_ev["SelJet"] = pruned_sel_jet[:, :2]
+        pruned_ev["njet"] = ak.count(pruned_sel_jet.pt, axis=1)
 
         ## <========= end: store custom objects
 
@@ -317,7 +326,7 @@ class NanoProcessor(processor.ProcessorABC):
                 )
 
             pruned_ev["psweight"] = np.zeros(len(pruned_ev))
-            for trigger in triggers:
+            for trigger in trig_pass:
                 # Check if the prescale weight file exists for the given trigger and year
                 psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_year{self._year}.json"
                 if not os.path.isfile(psfile):
@@ -338,8 +347,10 @@ class NanoProcessor(processor.ProcessorABC):
                     f"HLT_{trigger}",
                     ak.values_astype(pruned_ev.luminosityBlock, np.float32),
                 )
+                # Use the pt-binned decision: the raw HLT bits overlap, so the
+                # lowest (most prescaled) path would otherwise claim every event.
                 pruned_ev["psweight"] = ak.where(
-                    (pruned_ev.HLT[trigger]) & (pruned_ev["psweight"] == 0),
+                    (trig_pass[trigger][event_level]) & (pruned_ev["psweight"] == 0),
                     thispsweight,
                     pruned_ev["psweight"],
                 )
@@ -368,7 +379,7 @@ class NanoProcessor(processor.ProcessorABC):
                 "run",
                 "luminosityBlock",
             ]
-            for trigger in triggers:
+            for trigger in trig_pass:
                 othersData.append(f"HLT_{trigger}")
             array_writer(
                 self,

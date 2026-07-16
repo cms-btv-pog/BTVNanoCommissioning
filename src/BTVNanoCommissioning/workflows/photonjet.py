@@ -128,6 +128,15 @@ class NanoProcessor(processor.ProcessorABC):
         ## Jet cuts
         jet_sel = jet_id(events, self._campaign, max_eta=5.0, min_pt=20)
 
+        if self._year == "2016":
+            jet_puid = events.Jet.puId >= 1
+        elif self._year in ["2017", "2018"]:
+            jet_puid = events.Jet.puId >= 4
+        else:
+            jet_puid = ak.ones_like(jet_sel)
+
+        jet_sel = jet_sel & jet_puid
+
         ## Photon cuts
         photon_sel = (
             (events.Photon.cutBased == 3)
@@ -137,40 +146,45 @@ class NanoProcessor(processor.ProcessorABC):
             & (np.abs(events.Photon.eta) < 1.3)
         )
 
-        event_ph = ak.mask(events.Photon, photon_sel)
-        event_ph = ak.pad_none(event_ph, 1)
-        events.Photon = ak.pad_none(events.Photon, 1)
+        # Index with the selection rather than ak.mask: masking leaves the failing
+        # candidates in place as None, so slot 0 remains the leading *unselected*
+        # candidate. The photon is itself clustered as the leading jet in ~86% of
+        # gamma+jet events, so the cuts below were being evaluated on that
+        # photon-jet, which then dropped the event via None propagation.
+        event_ph = ak.pad_none(events.Photon[photon_sel], 1)
+        event_jet = ak.pad_none(events.Jet[jet_sel], 1)
 
         req_photon = ak.count(event_ph.pt, axis=1) > 0
+        req_jet = ak.count(event_jet.pt, axis=1) > 0
 
+        # Validate the paths against the sample (raises if none of them exist).
+        # The returned OR is unused: each path is pt-binned individually below.
+        HLT_helper(events, list(triggers.keys()))
+
+        # NB: `events.HLT[trg] = ...` writes into a temporary copy of the HLT
+        # record and is silently discarded, leaving the pt binning with no effect.
+        # Keep the binned decisions in a local dict instead.
+        trig_pass = {}
         for trg in triggers:
-            events.HLT[trg] = (
+            if not hasattr(events.HLT, trg):
+                continue
+            trig_pass[trg] = ak.fill_none(
                 events.HLT[trg]
-                & ((events.Photon[:, 0].pt >= triggers[trg][0]))
-                & ((events.Photon[:, 0].pt < triggers[trg][1]))
+                & (event_ph[:, 0].pt >= triggers[trg][0])
+                & (event_ph[:, 0].pt < triggers[trg][1]),
+                False,
             )
 
-        req_trig = HLT_helper(events, list(triggers.keys()))
+        req_trig = np.zeros(len(events), dtype="bool")
+        for trg_pass in trig_pass.values():
+            req_trig = req_trig | trg_pass
 
-        if self._year == "2016":
-            jet_puid = events.Jet.puId >= 1
-        elif self._year in ["2017", "2018"]:
-            jet_puid = events.Jet.puId >= 4
-        else:
-            jet_puid = ak.ones_like(jet_sel)
-
-        jet_sel = jet_sel & jet_puid
-        event_jet = ak.mask(events.Jet, jet_sel)
-        event_jet = ak.pad_none(event_jet, 1)
-        events.Jet = ak.pad_none(
-            events.Jet, 1
-        )  # Make sure that the shape is consistent
-
-        req_jet = ak.count(event_jet.pt, axis=1) > 0
         req_dphi = np.abs(event_jet[:, 0].delta_phi(event_ph[:, 0])) > 2.7
         req_scale = np.abs(1.0 - event_jet[:, 0].pt / event_ph[:, 0].pt) < 0.3
 
-        event_level = event_level & req_jet & req_dphi & req_scale & req_trig
+        event_level = (
+            event_level & req_photon & req_jet & req_dphi & req_scale & req_trig
+        )
 
         ## MC only: require gen vertex to be close to reco vertex
         if "GenVtx_z" in events.fields:
@@ -247,13 +261,16 @@ class NanoProcessor(processor.ProcessorABC):
         # Keep the structure of events and pruned the object size
         pruned_ev = events[event_level]
 
-        pruned_ev["Tag"] = pruned_ev.Photon[:, 0]
+        # Take the leading candidate from the *selected* collections, so the
+        # stored objects are the ones the cuts above were evaluated on.
+        pruned_sel_jet = event_jet[event_level]
+        pruned_ev["Tag"] = event_ph[event_level][:, 0]
         pruned_ev["Tag", "pt"] = pruned_ev["Tag"].pt
         pruned_ev["Tag", "eta"] = pruned_ev["Tag"].eta
         pruned_ev["Tag", "phi"] = pruned_ev["Tag"].phi
-        pruned_ev["SelJet"] = pruned_ev.Jet[:, 0]
+        pruned_ev["SelJet"] = pruned_sel_jet[:, 0]
 
-        pruned_ev["njet"] = ak.count(pruned_ev.Jet.pt, axis=1)
+        pruned_ev["njet"] = ak.count(pruned_sel_jet.pt, axis=1)
 
         ## <========= end: store custom objects
 
@@ -275,7 +292,7 @@ class NanoProcessor(processor.ProcessorABC):
                 raise ValueError(self._year, "is not supported for prescale weights.")
 
             pruned_ev["psweight"] = np.zeros(len(pruned_ev))
-            for trigger in triggers:
+            for trigger in trig_pass:
                 # Check if the prescale weight file exists for the given trigger and year
                 psfile = f"src/BTVNanoCommissioning/data/Prescales/ps_weight_{trigger}_year{self._year}.json"
                 if not os.path.isfile(psfile):
@@ -291,8 +308,10 @@ class NanoProcessor(processor.ProcessorABC):
                     f"HLT_{trigger}",
                     ak.values_astype(pruned_ev.luminosityBlock, np.float32),
                 )
+                # Use the pt-binned decision: the raw HLT bits overlap, so the
+                # lowest (most prescaled) path would otherwise claim every event.
                 pruned_ev["psweight"] = ak.where(
-                    (pruned_ev.HLT[trigger]) & (pruned_ev["psweight"] == 0),
+                    (trig_pass[trigger][event_level]) & (pruned_ev["psweight"] == 0),
                     thispsweight,
                     pruned_ev["psweight"],
                 )
@@ -321,7 +340,7 @@ class NanoProcessor(processor.ProcessorABC):
                 "run",
                 "luminosityBlock",
             ]
-            for trigger in triggers:
+            for trigger in trig_pass:
                 othersData.append(f"HLT_{trigger}")
             array_writer(
                 self,
