@@ -74,7 +74,7 @@ def get_histograms(axes, **kwargs):
             hists[f"Obj{obj}_Var{tagger}_pteta"] = Hist.Hist(
                 *obj_axes,
                 Hist.axis.Regular(
-                    50, 0, 1, name=tagger, label=tagger, underflow=False, overflow=False
+                    100, 0, 1, name=tagger, label=tagger, underflow=False, overflow=False
                 ),
                 axes["pt"],
                 axes["eta"],
