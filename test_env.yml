@@ -3,7 +3,7 @@ channels:
   - nodefaults
 
 dependencies:
-  - python[version='<=3.10']
+  - python[version='>=3.10,<3.13']
   - voms
   - ca-policy-lcg
   - ca-certificates
@@ -13,12 +13,12 @@ dependencies:
   - fsspec[version='>=0.3.3']
   - psutil
   - dask
-  - setuptools<=70.1.1
-  - parsl==2024.01.29
+  - setuptools
   - arrow
   - dask-jobqueue
   - alive-progress
   - pip:
-    - coffea==0.7.31
-    - correctionlib==2.7.0
+    - coffea[dask,dask-awkward,xrootd]==2026.7.0
+    - correctionlib>=2.6.0
     - onnxruntime
+    - parsl>=2024.12.09

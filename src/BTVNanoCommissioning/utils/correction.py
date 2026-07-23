@@ -648,7 +648,7 @@ def get_corr_inputs(input_dict, corr_obj, jersyst="nom"):
                         .replace("Phi", "phi")
                         .replace("Eta", "eta")
                         .replace("Mass", "mass")
-                        .replace("Rho", "rho")
+                        .replace("Rho", "event_rho")
                         .replace("A", "area")
                     ]
                 )
@@ -797,7 +797,7 @@ def get_MET_corr_keys():
         "muonSubtrDeltaPhi",
         "muonSubtrDeltaEta",
         "Genpt",
-        "rho",
+        "event_rho",
         "EventID",
         "run",
     ]
@@ -1079,13 +1079,20 @@ def JME_shifts(
             else:
                 nocorrjet["muonSubtrDeltaEta"] = ak.zeros_like(nocorrjet.pt)
             if not isRealData:
+                # Events with no GenJet would make the -1 -> 0 index substitution
+                # below index an empty list (awkward>=2 raises IndexError). Pad so
+                # index 0 always exists; the sentinel is always masked out by the
+                # ak.where, so results are unchanged wherever the old code worked.
+                genjet_pt = ak.fill_none(
+                    ak.pad_none(events.GenJet.pt, 1, axis=1), -1.0
+                )
                 genjetidx = ak.where(
                     events.Jet.genJetIdx == -1, 0, events.Jet.genJetIdx
                 )
                 nocorrjet["Genpt"] = ak.where(
-                    events.Jet.genJetIdx == -1, -1, events.GenJet[genjetidx].pt
+                    events.Jet.genJetIdx == -1, -1, genjet_pt[genjetidx]
                 )
-            nocorrjet["rho"] = ak.broadcast_arrays(
+            nocorrjet["event_rho"] = ak.broadcast_arrays(
                 events.fixedGridRhoFastjetAll, nocorrjet.pt
             )[0]
             nocorrjet["EventID"] = ak.broadcast_arrays(events.event, nocorrjet.pt)[0]
@@ -1101,7 +1108,7 @@ def JME_shifts(
                 nocorrt1metjet["Genpt"] = ak.broadcast_arrays(
                     -1, events.CorrT1METJet.rawPt
                 )[0]
-            nocorrt1metjet["rho"] = ak.broadcast_arrays(
+            nocorrt1metjet["event_rho"] = ak.broadcast_arrays(
                 events.fixedGridRhoFastjetAll, events.CorrT1METJet.rawPt
             )[0]
             nocorrt1metjet["EventID"] = ak.broadcast_arrays(
@@ -1154,7 +1161,7 @@ def JME_shifts(
                         np.array(t1j["area"]),
                         np.array(t1j["eta_noMuRaw"]),
                         np.array(t1j["pt_noMuRaw"]),
-                        np.array(t1j["rho"]),
+                        np.array(t1j["event_rho"]),
                     )
                 else:
                     warnings.warn(
@@ -1595,10 +1602,9 @@ def JME_shifts(
                 jecname = "MC"
 
             jets = correct_map["JME"]["jet_factory"][jecname].build(
-                add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll),
-                lazy_cache=events.caches[0],
+                add_jec_variables(events.Jet, events.fixedGridRhoFastjetAll)
             )
-            met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets, {})
+            met = correct_map["JME"]["met_factory"].build(events.PuppiMET, jets)
 
         # Sort the jets by pt
         new_jet_idx = ak.argsort(jets.pt, ascending=False)
@@ -2176,13 +2182,13 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
         for nj in range(ak.num(alljet.pt)[0]):
             jet = alljet[:, nj]
             masknone = ak.is_none(jet.pt)
-            jet.hadronFlavour = ak.fill_none(jet.hadronFlavour, 0)
+            jet["hadronFlavour"] = ak.fill_none(jet.hadronFlavour, 0)
             if "ctag" in correct_map.keys() and "correctionlib" in str(
                 type(correct_map["ctag"])
             ):
                 if SFtype == "DeepJetC":
-                    jet.btagDeepFlavCvL = ak.fill_none(jet.btagDeepFlavCvL, 0.0)
-                    jet.btagDeepFlavCvB = ak.fill_none(jet.btagDeepFlavCvB, 0.0)
+                    jet["btagDeepFlavCvL"] = ak.fill_none(jet.btagDeepFlavCvL, 0.0)
+                    jet["btagDeepFlavCvB"] = ak.fill_none(jet.btagDeepFlavCvB, 0.0)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -2215,8 +2221,8 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                             ),
                         )
                 elif SFtype == "DeepCSVC":
-                    jet.btagDeepCvL = ak.fill_none(jet.btagDeepCvL, 0.0)
-                    jet.btagDeepCvB = ak.fill_none(jet.btagDeepCvB, 0.0)
+                    jet["btagDeepCvL"] = ak.fill_none(jet.btagDeepCvL, 0.0)
+                    jet["btagDeepCvB"] = ak.fill_none(jet.btagDeepCvB, 0.0)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -2251,8 +2257,8 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                 type(correct_map["btag"])
             ):
                 if SFtype == "DeepJetB":
-                    jet.btagDeepFlavCvL = ak.fill_none(jet.btagDeepFlavCvL, 0.0)
-                    jet.btagDeepFlavCvB = ak.fill_none(jet.btagDeepFlavCvB, 0.0)
+                    jet["btagDeepFlavCvL"] = ak.fill_none(jet.btagDeepFlavCvL, 0.0)
+                    jet["btagDeepFlavCvB"] = ak.fill_none(jet.btagDeepFlavCvB, 0.0)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,
@@ -2285,8 +2291,8 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                             ),
                         )
                 elif SFtype == "DeepCSVB":
-                    jet.btagDeepCvL = ak.fill_none(jet.btagDeepCvL, 0.0)
-                    jet.btagDeepCvB = ak.fill_none(jet.btagDeepCvB, 0.0)
+                    jet["btagDeepCvL"] = ak.fill_none(jet.btagDeepCvL, 0.0)
+                    jet["btagDeepCvB"] = ak.fill_none(jet.btagDeepCvB, 0.0)
                     tmp_sfs = np.where(
                         masknone,
                         1.0,

@@ -9,6 +9,13 @@ import numpy as np
 import uproot
 from coffea.util import load, save
 from coffea import processor
+from coffea.processor import (
+    Runner,
+    IterativeExecutor,
+    FuturesExecutor,
+    DaskExecutor,
+    ParslExecutor,
+)
 from coffea.nanoevents import PFNanoAODSchema
 from BTVNanoCommissioning.workflows import workflows
 
@@ -653,24 +660,19 @@ if __name__ == "__main__":
     # Execute
     if args.executor in ["futures", "iterative", "standalone_condor"]:
         if args.executor == "iterative":
-            _exec = processor.iterative_executor
+            _exec = IterativeExecutor()
         else:
-            _exec = processor.futures_executor
+            _exec = FuturesExecutor(workers=args.workers)
         if args.executor != "standalone_condor":
-            output = processor.run_uproot_job(
-                sample_dict,
-                treename="Events",
-                processor_instance=processor_instance,
+            runner = Runner(
                 executor=_exec,
-                executor_args={
-                    "skipbadfiles": args.skipbadfiles,
-                    "schema": PFNanoAODSchema,
-                    "workers": args.workers,
-                    "xrootdtimeout": 900,
-                },
+                schema=PFNanoAODSchema,
                 chunksize=args.chunk,
                 maxchunks=args.max,
+                skipbadfiles=args.skipbadfiles,
+                xrootdtimeout=900,
             )
+            output = runner(sample_dict, processor_instance, treename="Events")
 
         ## standalone condor from https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/9edb9ed6bb0b28730b8de9e5aa1142ec4fdf74b7/condor/submitter.py
         else:
@@ -1009,36 +1011,28 @@ if __name__ == "__main__":
 
         dfk = parsl.load(htex_config)
         if not splitjobs:
-            output = processor.run_uproot_job(
-                sample_dict,
-                treename="Events",
-                processor_instance=processor_instance,
-                executor=processor.parsl_executor,
-                executor_args={
-                    "skipbadfiles": args.skipbadfiles,
-                    "schema": PFNanoAODSchema,
-                    "config": None,
-                },
+            runner = Runner(
+                executor=ParslExecutor(config=None),
+                schema=PFNanoAODSchema,
                 chunksize=args.chunk,
                 maxchunks=args.max,
+                skipbadfiles=args.skipbadfiles,
             )
+            output = runner(sample_dict, processor_instance, treename="Events")
         else:
-            output = processor.run_uproot_job(
-                sample_dict,
-                treename="Events",
-                processor_instance=processor_instance,
-                executor=processor.parsl_executor,
-                executor_args={
-                    "skipbadfiles": args.skipbadfiles,
-                    "schema": PFNanoAODSchema,
-                    "merging": True,
-                    "merges_executors": ["merge"],
-                    "jobs_executors": ["run"],
-                    "config": None,
-                },
+            runner = Runner(
+                executor=ParslExecutor(
+                    config=None,
+                    merging=True,
+                    merges_executors=["merge"],
+                    jobs_executors=["run"],
+                ),
+                schema=PFNanoAODSchema,
                 chunksize=args.chunk,
                 maxchunks=args.max,
+                skipbadfiles=args.skipbadfiles,
             )
+            output = runner(sample_dict, processor_instance, treename="Events")
     elif "dask" in args.executor:
         from dask_jobqueue import SLURMCluster, HTCondorCluster
         from distributed import Client
@@ -1124,20 +1118,14 @@ if __name__ == "__main__":
             client.wait_for_workers(1)
         with performance_report(filename="dask-report.html"):
             if args.executor != "dask/lxplus":
-                output = processor.run_uproot_job(
-                    sample_dict,
-                    treename="Events",
-                    processor_instance=processor_instance,
-                    executor=processor.dask_executor,
-                    executor_args={
-                        "client": client,
-                        "skipbadfiles": args.skipbadfiles,
-                        "schema": PFNanoAODSchema,
-                        "retries": args.retries,
-                    },
+                runner = Runner(
+                    executor=DaskExecutor(client=client, retries=args.retries),
+                    schema=PFNanoAODSchema,
                     chunksize=args.chunk,
                     maxchunks=args.max,
+                    skipbadfiles=args.skipbadfiles,
                 )
+                output = runner(sample_dict, processor_instance, treename="Events")
 
             else:
                 findex = int(args.index.split(",")[1])
@@ -1161,20 +1149,14 @@ if __name__ == "__main__":
                             and sindex > int(args.index.split(",")[2])
                         ):
                             break
-                        output = processor.run_uproot_job(
-                            splitted,
-                            treename="Events",
-                            processor_instance=processor_instance,
-                            executor=processor.dask_executor,
-                            executor_args={
-                                "client": client,
-                                "skipbadfiles": args.skipbadfiles,
-                                "schema": PFNanoAODSchema,
-                                "retries": args.retries,
-                            },
+                        runner = Runner(
+                            executor=DaskExecutor(client=client, retries=args.retries),
+                            schema=PFNanoAODSchema,
                             chunksize=args.chunk,
                             maxchunks=args.max,
+                            skipbadfiles=args.skipbadfiles,
                         )
+                        output = runner(splitted, processor_instance, treename="Events")
                         if args.noHist == False:
                             save(
                                 output,

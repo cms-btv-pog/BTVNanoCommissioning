@@ -129,7 +129,7 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         # Sort the jets by pt (the corrections applied above can reorder them)
-        events.Jet = events.Jet[ak.argsort(events.Jet.pt, axis=1, ascending=False)]
+        events["Jet"] = events.Jet[ak.argsort(events.Jet.pt, axis=1, ascending=False)]
 
         req_metfilter = MET_filters(events, self._campaign)
 

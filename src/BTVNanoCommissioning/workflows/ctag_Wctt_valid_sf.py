@@ -411,7 +411,7 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["dilep_mass"] = sdilep.mass
         pruned_ev["dilep_pt"] = sdilep.pt
         if "PFCands" in events.fields:
-            pruned_ev.PFCands = spfcands
+            pruned_ev["PFCands"] = spfcands
         # Add custom variables
 
         pruned_ev["dr_mujet_softmu"] = ssmu.delta_r(smuon_jet)

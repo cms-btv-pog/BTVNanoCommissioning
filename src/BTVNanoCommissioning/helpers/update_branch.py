@@ -16,7 +16,7 @@ def missing_branch(events):
 
     Example:
     ```python
-    events.fixedGridRhoFastjetAll = (
+    events["fixedGridRhoFastjetAll"] = (
         events.fixedGridRhoFastjetAll
         if hasattr(events, "fixedGridRhoFastjetAll")
         else events.Rho.fixedGridRhoFastjetAll
@@ -51,7 +51,7 @@ def missing_branch(events):
             + events.Jet.btagDeepFlavB_bb
             + events.Jet.btagDeepFlavB_lepb
         )
-        events.Jet = update(
+        events["Jet"] = update(
             events.Jet,
             {"btagDeepFlavB": jets.btagDeepFlavB},
         )
@@ -64,7 +64,7 @@ def missing_branch(events):
         jets["btagDeepFlavC"] = (
             events.Jet.btagDeepFlavCvL / (1.0 - events.Jet.btagDeepFlavCvL)
         ) * (events.Jet.btagDeepFlavG + events.Jet.btagDeepFlavUDS)
-        events.Jet = update(
+        events["Jet"] = update(
             events.Jet,
             {"btagDeepFlavC": jets.btagDeepFlavC},
         )
@@ -75,7 +75,7 @@ def missing_branch(events):
         jets["btagDeepFlavC"] = (
             events.Jet.btagDeepFlavCvB / (1.0 - events.Jet.btagDeepFlavCvB)
         ) * (events.Jet.btagDeepFlavB)
-        events.Jet = update(
+        events["Jet"] = update(
             events.Jet,
             {"btagDeepFlavC": jets.btagDeepFlavC},
         )
@@ -116,7 +116,7 @@ def missing_branch(events):
             ),
             -1,
         )
-        events.Jet = update(
+        events["Jet"] = update(
             events.Jet,
             {
                 "btagDeepFlavCvL": jets.btagDeepFlavCvL,
@@ -128,7 +128,7 @@ def missing_branch(events):
         jets["btagPNetCvNotB"] = (
             jets.btagPNetCvB * jets.btagPNetB / (1.0 - jets.btagPNetB) ** 2
         )
-        events.Jet = update(
+        events["Jet"] = update(
             events.Jet,
             {"btagPNetCvNotB": jets.btagPNetCvNotB},
         )
@@ -141,12 +141,12 @@ def missing_branch(events):
             * jets.btagRobustParTAK4B
             / (1.0 - jets.btagRobustParTAK4B) ** 2
         )
-        events.Jet = update(
+        events["Jet"] = update(
             events.Jet,
             {"btagRobustParTAK4CvNotB": jets.btagRobustParTAK4CvNotB},
         )
     if hasattr(events, "METFixEE2017"):
-        events.MET = events.METFixEE2017
+        events["MET"] = events.METFixEE2017
     if hasattr(events.PuppiMET, "ptUnclusteredUp") and not hasattr(
         events.PuppiMET, "MetUnclustEnUpDeltaX"
     ):
@@ -157,7 +157,7 @@ def missing_branch(events):
         met["MetUnclustEnUpDeltaY"] = (met.ptUnclusteredUp - met.pt) * np.sin(
             met.phiUnclusteredUp
         )
-        events.PuppiMET = update(
+        events["PuppiMET"] = update(
             events.PuppiMET,
             {
                 "MetUnclustEnUpDeltaX": met.MetUnclustEnUpDeltaX,

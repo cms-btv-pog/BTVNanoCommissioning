@@ -96,7 +96,7 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
     if nj != 1:
         pruned_ev["SelJet"] = pruned_ev.SelJet[:, :nj]
     if "var" in str(ak.type(pruned_ev.SelJet.pt)) and nj == 1:
-        pruned_ev.SelJet = pruned_ev.SelJet[:, 0]
+        pruned_ev["SelJet"] = pruned_ev.SelJet[:, 0]
 
     if "hadronFlavour" in pruned_ev.SelJet.fields:
         isRealData = False

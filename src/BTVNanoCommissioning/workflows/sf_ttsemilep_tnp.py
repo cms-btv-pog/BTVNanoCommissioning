@@ -595,7 +595,7 @@ class NanoProcessor(processor.ProcessorABC):
         ]
 
         nj = 4
-        pruned_ev.SelJet = pruned_ev.SelJet[:, :nj]
+        pruned_ev["SelJet"] = pruned_ev.SelJet[:, :nj]
 
         if "hadronFlavour" in pruned_ev.SelJet.fields:
             genflavor = ak.values_astype(

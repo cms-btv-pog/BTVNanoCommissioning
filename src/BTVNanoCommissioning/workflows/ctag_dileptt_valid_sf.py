@@ -268,7 +268,7 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["dilep", "phi"] = pruned_ev.dilep.phi
         pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
         if "PFCands" in events.fields:
-            pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
+            pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
 
         pruned_ev["dr_mujet_softmu"] = pruned_ev.SoftMuon.delta_r(pruned_ev.MuonJet)
         pruned_ev["soft_l_ptratio"] = pruned_ev.SoftMuon.pt / pruned_ev.MuonJet.pt
