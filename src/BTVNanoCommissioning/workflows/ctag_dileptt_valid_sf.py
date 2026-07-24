@@ -263,10 +263,19 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["MuonJet"] = mu_jet[event_level][:, 0]
         pruned_ev["SoftMuon"] = soft_muon[event_level][:, 0]
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
-        pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
-        pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta
-        pruned_ev["dilep", "phi"] = pruned_ev.dilep.phi
-        pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
+        # dilep is a candidate *sum* (cartesian x/y/z/t). Materialising
+        # pt/eta/phi/mass on top of it left both azimuthal representations on the
+        # record, which vector>=1.8 rejects. Re-zip into a pure polar record:
+        # same values, and the four fields stay materialised for the array writer.
+        pruned_ev["dilep"] = ak.zip(
+            {
+                "pt": pruned_ev.dilep.pt,
+                "eta": pruned_ev.dilep.eta,
+                "phi": pruned_ev.dilep.phi,
+                "mass": pruned_ev.dilep.mass,
+            },
+            with_name="PtEtaPhiMLorentzVector",
+        )
         if "PFCands" in events.fields:
             pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
 

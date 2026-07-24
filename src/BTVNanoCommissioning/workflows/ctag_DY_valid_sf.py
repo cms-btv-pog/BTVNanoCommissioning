@@ -265,11 +265,16 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev = events[event_level]
         if self.selMod == "QG":
             pruned_ev["SelJet"] = event_jet[event_level][:, 0]
-            pruned_ev["Tag"] = sz
-            pruned_ev["Tag", "pt"] = pruned_ev.Tag.pt
-            pruned_ev["Tag", "eta"] = pruned_ev.Tag.eta
-            pruned_ev["Tag", "phi"] = pruned_ev.Tag.phi
-            pruned_ev["Tag", "mass"] = pruned_ev.Tag.mass
+            # sz is a candidate *sum*, so it is stored in cartesian coordinates
+            # (x, y, z, t). Adding pt/eta/phi/mass on top left the record holding
+            # both azimuthal representations, which vector>=1.8 rejects with
+            # "conflicting azimuthal coordinate representations". Re-zip into a
+            # pure polar record instead: same values, and pt/eta/phi/mass stay
+            # materialised fields for the array writer.
+            pruned_ev["Tag"] = ak.zip(
+                {"pt": sz.pt, "eta": sz.eta, "phi": sz.phi, "mass": sz.mass},
+                with_name="PtEtaPhiMLorentzVector",
+            )
         else:
             pruned_ev["SelJet"] = event_jet[event_level]
 
@@ -287,11 +292,11 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["negl"] = snegmu
             pruned_ev["SelElectron"] = smu
             # kinOnly = ["SelElectron", "ElectronPlus", "ElectronMinus"]
-        pruned_ev["dilep"] = sz
-        pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
-        pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta
-        pruned_ev["dilep", "phi"] = pruned_ev.dilep.phi
-        pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
+        # See the note above: keep the dilepton in a pure polar representation.
+        pruned_ev["dilep"] = ak.zip(
+            {"pt": sz.pt, "eta": sz.eta, "phi": sz.phi, "mass": sz.mass},
+            with_name="PtEtaPhiMLorentzVector",
+        )
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
 
         pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
