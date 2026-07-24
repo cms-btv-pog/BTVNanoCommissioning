@@ -368,7 +368,20 @@ class NanoProcessor(processor.ProcessorABC):
         smuon_jet = smuon_jet[:, 0]
         ssmu = ssmu[:, 0]
         sz = shmu + ssmu
-        sw = shmu + smet
+        # coffea 2026 has no numpy.add overload for (Muon, PtEtaPhiMLorentzVector),
+        # so build the lepton's 4-vector explicitly with the same behaviour as MET
+        # before summing. Kinematics are unchanged (same pt/eta/phi/mass), this
+        # only makes the operand types match.
+        shmu_lv = ak.zip(
+            {
+                "pt": shmu.pt,
+                "eta": shmu.eta,
+                "phi": shmu.phi,
+                "mass": shmu.mass,
+            },
+            with_name="PtEtaPhiMLorentzVector",
+        )
+        sw = shmu_lv + smet
 
         osss = shmu.charge * ssmu.charge * -1  # Actual osss calculation
         smuon_jet_passc = {}

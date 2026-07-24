@@ -393,27 +393,33 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                 and "SelElectron" in pruned_ev.fields
                 and "SelMuon" in pruned_ev.fields
             ):
+                # Pick the harder of the two leptons per event. A Python
+                # `a if <array> else b` ternary cannot do this: it evaluates the
+                # truthiness of the whole comparison array, so it would select one
+                # branch for every event (and raises under awkward>=2). ak.where
+                # applies the comparison element-wise as intended.
+                _mu_is_harder = pruned_ev.SelMuon.pt > pruned_ev.SelElectron.pt
                 pruned_ev["hl"] = ak.zip(
                     {
-                        "pt": (
-                            pruned_ev.SelMuon.pt
-                            if pruned_ev.SelMuon.pt > pruned_ev.SelElectron.pt
-                            else pruned_ev.SelElectron.pt
+                        "pt": ak.where(
+                            _mu_is_harder,
+                            pruned_ev.SelMuon.pt,
+                            pruned_ev.SelElectron.pt,
                         ),
-                        "eta": (
-                            pruned_ev.SelMuon.eta
-                            if pruned_ev.SelMuon.pt > pruned_ev.SelElectron.pt
-                            else pruned_ev.SelElectron.eta
+                        "eta": ak.where(
+                            _mu_is_harder,
+                            pruned_ev.SelMuon.eta,
+                            pruned_ev.SelElectron.eta,
                         ),
-                        "phi": (
-                            pruned_ev.SelMuon.phi
-                            if pruned_ev.SelMuon.pt > pruned_ev.SelElectron.pt
-                            else pruned_ev.SelElectron.phi
+                        "phi": ak.where(
+                            _mu_is_harder,
+                            pruned_ev.SelMuon.phi,
+                            pruned_ev.SelElectron.phi,
                         ),
-                        "energy": (
-                            pruned_ev.SelMuon.energy
-                            if pruned_ev.SelMuon.pt > pruned_ev.SelElectron.pt
-                            else pruned_ev.SelElectron.energy
+                        "energy": ak.where(
+                            _mu_is_harder,
+                            pruned_ev.SelMuon.energy,
+                            pruned_ev.SelElectron.energy,
                         ),
                     },
                     with_name="PtEtaPhiECandidate",
