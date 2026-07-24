@@ -204,6 +204,56 @@ plus `fname`/`run`/`lumi`/`sumw` (confirms `column_accumulator`/`set_accumulator
 - Fix #6 matters beyond this migration: with a non-zero index the old code would have silently
   produced *wrong* `Genpt` values instead of crashing.
 
+## 8c. P3 WORKFLOW SWEEP RESULTS (23 / 33 validated end-to-end)
+
+All runs: `--max 1 --limit 1` on Summer24 MC unless noted.
+
+**PASS (23):** `QG_dijet` `QG_DY` `QG_photonjet` `QG_zerobias` `QG_pfjet`
+`ctag_Wc_sf` `ectag_Wc_sf` `ctag_Wc_noMuVeto_sf` `ctag_Wc_WP_sf` `ectag_Wc_WP_sf`
+`ctag_DY_sf` `ectag_DY_sf` `DY_sfl` `eDY_sfl` `ctag_ttsemilep_sf`
+`ectag_ttsemilep_sf` `ctag_ttsemilep_noMuVeto_sf` `ttsemilep_sf` `c_ttsemilep_sf`
+`sf_ttsemilep_tnp` `QCD_sf` `example` `validation`
+
+**NOT VALIDATED (10):**
+- `ttdilep_sf`, `ctag_ttdilep_sf`, `ectag_ttdilep_sf`, `emctag_ttdilep_sf`,
+  `sf_ttdilep_kin` — **no ttdilep sample json exists**. Note the coordinate-representation
+  fix touched `ctag_dileptt_valid_sf.py` / `ctag_emdileptt_valid_sf.py`, so those two
+  fixes are code-verified only.
+- `BTA`, `BTA_addPFMuons`, `BTA_addAllTracks`, `BTA_ttbar` — blocked by the skip-guard
+  (see below). `BTA_helper.cumsum` is covered by an equivalence unit test only.
+- `QCD_smu_sf` — blocked by a latent bug needing a physics decision (see below).
+
+### Migration bugs found by the sweep
+| Fix | File(s) | Cause |
+|---|---|---|
+| coordinate-representation conflict (6 sites) | `ctag_DY_valid_sf`, `DY_sfl`, `ctag_dileptt_valid_sf`, `ctag_emdileptt_valid_sf` | summed candidate (cartesian) + materialised polar fields; vector>=1.8 rejects |
+| mixed-type 4-vector add | `ctag_Wctt_valid_sf` | coffea 2026 drops `numpy.add` for mismatched behaviours |
+| `ak.layout` removal | `BTA_helper` | awkward 2 removed the low-level API |
+
+Sweep 1 (9 workflows) found 1 migration bug; sweep 2 (13 workflows) found **0**. The
+migration itself looks converged; what the sweep now surfaces is pre-existing repo bugs.
+
+### Pre-existing (NON-coffea) bugs surfaced — would fail identically on 0.7
+1. `validation.py`: `btag_wp_dict[self._campaign]` used the bare campaign, but that dict is
+   keyed `year_campaign` (`selection.py:375` even comments "correct, the format is
+   year_campaign"). 3 sites. **Fixed.**
+2. `validation.py`: `btag_wp(jet, self._campaign, ...)` omitted the `year` argument;
+   signature is `btag_wp(jets, year, campaign, tagger, borc, wp)`. 4 sites. **Fixed.**
+   Together, 1+2 mean the working-point block of `validation.py` had evidently never been
+   executed — despite `validation` being CI-gated.
+3. `QCD_soft_mu_validation.py`: selection requires **>=1** jet (`:114`) but `:177` indexes
+   `Jet[:, 1]` (the *second* jet), so any 1-jet event crashes. Confirmed **not** a sample
+   artefact — fails identically on the intended `btagmu` sample. **NOT fixed**: both
+   remedies change physics (padding to None alters the histogrammed `dr_mujet1`; requiring
+   >=2 jets changes acceptance). Needs an owner decision.
+4. `BTA_producer.py:66-72` returns early (`skip`) whenever its output already exists on
+   central EOS. Both samples in `metadata/test_bta_run3.json` are already produced, so the
+   BTA workflows execute nothing but `missing_branch`. **The BTA CI gate is very likely
+   passing vacuously** and would not have caught the `ak.layout` breakage.
+
+Unguarded minimum-object-count indexing (`GenJet[0]`, `Jet[:, 1]`) recurs in this codebase
+and is exactly what awkward 2's stricter bounds checking exposes — worth a dedicated audit.
+
 ## 9. Phasing / PR breakdown
 - **P0 (done)**: pins + env + `import coffea` smoke test.
 - **P1**: `runner.py` execution rewrite; get `example` workflow end-to-end on 1 file with `IterativeExecutor` (eager). Green = events load + histograms fill + `.coffea` saved.

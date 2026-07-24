@@ -233,12 +233,13 @@ class NanoProcessor(processor.ProcessorABC):
                 elif "WP" in histname:
                     jet = pruned_ev.SelJet[:, 0]
 
-                    for tagger in btag_wp_dict[self._campaign].keys():
+                    for tagger in btag_wp_dict[f"{self._year}_{self._campaign}"].keys():
                         if "bjet" in histname:
-                            for wp in btag_wp_dict[self._campaign][tagger]["b"].keys():
+                            for wp in btag_wp_dict[f"{self._year}_{self._campaign}"][tagger]["b"].keys():
                                 wp_weight = weight[
                                     btag_wp(
                                         jet,
+                                        self._year,
                                         self._campaign,
                                         tagger,
                                         "b",
@@ -249,6 +250,7 @@ class NanoProcessor(processor.ProcessorABC):
                                 wp_jet = jet[
                                     btag_wp(
                                         jet,
+                                        self._year,
                                         self._campaign,
                                         tagger,
                                         "b",
@@ -272,10 +274,11 @@ class NanoProcessor(processor.ProcessorABC):
                                         weight=wp_weight,
                                     )
                         elif "cjet" in histname:
-                            for wp in btag_wp_dict[self._campaign][tagger]["c"].keys():
+                            for wp in btag_wp_dict[f"{self._year}_{self._campaign}"][tagger]["c"].keys():
                                 wp_weight = weight[
                                     btag_wp(
                                         jet,
+                                        self._year,
                                         self._campaign,
                                         tagger,
                                         "c",
@@ -286,6 +289,7 @@ class NanoProcessor(processor.ProcessorABC):
                                 wp_jet = jet[
                                     btag_wp(
                                         jet,
+                                        self._year,
                                         self._campaign,
                                         tagger,
                                         "c",
