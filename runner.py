@@ -658,12 +658,12 @@ if __name__ == "__main__":
 
     #########
     # Execute
-    if args.executor in ["futures", "iterative", "standalone_condor"]:
+    if args.executor in ["futures", "iterative", "condor_standalone"]:
         if args.executor == "iterative":
             _exec = IterativeExecutor()
         else:
             _exec = FuturesExecutor(workers=args.workers)
-        if args.executor != "standalone_condor":
+        if args.executor != "condor_standalone":
             runner = Runner(
                 executor=_exec,
                 schema=PFNanoAODSchema,
@@ -808,6 +808,9 @@ if __name__ == "__main__":
             print(
                 f"Setup completed. Now submit the condor jobs by:\n  condor_submit {job_dir}/submit.jdl"
             )
+            # This path only generates the condor job files; no processor ran, so
+            # there is no `output` to save. Exit before the save block below.
+            sys.exit(0)
 
     elif "parsl" in args.executor:
         import parsl
