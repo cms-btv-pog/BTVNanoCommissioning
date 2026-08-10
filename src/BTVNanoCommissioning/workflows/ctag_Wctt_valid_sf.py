@@ -1,6 +1,7 @@
 import awkward as ak
 import numpy as np
 from coffea import processor
+from coffea.nanoevents.methods import vector
 
 from BTVNanoCommissioning.utils.correction import (
     load_lumi,
@@ -14,7 +15,11 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
 )
-from BTVNanoCommissioning.utils.array_writer import array_writer
+from BTVNanoCommissioning.utils.array_writer import (
+    array_writer,
+    add_canonical_met,
+    canonical_met_collection,
+)
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
     jet_id,
@@ -71,7 +76,7 @@ class NanoProcessor(processor.ProcessorABC):
         isMu = False
         isEle = False
         ### selections from Spandan
-        if "WcM" in self.selMod or "semittM" in self.selMod:
+        if "WcM" in self.selMod or "WcttM" in self.selMod or "semittM" in self.selMod:
             triggers = ["IsoMu27", "IsoMu24"]
             isMu = True
             dxySigcut = 1.0
@@ -83,10 +88,14 @@ class NanoProcessor(processor.ProcessorABC):
             ### remove muNeEmSum and loosen muon EF for noMuVeto
             if "noMuVeto" in self.selMod:
                 muNeEmSum = 1.0
-                muonpTratioCut = 0.6
+                muonpTratioCut = 0.8
             isolepdz, isolepdxy, isolepsip3d = 0.01, 0.002, 2
-        elif "WcE" in self.selMod or "semittE" in self.selMod:
-            triggers = ["Ele32_WPTight_Gsf_L1DoubleEG"]
+        elif "WcE" in self.selMod or "WcttE" in self.selMod or "semittE" in self.selMod:
+            triggers = [
+                "Ele32_WPTight_Gsf",
+                "Ele32_WPTight_Gsf_L1DoubleEG",
+                "Ele30_WPTight_Gsf",
+            ]
             isEle = True
             dxySigcut = 0.0
             muNeEmSum = 1.0
@@ -184,11 +193,13 @@ class NanoProcessor(processor.ProcessorABC):
         iso_lepindx = iso_lepindx[:, 0]
 
         ## Jet cuts
-        if "DeepJet_nsv" in events.Jet.fields:
-            jet_sel = jet_sel & (events.Jet.DeepJet_nsv > 0)
+        # if "DeepJet_nsv" in events.Jet.fields:
+        #     jet_sel = jet_sel & (events.Jet.DeepJet_nsv > 0)
         event_jet = events.Jet[jet_sel]
         nseljet = ak.count(event_jet.pt, axis=1)
-        if "Wc" in self.selMod:
+        if "Wctt" in self.selMod:
+            req_jets = nseljet >= 1
+        elif "Wc" in self.selMod:
             req_jets = (nseljet >= 1) & (nseljet <= 3)
         else:
             req_jets = nseljet >= 4
@@ -217,7 +228,6 @@ class NanoProcessor(processor.ProcessorABC):
                     ak.all(
                         events.Jet.metric_table(soft_muon) <= 0.4,
                         axis=2,
-                        mask_identity=True,
                     )
                 )
                 & ((events.Jet.muonIdx1 != -1) | (events.Jet.muonIdx2 != -1))
@@ -288,26 +298,16 @@ class NanoProcessor(processor.ProcessorABC):
             },
             with_name="PtEtaPhiMLorentzVector",
         )
-        if "Run3" not in self._campaign:
-            MET = ak.zip(
-                {
-                    "pt": events.MET.pt,
-                    "eta": ak.zeros_like(events.MET.pt),
-                    "phi": events.MET.phi,
-                    "mass": ak.zeros_like(events.MET.pt),
-                },
-                with_name="PtEtaPhiMLorentzVector",
-            )
-        else:
-            MET = ak.zip(
-                {
-                    "pt": events.PuppiMET.pt,
-                    "eta": ak.zeros_like(events.PuppiMET.pt),
-                    "phi": events.PuppiMET.phi,
-                    "mass": ak.zeros_like(events.PuppiMET.pt),
-                },
-                with_name="PtEtaPhiMLorentzVector",
-            )
+        met_collection = canonical_met_collection(events, self._campaign, self._year)
+        MET = ak.zip(
+            {
+                "pt": met_collection.pt,
+                "eta": ak.zeros_like(met_collection.pt),
+                "phi": met_collection.phi,
+                "mass": ak.zeros_like(met_collection.pt),
+            },
+            with_name="PtEtaPhiMLorentzVector",
+        )
 
         wmasscut = 55
         if "semitt" in self.selMod:
@@ -406,18 +406,28 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             pruned_ev["osss"] = 1.0
         pruned_ev["njet"] = njet
+        add_canonical_met(pruned_ev, self._campaign, self._year)
         pruned_ev["W_transmass"] = wm
         pruned_ev["W_pt"] = wp
+        pruned_ev["W_eta"] = sw.eta
+        pruned_ev["W_phi"] = sw.phi
+        pruned_ev["W_mass"] = sw.mass
         pruned_ev["dilep_mass"] = sdilep.mass
         pruned_ev["dilep_pt"] = sdilep.pt
         if "PFCands" in events.fields:
             pruned_ev.PFCands = spfcands
         # Add custom variables
+        top = sw + smuon_jet
+        pruned_ev["top_pt"] = top.pt
+        pruned_ev["top_eta"] = top.eta
+        pruned_ev["top_phi"] = top.phi
+        pruned_ev["top_mass"] = top.mass
 
         pruned_ev["dr_mujet_softmu"] = ssmu.delta_r(smuon_jet)
         pruned_ev["dr_mujet_lep1"] = shmu.delta_r(smuon_jet)
         pruned_ev["dr_lep1_softmu"] = shmu.delta_r(ssmu)
         pruned_ev["soft_l_ptratio"] = ssmu.pt / smuon_jet.pt
+        pruned_ev["soft_l_ptrel"] = ssmu.cross(smuon_jet).p / smuon_jet.p
         pruned_ev["l1_ptratio"] = shmu.pt / smuon_jet.pt
         pruned_ev["MuonJet_beta"] = smuon_jet.pt / smuon_jet.E
         pruned_ev["MuonJet_muneuEF"] = smuon_jet.muEF + smuon_jet.neEmEF
@@ -667,16 +677,7 @@ class NanoProcessor(processor.ProcessorABC):
                 systematics,
                 dataset,
                 isRealData,
-                doOnly=[
-                    "SelJet",
-                    "njet",
-                    "PuppiMET",
-                    "dilep_mass",
-                    "SoftMuon_dxySig",
-                    "MuonJet_muneuEF",
-                    "soft_l_ptratio",
-                    "osss",
-                ],
+                schema="CFM",
             )
 
         return {dataset: output}

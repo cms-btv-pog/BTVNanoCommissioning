@@ -16,7 +16,7 @@ from BTVNanoCommissioning.utils.histogramming.histogrammer import (
     histogrammer,
     histo_writer,
 )
-from BTVNanoCommissioning.utils.array_writer import array_writer
+from BTVNanoCommissioning.utils.array_writer import array_writer, add_canonical_met
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
     jet_id,
@@ -294,6 +294,19 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
 
+        add_canonical_met(pruned_ev, self._campaign, self._year)
+
+        # Dijet properties
+        two_jets_mask = ak.num(pruned_ev.SelJet) >= 2
+        dijet = (
+            ak.mask(pruned_ev.SelJet, two_jets_mask)[:, 0]
+            + ak.mask(pruned_ev.SelJet, two_jets_mask)[:, 1]
+        )
+        pruned_ev["dijet_pt"] = ak.fill_none(dijet.pt, -1.0)
+        pruned_ev["dijet_eta"] = ak.fill_none(dijet.eta, -99.0)
+        pruned_ev["dijet_phi"] = ak.fill_none(dijet.phi, -99.0)
+        pruned_ev["dijet_mass"] = ak.fill_none(dijet.mass, -1.0)
+
         pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
         pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
@@ -368,7 +381,7 @@ class NanoProcessor(processor.ProcessorABC):
                 systematics,
                 dataset,
                 isRealData,
-                schema="CFM",  # doOnly=["SelJet","njet","PuppiMET"]
+                schema="CFM",  # doOnly=["SelJet", "njet", "MET"]
             )
 
         return {dataset: output}

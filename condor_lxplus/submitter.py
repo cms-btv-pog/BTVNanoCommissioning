@@ -4,6 +4,7 @@ import shutil
 import tarfile
 import argparse
 import subprocess
+import sys
 
 
 def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
@@ -121,11 +122,15 @@ def get_main_parser():
         choices=[
             "False",
             "all",
+            "all_withJESTotal",
             "weight_only",
             "JEC_full",
             "JEC_reduced",
             "JEC_reduced_JER_split",
             "JEC_total",
+            "JERC_full",
+            "JERC_reduced",
+            "JERC_total",
             "JP_MC",
         ],
         help="Run with systematics, all, weights_only(no JERC uncertainties included),JERC_split, None",
@@ -173,11 +178,17 @@ def get_main_parser():
 if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
+    if args.isSyst in {"JERC_full", "JERC_reduced", "JERC_total"}:
+        args.isSyst = args.isSyst.replace("JERC", "JEC")
     print("Running with the following options:")
     print(args)
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = current_dir.replace("/condor_lxplus", "")
+    if base_dir not in sys.path:
+        sys.path.insert(0, base_dir)
+    from condor_lxplus import dashboard as job_dashboard
+
     """
     if args.remoteRepo is not None:
         print("Will use a remote path to access BTVNanoCommissioning:", args.remoteRepo)
@@ -205,7 +216,7 @@ if __name__ == "__main__":
             )
     """
     # Create job dir
-    job_dir = f"jobs_{args.jobName}"
+    job_dir = f"jobs_{args.jobName}_{args.campaign}"
     if os.path.exists(job_dir):
         user_input = input("Job directory already exists, overwrite? (y/n): ")
         if user_input.lower() == "y":
@@ -342,7 +353,44 @@ Queue JOBNUM from {jobnum_file}
         print("Submitting without spooling due to --noSpool option.")
         spool = ""
     if args.submit:
-        os.system(f"condor_submit {spool} {job_dir}/submit.jdl")
+        submit_command = ["condor_submit"]
+        if spool:
+            submit_command.append(spool)
+        submit_command.append(f"{job_dir}/submit.jdl")
+        completed = subprocess.run(
+            submit_command,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        submit_output = "\n".join(
+            part
+            for part in [completed.stdout.strip(), completed.stderr.strip()]
+            if part
+        )
+        if submit_output:
+            print(submit_output)
+        if completed.returncode != 0:
+            raise SystemExit(
+                f"condor_submit failed with return code {completed.returncode}"
+            )
+        submission = job_dashboard.parse_condor_submit_output(submit_output)
+        if submission is None:
+            raise SystemExit(
+                "condor_submit returned success but did not confirm a submitted cluster"
+            )
+        if submission["count"] != counter:
+            raise SystemExit(
+                "condor_submit reported "
+                f"{submission['count']} submitted jobs; expected {counter}"
+            )
+        job_dashboard.record_submission(
+            job_dir,
+            counter,
+            job_name=args.jobName,
+            output_dir=args.outputDir,
+            cluster_id=submission["cluster_id"],
+        )
     else:
         print(
             f"Setup completed. Now submit the condor jobs by:\n  condor_submit {spool} {job_dir}/submit.jdl"

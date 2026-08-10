@@ -506,7 +506,12 @@ class NanoProcessor(processor.ProcessorABC):
         ###############
         #     MET     #
         ###############
-        if "Run3" in self._campaign:
+        if (
+            "Run3" in self._campaign
+            or "Summer22" in self._campaign
+            or "Summer23" in self._campaign
+            or "Summer24" in self._campaign
+        ):
             basic_vars["ttbar_met_pt"] = events.PuppiMET.pt
             basic_vars["ttbar_met_phi"] = events.PuppiMET.phi
         else:

@@ -3,6 +3,54 @@ import numpy as np
 import awkward as ak
 import os, uproot
 
+MET_COLLECTION_BY_CAMPAIGN = {
+    "Rereco17_94X": "MET",
+    "2016preVFP-UL": "MET",
+    "2016postVFP-UL": "MET",
+    "2017-UL": "MET",
+    "2018-UL": "MET",
+    "Winter22Run3": "PuppiMET",
+    "Summer22": "PuppiMET",
+    "Summer22EE": "PuppiMET",
+    "Summer23": "PuppiMET",
+    "Summer23BPix": "PuppiMET",
+    "Summer24": "PuppiMET",
+    "Prompt25": "PuppiMET",
+}
+PROMPT_RUN2_YEARS = {"2016", "2016preVFP", "2016postVFP", "2017", "2018"}
+PROMPT_RUN3_YEARS = {"2022", "2023", "2024", "2025"}
+
+
+def canonical_met_name(campaign, year=None):
+    if campaign in MET_COLLECTION_BY_CAMPAIGN:
+        return MET_COLLECTION_BY_CAMPAIGN[campaign]
+    if campaign == "prompt_dataMC":
+        normalized_year = str(year).strip() if year is not None else ""
+        if normalized_year in PROMPT_RUN3_YEARS:
+            return "PuppiMET"
+        if normalized_year in PROMPT_RUN2_YEARS:
+            return "MET"
+        raise ValueError(
+            "Cannot classify MET for campaign 'prompt_dataMC' with year "
+            f"{year!r}; expected a supported Run 2 or Run 3 year."
+        )
+    raise ValueError(
+        f"Unknown MET campaign {campaign!r}; add it to MET_COLLECTION_BY_CAMPAIGN "
+        "before producing canonical MET branches."
+    )
+
+
+def canonical_met_collection(events, campaign, year=None):
+    return events[canonical_met_name(campaign, year)]
+
+
+def add_canonical_met(events, campaign, year=None):
+    met = canonical_met_collection(events, campaign, year)
+    events["MET_pt"] = met.pt
+    events["MET_phi"] = met.phi
+    return met
+
+
 arraySchema = {
     "CFM": [
         "SelJet_btag",
@@ -29,9 +77,18 @@ arraySchema = {
         "SelJet_mass",
         "SelJet_hadronFlavour",
         "SelJet_partonFlavour",
+        "SelJet_isMuonJet",
         "njet",
-        "PuppiMET_pt",
-        "PuppiMET_phi",
+        "MET_pt",
+        "MET_phi",
+        "dijet_pt",
+        "dijet_eta",
+        "dijet_phi",
+        "dijet_mass",
+        "top_pt",
+        "top_eta",
+        "top_phi",
+        "top_mass",
         "PV_npvs",
         "PV_npvsGood",
         "dilep_mass",
@@ -41,9 +98,13 @@ arraySchema = {
         "SoftMuon_dxySig",
         "MuonJet_muneuEF",
         "soft_l_ptratio",
+        "soft_l_ptrel",
         "osss",
         "W_transmass",
         "W_pt",
+        "W_eta",
+        "W_phi",
+        "W_mass",
         "Pileup_nTrueInt",
         "Pileup_nPU",
     ]

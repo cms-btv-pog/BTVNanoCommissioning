@@ -1,4 +1,4 @@
-import os, sys, json
+import os, sys, json, concurrent.futures, subprocess
 from copy import deepcopy
 from collections import defaultdict
 import time
@@ -7,6 +7,7 @@ from rich import print
 from BTVNanoCommissioning.utils.xrootdtools import get_xrootd_sites_map, find_other_file
 from glob import glob
 from alive_progress import alive_bar
+import dashboard as job_dashboard
 
 parser = argparse.ArgumentParser()
 parser.add_argument("job_dir", type=str, help="Input string")
@@ -16,11 +17,18 @@ parser.add_argument(
     action="store_true",
     help="Update xrootd paths of failed jobs.",
 )
+parser.add_argument(
+    "-c",
+    "--condor",
+    action="store_true",
+    help="Automatically run the final condor command",
+)
 args = parser.parse_args()
 
 sitemap = get_xrootd_sites_map()
 jobdir = args.job_dir
 updatexrootd = args.update_xrootd
+run_condor = args.condor
 
 uid = os.getuid()
 homedir = os.getenv("HOME")
@@ -38,28 +46,56 @@ with open(f"{jobdir}/arguments.json") as f:
     args = json.load(f)
 outdir = args["outputDir"]
 
+
+def check_job(n, outdir):
+    outfile = f"{outdir}/hists_{n}/hists_{n}.coffea"
+    if not os.path.isfile(outfile):
+        return n, f"[red]Job {n}[/] does not have an output histogram file."
+    arraylist = glob(f"{outdir}/arrays_hists_{n}/*/*/*.root")
+    for rootfile in arraylist:
+        try:
+            filesize = os.path.getsize(rootfile)
+            if filesize < 10 * 1024:  # Files smaller than 10 kB are likely zombies
+                return n, f"[red]Job {n}[/] has at least one zombie root output file."
+        except OSError:
+            return n, f"[red]Job {n}[/] error accessing root output file."
+    return None, None
+
+
 toresubmit = []
 
 with alive_bar(len(numlist), title="Checking jobs") as bar:
-    for n in numlist:
-        outfile = f"{outdir}/hists_{n}/hists_{n}.coffea"
-        if not os.path.isfile(outfile):
-            print(f"[red]Job {n}[/] does not have an output histogram file.")
-            toresubmit.append(n)
-        arraylist = glob(f"{outdir}/arrays_hists_{n}/*/*/*.root")
-        for rootfile in arraylist:
-            filesize = os.path.getsize(rootfile)
-            if filesize < 10 * 1024:  # Files smaller than 10 kB are likely zombies
-                print(f"[red]Job {n}[/] has at least one zombie root output file.")
-                toresubmit.append(n)
-                break
-        bar()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        futures = {executor.submit(check_job, n, outdir): n for n in numlist}
+        for future in concurrent.futures.as_completed(futures):
+            res, msg = future.result()
+            if res:
+                print(msg)
+                toresubmit.append(res)
+            bar()
+
+toresubmit = sorted(list(set(toresubmit)), key=lambda x: int(x))
+job_dashboard.record_checked_outputs(
+    jobdir,
+    checked_jobs=len(numlist),
+    missing_jobs=len(toresubmit),
+    job_ids=toresubmit,
+)
 
 if len(toresubmit) == 0:
     print("[green][b]All jobs complete. Nothing to resubmit![/][/]\n")
     print("[b]To hadd, run:[/]")
     print(f"[yellow]python condor_lxplus/haddoutputs.py {outdir}[/]")
     exit()
+
+if len(toresubmit) == len(numlist):
+    warning = (
+        "All checked jobs failed; skipping condor resubmission because this likely "
+        "indicates a code/config bug."
+    )
+    job_dashboard.record_automation_blocked(jobdir, warning)
+    print(f"[red][b]WARNING:[/] {warning}[/]")
+    exit(1)
 
 if updatexrootd:
     with open(f"{jobdir}/split_samples.json") as f:
@@ -89,13 +125,75 @@ for r in toresubmit:
 numlist2.close()
 
 jdl = open(f"{jobdir}/submit.jdl", "r").readlines()
-jdlnew = open(f"{jobdir}/resubmit.jdl", "w")
+
+queues = [
+    "espresso",
+    "microcentury",
+    "longlunch",
+    "workday",
+    "tomorrow",
+    "testmatch",
+    "nextweek",
+]
+current_flavour = None
 for line in jdl:
-    towrite = line.replace("jobnum_list.txt", "jobnum_list_resubmit.txt")
-    if updatexrootd:
-        towrite = towrite.replace("split_samples.json", "split_samples_resubmit.json")
-    jdlnew.write(towrite)
+    if "+JobFlavour" in line:
+        current_flavour = line.split("=")[1].strip().replace('"', "")
+        break
+
+next_flavour = current_flavour
+if current_flavour in queues:
+    idx = queues.index(current_flavour)
+    if idx < len(queues) - 1:
+        next_flavour = queues[idx + 1]
+        print(
+            f"[yellow]Bumping JobFlavour: [red]{current_flavour}[/] -> [green]{next_flavour}[/][/]"
+        )
+
+with open(f"{jobdir}/resubmit.jdl", "w") as jdlnew:
+    for line in jdl:
+        towrite = line.replace("jobnum_list.txt", "jobnum_list_resubmit.txt")
+        if updatexrootd:
+            towrite = towrite.replace(
+                "split_samples.json", "split_samples_resubmit.json"
+            )
+        if "+JobFlavour" in line and current_flavour:
+            towrite = towrite.replace(f'"{current_flavour}"', f'"{next_flavour}"')
+        jdlnew.write(towrite)
 
 print(f"[yellow]Found {len(toresubmit)} missing outputs: {toresubmit}[/]")
-print("[b]Resubmit with:[/]")
-print(f"condor_submit {jobdir}/resubmit.jdl")
+if run_condor:
+    print("\n[b]Submitting to condor...[/]")
+    completed = subprocess.run(
+        ["condor_submit", f"{jobdir}/resubmit.jdl"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    submit_output = "\n".join(
+        part for part in [completed.stdout.strip(), completed.stderr.strip()] if part
+    )
+    if submit_output:
+        print(submit_output)
+    if completed.returncode != 0:
+        raise SystemExit(
+            f"condor_submit failed with return code {completed.returncode}"
+        )
+    submission = job_dashboard.parse_condor_submit_output(submit_output)
+    if submission is None:
+        raise SystemExit(
+            "condor_submit returned success but did not confirm a submitted cluster"
+        )
+    if submission["count"] != len(toresubmit):
+        raise SystemExit(
+            "condor_submit reported "
+            f"{submission['count']} submitted jobs; expected {len(toresubmit)}"
+        )
+    job_dashboard.record_resubmitted_jobs(
+        jobdir,
+        toresubmit,
+        cluster_id=submission["cluster_id"],
+    )
+else:
+    print("[b]Resubmit with:[/]")
+    print(f"condor_submit {jobdir}/resubmit.jdl")

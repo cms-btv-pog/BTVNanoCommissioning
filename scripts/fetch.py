@@ -23,6 +23,12 @@ parser.add_argument(
     help="List of samples in DAS (default: %(default)s)",
 )
 parser.add_argument(
+    "--response",
+    default=None,
+    type=str,
+    help="Non-interactive answer for dataset selection prompts.",
+)
+parser.add_argument(
     "-o",
     "--output",
     default=r"test_my_samples.json",
@@ -82,7 +88,10 @@ parser.add_argument(
     default="infn",
 )
 parser.add_argument(
-    "-j", "--ncpus", help="Number of CPUs to use for validation", default="4"
+    "-j",
+    type=int,
+    default=12,
+    help="Number of CPUs/workers to use for validation and futures execution",
 )
 parser.add_argument(
     "--skipvalidation",
@@ -125,13 +134,6 @@ parser.add_argument(
     choices=["iterative", "futures"],
     default="iterative",
     help="The type of executor to use for parallelization",
-)
-parser.add_argument(
-    "--workers",
-    "-w",
-    type=int,
-    default=4,
-    help="Number of workers to use for futures executor",
 )
 parser.add_argument(
     "--doOnly",
@@ -238,8 +240,8 @@ if args.DAS_campaign == "auto":
     DAS_campaign_map = {
         "Summer22_2022": "Run2022C*Sep2023,Run2022D*Sep2023,Run3Summer22NanoAODv12-130X",
         "Summer22EE_2022": "Run2022E*Sep2023,Run2022F*Sep2023,Run2022G*Sep2023,Run3Summer22EENanoAODv12-130X",
-        "Summer23_2023": "Run2023C*Sep2023,Run3Summer23NanoAODv12",
-        "Summer23BPix_2023": "Run2023D*Sep2023,Run3Summer23BPixNanoAODv12",
+        "Summer23_2023": "Run2023C*Sep2023,Run3Summer23NanoAODv12-130X",
+        "Summer23BPix_2023": "Run2023D*Sep2023,Run3Summer23BPixNanoAODv12-130X",
         "Summer24_2024": "Run2024*MINIv6,RunIII2024Summer24NanoAODv15",
         "Summer25_2025": "Run2024*MINIv6,RunIII2024Summer24NanoAODv15",  # not a mistake, one uses 2024 MC for 2025 analysis
     }
@@ -1737,6 +1739,31 @@ def getRootFilesFromPath(d, lim=None):
     return rootfiles
 
 
+def resolve_campaign_selection(dataset, response, label, strict=False):
+    if response is None:
+        return None
+
+    response = response.strip()
+    if response.lower() == "all":
+        return list(range(len(dataset)))
+    if response == "0":
+        return []
+
+    camp_idxs = []
+    for camp_idx in response.split(","):
+        try:
+            idx = int(camp_idx) - 1
+            dataset[idx]
+            camp_idxs.append(idx)
+        except Exception:
+            if strict:
+                print(f"ERROR: {camp_idx} is not a valid input for {label}.")
+                sys.exit(1)
+            print(f"{camp_idx} is not a valid input. Try again!\n")
+            return None
+    return camp_idxs
+
+
 def validate(file):
     n_tries = 0
     check_path = os.popen(f"gfal-ls {file}").read()
@@ -1765,7 +1792,7 @@ def remove_bad_files(sample_dict, outname, remove_bad=True):
         _rmap = p_map(
             validate,
             sample_dict[sample],
-            num_cpus=int(args.ncpus),
+            num_cpus=args.j,
             desc=f"Validating {sample[:20]}...",
         )
 
@@ -1876,10 +1903,14 @@ def direct_das_query(dataset_name, campaign_pattern):
 def main(args):
 
     if args.from_workflow:
-        for sample in predefined_sample[args.from_workflow].keys():
+        for sample, datasets in predefined_sample[args.from_workflow].items():
             if args.doOnly is not None:
                 if sample != args.doOnly:
                     continue
+            print(f"\n📂 \033[1m{sample}\033[0m:")
+            for i, dataset in enumerate(datasets):
+                connector = "└──" if i == len(datasets) - 1 else "├──"
+                print(f"   {connector} 📄 {dataset}")
             if (
                 os.path.exists(
                     f"metadata/{args.campaign}/{sample}_{args.campaign}_{args.year}_{args.from_workflow}.json"
@@ -1934,24 +1965,15 @@ def main(args):
                     for i, d in enumerate(dataset):
                         print(f"  {i+1}: {d}")
                     campaigns = [d.split("/")[2] for d in dataset]
-                    campaign_input = input(
-                        f"{l} is which campaign? [Enter integer corresponding to above list. Use ',' for multiple or 'all']: "
+                    campaign_input = args.response
+                    if campaign_input is None:
+                        campaign_input = input(
+                            f"{l} is which campaign? [Enter integer corresponding to above list. Use ',' for multiple, '0' for none, or 'all' for all]: "
+                        )
+                    camp_idxs = resolve_campaign_selection(
+                        dataset, campaign_input, l, strict=args.response is not None
                     )
-                    camp_idxs = []
-
-                    if campaign_input.strip() == "all":
-                        camp_idxs = list(range(len(campaigns)))
-                        break
-                    cont = False
-                    for camp_idx in campaign_input.split(","):
-                        try:
-                            idx = int(camp_idx) - 1
-                            campaigns[idx]
-                            camp_idxs.append(idx)
-                        except:
-                            print(f"{camp_idx} is not a valid input. Try again!\n")
-                            cont = True
-                    if cont:
+                    if camp_idxs is None:
                         continue
                     break
 
@@ -1973,9 +1995,12 @@ def main(args):
                         print(f"  {i+1}: {d}")
                 campaigns = [d.split("/")[2] for d in dataset]
                 if args.from_workflow is None or dataset[0].endswith("SIM"):
-                    args.DAS_campaign = input(
-                        f"{l} is which campaign? \n {campaigns} \n"
-                    )
+                    if args.response is not None:
+                        args.DAS_campaign = args.response
+                    else:
+                        args.DAS_campaign = input(
+                            f"{l} is which campaign? \n {campaigns} \n"
+                        )
 
                     dataset = direct_das_query(l, args.DAS_campaign)
 
@@ -2041,12 +2066,10 @@ def main(args):
                         fset.append(line)
 
             print(
-                f"Processing {len(fset)} unique datasets with futures executor (workers={args.workers})"
+                f"Processing {len(fset)} unique datasets with futures executor (workers={args.j})"
             )
 
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=args.workers
-            ) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=args.j) as executor:
                 # Create a mapping of futures to datasets
                 future_to_dataset = {}
                 for dataset in fset:

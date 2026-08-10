@@ -3,24 +3,55 @@ import json
 import shutil
 import tarfile
 import argparse
+import re
+import subprocess
+import time
+
+CONDOR_SUBMIT_SUCCESS_RE = re.compile(
+    r"\b(?P<count>\d+)\s+job\(s\)\s+submitted\s+to\s+cluster\s+" r"(?P<cluster>\d+)\b",
+    re.IGNORECASE,
+)
+CONDOR_SUBMIT_PERMANENT_ERROR_RE = re.compile(
+    r"(failed to open .*\.jdl|no such file|invalid submit|submit file .*error|"
+    r"syntax error)",
+    re.IGNORECASE,
+)
+DEFAULT_SUBMIT_ATTEMPTS = 5
+MAX_SUBMIT_RETRY_DELAY_SECONDS = 300
 
 
 def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
-    with tarfile.open(output_filename, "w:gz") as tar:
-        for root, dirs, files in os.walk(source_dir):
-            dirs[:] = [
-                d for d in dirs if d not in exclude_dirs
-            ]  # Exclude specified directories
-            for file in files:
-                file_path = os.path.join(root, file)
-                tar.add(file_path, arcname=os.path.relpath(file_path, source_dir))
+    temporary_filename = f"{output_filename}.tmp"
+    try:
+        with tarfile.open(temporary_filename, "w:gz") as tar:
+            for item in os.listdir(source_dir):
+                if item in exclude_dirs:
+                    continue
+                item_path = os.path.join(source_dir, item)
+                if os.path.isdir(item_path):
+                    for root, dirs, files in os.walk(item_path):
+                        # Ensure we also skip any nested excluded directories
+                        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+                        for file in files:
+                            file_path = os.path.join(root, file)
+                            tar.add(
+                                file_path,
+                                arcname=os.path.relpath(file_path, source_dir),
+                            )
+                else:
+                    # Add top-level files
+                    tar.add(item_path, arcname=item)
+        os.replace(temporary_filename, output_filename)
+    finally:
+        if os.path.exists(temporary_filename):
+            os.remove(temporary_filename)
 
 
-def get_condor_submitter_parser(parser):
+def get_condor_submitter_parser(parser, require_job_args=True):
     parser.add_argument(
         "--jobName",
         help="Condor job name to make the job directory",
-        required=True,
+        required=require_job_args,
     )
     parser.add_argument(
         "-nCPU",
@@ -39,7 +70,7 @@ def get_condor_submitter_parser(parser):
     parser.add_argument(
         "--outputDir",
         help="Output directory",
-        required=True,
+        required=require_job_args,
     )
     parser.add_argument(
         "--remoteRepo",
@@ -51,7 +82,115 @@ def get_condor_submitter_parser(parser):
         default="tomorrow",
         help="JobFlavour for condor@lxplus. E.g. microcentury, longlunch, workday, tomorrow",
     )
+    parser.add_argument(
+        "--reuseTarball",
+        action="store_true",
+        help="Reuse an existing BTVNanoCommissioning.tar.gz without prompting to recreate it.",
+    )
+    parser.add_argument(
+        "--rebuildTarball",
+        action="store_true",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--submitRetries",
+        type=int,
+        default=DEFAULT_SUBMIT_ATTEMPTS,
+        help=(
+            "Maximum number of condor_submit attempts before failing "
+            "(default: %(default)s)."
+        ),
+    )
     return parser
+
+
+def validate_x509_proxy():
+    uid = os.getuid()
+    homedir = os.getenv("HOME")
+    expected_value = f"{homedir}/x509up_u{uid}"
+    current_value = os.getenv("X509_USER_PROXY")
+    if current_value != expected_value:
+        print("X509_USER_PROXY is NOT set correctly.")
+        print("Please run the following command in your shell:")
+        print("export X509_USER_PROXY=$HOME/x509up_u`id -u`")
+        sys.exit(1)
+
+
+def prompt_rebuild_tarball():
+    while True:
+        user_input = input(
+            "BTVNanoCommissioning.tar.gz already exists, skip the tarring? ([y]/n): "
+        ).strip()
+        if user_input in {"y", "Y"}:
+            return True
+        if user_input in {"n", "N"}:
+            return False
+        print("Please answer with y/Y or n/N.")
+
+
+def submit_condor_with_retry(
+    submit_jdl_path,
+    max_attempts=DEFAULT_SUBMIT_ATTEMPTS,
+    retry_delay_seconds=30,
+    expected_jobs=None,
+):
+    if max_attempts < 1:
+        raise ValueError("max_attempts must be at least 1")
+
+    last_output = ""
+    last_returncode = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            result = subprocess.run(
+                ["condor_submit", submit_jdl_path],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except OSError as exc:
+            raise RuntimeError(f"Could not execute condor_submit: {exc}") from exc
+
+        output = "\n".join(
+            part for part in [result.stdout.strip(), result.stderr.strip()] if part
+        )
+        last_output = output
+        last_returncode = result.returncode
+        if output:
+            print(output)
+
+        match = CONDOR_SUBMIT_SUCCESS_RE.search(output)
+        if result.returncode == 0 and match:
+            submitted_jobs = int(match.group("count"))
+            if expected_jobs is not None and submitted_jobs != expected_jobs:
+                raise RuntimeError(
+                    "condor_submit reported "
+                    f"{submitted_jobs} submitted jobs; expected {expected_jobs}"
+                )
+            return int(match.group("cluster"))
+
+        if CONDOR_SUBMIT_PERMANENT_ERROR_RE.search(output):
+            raise RuntimeError(
+                f"condor_submit failed with a permanent error on attempt {attempt}: "
+                f"{output or 'no output'}"
+            )
+
+        if attempt == max_attempts:
+            break
+
+        delay = min(
+            retry_delay_seconds * (2 ** (attempt - 1)),
+            MAX_SUBMIT_RETRY_DELAY_SECONDS,
+        )
+        print(
+            f"condor_submit did not report a successful submission on attempt {attempt}; "
+            f"retrying in {delay}s."
+        )
+        time.sleep(delay)
+
+    raise RuntimeError(
+        f"condor_submit failed after {max_attempts} attempts "
+        f"(last return code: {last_returncode}): {last_output or 'no output'}"
+    )
 
 
 def get_main_parser():
@@ -107,11 +246,15 @@ def get_main_parser():
         choices=[
             "False",
             "all",
+            "all_withJESTotal",
             "weight_only",
             "JEC_full",
             "JEC_reduced",
             "JEC_reduced_JER_split",
             "JEC_total",
+            "JERC_full",
+            "JERC_reduced",
+            "JERC_total",
             "JP_MC",
         ],
         help="Run with systematics (default: %(default)s)",
@@ -162,48 +305,67 @@ def get_main_parser():
 if __name__ == "__main__":
     parser = get_main_parser()
     args = parser.parse_args()
+    if args.isSyst in {"JERC_full", "JERC_reduced", "JERC_total"}:
+        args.isSyst = args.isSyst.replace("JERC", "JEC")
     print("Running with the following options:")
     print(args)
-
-    uid = os.getuid()
-    homedir = os.getenv("HOME")
-    expected_value = f"{homedir}/x509up_u{uid}"
-    current_value = os.getenv("X509_USER_PROXY")
-    if current_value != expected_value:
-        print("X509_USER_PROXY is NOT set correctly.")
-        print(f"Please run the following command in your shell:")
-        print(f"export X509_USER_PROXY=$HOME/x509up_u`id -u`")
-        sys.exit(1)
+    validate_x509_proxy()
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = current_dir.replace("/condor", "")
+    if base_dir not in sys.path:
+        sys.path.insert(0, base_dir)
+    from condor_lxplus import dashboard as job_dashboard
+
+    # Extract version for setuptools_scm fallback in worker nodes
+    try:
+        with open(os.path.join(base_dir, "src/BTVNanoCommissioning/version.py")) as f:
+            v_content = f.read()
+            v_match = re.search(r"version = ['\"]([^'\"]+)['\"]", v_content)
+            scm_version = v_match.group(1) if v_match else "0.1"
+    except Exception:
+        scm_version = "0.1"
+    setattr(args, "scm_version", scm_version)
 
     if args.remoteRepo is not None:
         print("Will use a remote path to access BTVNanoCommissioning:", args.remoteRepo)
     else:
         print("Tarring BTVNanoCommissioning directory...")
 
+        if args.reuseTarball and args.rebuildTarball:
+            raise ValueError(
+                "--reuseTarball and --rebuildTarball are mutually exclusive"
+            )
+
         skip_tar = False
         if os.path.exists("BTVNanoCommissioning.tar.gz"):
-            user_input = input(
-                "BTVNanoCommissioning.tar.gz already exists, skip the tarring? ([y]/n): "
-            )
-            if user_input.lower() != "n":
+            if args.rebuildTarball:
+                print("Rebuilding BTVNanoCommissioning.tar.gz")
+            elif args.reuseTarball:
+                print("Reusing existing BTVNanoCommissioning.tar.gz")
                 skip_tar = True
             else:
-                skip_tar = False
-                os.remove("BTVNanoCommissioning.tar.gz")
+                skip_tar = prompt_rebuild_tarball()
 
         if not skip_tar:
-            jobdirs = [d for d in os.listdir(base_dir) if d.startswith("jobs_")]
+            exclude_list = ["jsonpog-integration", "BTVNanoCommissioning.egg-info"]
+            for d in os.listdir(base_dir):
+                if (
+                    d.startswith("jobs_")
+                    or d.startswith("arrays_")
+                    or d.startswith("hists_")
+                    or d.startswith("condor")
+                    or d.startswith(".")
+                ):
+                    exclude_list.append(d)
             make_tarfile(
                 "BTVNanoCommissioning.tar.gz",
                 base_dir,
-                exclude_dirs=["BTVNanoCommissioning.egg-info"] + jobdirs,
+                exclude_dirs=exclude_list,
             )
 
     # Create job dir
-    job_dir = f"jobs_{args.jobName}"
+    job_dir = f"jobs_{args.jobName}_{args.campaign}"
     if os.path.exists(job_dir):
         user_input = input("Job directory already exists, overwrite? ([y]/n): ")
         if user_input.lower() != "n":
@@ -300,7 +462,18 @@ Queue JOBNUM from {jobnum_file}
     )
     with open(os.path.join(job_dir, "submit.jdl"), "w") as f:
         f.write(jdl_template)
-    os.system(f"condor_submit {job_dir}/submit.jdl")
+    cluster_id = submit_condor_with_retry(
+        f"{job_dir}/submit.jdl",
+        max_attempts=args.submitRetries,
+        expected_jobs=counter,
+    )
+    job_dashboard.record_submission(
+        job_dir,
+        counter,
+        job_name=args.jobName,
+        output_dir=args.outputDir,
+        cluster_id=cluster_id,
+    )
     # print(
     #     f"Setup completed. Now submit the condor jobs by:\n  condor_submit {job_dir}/submit.jdl"
     # )

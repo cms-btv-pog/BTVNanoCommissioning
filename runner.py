@@ -151,6 +151,18 @@ def retry_handler(exception, task_record):
         return 1
 
 
+def prompt_rebuild_tarball():
+    while True:
+        user_input = input(
+            "BTVNanoCommissioning.tar.gz already exists, skip the tarring? (y/n): "
+        ).strip()
+        if user_input in {"y", "Y"}:
+            return True
+        if user_input in {"n", "N"}:
+            return False
+        print("Please answer with y/Y or n/N.")
+
+
 ## From condor/submitter.py https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/9edb9ed6bb0b28730b8de9e5aa1142ec4fdf74b7/condor/submitter.py
 def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
     import tarfile
@@ -237,11 +249,15 @@ def config_parser(parser):
         choices=[
             "False",
             "all",
+            "all_withJESTotal",
             "weight_only",
             "JEC_full",
             "JEC_reduced",
             "JEC_reduced_JER_split",
             "JEC_total",
+            "JERC_full",
+            "JERC_reduced",
+            "JERC_total",
             "JP_MC",
         ],
         help="Run with systematics (default: %(default)s)",
@@ -300,7 +316,7 @@ def scaleout_parser(parser):
         "-j",
         "--workers",
         type=int,
-        default=3,
+        default=12,
         help="Number of workers (cores/threads) to use for multi-worker executors "
         "(e.g. futures or condor) (default: %(default)s)",
     )
@@ -410,6 +426,8 @@ if __name__ == "__main__":
     parser = scaleout_parser(parser)
     parser = debug_parser(parser)
     args = parser.parse_args()
+    if args.isSyst in {"JERC_full", "JERC_reduced", "JERC_total"}:
+        args.isSyst = args.isSyst.replace("JERC", "JEC")
     if args.isSyst == "False":
         args.isSyst = False
     os.environ["BTV_TTBAR_REWEIGHTS"] = args.ttbar_reweights
@@ -686,16 +704,9 @@ if __name__ == "__main__":
 
                 skip_tar = False
                 if os.path.exists("BTVNanoCommissioning.tar.gz"):
-                    user_input = input(
-                        "BTVNanoCommissioning.tar.gz already exists, skip the tarring? (y/n): "
-                    )
-                    if user_input.lower() == "y":
-                        skip_tar = True
-                    elif user_input.lower() == "n":
-                        skip_tar = False
+                    skip_tar = prompt_rebuild_tarball()
+                    if not skip_tar:
                         os.remove("BTVNanoCommissioning.tar.gz")
-                    else:
-                        raise Exception("Invalid input, exiting")
 
                 if not skip_tar:
                     jobdirs = [d for d in os.listdir(base_dir) if d.startswith("jobs_")]
@@ -710,7 +721,7 @@ if __name__ == "__main__":
             import shutil
 
             # Create job dir
-            job_dir = f"jobs_{args.jobName}"
+            job_dir = f"jobs_{args.jobName}_{args.campaign}"
             if os.path.exists(job_dir):
                 user_input = input("Job directory already exists, overwrite? (y/n): ")
                 if user_input.lower() == "y":

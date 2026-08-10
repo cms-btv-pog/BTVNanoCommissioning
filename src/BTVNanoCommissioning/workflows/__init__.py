@@ -116,6 +116,12 @@ workflows["ctag_Wc_WP_sf"] = partial(
 workflows["ectag_Wc_WP_sf"] = partial(
     CTAGWcTTValidSFProcessor, selectionModifier="cutbased_WcE"
 )
+workflows["ctag_Wctt_noMuVeto_sf"] = partial(
+    CTAGWcTTValidSFProcessor, selectionModifier="WcttM_noMuVeto"
+)
+workflows["ectag_Wctt_sf"] = partial(
+    CTAGWcTTValidSFProcessor, selectionModifier="WcttE"
+)
 
 # DY
 workflows["ctag_DY_sf"] = partial(CTAGDYValidSFProcessor, selectionModifier="DYM_ctag")
