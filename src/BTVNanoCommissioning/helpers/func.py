@@ -87,11 +87,11 @@ def num(ar):
 def _is_rootcompat(a):
     """Is it a flat or 1-d jagged array?"""
     t = ak.type(a)
-    if isinstance(t, ak._ext.ArrayType):
-        if isinstance(t.type, ak._ext.PrimitiveType):
+    if isinstance(t, ak.types.ArrayType):
+        if isinstance(t.content, ak.types.NumpyType):
             return True
-        if isinstance(t.type, ak._ext.ListType) and isinstance(
-            t.type.type, ak._ext.PrimitiveType
+        if isinstance(t.content, ak.types.ListType) and isinstance(
+            t.content.content, ak.types.NumpyType
         ):
             return True
     return False
@@ -243,7 +243,7 @@ def uproot_writeable(events, include=["events", "run", "luminosityBlock"]):
             if not no_filter and bname not in include:
                 continue
             ev[bname] = ak.fill_none(
-                ak.packed(ak.without_parameters(events[bname])), -99
+                ak.to_packed(ak.without_parameters(events[bname])), -99
             )
         else:
             b_nest = {}
@@ -271,19 +271,22 @@ def uproot_writeable(events, include=["events", "run", "luminosityBlock"]):
                     and "Flavor" not in n
                 ):
                     continue
+                # ak.num(..., axis=0) returns a 0-d array in awkward>=2
                 evnums = ak.num(events[bname][n], axis=0)
-                if not isinstance(evnums, int):
+                if np.ndim(evnums) != 0:
                     continue
-                if not _is_rootcompat(events[bname][n]) and evnums != len(
-                    flatten(events[bname][n])
-                ):
+                evnums = int(evnums)
+                # fill the option-type entries first: `var * ?float` is not
+                # ROOT-writeable, but `var * float` is
+                val = ak.fill_none(
+                    ak.to_packed(ak.without_parameters(events[bname][n])), -99
+                )
+                if not _is_rootcompat(val) and evnums != len(flatten(val)):
                     continue
                 # skip IdxG
                 if "IdxG" in n:
                     continue
-                b_nest[n] = ak.fill_none(
-                    ak.packed(ak.without_parameters(events[bname][n])), -99
-                )
+                b_nest[n] = val
             if bool(b_nest):
                 ev[bname] = ak.zip(b_nest)
     return ev

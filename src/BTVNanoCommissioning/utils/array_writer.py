@@ -151,17 +151,28 @@ def array_writer(
             out_branch = np.append(out_branch, othersMC)
 
     # Write to root files
-    print("Branches to write:", out_branch)
     outdir = f"{out_dir_base}{processor_class.name}/{systname[0]}/{dataset}/"
     os.system(f"mkdir -p {outdir}")
 
-    with uproot.recreate(
-        f"{outdir}/{nano_event.metadata['filename'].split('/')[-1].replace('.root','')}_{int(nano_event.metadata['entrystop']/processor_class.chunksize)}.root"
-    ) as fout:
+    outfile = f"{outdir}/{nano_event.metadata['filename'].split('/')[-1].replace('.root','')}_{int(nano_event.metadata['entrystop']/processor_class.chunksize)}.root"
+
+    with uproot.recreate(outfile) as fout:
+        # uproot>=5.7 writes RNTuples for dict-like assignment, mktree keeps TTrees
         if not empty:
-            fout["Events"] = uproot_writeable(pruned_event, include=out_branch)
-        fout["TotalEventCount"] = ak.Array(
-            [nano_event.metadata["entrystop"] - nano_event.metadata["entrystart"]]
+            fout.mktree("Events", uproot_writeable(pruned_event, include=out_branch))
+        fout.mktree(
+            "TotalEventCount",
+            ak.Array(
+                [nano_event.metadata["entrystop"] - nano_event.metadata["entrystart"]]
+            ),
         )
         if not isRealData:
-            fout["TotalEventWeight"] = ak.Array([ak.sum(nano_event.genWeight)])
+            fout.mktree("TotalEventWeight", ak.Array([ak.sum(nano_event.genWeight)]))
+
+    # Report what actually ended up in the tree rather than what was requested:
+    # uproot_writeable silently drops requested names that do not exist on
+    # pruned_ev, and silently adds extras (wildcard entries, bare collection
+    # names, cross-reference "Idx"/"Flavor" fields).
+    with uproot.open(outfile) as fin:
+        written = sorted(fin["Events"].keys()) if "Events" in fin else []
+    print(f"Branches written ({len(written)}):", written)

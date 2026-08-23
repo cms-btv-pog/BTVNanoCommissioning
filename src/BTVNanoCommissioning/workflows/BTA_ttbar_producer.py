@@ -537,20 +537,30 @@ class NanoProcessor(processor.ProcessorABC):
         os.system(f"mkdir -p {dataset}_{shift_name}")
         if ak.any(passEvent) == False:
             with uproot.recreate(fname) as fout:
-                fout["sumw"] = {
-                    "total_events": ak.Array([len(events)]),
-                }
+                fout.mktree(
+                    "sumw",
+                    {
+                        "total_events": ak.Array([len(events)]),
+                    },
+                )
                 if not isRealData:
-                    fout["total_pos_events"] = ak.Array([ak.sum(events.genWeight > 0)])
-                    fout["total_neg_events"] = ak.Array(
-                        [-1.0 * ak.sum(events.genWeight < 0)]
+                    fout.mktree(
+                        "total_pos_events", ak.Array([ak.sum(events.genWeight > 0)])
                     )
-                    fout["total_wei_events"] = ak.Array([ak.sum(events.genWeight)])
-                    fout["total_poswei_events"] = ak.Array(
-                        [ak.sum(events.genWeight[events.genWeight > 0.0])]
+                    fout.mktree(
+                        "total_neg_events",
+                        ak.Array([-1.0 * ak.sum(events.genWeight < 0)]),
                     )
-                    fout["total_negwei_events"] = ak.Array(
-                        [ak.sum(events.genWeight[events.genWeight < 0.0])]
+                    fout.mktree(
+                        "total_wei_events", ak.Array([ak.sum(events.genWeight)])
+                    )
+                    fout.mktree(
+                        "total_poswei_events",
+                        ak.Array([ak.sum(events.genWeight[events.genWeight > 0.0])]),
+                    )
+                    fout.mktree(
+                        "total_negwei_events",
+                        ak.Array([ak.sum(events.genWeight[events.genWeight < 0.0])]),
                     )
             return {dataset: 0}
 
@@ -573,17 +583,21 @@ class NanoProcessor(processor.ProcessorABC):
             output_root = {}
             for bname in output.keys():
                 if not output[bname].fields:
-                    output_root[bname] = ak.packed(ak.without_parameters(output[bname]))
+                    output_root[bname] = ak.to_packed(
+                        ak.without_parameters(output[bname])
+                    )
                 else:
                     b_nest = {}
                     for n in output[bname].fields:
-                        b_nest[n] = ak.packed(ak.without_parameters(output[bname][n]))
+                        b_nest[n] = ak.to_packed(
+                            ak.without_parameters(output[bname][n])
+                        )
                     output_root[bname] = ak.zip(b_nest)
-            fout["btagana/ttree"] = output_root
+            fout.mktree("btagana/ttree", output_root)
             if isRealData:
-                fout["sumw"] = {"total_events": ak.Array([len(events)])}
+                fout.mktree("sumw", {"total_events": ak.Array([len(events)])})
             else:
-                fout["sumw"] = {
+                sumw = {
                     "total_events": ak.Array([len(events)]),
                     "total_pos_events": ak.Array([ak.sum(events.genWeight > 0)]),
                     "total_neg_events": ak.Array([-1.0 * ak.sum(events.genWeight < 0)]),
@@ -595,6 +609,7 @@ class NanoProcessor(processor.ProcessorABC):
                         [ak.sum(events.genWeight[events.genWeight < 0.0])]
                     ),
                 }
+                fout.mktree("sumw", sumw)
         os.system(
             f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/BTA_ttbar/{self._campaign.replace('Run3','')}/{fname}"
         )
