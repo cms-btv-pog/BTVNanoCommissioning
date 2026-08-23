@@ -25,6 +25,8 @@ def get_histograms(axes, **kwargs):
     hists = {}
 
     is_dijet = kwargs.get("is_dijet", False)
+    is_trijet = kwargs.get("is_trijet", False)
+    is_photondijet = kwargs.get("is_photondijet", False)
     jet_fields = kwargs.get("jet_fields", [])
 
     # Taggers
@@ -54,6 +56,12 @@ def get_histograms(axes, **kwargs):
     objs = ["Tag", "SelJet"]
     if is_dijet:
         objs.extend(["FwdJet", "CenJet", "RndJet"])
+    if is_trijet:
+        # SoftJet (j3) is the gluon-enriched probe of arXiv:1104.1175
+        objs.extend(["SoftJet", "LeadJet", "SubleadJet"])
+    if is_photondijet:
+        # SoftJet (j2) is the quark-enriched probe of arXiv:1104.1175
+        objs.extend(["SoftJet", "LeadJet"])
 
     for obj in objs:
         if obj == "Tag":
@@ -108,7 +116,124 @@ def get_histograms(axes, **kwargs):
             storage=Hist.storage.Weight(),
         )
 
+    def _event_hists(prefix, spec):
+        # Event-level kinematics, split by the parton flavour of the probe jet
+        # so the quark/gluon purity can be read off directly.
+        for name, ax in spec.items():
+            hists[f"{prefix}_{name}"] = Hist.Hist(
+                axes["syst"],
+                axes["pflav"],
+                axes[ax],
+                storage=Hist.storage.Weight(),
+            )
+        hists[f"{prefix}_njet"] = Hist.Hist(
+            axes["syst"],
+            axes["n"],
+            storage=Hist.storage.Weight(),
+        )
+
+    if is_trijet:
+        _event_hists(
+            "trijet",
+            {
+                "disc": "qgdisc",
+                "deta12": "deta",
+                "abseta3": "abseta",
+                "mass": "trijetmass",
+            },
+        )
+    if is_photondijet:
+        _event_hists(
+            "photondijet",
+            {
+                "disc": "gammadisc",
+                "etaprod": "etaprod",
+                "drgj2": "dr",
+                "mass": "trijetmass",
+            },
+        )
+
     return hists
+
+
+def _event_level_writer(
+    events,
+    output,
+    weights,
+    systematics: list,
+    isSyst: bool,
+    prefix: str,
+    variables: dict,
+    probe: str = "SoftJet",
+):
+    """Fill the event-level histograms of a quark/gluon workflow.
+
+    The per-object histograms are handled by `qg_writer`; this only covers the
+    cross-object quantities the workflow attached to `pruned_ev`. Everything is
+    split by the parton flavour of `probe`, the jet the selection is meant to
+    purify.
+
+    variables: {histogram suffix: axis name} - the value is read from the
+    `f"{prefix}_{suffix}"` field of `events`.
+    """
+    if f"{prefix}_njet" not in output:
+        return output
+
+    if "partonFlavour" in events[probe].fields:
+        flav = _flavor_label(events[probe].partonFlavour)
+    else:
+        flav = ak.zeros_like(events[probe].pt, dtype=int)
+    flav = ak.to_numpy(flav)
+
+    filled = {
+        f"{prefix}_{name}": (
+            axis,
+            ak.to_numpy(ak.fill_none(events[f"{prefix}_{name}"], np.nan)),
+        )
+        for name, axis in variables.items()
+        if f"{prefix}_{name}" in output
+    }
+    njet = ak.to_numpy(events["njet"])
+
+    for syst in systematics:
+        if not isSyst and syst != "nominal":
+            break
+        weight = (
+            weights.weight()
+            if syst == "nominal" or syst not in list(weights.variations)
+            else weights.weight(modifier=syst)
+        )
+        for name, (axis, value) in filled.items():
+            output[name].fill(syst=syst, flav=flav, **{axis: value}, weight=weight)
+        output[f"{prefix}_njet"].fill(syst=syst, n=njet, weight=weight)
+
+    return output
+
+
+def trijet_writer(events, output, weights, systematics: list, isSyst: bool):
+    """Event-level histograms of the gluon-enriched trijet selection."""
+    return _event_level_writer(
+        events,
+        output,
+        weights,
+        systematics,
+        isSyst,
+        "trijet",
+        {"disc": "disc", "deta12": "deta", "abseta3": "abseta", "mass": "mass"},
+    )
+
+
+def photondijet_writer(events, output, weights, systematics: list, isSyst: bool):
+    """Event-level histograms of the quark-enriched photon+2jet selection."""
+    return _event_level_writer(
+        events,
+        output,
+        weights,
+        systematics,
+        isSyst,
+        "photondijet",
+        {"disc": "disc", "etaprod": "etaprod", "drgj2": "dr", "mass": "mass"},
+    )
 
 
 def qg_writer(

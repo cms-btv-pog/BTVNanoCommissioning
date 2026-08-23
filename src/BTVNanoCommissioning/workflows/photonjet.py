@@ -181,14 +181,18 @@ class NanoProcessor(processor.ProcessorABC):
         selections.add("photon", ak.count(event_ph.pt, axis=1) > 0)
         selections.add("jet", ak.count(event_jet.pt, axis=1) > 0)
         selections.add("dphi", np.abs(event_jet[:, 0].delta_phi(event_ph[:, 0])) > 2.7)
-        selections.add("scale", np.abs(1.0 - event_jet[:, 0].pt / event_ph[:, 0].pt) < 0.3)
+        selections.add(
+            "scale", np.abs(1.0 - event_jet[:, 0].pt / event_ph[:, 0].pt) < 0.3
+        )
         selections.add("trigger", req_trig)
         if "GenVtx_z" in events.fields:
             selections.add("vtx", np.abs(events.GenVtx_z - events.PV_z) < 0.2)
         else:
             selections.add("vtx", ak.ones_like(events.run, dtype=bool))
 
-        event_level = selections.all("lumi", "metfilter", "photon", "jet", "dphi", "scale", "trigger", "vtx")
+        event_level = selections.all(
+            "lumi", "metfilter", "photon", "jet", "dphi", "scale", "trigger", "vtx"
+        )
 
         ##<==== finish selection
 

@@ -184,19 +184,32 @@ class NanoProcessor(processor.ProcessorABC):
             "subjet",
             ak.where(
                 ak.count(event_jet.pt, axis=1) > 2,
-                event_jet[:, 2].pt / (0.5 * (event_jet[:, 0] + event_jet[:, 1])).pt < 0.15,
+                event_jet[:, 2].pt / (0.5 * (event_jet[:, 0] + event_jet[:, 1])).pt
+                < 0.15,
                 ak.ones_like(req_trig, dtype=bool),
             ),
         )
         selections.add("trigger", req_trig)
-        selections.add("balance", np.abs(1.0 - event_jet[:, 1].pt / event_jet[:, 0].pt) < 0.3)
+        selections.add(
+            "balance", np.abs(1.0 - event_jet[:, 1].pt / event_jet[:, 0].pt) < 0.3
+        )
         selections.add("leadjet", event_jet[:, 0].pt < ptmax)
         if "GenVtx_z" in events.fields:
             selections.add("vtx", np.abs(events.GenVtx_z - events.PV_z) < 0.2)
         else:
             selections.add("vtx", ak.ones_like(events.run, dtype=bool))
 
-        event_level = selections.all("lumi", "metfilter", "jets", "dphi", "subjet", "trigger", "balance", "leadjet", "vtx")
+        event_level = selections.all(
+            "lumi",
+            "metfilter",
+            "jets",
+            "dphi",
+            "subjet",
+            "trigger",
+            "balance",
+            "leadjet",
+            "vtx",
+        )
 
         ##<==== finish selection
 
@@ -271,29 +284,29 @@ class NanoProcessor(processor.ProcessorABC):
         # cuts above were evaluated on.
         pruned_sel_jet = event_jet[event_level]
         # pruned_ev["CenJet"] = ak.where(
-            # np.abs(pruned_sel_jet[:, 0].eta) < np.abs(pruned_sel_jet[:, 1].eta),
-            # pruned_sel_jet[:, 0],
-            # pruned_sel_jet[:, 1],
+        # np.abs(pruned_sel_jet[:, 0].eta) < np.abs(pruned_sel_jet[:, 1].eta),
+        # pruned_sel_jet[:, 0],
+        # pruned_sel_jet[:, 1],
         # )
         # pruned_ev["FwdJet"] = ak.where(
-            # np.abs(pruned_sel_jet[:, 0].eta) > np.abs(pruned_sel_jet[:, 1].eta),
-            # pruned_sel_jet[:, 0],
-            # pruned_sel_jet[:, 1],
+        # np.abs(pruned_sel_jet[:, 0].eta) > np.abs(pruned_sel_jet[:, 1].eta),
+        # pruned_sel_jet[:, 0],
+        # pruned_sel_jet[:, 1],
         # )
         # pruned_ev["RndJet"] = ak.where(
-            # np.random.randint(0, 2, size=len(pruned_ev)) == 0,
-            # pruned_sel_jet[:, 0],
-            # pruned_sel_jet[:, 1],
+        # np.random.randint(0, 2, size=len(pruned_ev)) == 0,
+        # pruned_sel_jet[:, 0],
+        # pruned_sel_jet[:, 1],
         # )
         # pruned_ev["LeadJet"] = ak.where(
-            # pruned_sel_jet[:, 0].pt > pruned_sel_jet[:, 1].pt,
-            # pruned_sel_jet[:, 0],
-            # pruned_sel_jet[:, 1],
+        # pruned_sel_jet[:, 0].pt > pruned_sel_jet[:, 1].pt,
+        # pruned_sel_jet[:, 0],
+        # pruned_sel_jet[:, 1],
         # )
         # pruned_ev["SubleadJet"] = ak.where(
-            # pruned_sel_jet[:, 0].pt < pruned_sel_jet[:, 1].pt,
-            # pruned_sel_jet[:, 0],
-            # pruned_sel_jet[:, 1],
+        # pruned_sel_jet[:, 0].pt < pruned_sel_jet[:, 1].pt,
+        # pruned_sel_jet[:, 0],
+        # pruned_sel_jet[:, 1],
         # )
         pruned_ev["SelJet"] = pruned_sel_jet[:, :2]
         pruned_ev["njet"] = ak.count(pruned_sel_jet.pt, axis=1)
