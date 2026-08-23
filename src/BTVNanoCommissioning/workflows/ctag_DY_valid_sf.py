@@ -1,6 +1,7 @@
 import awkward as ak
 import numpy as np
 from coffea import processor
+from coffea.analysis_tools import PackedSelection
 
 from BTVNanoCommissioning.utils.correction import (
     load_lumi,
@@ -208,27 +209,32 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = ak.pad_none(jetindx, 1)
         jetindx = jetindx[:, 0]
 
-        selection = (
-            req_lumi & req_trig & req_dilep & req_dilepmass & req_jets & req_metfilter
-        )
+        # Build selections with PackedSelection for cleaner tracking and cutflow
+        selections = PackedSelection()
+        selections.add("lumi", ak.fill_none(req_lumi, False))
+        selections.add("trigger", ak.fill_none(req_trig, False))
+        selections.add("metfilter", ak.fill_none(req_metfilter, False))
+        selections.add("dilep", ak.fill_none(req_dilep, False))
+        selections.add("dilepmass", ak.fill_none(req_dilepmass, False))
+        selections.add("jets", ak.fill_none(req_jets, False))
+
+        cuts = ["lumi", "trigger", "metfilter", "dilep", "dilepmass", "jets"]
 
         if "QG" in self.selMod:
             temp_jet = ak.pad_none(event_jet, 1, axis=1)
 
-            req_lead_jet = ak.fill_none(
-                (
+            selections.add(
+                "leadjet",
+                ak.fill_none(
                     np.abs(temp_jet[:, 0].delta_phi(pos_dilep[:, 0] + neg_dilep[:, 0]))
-                    > 2.7
+                    > 2.7,
+                    False,
+                    axis=-1,
                 ),
-                False,
-                axis=-1,
             )
-            selection = selection & req_lead_jet
+            cuts.append("leadjet")
 
-        event_level = ak.fill_none(
-            selection,
-            False,
-        )
+        event_level = selections.all(*cuts)
         if len(events[event_level]) == 0:
             if self.isArray:
                 array_writer(
