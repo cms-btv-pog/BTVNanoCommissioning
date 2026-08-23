@@ -74,7 +74,7 @@ def get_histograms(axes, **kwargs):
             hists[f"Obj{obj}_Var{tagger}_pteta"] = Hist.Hist(
                 *obj_axes,
                 Hist.axis.Regular(
-                    100,
+                    1,
                     0,
                     1,
                     name=tagger,
@@ -119,6 +119,48 @@ def qg_writer(
     isSyst: bool,
     SF_map: dict,
 ):
+    # The axis values read off `events` do not depend on the systematic, and
+    # within one object they are shared by every tagger. Flatten each of them
+    # once up front rather than once per (systematic, histogram): that repeated
+    # flattening dominated the runtime of systematics runs.
+    flat = {}  # (obj, field) -> flattened field
+    abs_eta = {}  # obj -> flattened |eta|
+    flav = {}  # obj -> flattened flavour label
+    template = {}  # obj -> array carrying the object's jagged shape
+    hist_specs = []
+
+    def flatten_field(hobj, field):
+        if (hobj, field) not in flat:
+            flat[(hobj, field)] = ak.flatten(events[hobj][field], axis=None)
+        return flat[(hobj, field)]
+
+    for histname in output:
+        if "Var" not in histname or "Obj" not in histname:
+            continue
+        hobj = histname.split("_Var")[0].replace("Obj", "")
+        var = histname.split("_Var")[1].split("_")[0]
+        is_pteta = histname.endswith("_pteta")
+        if hobj not in events.fields:
+            continue
+        if var not in events[hobj].fields:
+            continue
+
+        flatten_field(hobj, var)
+        template.setdefault(hobj, events[hobj].pt)
+        if is_pteta:
+            flatten_field(hobj, "pt")
+            if hobj not in abs_eta:
+                abs_eta[hobj] = ak.flatten(np.abs(events[hobj]["eta"]), axis=None)
+        if hobj != "Tag" and hobj not in flav:
+            if "partonFlavour" not in events[hobj].fields:
+                flav[hobj] = ak.zeros_like(flatten_field(hobj, "pt"), dtype=int)
+            else:
+                flav[hobj] = ak.flatten(
+                    _flavor_label(events[hobj].partonFlavour), axis=None
+                )
+
+        hist_specs.append((histname, hobj, var, is_pteta))
+
     for syst in systematics:
         if not isSyst and syst != "nominal":
             break
@@ -129,38 +171,26 @@ def qg_writer(
         )
         # weight = weight * weights.partial_weight(include=["psweight"])
 
-        for histname, hist in output.items():
-            if "Var" not in histname or "Obj" not in histname:
-                continue
-            hobj = histname.split("_Var")[0].replace("Obj", "")
-            var = histname.split("_Var")[1].split("_")[0]
-            is_pteta = histname.endswith("_pteta")
-            if hobj not in events.fields:
-                continue
-            if var not in events[hobj].fields:
-                continue
+        # One broadcast per object instead of one per histogram: every tagger of
+        # a given object shares that object's shape.
+        flat_weight = {
+            hobj: ak.flatten(ak.broadcast_arrays(weight, tmpl)[0], axis=None)
+            for hobj, tmpl in template.items()
+        }
 
+        for histname, hobj, var, is_pteta in hist_specs:
             obj_axes = {
                 "syst": syst,
-                var: ak.flatten(events[hobj][var], axis=None),
-                # "weight": weight,
+                var: flat[(hobj, var)],
             }
             if is_pteta:
-                obj_axes["pt"] = ak.flatten(events[hobj]["pt"], axis=None)
-                obj_axes["eta"] = ak.flatten(np.abs(events[hobj]["eta"]), axis=None)
+                obj_axes["pt"] = flat[(hobj, "pt")]
+                obj_axes["eta"] = abs_eta[hobj]
 
             if hobj != "Tag":
-                if "partonFlavour" not in events[hobj].fields:
-                    obj_axes["flav"] = ak.zeros_like(
-                        ak.flatten(events[hobj].pt, axis=None), dtype=int
-                    )
-                else:
-                    obj_axes["flav"] = ak.flatten(
-                        _flavor_label(events[hobj].partonFlavour), axis=None
-                    )
+                obj_axes["flav"] = flav[hobj]
 
-            w = ak.flatten(ak.broadcast_arrays(weight, events[hobj][var])[0], axis=None)
-            obj_axes["weight"] = w
+            obj_axes["weight"] = flat_weight[hobj]
 
             output[histname].fill(**obj_axes)
 
