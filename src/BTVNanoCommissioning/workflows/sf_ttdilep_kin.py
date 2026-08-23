@@ -316,11 +316,19 @@ class NanoProcessor(processor.ProcessorABC):
             output = dump_lumi(events[req_lumi], output)
 
         ## HLT
-        triggers = [
-            "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
-            "Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-            "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
-        ]
+        # 2016preVFP data does not have _DZ trigger variants; use non-DZ paths instead.
+        if self._campaign in ["2016preVFP-UL"]:
+            triggers = [
+                "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",
+                "Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
+                "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",
+            ]
+        else:
+            triggers = [
+                "Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",
+                "Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+                "Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",
+            ]
         req_trig = HLT_helper(events, triggers)
 
         ## Primary vertex

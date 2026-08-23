@@ -413,7 +413,7 @@ correction_config = {
     "Prompt25": {
         "default": {
             "DC": "Cert_Collisions2025_391658_398860_Golden.json",
-            "LUM": "puWeights2025.json.gz",
+            "LUM": "puWeights_2025pp_Golden_Summer24_25ns_69200ub.json.gz",
             # Year-dependent JES regrouped uncertainties use the MC JEC campaign year,
             # not the data year.  Summer24 JECs have "_2024_" in the correction names.
             "JME": {
