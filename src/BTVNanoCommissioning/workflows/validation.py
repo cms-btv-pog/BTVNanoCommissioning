@@ -235,7 +235,9 @@ class NanoProcessor(processor.ProcessorABC):
 
                     for tagger in btag_wp_dict[f"{self._year}_{self._campaign}"].keys():
                         if "bjet" in histname:
-                            for wp in btag_wp_dict[f"{self._year}_{self._campaign}"][tagger]["b"].keys():
+                            for wp in btag_wp_dict[f"{self._year}_{self._campaign}"][
+                                tagger
+                            ]["b"].keys():
                                 wp_weight = weight[
                                     btag_wp(
                                         jet,
@@ -274,7 +276,9 @@ class NanoProcessor(processor.ProcessorABC):
                                         weight=wp_weight,
                                     )
                         elif "cjet" in histname:
-                            for wp in btag_wp_dict[f"{self._year}_{self._campaign}"][tagger]["c"].keys():
+                            for wp in btag_wp_dict[f"{self._year}_{self._campaign}"][
+                                tagger
+                            ]["c"].keys():
                                 wp_weight = weight[
                                     btag_wp(
                                         jet,

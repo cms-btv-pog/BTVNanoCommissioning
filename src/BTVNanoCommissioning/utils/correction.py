@@ -1083,9 +1083,7 @@ def JME_shifts(
                 # below index an empty list (awkward>=2 raises IndexError). Pad so
                 # index 0 always exists; the sentinel is always masked out by the
                 # ak.where, so results are unchanged wherever the old code worked.
-                genjet_pt = ak.fill_none(
-                    ak.pad_none(events.GenJet.pt, 1, axis=1), -1.0
-                )
+                genjet_pt = ak.fill_none(ak.pad_none(events.GenJet.pt, 1, axis=1), -1.0)
                 genjetidx = ak.where(
                     events.Jet.genJetIdx == -1, 0, events.Jet.genJetIdx
                 )
