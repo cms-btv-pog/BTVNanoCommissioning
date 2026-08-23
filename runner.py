@@ -682,9 +682,9 @@ if __name__ == "__main__":
     # Execute
     if args.executor in ["futures", "iterative", "condor_standalone"]:
         if args.executor == "iterative":
-            _exec = IterativeExecutor()
+            _exec = IterativeExecutor(retries=args.retries)
         else:
-            _exec = FuturesExecutor(workers=args.workers)
+            _exec = FuturesExecutor(workers=args.workers, retries=args.retries)
         if args.executor != "condor_standalone":
             runner = Runner(
                 executor=_exec,
@@ -837,7 +837,6 @@ if __name__ == "__main__":
     elif "parsl" in args.executor:
         import parsl
         from parsl.providers import LocalProvider, CondorProvider, SlurmProvider
-        from parsl.channels import LocalChannel
         from parsl.config import Config
         from parsl.executors import HighThroughputExecutor
         from parsl.launchers import SrunLauncher
@@ -851,9 +850,8 @@ if __name__ == "__main__":
                         address=address_by_hostname(),
                         prefetch_capacity=0,
                         provider=SlurmProvider(
-                            channel=LocalChannel(script_dir="logs_parsl"),
                             launcher=SrunLauncher(),
-                            mem_per_node=args.memory,
+                            mem_per_node=int(args.memory),
                             max_blocks=(args.scaleout) + 10,
                             init_blocks=args.scaleout,
                             partition="all",
@@ -872,9 +870,8 @@ if __name__ == "__main__":
                             address=address_by_hostname(),
                             prefetch_capacity=0,
                             provider=SlurmProvider(
-                                channel=LocalChannel(script_dir="logs_parsl"),
                                 launcher=SrunLauncher(),
-                                mem_per_node=args.memory,
+                                mem_per_node=int(args.memory),
                                 max_blocks=(args.scaleout) + 10,
                                 init_blocks=args.scaleout,
                                 partition="all",
@@ -887,9 +884,8 @@ if __name__ == "__main__":
                             address=address_by_hostname(),
                             prefetch_capacity=0,
                             provider=SlurmProvider(
-                                channel=LocalChannel(script_dir="logs_parsl"),
                                 launcher=SrunLauncher(),
-                                mem_per_node=args.memory,
+                                mem_per_node=int(args.memory),
                                 max_blocks=(args.scaleout) + 10,
                                 init_blocks=args.scaleout,
                                 partition="all",
@@ -909,7 +905,7 @@ if __name__ == "__main__":
                         HighThroughputExecutor(
                             label="coffea_parsl_condor",
                             address=address_by_query(),
-                            max_workers=1,
+                            max_workers_per_node=1,
                             worker_debug=True,
                             provider=CondorProvider(
                                 nodes_per_block=1,
@@ -933,7 +929,7 @@ if __name__ == "__main__":
                             HighThroughputExecutor(
                                 label="run",
                                 address=address_by_query(),
-                                max_workers=1,
+                                max_workers_per_node=1,
                                 worker_debug=True,
                                 provider=CondorProvider(
                                     nodes_per_block=1,
@@ -950,7 +946,7 @@ if __name__ == "__main__":
                             HighThroughputExecutor(
                                 label="merge",
                                 address=address_by_query(),
-                                max_workers=1,
+                                max_workers_per_node=1,
                                 worker_debug=True,
                                 provider=CondorProvider(
                                     nodes_per_block=1,
@@ -975,7 +971,7 @@ if __name__ == "__main__":
                         HighThroughputExecutor(
                             label="coffea_parsl_condor",
                             address=address_by_query(),
-                            max_workers=1,
+                            max_workers_per_node=1,
                             provider=CondorProvider(
                                 nodes_per_block=1,
                                 cores_per_slot=args.workers,
@@ -997,7 +993,7 @@ if __name__ == "__main__":
                             HighThroughputExecutor(
                                 label="run",
                                 address=address_by_query(),
-                                max_workers=1,
+                                max_workers_per_node=1,
                                 provider=CondorProvider(
                                     nodes_per_block=1,
                                     cores_per_slot=args.workers,
@@ -1013,7 +1009,7 @@ if __name__ == "__main__":
                             HighThroughputExecutor(
                                 label="merge",
                                 address=address_by_query(),
-                                max_workers=1,
+                                max_workers_per_node=1,
                                 provider=CondorProvider(
                                     nodes_per_block=1,
                                     cores_per_slot=args.workers,
@@ -1042,6 +1038,7 @@ if __name__ == "__main__":
                 chunksize=args.chunk,
                 maxchunks=args.max,
                 skipbadfiles=args.skipbadfiles,
+                xrootdtimeout=900,
             )
             output = runner(sample_dict, processor_instance, treename="Events")
         else:
@@ -1056,6 +1053,7 @@ if __name__ == "__main__":
                 chunksize=args.chunk,
                 maxchunks=args.max,
                 skipbadfiles=args.skipbadfiles,
+                xrootdtimeout=900,
             )
             output = runner(sample_dict, processor_instance, treename="Events")
     elif "dask" in args.executor:
@@ -1103,13 +1101,17 @@ if __name__ == "__main__":
                 job_script_prologue=job_script_prologue,
             )
         elif "slurm" in args.executor:
+            # NB: neither `retries` nor `disk` are valid here. dask_jobqueue
+            # forwards unknown kwargs to SLURMJob -> Job.__init__, which accepts
+            # neither (surfaced as a ValueError from _dummy_job during
+            # construction). Retries are a coffea-level concern and are set on
+            # DaskExecutor below; SLURM has no per-job disk request (unlike
+            # HTCondorCluster, which does take `disk`).
             cluster = SLURMCluster(
                 queue="all",
                 cores=args.workers,
                 processes=args.scaleout,
                 memory=f"{args.memory}GB",
-                disk=f"{args.disk}GB",
-                retries=args.retries,
                 walltime="00:30:00",
                 job_script_prologue=job_script_prologue,
             )
@@ -1152,6 +1154,7 @@ if __name__ == "__main__":
                     chunksize=args.chunk,
                     maxchunks=args.max,
                     skipbadfiles=args.skipbadfiles,
+                    xrootdtimeout=900,
                 )
                 output = runner(sample_dict, processor_instance, treename="Events")
 
@@ -1183,6 +1186,7 @@ if __name__ == "__main__":
                             chunksize=args.chunk,
                             maxchunks=args.max,
                             skipbadfiles=args.skipbadfiles,
+                            xrootdtimeout=900,
                         )
                         output = runner(splitted, processor_instance, treename="Events")
                         if args.noHist == False:
