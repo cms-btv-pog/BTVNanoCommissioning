@@ -1190,15 +1190,17 @@ if __name__ == "__main__":
                         )
                         output = runner(splitted, processor_instance, treename="Events")
                         if args.noHist == False:
-                            save(
-                                output,
-                                coffeaoutput.replace(
-                                    ".coffea", f"_{sindex}_{findex}.coffea"
-                                ),
+                            splitoutput = coffeaoutput.replace(
+                                ".coffea", f"_{sindex}_{findex}.coffea"
+                            )
+                            save(output, splitoutput)
+                            print(
+                                f"Saving histograms to {os.path.abspath(splitoutput)}"
                             )
     if not "lxplus" in args.executor:
         if args.noHist == False:
             save(output, coffeaoutput)
-    if args.noHist == False:
-        # print(output)
-        print(f"Saving output to {coffeaoutput}")
+            # print(output)
+            print(f"Saving histograms to {os.path.abspath(coffeaoutput)}")
+    if args.isArray:
+        print(f"Arrays written under {os.path.abspath(outdir)}/")

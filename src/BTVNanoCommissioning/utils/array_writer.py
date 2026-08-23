@@ -175,4 +175,7 @@ def array_writer(
     # names, cross-reference "Idx"/"Flavor" fields).
     with uproot.open(outfile) as fin:
         written = sorted(fin["Events"].keys()) if "Events" in fin else []
-    print(f"Branches written ({len(written)}):", written)
+    print(
+        f"Writing arrays to {os.path.abspath(outfile)} - branches ({len(written)}):",
+        written,
+    )
