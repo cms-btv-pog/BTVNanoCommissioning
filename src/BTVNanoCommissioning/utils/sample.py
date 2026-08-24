@@ -580,6 +580,35 @@ predefined_sample = {
             "QCD-4Jets_Bin-HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
         ],
     },
+    "QG_trijet": {
+        "data": ["JetMET0", "JetMET1"],
+        "MC": [
+            # HT binned pre Summer24
+            "QCD-4Jets_HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-600to800_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1200to1500_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-1500to2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_HT-2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            # HT binned Summer24
+            "QCD-4Jets_Bin-HT-1000to1200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-100to200_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-1200to1500_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-1500to2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-2000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-200to400_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-400to600_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-40to70_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-600to800_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-70to100_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+            "QCD-4Jets_Bin-HT-800to1000_TuneCP5_13p6TeV_madgraphMLM-pythia8",
+        ],
+    },
     "QG_photonjet": {
         "data": [
             "EGamma",
@@ -637,3 +666,21 @@ predefined_sample = {
         ],
     },
 }
+
+# The photon+2jet selection runs on the same datasets as the photon+jet one.
+for _photondijet_variant in [
+    "QG_photondijet",
+    "QG_photondijet_quark",
+    "QG_photondijet_softprobe",
+    "QG_photondijet_softprobe_quark",
+]:
+    predefined_sample[_photondijet_variant] = predefined_sample["QG_photonjet"]
+
+# The trijet variants (gluon-enriched working point, alternative trigger menu)
+# run on the same datasets as the nominal trijet selection.
+for _trijet_variant in [
+    "QG_trijet_gluon",
+    "QG_trijet_dijetave",
+    "QG_trijet_dijetave_gluon",
+]:
+    predefined_sample[_trijet_variant] = predefined_sample["QG_trijet"]

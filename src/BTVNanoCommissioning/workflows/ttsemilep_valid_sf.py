@@ -271,7 +271,7 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["SelMuon"] = event_muon[event_level][:, 0]
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
         if "PFCands" in events.fields:
-            pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
+            pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
         if self.ttaddsel != "c_tt_semilep":
             for i in range(4):
                 pruned_ev[f"dr_mujet{i}"] = pruned_ev.SelMuon.delta_r(

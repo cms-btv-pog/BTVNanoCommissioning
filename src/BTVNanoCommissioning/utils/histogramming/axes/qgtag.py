@@ -38,4 +38,24 @@ axes = {
     "ptratio": hist.axis.Regular(50, 0, 1, name="ratio", label="ratio"),
     "n": hist.axis.Integer(0, 10, name="n", label="N obj"),
     "osss": hist.axis.IntCategory([1, -1], name="osss", label="OS(+)/SS(-)"),
+    # Trijet (arXiv:1104.1175) quark/gluon kinematic discriminant and its inputs
+    "qgdisc": hist.axis.Regular(
+        50, -5, 5, name="disc", label=r"$|\eta_{j3}| - |\eta_{j1}-\eta_{j2}|$"
+    ),
+    "deta": hist.axis.Regular(25, 0, 5, name="deta", label=r"$|\eta_{j1}-\eta_{j2}|$"),
+    "abseta": hist.axis.Regular(25, 0, 2.5, name="abseta", label=r"$|\eta|$"),
+    # gamma+2jet (arXiv:1104.1175) quark/gluon discriminant and its inputs
+    "gammadisc": hist.axis.Regular(
+        60,
+        -5,
+        10,
+        name="disc",
+        label=r"$\eta_{\gamma}\eta_{j1} + \Delta R_{\gamma j2}$",
+    ),
+    "etaprod": hist.axis.Regular(
+        50, -8, 8, name="etaprod", label=r"$\eta_{\gamma}\eta_{j1}$"
+    ),
+    "trijetmass": hist.axis.Regular(
+        60, 0, 3000, name="mass", label="trijet mass [GeV]"
+    ),
 }

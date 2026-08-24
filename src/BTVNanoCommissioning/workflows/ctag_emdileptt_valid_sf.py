@@ -237,11 +237,20 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["SelElectron"] = iso_ele[event_level][:, 0]
         pruned_ev["MuonJet"] = mu_jet[event_level][:, 0]
         pruned_ev["SoftMuon"] = soft_muon[event_level][:, 0]
-        pruned_ev["dilep"] = pruned_ev.SelMuon + pruned_ev.SelElectron
-        pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
-        pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta
-        pruned_ev["dilep", "phi"] = pruned_ev.dilep.phi
-        pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
+        # The sum is stored in cartesian coordinates (x/y/z/t); materialising
+        # pt/eta/phi/mass on top of it left both azimuthal representations on the
+        # record, which vector>=1.8 rejects. Build the pure polar record directly:
+        # same values, and the four fields stay materialised for the array writer.
+        _dilep = pruned_ev.SelMuon + pruned_ev.SelElectron
+        pruned_ev["dilep"] = ak.zip(
+            {
+                "pt": _dilep.pt,
+                "eta": _dilep.eta,
+                "phi": _dilep.phi,
+                "mass": _dilep.mass,
+            },
+            with_name="PtEtaPhiMLorentzVector",
+        )
         if "PFCands" in events.fields:
             pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
         # Add custom variables

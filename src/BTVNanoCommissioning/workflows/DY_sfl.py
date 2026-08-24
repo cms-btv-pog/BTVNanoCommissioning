@@ -288,11 +288,14 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev["posl"] = sposmu
             pruned_ev["negl"] = snegmu
             pruned_ev["SelElectron"] = smu
-        pruned_ev["dilep"] = sz
-        pruned_ev["dilep", "pt"] = pruned_ev.dilep.pt
-        pruned_ev["dilep", "eta"] = pruned_ev.dilep.eta
-        pruned_ev["dilep", "phi"] = pruned_ev.dilep.phi
-        pruned_ev["dilep", "mass"] = pruned_ev.dilep.mass
+        # sz is a candidate *sum* (cartesian x/y/z/t). Materialising pt/eta/phi/mass
+        # on top of it left both azimuthal representations on the record, which
+        # vector>=1.8 rejects. Re-zip into a pure polar record: same values, and
+        # pt/eta/phi/mass remain materialised fields for the array writer.
+        pruned_ev["dilep"] = ak.zip(
+            {"pt": sz.pt, "eta": sz.eta, "phi": sz.phi, "mass": sz.mass},
+            with_name="PtEtaPhiMLorentzVector",
+        )
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
         pruned_ev["dr_mu1jet"] = sposmu.delta_r(sel_jet)
         pruned_ev["dr_mu2jet"] = snegmu.delta_r(sel_jet)

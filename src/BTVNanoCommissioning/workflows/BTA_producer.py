@@ -1155,13 +1155,17 @@ class NanoProcessor(processor.ProcessorABC):
             output_root = {}
             for bname in output.keys():
                 if not output[bname].fields:
-                    output_root[bname] = ak.packed(ak.without_parameters(output[bname]))
+                    output_root[bname] = ak.to_packed(
+                        ak.without_parameters(output[bname])
+                    )
                 else:
                     b_nest = {}
                     for n in output[bname].fields:
-                        b_nest[n] = ak.packed(ak.without_parameters(output[bname][n]))
+                        b_nest[n] = ak.to_packed(
+                            ak.without_parameters(output[bname][n])
+                        )
                     output_root[bname] = ak.zip(b_nest)
-            fout["btagana/ttree"] = output_root
+            fout.mktree("btagana/ttree", output_root)
         os.system(
             f"xrdcp -p --silent {fname} root://eoscms.cern.ch//eos/cms/store/group/phys_btag/milee/{dirname}/{self._campaign.replace('Run3','')}/{fname}"
         )

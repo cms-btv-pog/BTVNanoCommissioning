@@ -3,7 +3,7 @@ import os
 import numpy as np
 import correctionlib
 from coffea import processor
-from coffea.analysis_tools import Weights
+from coffea.analysis_tools import Weights, PackedSelection
 
 # functions to load SFs, corrections
 from BTVNanoCommissioning.utils.correction import (
@@ -122,8 +122,6 @@ class NanoProcessor(processor.ProcessorABC):
 
         req_metfilter = MET_filters(events, self._campaign)
 
-        event_level = req_lumi & req_metfilter
-
         ##### Add some selections
         ## Jet cuts
         jet_sel = jet_id(events, self._campaign, max_eta=5.0, min_pt=20)
@@ -154,9 +152,6 @@ class NanoProcessor(processor.ProcessorABC):
         event_ph = ak.pad_none(events.Photon[photon_sel], 1)
         event_jet = ak.pad_none(events.Jet[jet_sel], 1)
 
-        req_photon = ak.count(event_ph.pt, axis=1) > 0
-        req_jet = ak.count(event_jet.pt, axis=1) > 0
-
         # Validate the paths against the sample (raises if none of them exist).
         # The returned OR is unused: each path is pt-binned individually below.
         HLT_helper(events, list(triggers.keys()))
@@ -179,20 +174,25 @@ class NanoProcessor(processor.ProcessorABC):
         for trg_pass in trig_pass.values():
             req_trig = req_trig | trg_pass
 
-        req_dphi = np.abs(event_jet[:, 0].delta_phi(event_ph[:, 0])) > 2.7
-        req_scale = np.abs(1.0 - event_jet[:, 0].pt / event_ph[:, 0].pt) < 0.3
-
-        event_level = (
-            event_level & req_photon & req_jet & req_dphi & req_scale & req_trig
+        # Build selections with PackedSelection for cleaner tracking and cutflow
+        selections = PackedSelection()
+        selections.add("lumi", req_lumi)
+        selections.add("metfilter", req_metfilter)
+        selections.add("photon", ak.count(event_ph.pt, axis=1) > 0)
+        selections.add("jet", ak.count(event_jet.pt, axis=1) > 0)
+        selections.add("dphi", np.abs(event_jet[:, 0].delta_phi(event_ph[:, 0])) > 2.7)
+        selections.add(
+            "scale", np.abs(1.0 - event_jet[:, 0].pt / event_ph[:, 0].pt) < 0.3
         )
-
-        ## MC only: require gen vertex to be close to reco vertex
+        selections.add("trigger", req_trig)
         if "GenVtx_z" in events.fields:
-            req_vtx = np.abs(events.GenVtx_z - events.PV_z) < 0.2
+            selections.add("vtx", np.abs(events.GenVtx_z - events.PV_z) < 0.2)
         else:
-            req_vtx = ak.ones_like(events.run, dtype=bool)
+            selections.add("vtx", ak.ones_like(events.run, dtype=bool))
 
-        event_level = event_level & req_vtx
+        event_level = selections.all(
+            "lumi", "metfilter", "photon", "jet", "dphi", "scale", "trigger", "vtx"
+        )
 
         ##<==== finish selection
 

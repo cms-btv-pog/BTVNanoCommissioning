@@ -127,28 +127,28 @@ class NanoProcessor(processor.ProcessorABC):
         ## Muon cuts
         # muon twiki: https://twiki.cern.ch/twiki/bin/view/CMS/SWGuideMuonIdRun2
         if self._campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
-            events.Muon = events.Muon[
+            events["Muon"] = events.Muon[
                 (events.Muon.pt > 25) & mu_promptmvaid(events, self._campaign)
             ]
         else:
-            events.Muon = events.Muon[
+            events["Muon"] = events.Muon[
                 (events.Muon.pt > 25) & mu_idiso(events, self._campaign)
             ]
-        events.Muon = ak.pad_none(events.Muon, 1, axis=1)
+        events["Muon"] = ak.pad_none(events.Muon, 1, axis=1)
         req_muon = ak.count(events.Muon.pt, axis=1) == 1
 
         ## Electron cuts
         # electron twiki: https://twiki.cern.ch/twiki/bin/viewauth/CMS/CutBasedElectronIdentificationRun2
         if self._campaign in ["Summer24", "Winter25", "Prompt25"]:  # NanoAODv15
-            events.Electron = events.Electron[
+            events["Electron"] = events.Electron[
                 (events.Electron.pt > 25) & ele_promptmvaid(events, self._campaign)
             ]
         else:
-            events.Electron = events.Electron[
+            events["Electron"] = events.Electron[
                 (events.Electron.pt > 25) & ele_cuttightid(events, self._campaign)
             ]
 
-        events.Electron = ak.pad_none(events.Electron, 1, axis=1)
+        events["Electron"] = ak.pad_none(events.Electron, 1, axis=1)
         req_ele = ak.count(events.Electron.pt, axis=1) == 1
 
         ## Jet cuts
@@ -218,7 +218,7 @@ class NanoProcessor(processor.ProcessorABC):
 
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
-            pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
+            pruned_ev["PFCands"] = PFCand_link(events, event_level, jetindx)
 
         ####################
         #     Output       #

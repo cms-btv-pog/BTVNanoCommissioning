@@ -9,6 +9,13 @@ import numpy as np
 import uproot
 from coffea.util import load, save
 from coffea import processor
+from coffea.processor import (
+    Runner,
+    IterativeExecutor,
+    FuturesExecutor,
+    DaskExecutor,
+    ParslExecutor,
+)
 from coffea.nanoevents import PFNanoAODSchema
 from BTVNanoCommissioning.workflows import workflows
 
@@ -673,26 +680,21 @@ if __name__ == "__main__":
 
     #########
     # Execute
-    if args.executor in ["futures", "iterative", "standalone_condor"]:
+    if args.executor in ["futures", "iterative", "condor_standalone"]:
         if args.executor == "iterative":
-            _exec = processor.iterative_executor
+            _exec = IterativeExecutor(retries=args.retries)
         else:
-            _exec = processor.futures_executor
-        if args.executor != "standalone_condor":
-            output = processor.run_uproot_job(
-                sample_dict,
-                treename="Events",
-                processor_instance=processor_instance,
+            _exec = FuturesExecutor(workers=args.workers, retries=args.retries)
+        if args.executor != "condor_standalone":
+            runner = Runner(
                 executor=_exec,
-                executor_args={
-                    "skipbadfiles": args.skipbadfiles,
-                    "schema": PFNanoAODSchema,
-                    "workers": args.workers,
-                    "xrootdtimeout": 900,
-                },
+                schema=PFNanoAODSchema,
                 chunksize=args.chunk,
                 maxchunks=args.max,
+                skipbadfiles=args.skipbadfiles,
+                xrootdtimeout=900,
             )
+            output = runner(sample_dict, processor_instance, treename="Events")
 
         ## standalone condor from https://github.com/cms-btv-pog/BTVNanoCommissioning/blob/9edb9ed6bb0b28730b8de9e5aa1142ec4fdf74b7/condor/submitter.py
         else:
@@ -828,11 +830,13 @@ if __name__ == "__main__":
             print(
                 f"Setup completed. Now submit the condor jobs by:\n  condor_submit {job_dir}/submit.jdl"
             )
+            # This path only generates the condor job files; no processor ran, so
+            # there is no `output` to save. Exit before the save block below.
+            sys.exit(0)
 
     elif "parsl" in args.executor:
         import parsl
         from parsl.providers import LocalProvider, CondorProvider, SlurmProvider
-        from parsl.channels import LocalChannel
         from parsl.config import Config
         from parsl.executors import HighThroughputExecutor
         from parsl.launchers import SrunLauncher
@@ -846,9 +850,8 @@ if __name__ == "__main__":
                         address=address_by_hostname(),
                         prefetch_capacity=0,
                         provider=SlurmProvider(
-                            channel=LocalChannel(script_dir="logs_parsl"),
                             launcher=SrunLauncher(),
-                            mem_per_node=args.memory,
+                            mem_per_node=int(args.memory),
                             max_blocks=(args.scaleout) + 10,
                             init_blocks=args.scaleout,
                             partition="all",
@@ -867,9 +870,8 @@ if __name__ == "__main__":
                             address=address_by_hostname(),
                             prefetch_capacity=0,
                             provider=SlurmProvider(
-                                channel=LocalChannel(script_dir="logs_parsl"),
                                 launcher=SrunLauncher(),
-                                mem_per_node=args.memory,
+                                mem_per_node=int(args.memory),
                                 max_blocks=(args.scaleout) + 10,
                                 init_blocks=args.scaleout,
                                 partition="all",
@@ -882,9 +884,8 @@ if __name__ == "__main__":
                             address=address_by_hostname(),
                             prefetch_capacity=0,
                             provider=SlurmProvider(
-                                channel=LocalChannel(script_dir="logs_parsl"),
                                 launcher=SrunLauncher(),
-                                mem_per_node=args.memory,
+                                mem_per_node=int(args.memory),
                                 max_blocks=(args.scaleout) + 10,
                                 init_blocks=args.scaleout,
                                 partition="all",
@@ -904,7 +905,7 @@ if __name__ == "__main__":
                         HighThroughputExecutor(
                             label="coffea_parsl_condor",
                             address=address_by_query(),
-                            max_workers=1,
+                            max_workers_per_node=1,
                             worker_debug=True,
                             provider=CondorProvider(
                                 nodes_per_block=1,
@@ -928,7 +929,7 @@ if __name__ == "__main__":
                             HighThroughputExecutor(
                                 label="run",
                                 address=address_by_query(),
-                                max_workers=1,
+                                max_workers_per_node=1,
                                 worker_debug=True,
                                 provider=CondorProvider(
                                     nodes_per_block=1,
@@ -945,7 +946,7 @@ if __name__ == "__main__":
                             HighThroughputExecutor(
                                 label="merge",
                                 address=address_by_query(),
-                                max_workers=1,
+                                max_workers_per_node=1,
                                 worker_debug=True,
                                 provider=CondorProvider(
                                     nodes_per_block=1,
@@ -970,7 +971,7 @@ if __name__ == "__main__":
                         HighThroughputExecutor(
                             label="coffea_parsl_condor",
                             address=address_by_query(),
-                            max_workers=1,
+                            max_workers_per_node=1,
                             provider=CondorProvider(
                                 nodes_per_block=1,
                                 cores_per_slot=args.workers,
@@ -992,7 +993,7 @@ if __name__ == "__main__":
                             HighThroughputExecutor(
                                 label="run",
                                 address=address_by_query(),
-                                max_workers=1,
+                                max_workers_per_node=1,
                                 provider=CondorProvider(
                                     nodes_per_block=1,
                                     cores_per_slot=args.workers,
@@ -1008,7 +1009,7 @@ if __name__ == "__main__":
                             HighThroughputExecutor(
                                 label="merge",
                                 address=address_by_query(),
-                                max_workers=1,
+                                max_workers_per_node=1,
                                 provider=CondorProvider(
                                     nodes_per_block=1,
                                     cores_per_slot=args.workers,
@@ -1031,36 +1032,30 @@ if __name__ == "__main__":
 
         dfk = parsl.load(htex_config)
         if not splitjobs:
-            output = processor.run_uproot_job(
-                sample_dict,
-                treename="Events",
-                processor_instance=processor_instance,
-                executor=processor.parsl_executor,
-                executor_args={
-                    "skipbadfiles": args.skipbadfiles,
-                    "schema": PFNanoAODSchema,
-                    "config": None,
-                },
+            runner = Runner(
+                executor=ParslExecutor(config=None),
+                schema=PFNanoAODSchema,
                 chunksize=args.chunk,
                 maxchunks=args.max,
+                skipbadfiles=args.skipbadfiles,
+                xrootdtimeout=900,
             )
+            output = runner(sample_dict, processor_instance, treename="Events")
         else:
-            output = processor.run_uproot_job(
-                sample_dict,
-                treename="Events",
-                processor_instance=processor_instance,
-                executor=processor.parsl_executor,
-                executor_args={
-                    "skipbadfiles": args.skipbadfiles,
-                    "schema": PFNanoAODSchema,
-                    "merging": True,
-                    "merges_executors": ["merge"],
-                    "jobs_executors": ["run"],
-                    "config": None,
-                },
+            runner = Runner(
+                executor=ParslExecutor(
+                    config=None,
+                    merging=True,
+                    merges_executors=["merge"],
+                    jobs_executors=["run"],
+                ),
+                schema=PFNanoAODSchema,
                 chunksize=args.chunk,
                 maxchunks=args.max,
+                skipbadfiles=args.skipbadfiles,
+                xrootdtimeout=900,
             )
+            output = runner(sample_dict, processor_instance, treename="Events")
     elif "dask" in args.executor:
         from dask_jobqueue import SLURMCluster, HTCondorCluster
         from distributed import Client
@@ -1106,13 +1101,17 @@ if __name__ == "__main__":
                 job_script_prologue=job_script_prologue,
             )
         elif "slurm" in args.executor:
+            # NB: neither `retries` nor `disk` are valid here. dask_jobqueue
+            # forwards unknown kwargs to SLURMJob -> Job.__init__, which accepts
+            # neither (surfaced as a ValueError from _dummy_job during
+            # construction). Retries are a coffea-level concern and are set on
+            # DaskExecutor below; SLURM has no per-job disk request (unlike
+            # HTCondorCluster, which does take `disk`).
             cluster = SLURMCluster(
                 queue="all",
                 cores=args.workers,
                 processes=args.scaleout,
                 memory=f"{args.memory}GB",
-                disk=f"{args.disk}GB",
-                retries=args.retries,
                 walltime="00:30:00",
                 job_script_prologue=job_script_prologue,
             )
@@ -1149,20 +1148,15 @@ if __name__ == "__main__":
             client.wait_for_workers(1)
         with performance_report(filename="dask-report.html"):
             if args.executor != "dask/lxplus":
-                output = processor.run_uproot_job(
-                    sample_dict,
-                    treename="Events",
-                    processor_instance=processor_instance,
-                    executor=processor.dask_executor,
-                    executor_args={
-                        "client": client,
-                        "skipbadfiles": args.skipbadfiles,
-                        "schema": PFNanoAODSchema,
-                        "retries": args.retries,
-                    },
+                runner = Runner(
+                    executor=DaskExecutor(client=client, retries=args.retries),
+                    schema=PFNanoAODSchema,
                     chunksize=args.chunk,
                     maxchunks=args.max,
+                    skipbadfiles=args.skipbadfiles,
+                    xrootdtimeout=900,
                 )
+                output = runner(sample_dict, processor_instance, treename="Events")
 
             else:
                 findex = int(args.index.split(",")[1])
@@ -1186,30 +1180,27 @@ if __name__ == "__main__":
                             and sindex > int(args.index.split(",")[2])
                         ):
                             break
-                        output = processor.run_uproot_job(
-                            splitted,
-                            treename="Events",
-                            processor_instance=processor_instance,
-                            executor=processor.dask_executor,
-                            executor_args={
-                                "client": client,
-                                "skipbadfiles": args.skipbadfiles,
-                                "schema": PFNanoAODSchema,
-                                "retries": args.retries,
-                            },
+                        runner = Runner(
+                            executor=DaskExecutor(client=client, retries=args.retries),
+                            schema=PFNanoAODSchema,
                             chunksize=args.chunk,
                             maxchunks=args.max,
+                            skipbadfiles=args.skipbadfiles,
+                            xrootdtimeout=900,
                         )
+                        output = runner(splitted, processor_instance, treename="Events")
                         if args.noHist == False:
-                            save(
-                                output,
-                                coffeaoutput.replace(
-                                    ".coffea", f"_{sindex}_{findex}.coffea"
-                                ),
+                            splitoutput = coffeaoutput.replace(
+                                ".coffea", f"_{sindex}_{findex}.coffea"
+                            )
+                            save(output, splitoutput)
+                            print(
+                                f"Saving histograms to {os.path.abspath(splitoutput)}"
                             )
     if not "lxplus" in args.executor:
         if args.noHist == False:
             save(output, coffeaoutput)
-    if args.noHist == False:
-        # print(output)
-        print(f"Saving output to {coffeaoutput}")
+            # print(output)
+            print(f"Saving histograms to {os.path.abspath(coffeaoutput)}")
+    if args.isArray:
+        print(f"Arrays written under {os.path.abspath(outdir)}/")

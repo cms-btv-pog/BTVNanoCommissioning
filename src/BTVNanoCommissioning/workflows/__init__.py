@@ -56,6 +56,12 @@ from BTVNanoCommissioning.workflows.dijet import (
 from BTVNanoCommissioning.workflows.photonjet import (
     NanoProcessor as QGtagPhotonjetProcessor,
 )
+from BTVNanoCommissioning.workflows.photondijet import (
+    NanoProcessor as QGtagPhotondijetProcessor,
+)
+from BTVNanoCommissioning.workflows.trijet import (
+    NanoProcessor as QGtagTrijetProcessor,
+)
 
 ## Example
 from BTVNanoCommissioning.workflows.example import (
@@ -128,6 +134,29 @@ workflows["QG_dijet"] = partial(QGtagDijetProcessor, selectionModifier="DiPFJetA
 workflows["QG_zerobias"] = partial(QGtagDijetProcessor, selectionModifier="ZB")
 workflows["QG_pfjet"] = partial(QGtagDijetProcessor, selectionModifier="PFJet")
 workflows["QG_photonjet"] = QGtagPhotonjetProcessor
+# Quark-enriched photon+2jet, arXiv:1104.1175
+workflows["QG_photondijet"] = partial(QGtagPhotondijetProcessor, selectionModifier="")
+workflows["QG_photondijet_quark"] = partial(
+    QGtagPhotondijetProcessor, selectionModifier="quark"
+)
+workflows["QG_photondijet_softprobe"] = partial(
+    QGtagPhotondijetProcessor, selectionModifier="softprobe"
+)
+workflows["QG_photondijet_softprobe_quark"] = partial(
+    QGtagPhotondijetProcessor, selectionModifier="softprobe_quark"
+)
+
+# Gluon-enriched trijet, arXiv:1104.1175
+workflows["QG_trijet"] = partial(QGtagTrijetProcessor, selectionModifier="PFJet")
+workflows["QG_trijet_gluon"] = partial(
+    QGtagTrijetProcessor, selectionModifier="PFJet_gluon"
+)
+workflows["QG_trijet_dijetave"] = partial(
+    QGtagTrijetProcessor, selectionModifier="DiPFJetAve"
+)
+workflows["QG_trijet_dijetave_gluon"] = partial(
+    QGtagTrijetProcessor, selectionModifier="DiPFJetAve_gluon"
+)
 
 # DY light jet SF with negative tag method
 workflows["DY_sfl"] = partial(NegTagDYValidSFProcessor, selectionModifier="DYM")

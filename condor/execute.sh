@@ -48,11 +48,12 @@ if [ ! -d /afs/cern.ch/user/${USER:0:1}/$USER ]; then
     micromamba install -c conda-forge jq --yes
 fi
 
-# Create base env with python=3.10 and setuptools<=70.1.1
-micromamba activate 
-micromamba install python=3.10 -c conda-forge xrootd --yes
+# Create base env with Python 3.12 (the version validated against coffea 2026;
+# coffea 2026 requires >=3.10). setuptools is installed unpinned -- the old
+# setuptools<=70.1.1 cap was a coffea 0.7 constraint and is no longer needed.
+micromamba activate
+micromamba install python=3.12 -c conda-forge xrootd setuptools --yes
 micromamba activate base
-micromamba install setuptools=70.1.1
 
 # Install BTVNanoCommissioning
 mkdir BTVNanoCommissioning
@@ -98,10 +99,10 @@ OPTS="$OPTS --json sample.json"  # use the sample json for this JOBID
 # Check the number of CPUs requested and set the worker accordingly.
 # If nCPU > 1, use futures executor with nCPU workers. If nCPU = 1, use iterative executor with 1 worker.
 if [ $NCPU -gt 1 ]; then
-    OPTS="$OPTS --worker $NCPU"  # use number of worker = nCPU
+    OPTS="$OPTS --workers $NCPU"  # use number of worker = nCPU
     OPTS="$OPTS --executor futures"
 else
-    OPTS="$OPTS --worker 1"  # use number of worker = 1
+    OPTS="$OPTS --workers 1"  # use number of worker = 1
     OPTS="$OPTS --executor iterative"
 fi
 

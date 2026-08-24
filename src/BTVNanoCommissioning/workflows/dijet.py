@@ -3,7 +3,7 @@ import numpy as np
 import correctionlib
 import os
 from coffea import processor
-from coffea.analysis_tools import Weights
+from coffea.analysis_tools import Weights, PackedSelection
 
 # functions to load SFs, corrections
 from BTVNanoCommissioning.utils.correction import (
@@ -129,11 +129,9 @@ class NanoProcessor(processor.ProcessorABC):
             )
 
         # Sort the jets by pt (the corrections applied above can reorder them)
-        events.Jet = events.Jet[ak.argsort(events.Jet.pt, axis=1, ascending=False)]
+        events["Jet"] = events.Jet[ak.argsort(events.Jet.pt, axis=1, ascending=False)]
 
         req_metfilter = MET_filters(events, self._campaign)
-
-        event_level = req_lumi & req_metfilter
 
         ##### Add some selections
         ## Jet cuts
@@ -176,33 +174,42 @@ class NanoProcessor(processor.ProcessorABC):
         for trg_pass in trig_pass.values():
             req_trig = req_trig | trg_pass
 
-        req_leadjet = event_jet[:, 0].pt < ptmax
-        req_jet = ak.count(event_jet.pt, axis=1) > 1
-        req_dphi = abs(event_jet[:, 0].delta_phi(event_jet[:, 1])) > 2.7
-        req_subjet = ak.where(
-            ak.count(event_jet.pt, axis=1) > 2,
-            event_jet[:, 2].pt / (0.5 * (event_jet[:, 0] + event_jet[:, 1])).pt < 0.15,
-            ak.ones_like(req_jet, dtype=bool),
+        # Build selections with PackedSelection for cleaner tracking and cutflow
+        selections = PackedSelection()
+        selections.add("lumi", req_lumi)
+        selections.add("metfilter", req_metfilter)
+        selections.add("jets", ak.count(event_jet.pt, axis=1) > 1)
+        selections.add("dphi", abs(event_jet[:, 0].delta_phi(event_jet[:, 1])) > 2.7)
+        selections.add(
+            "subjet",
+            ak.where(
+                ak.count(event_jet.pt, axis=1) > 2,
+                event_jet[:, 2].pt / (0.5 * (event_jet[:, 0] + event_jet[:, 1])).pt
+                < 0.15,
+                ak.ones_like(req_trig, dtype=bool),
+            ),
         )
-        req_bal = np.abs(1.0 - event_jet[:, 1].pt / event_jet[:, 0].pt) < 0.3
-
-        event_level = (
-            event_level
-            & req_jet
-            & req_dphi
-            & req_subjet
-            & req_trig
-            & req_bal
-            & req_leadjet
+        selections.add("trigger", req_trig)
+        selections.add(
+            "balance", np.abs(1.0 - event_jet[:, 1].pt / event_jet[:, 0].pt) < 0.3
         )
-
-        ## MC only: require gen vertex to be close to reco vertex
+        selections.add("leadjet", event_jet[:, 0].pt < ptmax)
         if "GenVtx_z" in events.fields:
-            req_vtx = np.abs(events.GenVtx_z - events.PV_z) < 0.2
+            selections.add("vtx", np.abs(events.GenVtx_z - events.PV_z) < 0.2)
         else:
-            req_vtx = ak.ones_like(events.run, dtype=bool)
+            selections.add("vtx", ak.ones_like(events.run, dtype=bool))
 
-        event_level = event_level & req_vtx
+        event_level = selections.all(
+            "lumi",
+            "metfilter",
+            "jets",
+            "dphi",
+            "subjet",
+            "trigger",
+            "balance",
+            "leadjet",
+            "vtx",
+        )
 
         ##<==== finish selection
 
@@ -276,31 +283,31 @@ class NanoProcessor(processor.ProcessorABC):
         # Built from the *selected* jets, so the stored objects are the ones the
         # cuts above were evaluated on.
         pruned_sel_jet = event_jet[event_level]
-        pruned_ev["CenJet"] = ak.where(
-            np.abs(pruned_sel_jet[:, 0].eta) < np.abs(pruned_sel_jet[:, 1].eta),
-            pruned_sel_jet[:, 0],
-            pruned_sel_jet[:, 1],
-        )
-        pruned_ev["FwdJet"] = ak.where(
-            np.abs(pruned_sel_jet[:, 0].eta) > np.abs(pruned_sel_jet[:, 1].eta),
-            pruned_sel_jet[:, 0],
-            pruned_sel_jet[:, 1],
-        )
-        pruned_ev["RndJet"] = ak.where(
-            np.random.randint(0, 2, size=len(pruned_ev)) == 0,
-            pruned_sel_jet[:, 0],
-            pruned_sel_jet[:, 1],
-        )
-        pruned_ev["LeadJet"] = ak.where(
-            pruned_sel_jet[:, 0].pt > pruned_sel_jet[:, 1].pt,
-            pruned_sel_jet[:, 0],
-            pruned_sel_jet[:, 1],
-        )
-        pruned_ev["SubleadJet"] = ak.where(
-            pruned_sel_jet[:, 0].pt < pruned_sel_jet[:, 1].pt,
-            pruned_sel_jet[:, 0],
-            pruned_sel_jet[:, 1],
-        )
+        # pruned_ev["CenJet"] = ak.where(
+        # np.abs(pruned_sel_jet[:, 0].eta) < np.abs(pruned_sel_jet[:, 1].eta),
+        # pruned_sel_jet[:, 0],
+        # pruned_sel_jet[:, 1],
+        # )
+        # pruned_ev["FwdJet"] = ak.where(
+        # np.abs(pruned_sel_jet[:, 0].eta) > np.abs(pruned_sel_jet[:, 1].eta),
+        # pruned_sel_jet[:, 0],
+        # pruned_sel_jet[:, 1],
+        # )
+        # pruned_ev["RndJet"] = ak.where(
+        # np.random.randint(0, 2, size=len(pruned_ev)) == 0,
+        # pruned_sel_jet[:, 0],
+        # pruned_sel_jet[:, 1],
+        # )
+        # pruned_ev["LeadJet"] = ak.where(
+        # pruned_sel_jet[:, 0].pt > pruned_sel_jet[:, 1].pt,
+        # pruned_sel_jet[:, 0],
+        # pruned_sel_jet[:, 1],
+        # )
+        # pruned_ev["SubleadJet"] = ak.where(
+        # pruned_sel_jet[:, 0].pt < pruned_sel_jet[:, 1].pt,
+        # pruned_sel_jet[:, 0],
+        # pruned_sel_jet[:, 1],
+        # )
         pruned_ev["SelJet"] = pruned_sel_jet[:, :2]
         pruned_ev["njet"] = ak.count(pruned_sel_jet.pt, axis=1)
 

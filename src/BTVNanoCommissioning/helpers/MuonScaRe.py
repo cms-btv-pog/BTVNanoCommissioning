@@ -175,7 +175,9 @@ def get_rndm(eta, phi, nL, evtNr, lumiNr, cset, nested=False):
 
     # get random number following the CB
     def get_rndm_f(seed):
-        random.seed(seed)
+        # Python >=3.11 removed the hash() fallback in random.seed(), so numpy
+        # integer seeds (np.uint32 from SeedSequence) must be cast to int.
+        random.seed(int(seed))
         ret_rndm_f = random.random()
         if ret_rndm_f == 0.0:
             ret_rndm_f += np.nextafter(0.0)
@@ -235,9 +237,15 @@ def get_k(eta, var, cset, nested=False):
 
     # calculate residual smearing factor
     # return 0 if smearing in MC already larger than in data
-    k_f = np.zeros_like(k_data_f)
+    # awkward>=2 forbids masked in-place assignment ("only fields may be assigned
+    # in-place"), so select with np.where instead. The np.maximum guard keeps the
+    # unselected branch from producing NaN before np.where discards it.
     condition = k_mc_f < k_data_f
-    k_f[condition] = (k_data_f[condition] ** 2 - k_mc_f[condition] ** 2) ** 0.5
+    k_f = np.where(
+        condition,
+        np.sqrt(np.maximum(k_data_f**2 - k_mc_f**2, 0.0)),
+        0.0,
+    )
 
     if nested:
         result = ak.unflatten(k_f, nmuons)
