@@ -18,9 +18,9 @@ micromamba activate
 NOTE: always make sure that conda, python, and pip point to local micromamba installation (`which conda` etc.).
 
 
-You can simply create the environment through the existing `test_env.yml` under your micromamba environment using micromamba, and activate it
+You can simply create the environment through the existing `btv_env.yml` under your micromamba environment using micromamba, and activate it
 ```
-micromamba env create -f test_env.yml
+micromamba env create -f btv_env.yml
 
 ```
 ### Setup the framework
