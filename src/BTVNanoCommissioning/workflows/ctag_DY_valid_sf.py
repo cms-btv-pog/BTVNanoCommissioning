@@ -1,5 +1,4 @@
-import awkward as ak
-import numpy as np
+import awkward as ak, numpy as np
 from coffea import processor
 
 from BTVNanoCommissioning.utils.correction import (
@@ -20,6 +19,8 @@ from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
     jet_id,
+    mu_promptmvaid,
+    ele_promptmvaid,
     mu_idiso,
     ele_mvatightid,
     MET_filters,
@@ -48,14 +49,14 @@ class NanoProcessor(processor.ProcessorABC):
         self.chunksize = chunksize
         self.selMod = selectionModifier
         # Load corrections
-        self.SF_map = load_SF(self._year, self._campaign)
+        self.SF_map = load_SF(self._year, self._campaign, self.selMod)
 
     @property
     def accumulator(self):
         return self._accumulator
 
     def process(self, events):
-        events = missing_branch(events)
+        events = missing_branch(events, f"{self._year}_{self._campaign}")
         sumws = reweighting(events, self.isSyst)
         vetoed_events, shifts = common_shifts(self, events)
 
@@ -79,14 +80,16 @@ class NanoProcessor(processor.ProcessorABC):
         else:
             raise ValueError(self.selMod, "is not a valid selection modifier.")
 
-        histname = {"DYM": "ctag_DY_sf", "DYE": "ectag_DY_sf"}
+        hists = ["common", "fourvec", "DY"]
+        if "2D" in self.selMod:
+            hists.append("DY_2D")
         output = {}
         if not self.noHist:
             if "QG" not in self.selMod:
                 output = histogrammer(
                     jet_fields=events.Jet.fields,
                     obj_list=["posl", "negl", "dilep", "jet0"],
-                    hist_collections=["common", "fourvec", "DY"],
+                    hist_collections=hists,
                     include_m=isMu,
                 )
             else:
@@ -137,24 +140,43 @@ class NanoProcessor(processor.ProcessorABC):
         req_metfilter = MET_filters(events, self._campaign)
 
         # Muon cuts
-        dilep_mu = events.Muon[
-            ak.any(events.Muon.pt > 20, axis=1)
-            & (events.Muon.pt > 12)
-            & mu_idiso(events, self._campaign)
-        ]
+        if "2D" in self.selMod and self._campaign in [
+            "Summer24",
+            "Winter25",
+            "Prompt25",
+        ]:  # NanoAODv15
+            dilep_mu = events.Muon[
+                (events.Muon.pt > 12) & mu_promptmvaid(events, self._campaign)
+            ]
+        else:
+            dilep_mu = events.Muon[
+                (events.Muon.pt > 12) & mu_idiso(events, self._campaign)
+            ]
 
         # Electron cuts
-        dilep_ele = events.Electron[
-            ak.any(events.Electron.pt > 26, axis=1)
-            & (events.Electron.pt > 15)
-            & ele_mvatightid(events, self._campaign)
-        ]
+        if "2D" in self.selMod and self._campaign in [
+            "Summer24",
+            "Winter25",
+            "Prompt25",
+        ]:  # NanoAODv15
+            dilep_ele = events.Electron[
+                (events.Electron.pt > 15) & ele_promptmvaid(events, self._campaign)
+            ]
+        else:
+            dilep_ele = events.Electron[
+                (events.Electron.pt > 15) & ele_mvatightid(events, self._campaign)
+            ]
+
         if isMu:
             thisdilep = dilep_mu
             otherdilep = dilep_ele
+            if "2D" in self.selMod:
+                req_leppt = ak.max(dilep_mu.pt, axis=1, mask_identity=False) > 20
         else:
             thisdilep = dilep_ele
             otherdilep = dilep_mu
+            if "2D" in self.selMod:
+                req_leppt = ak.max(dilep_ele.pt, axis=1, mask_identity=False) > 25
 
         # dilepton
         pos_dilep = thisdilep[thisdilep.charge > 0]
@@ -168,6 +190,8 @@ class NanoProcessor(processor.ProcessorABC):
             False,
             axis=-1,
         )
+        if "2D" in self.selMod:
+            req_dilep = req_dilep & req_leppt
 
         pos_dilep = ak.pad_none(pos_dilep, 1, axis=1)
         neg_dilep = ak.pad_none(neg_dilep, 1, axis=1)

@@ -59,6 +59,8 @@ if len(toresubmit) == 0:
     print("[green][b]All jobs complete. Nothing to resubmit![/][/]\n")
     print("[b]To hadd, run:[/]")
     print(f"[yellow]python condor_lxplus/haddoutputs.py {outdir}[/]")
+    emptylist = open(f"{jobdir}/jobnum_list_resubmit.txt", "w")
+    emptylist.close()
     exit()
 
 if updatexrootd:

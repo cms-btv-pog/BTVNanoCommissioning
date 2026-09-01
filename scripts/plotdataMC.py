@@ -218,7 +218,7 @@ def main(args):
 
     if "emctag" in args.phase:
         input_txt += r" (e$\mu$)"
-    elif "ectag" in args.phase:
+    elif "ectag" in args.phase or "2D_e_" in args.phase:
         input_txt += " (e)"
     elif args.phase == "ttdilep_sf":
         input_txt += r" (e$\mu$)"
@@ -260,6 +260,13 @@ def main(args):
         ).all():
             print(discr, "is empty, skipping")
             continue
+
+        ## additional legend info
+        if "2Dbin_pt" in discr or "HFvLF_pt" in discr or "BvC_pt" in discr:
+            tmp = discr.strip().split("_")[1][2:]
+            tmp = tmp.split("to")
+            low_edge = tmp[0]
+            up_edge = tmp[1]
 
         ## axis info
         allaxis = {}
@@ -687,6 +694,23 @@ def main(args):
 
         rax.set_xlabel(xlabel)
 
+        if "2D" in discr:
+            xtickpos = [0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5]
+            xticklabels = [
+                "L0",
+                "C0",
+                "C1",
+                "C2",
+                "C3",
+                "C4",
+                "B0",
+                "B1",
+                "B2",
+                "B3",
+                "B4",
+            ]
+            rax.set_xticks(xtickpos, xticklabels)
+
         if "sample" in args.split:
             ax.legend(ncols=2, prop={"size": 16})
         else:
@@ -711,6 +735,10 @@ def main(args):
             )
 
         rax.set_xlim(xmin, xmax)
+
+        if "2Dbin_pt" in discr or "HFvLF_pt" in discr or "BvC_pt" in discr:
+            input_txt += "\n" + low_edge + " < jet $p_T$ < " + up_edge + " GeV"
+
         at = AnchoredText(input_txt + "\n" + args.ext, loc=2, frameon=False)
         ax.add_artist(at)
 

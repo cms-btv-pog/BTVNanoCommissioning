@@ -307,13 +307,81 @@ def btag_wp(jets, year, campaign, tagger, borc, wp):
     WP = wp_dict(year, campaign)
     if borc == "b":
         jet_mask = jets[f"btag{tagger}B"] > WP[tagger]["b"][wp]
-    else:
+    elif borc == "c":
         jet_mask = (jets[f"btag{tagger}CvB"] > WP[tagger]["c"][wp][1]) & (
             jets[f"btag{tagger}CvL"] > WP[tagger]["c"][wp][0]
         )
+    elif borc == "2Db":
+        jet_mask = jets[f"btag{tagger}2Dbin"] >= WP[tagger]["2D"]["b"][wp]
+    elif borc == "2Dc":
+        jet_mask = (jets[f"btag{tagger}2Dbin"] >= WP[tagger]["2D"]["c"][wp][0]) & (
+            jets[f"btag{tagger}2Dbin"] <= WP[tagger]["2D"]["c"][wp][1]
+        )
+    else:
+        raise ValueError("Invalid flavour!")
     return jet_mask
 
 
+_mapping = {
+    1: {
+        1: 0,
+        2: 0,
+        3: 0,
+        4: 0,
+        5: 0,
+        6: 0,
+        7: 0,
+        8: 0,
+    },
+    2: {
+        1: 40,
+        2: 40,
+        3: 40,
+        4: 40,
+        5: 40,
+        6: 40,
+        7: 40,
+        8: 40,
+    },
+    3: {
+        1: 41,
+        2: 41,
+        3: 41,
+        4: 41,
+        5: 41,
+        6: 41,
+        7: 41,
+        8: 41,
+    },
+    4: {
+        1: 44,
+        2: 43,
+        3: 42,
+        4: 50,
+        5: 51,
+        6: 52,
+        7: 53,
+        8: 54,
+    },
+}
+_b2D = {
+    "L": 50,
+    "M": 51,
+    "T": 52,
+}
+_c2D = {
+    "L": [40, 44],
+    "M": [41, 44],
+    "T": [42, 44],
+}
+_jet_pt_bins = [
+    (25, 35),
+    (35, 50),
+    (50, 70),
+    (70, 90),
+    (90, 120),
+    (120, 10000),
+]
 btag_wp_dict = {
     "2016preVFP_2016preVFP-UL": {
         "UParTAK4": {
@@ -439,6 +507,16 @@ btag_wp_dict = {
                 "M": [0.160, 0.306],
                 "T": [0.492, 0.259],
             },
+            "2D": {
+                "HFvLF": np.array([0.0, 0.160, 0.332, 0.706, 1.00001]),
+                "BvC": np.array(
+                    [0.0, 0.036, 0.090, 0.260, 0.799, 0.932, 0.978, 0.993, 1.00001]
+                ),
+                "mapping": _mapping,
+                "b": _b2D,
+                "c": _c2D,
+                "jet_pt_bins": _jet_pt_bins,
+            },
         },
     },
     "2022_Summer22EE": {
@@ -488,6 +566,16 @@ btag_wp_dict = {
                 "L": [0.054, 0.182],
                 "M": [0.160, 0.304],
                 "T": [0.491, 0.258],
+            },
+            "2D": {
+                "HFvLF": np.array([0.0, 0.160, 0.332, 0.706, 1.00001]),
+                "BvC": np.array(
+                    [0.0, 0.036, 0.090, 0.260, 0.799, 0.932, 0.978, 0.993, 1.00001]
+                ),
+                "mapping": _mapping,
+                "b": _b2D,
+                "c": _c2D,
+                "jet_pt_bins": _jet_pt_bins,
             },
         },
     },
@@ -542,6 +630,16 @@ btag_wp_dict = {
                 "T": [0.434, 0.300],
                 "XT": [0.634, 0.549],
             },
+            "2D": {
+                "HFvLF": np.array([0.0, 0.144, 0.292, 0.646, 1.00001]),
+                "BvC": np.array(
+                    [0.0, 0.036, 0.078, 0.240, 0.752, 0.915, 0.972, 0.992, 1.00001]
+                ),
+                "mapping": _mapping,
+                "b": _b2D,
+                "c": _c2D,
+                "jet_pt_bins": _jet_pt_bins,
+            },
         },
     },
     "2023_Summer23BPix": {
@@ -595,6 +693,16 @@ btag_wp_dict = {
                 "T": [0.436, 0.303],
                 "XT": [0.634, 0.5552],
             },
+            "2D": {
+                "HFvLF": np.array([0.0, 0.144, 0.288, 0.640, 1.00001]),
+                "BvC": np.array(
+                    [0.0, 0.036, 0.082, 0.243, 0.742, 0.909, 0.969, 0.992, 1.00001]
+                ),
+                "mapping": _mapping,
+                "b": _b2D,
+                "c": _c2D,
+                "jet_pt_bins": _jet_pt_bins,
+            },
         },
     },
     "2024_Summer24": {
@@ -614,6 +722,16 @@ btag_wp_dict = {
                 "T": [0.650, 0.421],
                 "XT": [0.810, 0.736],
             },
+            "2D": {
+                "HFvLF": np.array([0.000, 0.250, 0.452, 0.808, 1.000]),
+                "BvC": np.array(
+                    [0.000, 0.006, 0.017, 0.055, 0.761, 0.944, 0.985, 0.995, 1.000]
+                ),
+                "mapping": _mapping,
+                "b": _b2D,
+                "c": _c2D,
+                "jet_pt_bins": _jet_pt_bins,
+            },
         },
     },
     "2025_Prompt25": {
@@ -632,6 +750,16 @@ btag_wp_dict = {
                 "M": [0.291, 0.457],
                 "T": [0.650, 0.421],
                 "XT": [0.810, 0.736],
+            },
+            "2D": {
+                "HFvLF": np.array([0.000, 0.250, 0.452, 0.808, 1.000]),
+                "BvC": np.array(
+                    [0.000, 0.006, 0.017, 0.055, 0.761, 0.944, 0.985, 0.995, 1.000]
+                ),
+                "mapping": _mapping,
+                "b": _b2D,
+                "c": _c2D,
+                "jet_pt_bins": _jet_pt_bins,
             },
         },
     },

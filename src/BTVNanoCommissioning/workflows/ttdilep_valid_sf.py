@@ -23,10 +23,12 @@ from BTVNanoCommissioning.utils.array_writer import array_writer
 from BTVNanoCommissioning.utils.selection import (
     HLT_helper,
     jet_id,
-    mu_promptmvaid,
     ele_promptmvaid,
-    mu_idiso,
+    ele_mvatightid,
     ele_cuttightid,
+    mu_promptmvaid,
+    mu_idiso,
+    MET_filters,
 )
 
 
@@ -60,7 +62,7 @@ class NanoProcessor(processor.ProcessorABC):
 
     ## Apply corrections on momentum/mass on MET, Jet, Muon
     def process(self, events):
-        events = missing_branch(events)
+        events = missing_branch(events, f"{self._year}_{self._campaign}")
         sumws = reweighting(events, self.isSyst)
         vetoed_events, shifts = common_shifts(self, events)
 
@@ -74,12 +76,16 @@ class NanoProcessor(processor.ProcessorABC):
         isRealData = not hasattr(events, "genWeight")
 
         ## Create histograms
+        objs = ["mu", "ele", "jet0", "jet1"]
+        if self.selMod == "ttdilep_sf_2D":
+            objs.append("MET")
         output = {}
         if not self.noHist:
             output = histogrammer(
                 events.Jet.fields,
-                obj_list=["mu", "ele", "jet0", "jet1"],
+                obj_list=objs,
                 hist_collections=["common", "fourvec", "ttdilep"],
+                njet=2,
             )
 
         if shift_name is None:
@@ -144,16 +150,20 @@ class NanoProcessor(processor.ProcessorABC):
                 (events.Electron.pt > 25) & ele_promptmvaid(events, self._campaign)
             ]
         else:
-            events.Electron = events.Electron[
-                (events.Electron.pt > 25) & ele_cuttightid(events, self._campaign)
-            ]
-
+            if self.selMod == "ttdilep_sf_2D":
+                events.Electron = events.Electron[
+                    (events.Electron.pt > 25) & ele_mvatightid(events, self._campaign)
+                ]
+            else:
+                events.Electron = events.Electron[
+                    (events.Electron.pt > 25) & ele_cuttightid(events, self._campaign)
+                ]
         events.Electron = ak.pad_none(events.Electron, 1, axis=1)
         req_ele = ak.count(events.Electron.pt, axis=1) == 1
 
         ## Jet cuts
         jetsel = ak.fill_none(
-            jet_id(events, self._campaign)
+            jet_id(events, self._campaign, min_pt=25)
             & (
                 ak.all(
                     events.Jet.metric_table(events.Muon) > 0.4,
@@ -185,8 +195,27 @@ class NanoProcessor(processor.ProcessorABC):
         jetindx = ak.pad_none(jetindx, 2)
         jetindx = jetindx[:, :2]
 
+        ## MET
+        if self.selMod == "ttdilep_sf_2D":
+            event_MET = ak.zip(
+                {
+                    "pt": events.PuppiMET.pt,
+                    "eta": ak.zeros_like(events.PuppiMET.pt),
+                    "phi": events.PuppiMET.phi,
+                    "mass": ak.zeros_like(events.PuppiMET.pt),
+                },
+                with_name="PtEtaPhiMLorentzVector",
+            )
+        req_metfilter = MET_filters(events, self._campaign)
+
         event_level = (
-            req_trig & req_lumi & req_muon & req_ele & req_jets & req_opposite_charge
+            req_trig
+            & req_lumi
+            & req_muon
+            & req_ele
+            & req_jets
+            & req_opposite_charge
+            & req_metfilter
         )
         event_level = ak.fill_none(event_level, False)
         if len(events[event_level]) == 0:
@@ -219,6 +248,9 @@ class NanoProcessor(processor.ProcessorABC):
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
             pruned_ev.PFCands = PFCand_link(events, event_level, jetindx)
+
+        if self.selMod == "ttdilep_sf_2D":
+            pruned_ev["MET"] = event_MET[event_level]
 
         ####################
         #     Output       #

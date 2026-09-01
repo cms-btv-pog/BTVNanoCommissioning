@@ -2138,7 +2138,301 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
     ValueError: If the SFtype is not recognized or supported.
     """
     jet = event.SelJet
-    if SFtype.endswith("C"):
+    if SFtype.endswith("BC"):
+        systlist = [
+            "PUWeight",
+            "JESRegrouped_Absolute",
+            "JESRegrouped_Absolute_2024",
+            "JESRegrouped_BBEC1",
+            "JESRegrouped_BBEC1_2024",
+            "JESRegrouped_EC2",
+            "JESRegrouped_EC2_2024",
+            "JESRegrouped_FlavorQCD",
+            "JESRegrouped_HF",
+            "JESRegrouped_HF_2024",
+            "JESRegrouped_RelativeBal",
+            "JESRegrouped_RelativeSample_2024",
+            # "JESTotal",
+            "JEReta0to1p93",
+            "JEReta1p93to2p5",
+            # "JERTotal",
+            "MET_UnclEnergy",
+            "Ele_Reco",
+            "Ele_ID",
+            "Ele_Trigger",
+            "Ele_Scale",
+            "Ele_Smear",
+            "Mu_ID",
+            "Mu_Iso",
+            "Mu_Trigger",
+            "Mu_Scale",
+            "Mu_Resol",
+            "TTWeight_ttbar",
+            "HDamp_ttbar",
+            "LHEScaleWeight_PDF_ttbar",
+            "LHEScaleWeight_PDF_singlet",
+            "LHEScaleWeight_PDF_wjets",
+            "LHEScaleWeight_PDF_zjets",
+            "LHEScaleWeight_PDF_diboson",
+            "LHEScaleWeight_aS_ttbar",
+            "LHEScaleWeight_aS_singlet",
+            "LHEScaleWeight_aS_wjets",
+            "LHEScaleWeight_aS_zjets",
+            "LHEScaleWeight_aS_diboson",
+            "LHEScaleWeight_muF_ttbar",
+            "LHEScaleWeight_muF_singlet",
+            "LHEScaleWeight_muF_wjets",
+            "LHEScaleWeight_muF_zjets",
+            "LHEScaleWeight_muF_diboson",
+            "LHEScaleWeight_muR_ttbar",
+            "LHEScaleWeight_muR_singlet",
+            "LHEScaleWeight_muR_wjets",
+            "LHEScaleWeight_muR_zjets",
+            "LHEScaleWeight_muR_diboson",
+            "PSWeightFSR_ttbar",
+            "PSWeightFSR_singlet",
+            "PSWeightFSR_wjets",
+            "PSWeightFSR_zjets",
+            "PSWeightFSR_diboson",
+            "PSWeightISR_ttbar",
+            "PSWeightISR_singlet",
+            "PSWeightISR_wjets",
+            "PSWeightISR_zjets",
+            "PSWeightISR_diboson",
+            "BDecay_ttbar",
+            # "BFragBL_ttbar",
+            # "BFragPeterson_ttbar",
+            "CDecay_ttbar",
+            # "CFragBL_ttbar",
+            # "CFragPeterson_ttbar",
+            "XSec_ZJets_c",
+            "XSec_ZJets_b",
+            "XSec_WJets_c",
+            "XSec_WJets_b",
+            "XSec_ZJets",
+            "XSec_WJets",
+            "XSec_ttbar",
+            "XSec_singlet_tW",
+            "XSec_singlet_tCh",
+            "XSec_VV",
+            "Lumi_13p6TeV_2024",
+            # "Stat_flavB_B0_eta_0p00toinf_pt_25to35",
+            # "Stat_flavB_B0_eta_0p00toinf_pt_35to50",
+            # "Stat_flavB_B0_eta_0p00toinf_pt_50to70",
+            # "Stat_flavB_B0_eta_0p00toinf_pt_70to90",
+            # "Stat_flavB_B0_eta_0p00toinf_pt_90to120",
+            # "Stat_flavB_B0_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavB_B1_eta_0p00toinf_pt_25to35",
+            # "Stat_flavB_B1_eta_0p00toinf_pt_35to50",
+            # "Stat_flavB_B1_eta_0p00toinf_pt_50to70",
+            # "Stat_flavB_B1_eta_0p00toinf_pt_70to90",
+            # "Stat_flavB_B1_eta_0p00toinf_pt_90to120",
+            # "Stat_flavB_B1_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavB_B2_eta_0p00toinf_pt_25to35",
+            # "Stat_flavB_B2_eta_0p00toinf_pt_35to50",
+            # "Stat_flavB_B2_eta_0p00toinf_pt_50to70",
+            # "Stat_flavB_B2_eta_0p00toinf_pt_70to90",
+            # "Stat_flavB_B2_eta_0p00toinf_pt_90to120",
+            # "Stat_flavB_B2_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavB_B3_eta_0p00toinf_pt_25to35",
+            # "Stat_flavB_B3_eta_0p00toinf_pt_35to50",
+            # "Stat_flavB_B3_eta_0p00toinf_pt_50to70",
+            # "Stat_flavB_B3_eta_0p00toinf_pt_70to90",
+            # "Stat_flavB_B3_eta_0p00toinf_pt_90to120",
+            # "Stat_flavB_B3_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavB_B4_eta_0p00toinf_pt_25to35",
+            # "Stat_flavB_B4_eta_0p00toinf_pt_35to50",
+            # "Stat_flavB_B4_eta_0p00toinf_pt_50to70",
+            # "Stat_flavB_B4_eta_0p00toinf_pt_70to90",
+            # "Stat_flavB_B4_eta_0p00toinf_pt_90to120",
+            # "Stat_flavB_B4_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavB_C0_eta_0p00toinf_pt_25to35",
+            # "Stat_flavB_C0_eta_0p00toinf_pt_35to50",
+            # "Stat_flavB_C0_eta_0p00toinf_pt_50to70",
+            # "Stat_flavB_C0_eta_0p00toinf_pt_70to90",
+            # "Stat_flavB_C0_eta_0p00toinf_pt_90to120",
+            # "Stat_flavB_C0_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavB_C1_eta_0p00toinf_pt_25to35",
+            # "Stat_flavB_C1_eta_0p00toinf_pt_35to50",
+            # "Stat_flavB_C1_eta_0p00toinf_pt_50to70",
+            # "Stat_flavB_C1_eta_0p00toinf_pt_70to90",
+            # "Stat_flavB_C1_eta_0p00toinf_pt_90to120",
+            # "Stat_flavB_C1_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavB_C2_eta_0p00toinf_pt_25to35",
+            # "Stat_flavB_C2_eta_0p00toinf_pt_35to50",
+            # "Stat_flavB_C2_eta_0p00toinf_pt_50to70",
+            # "Stat_flavB_C2_eta_0p00toinf_pt_70to90",
+            # "Stat_flavB_C2_eta_0p00toinf_pt_90to120",
+            # "Stat_flavB_C2_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavB_C3_eta_0p00toinf_pt_25to35",
+            # "Stat_flavB_C3_eta_0p00toinf_pt_35to50",
+            # "Stat_flavB_C3_eta_0p00toinf_pt_50to70",
+            # "Stat_flavB_C3_eta_0p00toinf_pt_70to90",
+            # "Stat_flavB_C3_eta_0p00toinf_pt_90to120",
+            # "Stat_flavB_C3_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavB_C4_eta_0p00toinf_pt_25to35",
+            # "Stat_flavB_C4_eta_0p00toinf_pt_35to50",
+            # "Stat_flavB_C4_eta_0p00toinf_pt_50to70",
+            # "Stat_flavB_C4_eta_0p00toinf_pt_70to90",
+            # "Stat_flavB_C4_eta_0p00toinf_pt_90to120",
+            # "Stat_flavB_C4_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavC_B0_eta_0p00toinf_pt_25to35",
+            # "Stat_flavC_B0_eta_0p00toinf_pt_35to50",
+            # "Stat_flavC_B0_eta_0p00toinf_pt_50to70",
+            # "Stat_flavC_B0_eta_0p00toinf_pt_70to90",
+            # "Stat_flavC_B0_eta_0p00toinf_pt_90to120",
+            # "Stat_flavC_B0_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavC_B1_eta_0p00toinf_pt_25to35",
+            # "Stat_flavC_B1_eta_0p00toinf_pt_35to50",
+            # "Stat_flavC_B1_eta_0p00toinf_pt_50to70",
+            # "Stat_flavC_B1_eta_0p00toinf_pt_70to90",
+            # "Stat_flavC_B1_eta_0p00toinf_pt_90to120",
+            # "Stat_flavC_B1_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavC_B2_eta_0p00toinf_pt_25to35",
+            # "Stat_flavC_B2_eta_0p00toinf_pt_35to50",
+            # "Stat_flavC_B2_eta_0p00toinf_pt_50to70",
+            # "Stat_flavC_B2_eta_0p00toinf_pt_70to90",
+            # "Stat_flavC_B2_eta_0p00toinf_pt_90to120",
+            # "Stat_flavC_B2_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavC_B3_eta_0p00toinf_pt_25to35",
+            # "Stat_flavC_B3_eta_0p00toinf_pt_35to50",
+            # "Stat_flavC_B3_eta_0p00toinf_pt_50to70",
+            # "Stat_flavC_B3_eta_0p00toinf_pt_70to90",
+            # "Stat_flavC_B3_eta_0p00toinf_pt_90to120",
+            # "Stat_flavC_B3_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavC_B4_eta_0p00toinf_pt_25to35",
+            # "Stat_flavC_B4_eta_0p00toinf_pt_35to50",
+            # "Stat_flavC_B4_eta_0p00toinf_pt_50to70",
+            # "Stat_flavC_B4_eta_0p00toinf_pt_70to90",
+            # "Stat_flavC_B4_eta_0p00toinf_pt_90to120",
+            # "Stat_flavC_B4_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavC_C0_eta_0p00toinf_pt_25to35",
+            # "Stat_flavC_C0_eta_0p00toinf_pt_35to50",
+            # "Stat_flavC_C0_eta_0p00toinf_pt_50to70",
+            # "Stat_flavC_C0_eta_0p00toinf_pt_70to90",
+            # "Stat_flavC_C0_eta_0p00toinf_pt_90to120",
+            # "Stat_flavC_C0_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavC_C1_eta_0p00toinf_pt_25to35",
+            # "Stat_flavC_C1_eta_0p00toinf_pt_35to50",
+            # "Stat_flavC_C1_eta_0p00toinf_pt_50to70",
+            # "Stat_flavC_C1_eta_0p00toinf_pt_70to90",
+            # "Stat_flavC_C1_eta_0p00toinf_pt_90to120",
+            # "Stat_flavC_C1_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavC_C2_eta_0p00toinf_pt_25to35",
+            # "Stat_flavC_C2_eta_0p00toinf_pt_35to50",
+            # "Stat_flavC_C2_eta_0p00toinf_pt_50to70",
+            # "Stat_flavC_C2_eta_0p00toinf_pt_70to90",
+            # "Stat_flavC_C2_eta_0p00toinf_pt_90to120",
+            # "Stat_flavC_C2_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavC_C3_eta_0p00toinf_pt_25to35",
+            # "Stat_flavC_C3_eta_0p00toinf_pt_35to50",
+            # "Stat_flavC_C3_eta_0p00toinf_pt_50to70",
+            # "Stat_flavC_C3_eta_0p00toinf_pt_70to90",
+            # "Stat_flavC_C3_eta_0p00toinf_pt_90to120",
+            # "Stat_flavC_C3_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavC_C4_eta_0p00toinf_pt_25to35",
+            # "Stat_flavC_C4_eta_0p00toinf_pt_35to50",
+            # "Stat_flavC_C4_eta_0p00toinf_pt_50to70",
+            # "Stat_flavC_C4_eta_0p00toinf_pt_70to90",
+            # "Stat_flavC_C4_eta_0p00toinf_pt_90to120",
+            # "Stat_flavC_C4_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavL_B0_eta_0p00toinf_pt_25to35",
+            # "Stat_flavL_B0_eta_0p00toinf_pt_35to50",
+            # "Stat_flavL_B0_eta_0p00toinf_pt_50to70",
+            # "Stat_flavL_B0_eta_0p00toinf_pt_70to90",
+            # "Stat_flavL_B0_eta_0p00toinf_pt_90to120",
+            # "Stat_flavL_B0_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavL_B1_eta_0p00toinf_pt_25to35",
+            # "Stat_flavL_B1_eta_0p00toinf_pt_35to50",
+            # "Stat_flavL_B1_eta_0p00toinf_pt_50to70",
+            # "Stat_flavL_B1_eta_0p00toinf_pt_70to90",
+            # "Stat_flavL_B1_eta_0p00toinf_pt_90to120",
+            # "Stat_flavL_B1_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavL_B2_eta_0p00toinf_pt_25to35",
+            # "Stat_flavL_B2_eta_0p00toinf_pt_35to50",
+            # "Stat_flavL_B2_eta_0p00toinf_pt_50to70",
+            # "Stat_flavL_B2_eta_0p00toinf_pt_70to90",
+            # "Stat_flavL_B2_eta_0p00toinf_pt_90to120",
+            # "Stat_flavL_B2_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavL_B3_eta_0p00toinf_pt_25to35",
+            # "Stat_flavL_B3_eta_0p00toinf_pt_35to50",
+            # "Stat_flavL_B3_eta_0p00toinf_pt_50to70",
+            # "Stat_flavL_B3_eta_0p00toinf_pt_70to90",
+            # "Stat_flavL_B3_eta_0p00toinf_pt_90to120",
+            # "Stat_flavL_B3_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavL_B4_eta_0p00toinf_pt_25to35",
+            # "Stat_flavL_B4_eta_0p00toinf_pt_35to50",
+            # "Stat_flavL_B4_eta_0p00toinf_pt_50to70",
+            # "Stat_flavL_B4_eta_0p00toinf_pt_70to90",
+            # "Stat_flavL_B4_eta_0p00toinf_pt_90to120",
+            # "Stat_flavL_B4_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavL_C0_eta_0p00toinf_pt_25to35",
+            # "Stat_flavL_C0_eta_0p00toinf_pt_35to50",
+            # "Stat_flavL_C0_eta_0p00toinf_pt_50to70",
+            # "Stat_flavL_C0_eta_0p00toinf_pt_70to90",
+            # "Stat_flavL_C0_eta_0p00toinf_pt_90to120",
+            # "Stat_flavL_C0_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavL_C1_eta_0p00toinf_pt_25to35",
+            # "Stat_flavL_C1_eta_0p00toinf_pt_35to50",
+            # "Stat_flavL_C1_eta_0p00toinf_pt_50to70",
+            # "Stat_flavL_C1_eta_0p00toinf_pt_70to90",
+            # "Stat_flavL_C1_eta_0p00toinf_pt_90to120",
+            # "Stat_flavL_C1_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavL_C2_eta_0p00toinf_pt_25to35",
+            # "Stat_flavL_C2_eta_0p00toinf_pt_35to50",
+            # "Stat_flavL_C2_eta_0p00toinf_pt_50to70",
+            # "Stat_flavL_C2_eta_0p00toinf_pt_70to90",
+            # "Stat_flavL_C2_eta_0p00toinf_pt_90to120",
+            # "Stat_flavL_C2_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavL_C3_eta_0p00toinf_pt_25to35",
+            # "Stat_flavL_C3_eta_0p00toinf_pt_35to50",
+            # "Stat_flavL_C3_eta_0p00toinf_pt_50to70",
+            # "Stat_flavL_C3_eta_0p00toinf_pt_70to90",
+            # "Stat_flavL_C3_eta_0p00toinf_pt_90to120",
+            # "Stat_flavL_C3_eta_0p00toinf_pt_120toinf",
+            # "Stat_flavL_C4_eta_0p00toinf_pt_25to35",
+            # "Stat_flavL_C4_eta_0p00toinf_pt_35to50",
+            # "Stat_flavL_C4_eta_0p00toinf_pt_50to70",
+            # "Stat_flavL_C4_eta_0p00toinf_pt_70to90",
+            # "Stat_flavL_C4_eta_0p00toinf_pt_90to120",
+            # "Stat_flavL_C4_eta_0p00toinf_pt_120toinf",
+            "Stat_flavB_B0",
+            "Stat_flavB_B1",
+            "Stat_flavB_B2",
+            "Stat_flavB_B3",
+            "Stat_flavB_B4",
+            "Stat_flavB_C0",
+            "Stat_flavB_C1",
+            "Stat_flavB_C2",
+            "Stat_flavB_C3",
+            "Stat_flavB_C4",
+            "Stat_flavB_L0",
+            "Stat_flavC_B0",
+            "Stat_flavC_B1",
+            "Stat_flavC_B2",
+            "Stat_flavC_B3",
+            "Stat_flavC_B4",
+            "Stat_flavC_C0",
+            "Stat_flavC_C1",
+            "Stat_flavC_C2",
+            "Stat_flavC_C3",
+            "Stat_flavC_C4",
+            "Stat_flavC_L0",
+            "Stat_flavL_B0",
+            "Stat_flavL_B1",
+            "Stat_flavL_B2",
+            "Stat_flavL_B3",
+            "Stat_flavL_B4",
+            "Stat_flavL_C0",
+            "Stat_flavL_C1",
+            "Stat_flavL_C2",
+            "Stat_flavL_C3",
+            "Stat_flavL_C4",
+            "Stat_flavL_L0",
+            "Stat",
+            "Total",
+        ]
+    elif SFtype.endswith("C"):
         systlist = [
             "Extrap",
             "Interp",
@@ -2247,6 +2541,49 @@ def btagSFs(event, correct_map, weights, SFtype, syst=False):
                             jet.btagDeepCvB,
                         ),
                     )
+                elif SFtype == "UParTAK4BC" or SFtype == "PNetBC":
+                    if SFtype == "UParTAK4BC":
+                        jet_2Dbin = ak.fill_none(jet.btagUParTAK42Dbin, 0)
+                    elif SFtype == "PNetBC":
+                        jet_2Dbin = ak.fill_none(jet.btagPNet2Dbin, 0)
+                    jet_2Dbin = ak.where(jet_2Dbin == -1, 0, jet_2Dbin)
+                    masknone = masknone | (jet_2Dbin == -1)
+                    jet_eta = ak.fill_none(jet.eta, 0)
+                    jet_pt = ak.fill_none(jet.pt, 0)
+                    tmp_sfs = np.where(
+                        masknone,
+                        1.0,
+                        correct_map["ctag"]["UParTAK4_pseudocontinuous"].evaluate(
+                            "central",
+                            jet.hadronFlavour,
+                            jet_2Dbin,
+                            jet_eta,
+                            jet_pt,
+                        ),
+                    )
+                    if syst:
+                        tmp_sfs_up = np.where(
+                            masknone,
+                            1.0,
+                            correct_map["ctag"]["UParTAK4_pseudocontinuous"].evaluate(
+                                f"up_{systlist[i]}",
+                                jet.hadronFlavour,
+                                jet_2Dbin,
+                                jet_eta,
+                                jet_pt,
+                            ),
+                        )
+                        tmp_sfs_down = np.where(
+                            masknone,
+                            1.0,
+                            correct_map["ctag"]["UParTAK4_pseudocontinuous"].evaluate(
+                                f"down_{systlist[i]}",
+                                jet.hadronFlavour,
+                                jet_2Dbin,
+                                jet_eta,
+                                jet_pt,
+                            ),
+                        )
             elif "btag" in correct_map.keys() and "correctionlib" in str(
                 type(correct_map["btag"])
             ):
@@ -2486,6 +2823,7 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             )
                             sfs_up = np.where(masknone, 1.0, sfs_up)
                             sfs_down = np.where(masknone, 1.0, sfs_down)
+
                     elif sf_id.startswith("UL-"):
                         # UL uses a two-bin reco scheme (RecoBelow20 / RecoAbove20)
                         sfs_low = np.where(
@@ -2512,7 +2850,47 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                         )
                         sfs = np.where(masknone, 1.0, sfs)
 
-                        if syst:
+                    else:
+                        if "Prompt25" in correct_map["campaign"]:
+                            sfs_low = np.ones_like(ele_pt_low)
+                        else:
+                            sfs_low = np.where(
+                                (ele.pt < 20.0) & ~masknone,
+                                correct_map["EGM"][sf_id].evaluate(
+                                    sf_campaign,
+                                    "sf",
+                                    "RecoBelow20",
+                                    ele_etaSC,
+                                    ele_pt_low,
+                                ),
+                                1.0,
+                            )
+                        sfs_high = np.where(
+                            (ele.pt >= 75.0) & ~masknone,
+                            correct_map["EGM"][sf_id].evaluate(
+                                sf_campaign,
+                                "sf",
+                                "RecoAbove75",
+                                ele_etaSC,
+                                ele_pt_high,
+                            ),
+                            sfs_low,
+                        )
+                        sfs = np.where(
+                            (ele.pt >= 20.0) & (ele.pt < 75.0) & ~masknone,
+                            correct_map["EGM"][sf_id].evaluate(
+                                sf_campaign,
+                                "sf",
+                                "Reco20to75",
+                                ele_etaSC,
+                                ele_pt,
+                            ),
+                            sfs_high,
+                        )
+                        sfs = np.where(masknone, 1.0, sfs)
+
+                    if syst:
+                        if sf_id.startswith("UL-"):
                             sfs_up_low = np.where(
                                 (ele.pt < 20.0) & ~masknone,
                                 correct_map["EGM"][sf_id].evaluate(
@@ -2560,61 +2938,33 @@ def eleSFs(ele, correct_map, weights, syst=True, isHLT=False):
                             sfs_up = np.where(masknone, 1.0, sfs_up)
                             sfs_down = np.where(masknone, 1.0, sfs_down)
 
-                    else:
-                        sfs_low = np.where(
-                            (ele.pt < 20.0) & ~masknone,
-                            correct_map["EGM"][sf_id].evaluate(
-                                sf_campaign,
-                                "sf",
-                                "RecoBelow20",
-                                ele_etaSC,
-                                ele_pt_low,
-                            ),
-                            1.0,
-                        )
-                        sfs_high = np.where(
-                            (ele.pt >= 75.0) & ~masknone,
-                            correct_map["EGM"][sf_id].evaluate(
-                                sf_campaign,
-                                "sf",
-                                "RecoAbove75",
-                                ele_etaSC,
-                                ele_pt_high,
-                            ),
-                            sfs_low,
-                        )
-                        sfs = np.where(
-                            (ele.pt >= 20.0) & (ele.pt < 75.0) & ~masknone,
-                            correct_map["EGM"][sf_id].evaluate(
-                                sf_campaign, "sf", "Reco20to75", ele_etaSC, ele_pt
-                            ),
-                            sfs_high,
-                        )
-                        sfs = np.where(masknone, 1.0, sfs)
-
-                        if syst:
-                            sfs_up_low = np.where(
-                                (ele.pt < 20.0) & ~masknone,
-                                correct_map["EGM"][sf_id].evaluate(
-                                    sf_campaign,
-                                    "sfup",
-                                    "RecoBelow20",
-                                    ele_etaSC,
-                                    ele_pt_low,
-                                ),
-                                0.0,
-                            )
-                            sfs_down_low = np.where(
-                                (ele.pt < 20.0) & ~masknone,
-                                correct_map["EGM"][sf_id].evaluate(
-                                    sf_campaign,
-                                    "sfdown",
-                                    "RecoBelow20",
-                                    ele_etaSC,
-                                    ele_pt_low,
-                                ),
-                                0.0,
-                            )
+                        else:
+                            if "Prompt25" in correct_map["campaign"]:
+                                sfs_up_low = np.ones_like(ele_pt_low)
+                                sfs_down_low = np.ones_like(ele_pt_low)
+                            else:
+                                sfs_up_low = np.where(
+                                    (ele.pt < 20.0) & ~masknone,
+                                    correct_map["EGM"][sf_id].evaluate(
+                                        sf_campaign,
+                                        "sfup",
+                                        "RecoBelow20",
+                                        ele_etaSC,
+                                        ele_pt_low,
+                                    ),
+                                    0.0,
+                                )
+                                sfs_down_low = np.where(
+                                    (ele.pt < 20.0) & ~masknone,
+                                    correct_map["EGM"][sf_id].evaluate(
+                                        sf_campaign,
+                                        "sfdown",
+                                        "RecoBelow20",
+                                        ele_etaSC,
+                                        ele_pt_low,
+                                    ),
+                                    0.0,
+                                )
                             sfs_up_high = np.where(
                                 (ele.pt >= 75.0) & ~masknone,
                                 correct_map["EGM"][sf_id].evaluate(
@@ -3056,11 +3406,14 @@ def add_pdf_weight(weights, pdf_weights, isSyst=False):
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TopPtReweighting#TOP_PAG_corrections_based_on_the
 def top_pT_sf_formula(pt):
     x = np.clip(pt, 0, 2000)
+    """
     # From page 30 of AN v9 https://cms.cern.ch/iCMS/jsp/db_notes/noteInfo.jsp?cmsnoteid=CMS%20AN-2024/019
     w_13_to_13p6 = (
         0.991 + 0.000075 * x
     )  # Extrapolation of the number below (which was for CoM = 13 TeV) to CoM = 13.6 TeV
     return (0.103 * np.exp(-0.0118 * x) - 0.000134 * x + 0.973) * w_13_to_13p6
+    """
+    return 0.103 * np.exp(-0.0118 * x) - 0.000134 * x + 0.973
 
 
 def top_pT_reweighting(gen):
@@ -3895,13 +4248,15 @@ def common_shifts(self, events):
     if "roccor" in self.SF_map.keys():
         shifts = Roccor_shifts(shifts, self.SF_map, events, isRealData, self.isSyst)
     elif "muonSS" in self.SF_map.keys():
-        shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, self.isSyst)
+        shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, True)
+        # shifts = MUO_shifts(shifts, self.SF_map, events, isRealData, self.isSyst)
     else:
         for shift in shifts:
             shift[0]["Muon"] = events.Muon
 
     if "electronSS" in self.SF_map.keys():
-        shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, self.isSyst)
+        shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, True)
+        # shifts = EGM_shifts(shifts, self.SF_map, events, isRealData, self.isSyst)
     else:
         for shift in shifts:
             shift[0]["Electron"] = events.Electron
@@ -3983,14 +4338,16 @@ def weight_manager(pruned_ev, SF_map, isSyst, ttbar_reweights=None, campaign=Non
         if "MUO" in SF_map.keys() and "SelMuon" in pruned_ev.fields:
             muSFs(pruned_ev.SelMuon, SF_map, weights, syst_wei, True)
         if "EGM" in SF_map.keys() and "SelElectron" in pruned_ev.fields:
-            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, False)
+            eleSFs(pruned_ev.SelElectron, SF_map, weights, syst_wei, True)
         if (
             "ctag" in SF_map.keys() or "btag" in SF_map.keys()
         ) and "SelJet" in pruned_ev.fields:
-            btagSFs(pruned_ev, SF_map, weights, "DeepJetC", syst_wei)
-            btagSFs(pruned_ev, SF_map, weights, "DeepJetB", syst_wei)
-            btagSFs(pruned_ev, SF_map, weights, "DeepCSVB", syst_wei)
-            btagSFs(pruned_ev, SF_map, weights, "DeepCSVC", syst_wei)
+            btagSFs(pruned_ev, SF_map, weights, "UParTAK4BC", syst_wei)
+            # btagSFs(pruned_ev, SF_map, weights, "PNetBC", syst_wei)
+            # btagSFs(pruned_ev, SF_map, weights, "DeepJetC", syst_wei)
+            # btagSFs(pruned_ev, SF_map, weights, "DeepJetB", syst_wei)
+            # btagSFs(pruned_ev, SF_map, weights, "DeepCSVB", syst_wei)
+            # btagSFs(pruned_ev, SF_map, weights, "DeepCSVC", syst_wei)
 
     return weights
 
