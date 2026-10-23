@@ -5,8 +5,6 @@ import psutil, os, gzip, importlib, cloudpickle
 from coffea.jetmet_tools import JECStack, CorrectedJetsFactory, CorrectedMETFactory
 from coffea.lookup_tools import extractor
 
-import collections
-
 
 from pathlib import Path
 
@@ -215,13 +213,16 @@ def _compile_jec_(year, campaign, factory_map, name):
 def PFCand_link(events, event_level, jetindx):
     if str(ak.type(jetindx)).count("*") > 1:
         jetindx = jetindx[event_level]
-        spfcands = collections.defaultdict(dict)
+        spfcands = {}
         for i in range(len(jetindx[0])):
-            spfcands[i] = events[event_level].PFCands[
+            spfcands[str(i)] = events[event_level].PFCands[
                 events[event_level]
                 .JetPFCands[events[event_level].JetPFCands.jetIdx == jetindx[:, i]]
                 .pFCandsIdx
             ]
+        # One field per selected jet. awkward 2 cannot assign a plain dict onto
+        # pruned_ev, and record field names must be strings.
+        spfcands = ak.zip(spfcands, depth_limit=1)
 
     else:
         spfcands = events[event_level].PFCands[

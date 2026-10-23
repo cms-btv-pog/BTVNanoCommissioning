@@ -46,6 +46,7 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=False,
         noHist=False,
         chunksize=75000,
+        ttbar_reweights="none",
     ):
         self._year = year
         self._campaign = campaign
@@ -55,12 +56,9 @@ class NanoProcessor(processor.ProcessorABC):
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
+        self.ttbar_reweights = ttbar_reweights
         ## Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
-
-    @property
-    def accumulator(self):
-        return self._accumulator
 
     ## Apply corrections on momentum/mass on MET, Jet, Muon
     def process(self, events):
@@ -196,7 +194,7 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev,
             self.SF_map,
             self.isSyst,
-            ttbar_reweights=getattr(self, "ttbar_reweights", "none"),
+            ttbar_reweights=self.ttbar_reweights,
             campaign=self._campaign,
         )
         # Configure systematics shifts

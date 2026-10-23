@@ -895,7 +895,7 @@ def rebin_hist(h, axis_name, edges):
     axes = list(h.axes)
     axes[ax_idx] = new_ax
 
-    hnew = hist.Hist(*axes, name=h.name, storage=h._storage_type())
+    hnew = hist.Hist(*axes, name=h.name, storage=h.storage_type())
 
     # Offset from bin edge to avoid numeric issues
     offset = 0.5 * np.min(ax.edges[1:] - ax.edges[:-1])
@@ -917,7 +917,7 @@ def rebin_hist(h, axis_name, edges):
     hnew.values(flow=flow)[...] = np.add.reduceat(
         h.values(flow=flow), edge_idx, axis=ax_idx
     ).take(indices=range(new_ax.size + underflow + overflow), axis=ax_idx)
-    if hnew._storage_type() == hist.storage.Weight():
+    if hnew.storage_type() == hist.storage.Weight():
         hnew.variances(flow=flow)[...] = np.add.reduceat(
             h.variances(flow=flow), edge_idx, axis=ax_idx
         ).take(indices=range(new_ax.size + underflow + overflow), axis=ax_idx)

@@ -21,7 +21,13 @@ def HLT_helper(events, triggers):
     return req_trig
 
 
-def jet_id(events, campaign, max_eta=2.5, min_pt=20):
+def jet_id_mask(events, campaign):
+    """Per-jet ID boolean, with no kinematic cuts applied.
+
+    Split out of `jet_id` so that producers which need the ID on its own (the BTA
+    workflows, which write it as an ntuple column) do not have to re-implement the
+    per-campaign logic. `jet_id` is unchanged: it is this mask plus the pt/eta cuts.
+    """
     # Run 3 NanoAODs have a bug in jetId
     # Implement fix from:
     # https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetID13p6TeV#nanoAOD_Flags
@@ -165,7 +171,11 @@ def jet_id(events, campaign, max_eta=2.5, min_pt=20):
     else:
         jetid = events.Jet.jetId >= 5
 
-    jetid = ak.values_astype(jetid, bool)
+    return ak.values_astype(jetid, bool)
+
+
+def jet_id(events, campaign, max_eta=2.5, min_pt=20):
+    jetid = jet_id_mask(events, campaign)
 
     if campaign == "Rereco17_94X":
         # Use puId for Run2

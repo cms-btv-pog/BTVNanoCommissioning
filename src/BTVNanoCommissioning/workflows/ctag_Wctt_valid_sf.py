@@ -37,6 +37,7 @@ class NanoProcessor(processor.ProcessorABC):
         noHist=False,
         chunksize=75000,
         selectionModifier="WcM",
+        ttbar_reweights="none",
     ):
         self._year = year
         self._campaign = campaign
@@ -46,13 +47,10 @@ class NanoProcessor(processor.ProcessorABC):
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
+        self.ttbar_reweights = ttbar_reweights
         ## Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
         self.selMod = selectionModifier
-
-    @property
-    def accumulator(self):
-        return self._accumulator
 
     def process(self, events):
         events = missing_branch(events)
@@ -468,7 +466,7 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev,
             self.SF_map,
             self.isSyst,
-            ttbar_reweights=getattr(self, "ttbar_reweights", "none"),
+            ttbar_reweights=self.ttbar_reweights,
             campaign=self._campaign,
         )
 

@@ -17,18 +17,18 @@ coffea 2026's `from_root` default mode is `'virtual'` (materialize-on-access) �
 
 | Area | File(s) | Old (0.7) | Change |
 |---|---|---|---|
-| **Execution** | `runner.py` (only) | `run_uproot_job` + `iterative/futures/parsl/dask_executor` | **Rewrite** to `Runner` + executor classes (§3) |
-| **JEC/JER build** | `utils/correction.py` (`JME_shifts`, ~1300–1669), `helpers/func.py` (factory) | `CorrectedJetsFactory.build(..., lazy_cache=events.caches[0])` | Drop `lazy_cache`; regen factory pickle (§4) |
+| **Execution** | `runner.py` (only) | `run_uproot_job` + `iterative/futures/parsl/dask_executor` | ✅ Rewritten to `Runner` + executor classes (§3) |
+| **JEC/JER build** | `utils/correction.py` (`JME_shifts`, ~1300–1669), `helpers/func.py` (factory) | `CorrectedJetsFactory.build(..., lazy_cache=events.caches[0])` | ✅ `lazy_cache` dropped; no pickle regeneration needed, that path is dormant (§4) |
 | **Accumulators** | `helpers/func.py` (`dump_lumi`) | `column_accumulator`, `set_accumulator` | ✅ No change (both survive) |
-| **Histogram fills** | `utils/histogramming/histogrammer.py` | eager flatten + numpy | Minimal; fix latent `if <ak> > <ak>` bug (§6) |
-| **Env/pins** | `setup.cfg`, `test_env.yml` | coffea 0.7.31 | DONE |
-| **Outliers** | `BTA_producer.py`, `BTA_ttbar_producer.py`, `sf_ttdilep_kin.py` | extra `np.array(ak…)`, BDT `to_numpy` | Validate under eager |
+| **Histogram fills** | `utils/histogramming/histogrammer.py` | eager flatten + numpy | ✅ Minimal; latent `if <ak> > <ak>` bug fixed (§6) |
+| **Env/pins** | `setup.cfg`, `btv_env.yml` (was `test_env.yml`) | coffea 0.7.31 | DONE |
+| **Outliers** | `BTA_producer.py`, `BTA_ttbar_producer.py`, `sf_ttdilep_kin.py` | extra `np.array(ak…)`, BDT `to_numpy` | ✅ Validated under eager (§8c, §8d) |
 
 Everything else (corrections `extractor`/`LumiMask`/`Weights`/`BTagScaleFactor`, plotting scripts, condor submitters) works with minor/no changes — confirmed by introspection (§7).
 
 ## 2. Environment (done)
 - `setup.cfg`: `coffea[dask,dask-awkward,xrootd]==2026.7.0`, `correctionlib>=2.6.0`, `python_requires=>=3.10`.
-- `test_env.yml`: python 3.10–3.12, coffea 2026.7.0 via pip, `parsl>=2024.12.09`, dropped `setuptools<=70.1.1` cap.
+- `btv_env.yml` (renamed from `test_env.yml` in `6006cd1`; the CI `environment-file:` entries now follow the rename): python 3.10–3.12, coffea 2026.7.0 via pip, `parsl>=2024.12.09`, dropped `setuptools<=70.1.1` cap.
 - Env `btv_coffea_2026` created (Python 3.12, numpy 2.x, awkward 2.11). Canonical CI env name stays `btv_coffea`.
 
 ## 3. Execution rewrite — `runner.py` (the core change)
@@ -110,6 +110,8 @@ Control flow in `JME_shifts`:
 **Real remaining JEC work** is validating the *live* correctionlib block
 (`correction.py:1044-1571`: `unc_jets`/`unc_met`, hand-rolled JES/JER sources, manual
 `ak.flatten/unflatten/values_astype`) under awkward 2.11 / numpy 2.4 — this needs event data.
+**✅ Resolved:** the block runs in every sweep (§8b, §8c) and in the CI commands with
+`--isSyst all` (§8d).
 
 ### Validation result — corrections stack builds under coffea 2026
 
@@ -130,12 +132,12 @@ from `campaign_map()`. This aborts long before the JME branch, so the string-val
 `"JME"` entry for those two campaigns is latent/unreachable rather than the actual fault.
 
 ## 5. Accumulators — `helpers/func.py` `dump_lumi`
-✅ **No change required** — `column_accumulator`, `set_accumulator`, and `accumulate` all survive in 2026.7.0 (§7). Optional cleanup: remove the dead `@property accumulator`/`self._accumulator` (never assigned) from all 18 processors when touching them.
+✅ **No change required** — `column_accumulator`, `set_accumulator`, and `accumulate` all survive in 2026.7.0 (§7). Optional cleanup: remove the dead `@property accumulator`/`self._accumulator` (never assigned) from all 18 processors when touching them. **✅ Done** (`31ef35e`, the 17 processors that had it).
 
 ## 6. Histogramming — `utils/histogramming/histogrammer.py`
 - Fills already eager: `h.fill(temp_syst, flatten(genflavor), flatten(pruned_ev.SelJet[histname]), weight=flatten(...))`, `syst=np.full(len(weight), syst)`. Works under eager/virtual NanoEvents.
 - `hist.Hist.fill` (hist 2.10) accepts the flattened awkward + numpy weights (API stable).
-- **Latent bug to fix regardless**: `histogrammer.py:400-416` uses `pt if <ak_array> > <ak_array> else ...` — a Python `if` on a non-scalar awkward array. Rarely reached today; fix with `ak.where`.
+- **Latent bug to fix regardless**: `histogrammer.py:400-416` uses `pt if <ak_array> > <ak_array> else ...` — a Python `if` on a non-scalar awkward array. Rarely reached today; fix with `ak.where`. **✅ Fixed:** the `hl` record is built field by field with `ak.where` (and carries `charge`, §8c).
 
 ## 7. Ground-truth API check (installed coffea 2026.7.0, env `btv_coffea_2026`)
 
@@ -158,9 +160,9 @@ Stack: coffea **2026.7.0**, awkward **2.11.0**, hist **2.10.1**, uproot **5.7.5*
 
 ## 8. Peripheral / infra
 - Execution API is **only** in `runner.py` (verified) — no other file uses `run_uproot_job`.
-- Env naming: canonical name stays `btv_coffea` (CI `activate-environment: btv_coffea`; hardcoded in runner.py:613, condor_lxplus/submitter.py:231/235, scripts/fetch.py). Keep the migrated production env named `btv_coffea`; `btv_coffea_2026` is a dev sandbox only.
+- Env naming: canonical name stays `btv_coffea` (CI `activate-environment: btv_coffea`; hardcoded in runner.py:722, condor_lxplus/submitter.py:231/235, scripts/fetch.py). Keep the migrated production env named `btv_coffea`; `btv_coffea_2026` is a dev sandbox only.
 - Postprocessing scripts (`scripts/plotdataMC.py`, `make_template.py`, `comparison.py`, `plotSysts.py`, …) load `.coffea` via `coffea.util.load`; output object shape unchanged in eager mode → expected to keep working (watch `hist` version drift in `plot_utils.py`).
-- CI workflows (`.github/workflows/*_workflow.yml`) build `test_env.yml` and run one workflow each — these become the end-to-end migration gate.
+- CI workflows (`.github/workflows/*_workflow.yml`, `validation.yml`) build `btv_env.yml` and run one workflow each — these become the end-to-end migration gate. CI pins Python 3.10, while the sweeps ran on 3.12.
 
 ## 8b. END-TO-END VALIDATION ✅ (P1+P2+P3 verified with real data)
 
@@ -183,6 +185,7 @@ plus `fname`/`run`/`lumi`/`sumw` (confirms `column_accumulator`/`set_accumulator
 > migration issue — in the current working tree `dijet.py` has `CenJet`/`FwdJet`/`RndJet`/
 > `LeadJet`/`SubleadJet` commented out (uncommitted local edits), so only `SelJet` is
 > defined. The `qgtag` collection books histograms for all object categories regardless.
+> **✅ Resolved:** the categories are back in `dijet.py`; the Oct 2026 re-sweep fills 396/495.
 
 ### Runtime fixes required (7 iterations)
 
@@ -204,68 +207,163 @@ plus `fname`/`run`/`lumi`/`sumw` (confirms `column_accumulator`/`set_accumulator
 - Fix #6 matters beyond this migration: with a non-zero index the old code would have silently
   produced *wrong* `Genpt` values instead of crashing.
 
-## 8c. P3 WORKFLOW SWEEP RESULTS (23 / 33 validated end-to-end)
+## 8c. P3 WORKFLOW SWEEP RESULTS (41 / 41 validated end-to-end)
 
-All runs: `--max 1 --limit 1` on Summer24 MC unless noted.
+All runs: `--max 1 --limit 1` on Summer24 MC unless noted. Env `btv_coffea_2026`
+(coffea 2026.7.0). The registry grew from 33 to 41 workflows with the
+`QG_photondijet*` / `QG_trijet*` additions. Those 8 variants (`cebc2b3`) now live on
+the `split/qg-sf` branch; `update-coffea-2026` registers 33.
 
-**PASS (23):** `QG_dijet` `QG_DY` `QG_photonjet` `QG_zerobias` `QG_pfjet`
-`ctag_Wc_sf` `ectag_Wc_sf` `ctag_Wc_noMuVeto_sf` `ctag_Wc_WP_sf` `ectag_Wc_WP_sf`
-`ctag_DY_sf` `ectag_DY_sf` `DY_sfl` `eDY_sfl` `ctag_ttsemilep_sf`
+**PASS (36).** Sweeps 1-2 (23): `QG_dijet` `QG_DY` `QG_photonjet` `QG_zerobias`
+`QG_pfjet` `ctag_Wc_sf` `ectag_Wc_sf` `ctag_Wc_noMuVeto_sf` `ctag_Wc_WP_sf`
+`ectag_Wc_WP_sf` `ctag_DY_sf` `ectag_DY_sf` `DY_sfl` `eDY_sfl` `ctag_ttsemilep_sf`
 `ectag_ttsemilep_sf` `ctag_ttsemilep_noMuVeto_sf` `ttsemilep_sf` `c_ttsemilep_sf`
-`sf_ttsemilep_tnp` `QCD_sf` `example` `validation`
+`sf_ttsemilep_tnp` `QCD_sf` `example` `validation`.
+Sweep 3 (13): `QG_photondijet` `QG_photondijet_quark` `QG_photondijet_softprobe`
+`QG_photondijet_softprobe_quark` `QG_trijet` `QG_trijet_gluon` `QG_trijet_dijetave`
+`QG_trijet_dijetave_gluon` `ttdilep_sf` `ctag_ttdilep_sf` `ectag_ttdilep_sf`
+`emctag_ttdilep_sf` `sf_ttdilep_kin`.
 
-**NOT VALIDATED (10):**
-- `ttdilep_sf`, `ctag_ttdilep_sf`, `ectag_ttdilep_sf`, `emctag_ttdilep_sf`,
-  `sf_ttdilep_kin` — **no ttdilep sample json exists**. Note the coordinate-representation
-  fix touched `ctag_dileptt_valid_sf.py` / `ctag_emdileptt_valid_sf.py`, so those two
-  fixes are code-verified only.
-- `BTA`, `BTA_addPFMuons`, `BTA_addAllTracks`, `BTA_ttbar` — blocked by the skip-guard
-  (see below). `BTA_helper.cumsum` is covered by an equivalence unit test only.
-- `QCD_smu_sf` — blocked by a latent bug needing a physics decision (see below).
+Sweep 3 follow-up (5): `BTA` `BTA_addPFMuons` `BTA_addAllTracks` `BTA_ttbar`
+`QCD_smu_sf` — these five failed on first contact and pass after the fixes in
+"Fixing the sweep-3 failures" below. **No workflow in the registry is now unvalidated.**
 
-### Migration bugs found by the sweep
-| Fix | File(s) | Cause |
+Every sweep-3 PASS was checked for **non-vacuity**: the `.coffea` was reloaded with
+`coffea.util.load` and at least one `hist.Hist` verified to have a non-zero weighted sum
+(e.g. `emctag_ttdilep_sf` 36/58 histograms filled, `sumw` 4.05e6; the four
+`QG_photondijet*` 540/615 filled each). An exit code of 0 is not sufficient evidence —
+see the BTA finding.
+
+### Sweep 3 (Aug 2026): the 8 new QG variants + the 10 previously-blocked workflows
+
+Missing filesets were covered by reusing sibling JSONs rather than fetching from DAS:
+`QG_photondijet*` → `MC_Summer24_2024_QG_photonjet.json`, `QG_trijet*` →
+`MC_Summer24_2024_QG_dijet.json`, all ttdilep variants and `BTA_ttbar` →
+`MC_Summer24_2024_ctag_ttsemilep_sf.json` with `--only TTto2L2Nu…`.
+
+**The BTA skip-guard was bypassed without editing source**, by running with
+`--isSyst JP_MC`: `BTA_producer.py:66-72` prefixes `systematic/` to the `gfal-ls` path
+when `self.isSyst` is truthy, and that path does not exist centrally, so the early
+`return` does not fire.
+
+> **§8c's suspicion is now confirmed: the BTA CI gate was passing vacuously.** With the
+> guard bypassed, all three `BTA*` producers crash immediately under coffea 2026. The gate
+> had been green only because the processor returned before doing any work.
+
+### Migration bugs found by sweep 3
+| Fix | File | Cause |
 |---|---|---|
-| coordinate-representation conflict (6 sites) | `ctag_DY_valid_sf`, `DY_sfl`, `ctag_dileptt_valid_sf`, `ctag_emdileptt_valid_sf` | summed candidate (cartesian) + materialised polar fields; vector>=1.8 rejects |
-| mixed-type 4-vector add | `ctag_Wctt_valid_sf` | coffea 2026 drops `numpy.add` for mismatched behaviours |
-| `ak.layout` removal | `BTA_helper` | awkward 2 removed the low-level API |
+| `PtEtaPhiECandidate` missing `charge` | `utils/histogramming/histogrammer.py:419` | the `hl` ("harder lepton") record is zipped from pt/eta/phi/energy only; coffea 2026 validates a behaviour's required fields **at construction**, where 0.7 did not. Broke every workflow booking `hl`, i.e. `emctag_ttdilep_sf`. **Fixed** by zipping `charge` with the same `ak.where(_mu_is_harder, …)` as the other four fields; `emctag_ttdilep_sf` then passes with `hl_ptratio` filled. |
 
-Sweep 1 (9 workflows) found 1 migration bug; sweep 2 (13 workflows) found **0**. The
-migration itself looks converged; what the sweep now surfaces is pre-existing repo bugs.
+That is the **only** migration bug in 18 runs — consistent with sweep 2 (13 workflows,
+0 bugs). The migration itself is converged.
+*(Superseded by §8d: the CI test file reached three more awkward-2 bugs in paths these
+Summer24 inputs never exercise. All three are fixed.)*
 
-### Pre-existing (NON-coffea) bugs surfaced — would fail identically on 0.7
-1. `validation.py`: `btag_wp_dict[self._campaign]` used the bare campaign, but that dict is
-   keyed `year_campaign` (`selection.py:375` even comments "correct, the format is
-   year_campaign"). 3 sites. **Fixed.**
-2. `validation.py`: `btag_wp(jet, self._campaign, ...)` omitted the `year` argument;
-   signature is `btag_wp(jets, year, campaign, tagger, borc, wp)`. 4 sites. **Fixed.**
-   Together, 1+2 mean the working-point block of `validation.py` had evidently never been
-   executed — despite `validation` being CI-gated.
-3. `QCD_soft_mu_validation.py`: selection requires **>=1** jet (`:114`) but `:177` indexes
-   `Jet[:, 1]` (the *second* jet), so any 1-jet event crashes. Confirmed **not** a sample
-   artefact — fails identically on the intended `btagmu` sample. **NOT fixed**: both
-   remedies change physics (padding to None alters the histogrammed `dr_mujet1`; requiring
-   >=2 jets changes acceptance). Needs an owner decision.
-4. `BTA_producer.py:66-72` returns early (`skip`) whenever its output already exists on
-   central EOS. Both samples in `metadata/test_bta_run3.json` are already produced, so the
-   BTA workflows execute nothing but `missing_branch`. **The BTA CI gate is very likely
-   passing vacuously** and would not have caught the `ak.layout` breakage.
+### Fixing the sweep-3 failures
 
-Unguarded minimum-object-count indexing (`GenJet[0]`, `Jet[:, 1]`) recurs in this codebase
-and is exactly what awkward 2's stricter bounds checking exposes — worth a dedicated audit.
+The three reported defects were each **masking further ones**: they aborted the
+processor before code that had never run under coffea 2026 could be reached. Fixing
+one exposed the next, so the five workflows took six fixes in total. Every fix below
+was verified by re-running the workflow on real data.
+
+| # | Site | Cause | Category |
+|---|---|---|---|
+| 1 | `BTA_producer.py` (genpt) | `events.GenJet[genJetIdx]` with the invalid-match index clamped to `0`, which is *itself* out of range in events with zero GenJets. Padded with `ak.pad_none(..., 1)`. Second instance of §8b fix #6. | **awkward 2** |
+| 2 | `BTA_producer.py`, `BTA_ttbar_producer.py` (jet ID columns) | `jet.jetId` unguarded, but **NanoAODv13+/v15 dropped `Jet_jetId`** (confirmed absent from the Summer24 v15 branch list). `utils/selection.py` already guarded the same access; the BTA producers never got it. | **NanoAOD version** |
+| 3 | `QCD_soft_mu_validation.py:179` | `Jet[:, 1]` while the selection requires only `>=1` jet. Padded so 1-jet events yield `-1`; acceptance unchanged. | **latent bug** |
+| 4 | `BTA_producer.py` ×4 (`sign2D`, `sign3D`, `ip2/3dsign_jetref`) | `ThreeVector.dot(LorentzVector)` — vector>=1.8 refuses mismatched dimensionality instead of silently projecting. Take `jet.pvec`. | **vector 1.8** |
+| 5 | `BTA_producer.py` ×2 (`ptrel`) | `cross` on two 4-vectors — "cross is only defined for 3D vectors". Take the spatial parts. | **vector 1.8** |
+| 6 | `BTA_producer.py:979` | a field literally named **`deltaR`** on a Lorentz-vector record. vector>=1.x defines `deltaR` as a *method*, which shadows the field, so the later read returned a bound method (`unknown type method`). Renamed the intermediate field to `deltaR_jet`; the output branch is still `deltaR`. | **vector 1.8** |
+| 7 | `QCD_soft_mu_validation.py` (JetSVs) | `ak.pad_none(JetSVs.jetIdx, len(filtered_events.Jet))` — `len` of a jagged array is the *event* count, not the per-event jet count, so the pad target was meaningless. Removed: the `valid_indices` filter immediately below already does what the pad was reaching for. | **latent bug** |
+
+Fix 2 needed a small, behaviour-preserving refactor: `utils/selection.py` now exposes
+`jet_id_mask(events, campaign)` (the per-jet ID with no kinematic cuts) and `jet_id`
+is that mask plus the pt/eta cuts, exactly as before. `helpers/BTA_helper.py` gained
+`jet_id_columns(...)`, shared by both BTA producers. Where `Jet_jetId` is absent the
+framework only implements TightLepVeto, so all three ID columns are filled with it —
+TightLepVeto implies Tight implies Loose, so a flagged jet genuinely passes that
+column, and jets passing only a looser ID are conservatively `False` rather than
+guessed. **This is a physics-content change to the BTA ntuple on v15 inputs and wants
+an owner's eye.**
+
+> **§8c's suspicion is confirmed twice over.** The BTA gate was not merely vacuous —
+> the code behind it had *six* separate coffea-2026 incompatibilities, none of which
+> any green CI run could have caught. `grep -c "skip "` on the fixed runs is 0, and
+> the logs show the producers reaching their ntuple write (which then fails only on
+> central-EOS permissions), i.e. full execution.
+
+Fix 6 generalises: **any field whose name collides with a `vector` method now
+resolves to the method.** This is the same failure class as the `rho` → `event_rho`
+rename (§8b fix #2) and is worth a repo-wide grep before the next campaign.
+**✅ Done** (§9 P5): no live clash.
+
+### Caveats on this table
+- *(Resolved Oct 2026, see §9 P4: all 23 re-run and passing.)* The 23 workflows from sweeps 1-2 were **not** re-run in sweep 3, so they are not verified
+  against the later `PackedSelection` refactors (`8983295`, `9733c9c`, `240ba5f`), the new
+  awkward interfaces / explicit TTree writing (`6fa8cda`), or the array-writer output change
+  (`0e4b8ed`).
+- `QCD_smu_sf` and the four `BTA*` workflows were re-verified after the fixes, together
+  with `example`, `ttsemilep_sf` and `QG_trijet` as regression checks on the
+  `jet_id` / `jet_id_mask` refactor (identical filled-histogram counts to sweep 3).
+- Sweep 3's first pass raced a concurrent edit adding `ttbar_reweights` to every processor
+  `__init__`; 6 workflows aborted with
+  `TypeError: NanoProcessor.__init__() got an unexpected keyword argument 'ttbar_reweights'`.
+  Those runs were repeated against the settled tree and are **not** counted as failures. If
+  that keyword is ever added to `runner.py` again ahead of the processors, every workflow
+  fails at construction — worth a CI smoke test that merely instantiates all 41 processors.
+  **✅ Done:** `scripts/check_workflows.py` + `check_workflows.yml` (§9 P4).
+
+## 8d. CI COMMANDS ON PYTHON 3.10 (Oct 2026)
+
+Every distinct `runner.py` command in `.github/workflows/*.yml` (20) was run locally in a
+fresh env built from `btv_env.yml` with `python=3.10` (3.10.22, coffea 2026.7.0), on
+`metadata/test_bta_run3.json` (Summer23 PFNano), with the same non-vacuity check as §8c.
+
+**All 20 pass after three fixes.** None of the failures were Python-3.10 specific. All three
+were coffea-2026 / awkward-2 bugs in code paths that the Summer24 BTV Nano used by the sweeps
+never reaches, because those inputs have no `PFCands`, no `JetSVs` and never zero-GenJet MC
+events in the BTA ttbar sample. The CI test file has all three, so CI would have caught them on
+the PR. Upstream master's CI passes the same commands under coffea 0.7.
+
+| # | Site | Cause | Hit by |
+|---|---|---|---|
+| 1 | `BTA_ttbar_producer.py` (genpt) | §8c BTA fix 1 never ported: placeholder GenJet index 0 is out of range in events with zero GenJets. Same `ak.pad_none(events.GenJet, 1)` fix. | `BTA_ttbar` |
+| 2 | `helpers/func.py` `PFCand_link` | multi-jet branch returned a `dict` with **int** keys, assigned onto `pruned_ev`. awkward 2 rejects it (`keys of dicts in 'fromiter' must all be strings`). Now string keys, `ak.zip(..., depth_limit=1)`. Nothing downstream reads the per-jet form (the histogrammer needs `PFCands.pt`, the array writer drops `PFCands`). | `ttsemilep_sf`, `c_ttsemilep_sf`, `ttdilep_sf`, `validation` |
+| 3 | `QCD_validation.py` (JetSVs) | §8c fix 7 never ported from the soft-mu sibling: attribute field assignment plus a pad sized by `len()` (the event count). | `QCD_sf` |
+
+The three `BTA*` CI jobs remain vacuous for `BTA`/`BTA_addPFMuons`/`BTA_addAllTracks`: their
+outputs already exist on central EOS, so the producer skips every file. `BTA_ttbar` has no
+central output yet and runs fully.
+
+Not covered locally: lxplus mounts all of `/cvmfs`, but the CI workflows mount only
+`grid.cern.ch`, while the corrections read from `/cvmfs/cms-griddata.cern.ch`. Master has the
+same mount list and passes, so this is probably fine, but it is the one CI difference this run
+could not reproduce.
 
 ## 9. Phasing / PR breakdown
 - **P0 (done)**: pins + env + `import coffea` smoke test.
-- **P1**: `runner.py` execution rewrite; get `example` workflow end-to-end on 1 file with `IterativeExecutor` (eager). Green = events load + histograms fill + `.coffea` saved.
-- **P2**: JEC/JER — drop `events.caches[0]`, regenerate factory pickle, fix `.build()` call; get `JME_shifts` (nominal + up/down) working.
-- **P3**: sweep the other 17 processors; fix eager outliers (`BTA_producer`, `BTA_ttbar_producer`, `sf_ttdilep_kin` BDT `to_numpy`); numpy-2 audit (`np.float_`, copy semantics).
-- **P4**: scale-out executors (dask/parsl/condor) + CI green across all `*_workflow.yml`.
-- **P5**: plotting/template scripts + docs.
+- **P1 (done)**: `runner.py` execution rewrite to `Runner` + executor classes (§3, §8b).
+- **P2 (done)**: JEC/JER — `lazy_cache` / `events.caches[0]` dropped, `.build()` calls fixed. Pickle regeneration is not needed: that path is dormant (§4). The live correctionlib `JME_shifts` block runs in every sweep.
+- **P3 (done)**: all 41 registered workflows validated end-to-end (§8c). This branch now registers 33; the 8 `QG_photondijet*`/`QG_trijet*` variants live on `split/qg-sf`. The numpy-2 alias audit is clean: no `np.float_`/`np.bool8`/`np.NaN`/`np.int0`/`np.complex_`/`np.unicode_`/`np.string_` left in `src/`, `scripts/` or `runner.py`.
+- **P4 (partly done)**:
+  - ✅ parsl/dask cluster configs build under parsl 2026 / dask-jobqueue 0.9 (`43eac31`). Real SLURM/HTCondor submission through them is **not** verified.
+  - ✅ `condor/submitter.py` works from an EOS checkout (`96b2bab`, `561500f`) and is used for production on lxplus.
+  - ✅ CI `environment-file:` entries point at `btv_env.yml` again. They still named `test_env.yml` after the rename, so every CI job failed at environment setup.
+  - ✅ All 20 CI `runner.py` commands pass locally on Python 3.10 after three fixes (§8d). Still to see: the real GitHub run on the PR to master. CI only triggers on `master` pushes and PRs.
+  - ✅ Re-ran the 23 sweep-1/2 workflows (Oct 2026, same settings as §8c, iterative executor) against the later PackedSelection / TTree-writing / array-writer changes and `3c2b0ec`, `7f2e3a1`: **23 / 23 pass with filled histograms**. `sf_ttsemilep_tnp` needs `--selectionModifier tt_semilep_mu|tt_semilep_el` since `f6f4bd4`, and passes in both channels (603/800 and 355/800 filled).
+  - ✅ CI smoke test: `scripts/check_workflows.py` builds and pickles every registered workflow through `runner.build_processor` (the code path a run uses), with no events, proxy or CVMFS. It runs in `.github/workflows/check_workflows.yml`. `sf_ttsemilep_tnp` is built once per channel because it rejects an empty `--selectionModifier` (since `f6f4bd4`).
+- **P5 (started)**:
+  - ✅ `plot_utils.py` rebin helper uses `h.storage_type()` instead of `_storage_type()`, which hist 2.10 deprecates with a `FutureWarning`.
+  - ⬜ Run the post-processing scripts (`plotdataMC.py`, `make_template.py`, `comparison.py`, …) on a coffea-2026 `.coffea` output.
+  - ✅ Removed the unused `accumulator` property from the 17 processors that carried it (§5). `ProcessorABC` only requires `process`.
+  - ✅ Checked for record fields whose names collide with `vector` methods (§8c fix 6): every field name assigned in `src/` was compared with the attributes of coffea's vector, candidate and NanoAOD classes. No live clash. The only overlaps (`rho`, `m`, `e`, `p`, `deltaR`) are plain output records without a vector behaviour, and `pvec` in `BTA_producer.py` is set on `JetPFCands` records, which are not vectors.
+- **Unrelated to the migration**: `Rereco17_94X` and `Winter22Run3` are missing from `campaign_map()` (§4), so `load_SF` fails for both. They are kept on purpose; adding them to `campaign_map()` would make them loadable.
 
 ## 10. Top risks (post-introspection — reduced)
-1. **numpy 2.x** behavioral changes across ~40 files (`np.float_`/`np.bool8`/`np.NaN` removals, copy-on-write, `np.unique` API) — now the #1 risk since all coffea classes survived. Repo-wide numpy-2 audit.
-2. **JEC internals**: classes survive but `.build()` dropped `lazy_cache`, and the pickled factory blob must be regenerated under coffea 2026 / awkward 2.11. The hand-rolled JES/JER block (`correction.py ~1300-1600`) needs runtime validation.
-3. **`hist` 2.10 drift** affecting `plot_utils.py` reimplemented `plotratio` / `._storage_type()` internals.
-4. **`from_root` default mode='virtual'**: confirm `Runner`+`IterativeExecutor` feeds materializing arrays (virtual/eager), not dask, so `len(events)`/`.to_numpy()` keep working. (Use non-dask executors for first validation.)
+1. **numpy 2.x** behavioral changes across ~40 files (`np.float_`/`np.bool8`/`np.NaN` removals, copy-on-write, `np.unique` API) — now the #1 risk since all coffea classes survived. Repo-wide numpy-2 audit. **✅ Resolved:** caused zero failures across all sweeps (§8b), and the alias audit is clean (§9 P3).
+2. **JEC internals**: classes survive but `.build()` dropped `lazy_cache`. ~~the pickled factory blob must be regenerated~~ — **superseded by §4**: the pickle path is dormant, so no regeneration is needed. The hand-rolled JES/JER block (`correction.py ~1300-1600`) has since been exercised by every sweep run.
+3. **`hist` 2.10 drift** affecting `plot_utils.py` reimplemented `plotratio` / `._storage_type()` internals. `._storage_type()` is replaced by the public `storage_type()`; `plotratio` is still unchecked.
+4. **`from_root` default mode='virtual'**: confirm `Runner`+`IterativeExecutor` feeds materializing arrays (virtual/eager), not dask, so `len(events)`/`.to_numpy()` keep working. (Use non-dask executors for first validation.) **✅ Resolved:** eager idioms worked from the first run with both `IterativeExecutor` and `FuturesExecutor` (§8b).
 
 _(Resolved by introspection: column_accumulator/set_accumulator, Rochester txt_converters/rochester_lookup, LumiMask, extractor, BTagScaleFactor, Weights, ProcessorABC — all still present, no longer risks.)_

@@ -14,7 +14,7 @@ WORKDIR=`pwd`
 
 # Get arguments
 declare -A ARGS
-for key in workflow output samplejson year campaign isSyst ttbar_reweights isArray noHist overwrite voms chunk skipbadfiles outputDir remoteRepo; do
+for key in workflow output samplejson year campaign isSyst ttbar_reweights isArray array_systs array_perjet noHist overwrite voms chunk skipbadfiles outputDir remoteRepo; do
     echo $(jq -r ".$key" $WORKDIR/arguments.json)
     ARGS[$key]=$(jq -r ".$key" $WORKDIR/arguments.json)
 done
@@ -65,6 +65,14 @@ else
     tar xaf $WORKDIR/BTVNanoCommissioning.tar.gz
 fi
 
+# setuptools_scm infers the version from git metadata, which the sandbox tarball
+# deliberately does not carry (shipping .git would add ~100 MB to every job).
+# Hand it the version recorded when the tarball was made; without this the
+# editable install fails with "unable to detect version".
+SCM_VERSION=$(sed -n "s/^__version__ = version = '\(.*\)'$/\1/p" src/BTVNanoCommissioning/version.py 2>/dev/null | head -1)
+export SETUPTOOLS_SCM_PRETEND_VERSION=${SCM_VERSION:-0.0.0}
+echo "Using SETUPTOOLS_SCM_PRETEND_VERSION=$SETUPTOOLS_SCM_PRETEND_VERSION"
+
 pip install -e .
 
 ## other dependencies
@@ -88,6 +96,14 @@ fi
 if [ "${ARGS[ttbar_reweights]}" != "none" ]; then
     OPTS="$OPTS --ttbar-reweights ${ARGS[ttbar_reweights]}"
 fi
+# Forward every explicit value, "none" included: runner.py's default is not
+# "none", so dropping it here would silently turn the trees' systematics back on.
+if [ "${ARGS[array_systs]}" != "null" ]; then
+    OPTS="$OPTS --array-systs ${ARGS[array_systs]}"
+fi
+if [ "${ARGS[array_perjet]}" == true ]; then
+    OPTS="$OPTS --array-perjet"
+fi
 for key in  isArray noHist overwrite skipbadfiles; do
     if [ "${ARGS[$key]}" == true ]; then
         OPTS="$OPTS --$key"
@@ -109,19 +125,21 @@ fi
 # Launch
 echo "Now launching: python runner.py $OPTS"
 python runner.py $OPTS
+RUNNER_STATUS=$?
 
 # Transfer output
+COPY_STATUS=0
 if [[ ${ARGS[outputDir]} == root://* ]]; then
 
-    xrdcp --silent -p -f -r hists_* ${ARGS[outputDir]}/
+    xrdcp --silent -p -f -r hists_* ${ARGS[outputDir]}/ || COPY_STATUS=$?
     if [[ "$OPTS" == *"isArray"* ]]; then
-	xrdcp --silent -p -f -r arrays_* ${ARGS[outputDir]}/
+	xrdcp --silent -p -f -r arrays_* ${ARGS[outputDir]}/ || COPY_STATUS=$?
     fi
 else
     mkdir -p ${ARGS[outputDir]}
-    cp -p -f -r hists_* ${ARGS[outputDir]}/
+    cp -p -f -r hists_* ${ARGS[outputDir]}/ || COPY_STATUS=$?
     if [[ "$OPTS" == *"isArray"* ]]; then
-	cp -p -f -r arrays_* ${ARGS[outputDir]}/
+	cp -p -f -r arrays_* ${ARGS[outputDir]}/ || COPY_STATUS=$?
     fi
 fi
 
@@ -132,4 +150,15 @@ fi
 #     xrdcp --silent -p -f $filename ${ARGS[outputDir]}/$SAMPLENAME/
 # done
 
+# `.success` is what condor transfers back, so it is always created; but the
+# job's exit status must still reflect reality. Exiting 0 unconditionally meant a
+# failed runner -- or a worker with no EOS mount, where the copy above fails --
+# was reported to condor as a success, so `max_retries` never fired and the loss
+# only ever showed up as a missing output file.
 touch $WORKDIR/.success
+
+if [ $RUNNER_STATUS -ne 0 ] || [ $COPY_STATUS -ne 0 ]; then
+    echo "JOB FAILED: runner exit=$RUNNER_STATUS, output copy exit=$COPY_STATUS"
+    exit 1
+fi
+exit 0

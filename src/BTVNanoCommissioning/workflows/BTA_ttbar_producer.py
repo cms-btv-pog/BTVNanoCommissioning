@@ -7,6 +7,7 @@ from BTVNanoCommissioning.helpers.update_branch import missing_branch
 from BTVNanoCommissioning.helpers.BTA_helper import (
     BTA_ttbar_HLT_chns,
     to_bitwise_trigger,
+    jet_id_columns,
 )
 from BTVNanoCommissioning.helpers.func import update
 from BTVNanoCommissioning.utils.correction import load_SF, JME_shifts
@@ -24,10 +25,12 @@ class NanoProcessor(processor.ProcessorABC):
         isArray=True,
         noHist=False,
         chunksize=75000,
+        ttbar_reweights="none",
     ):
         self._year = year
         self._campaign = campaign
         self.chunksize = chunksize
+        self.ttbar_reweights = ttbar_reweights
         self.syst = isSyst
         self.name = name
         self.SF_map = load_SF(self._year, self._campaign)
@@ -37,10 +40,6 @@ class NanoProcessor(processor.ProcessorABC):
         # note: in BTA TTbarSelectionProducer it says "disable trigger selection in MC"
         # for consistency, we will disable both trigger selection in MC and data here
         self.do_trig_sel = False
-
-    @property
-    def accumulator(self):
-        return self._accumulator
 
     def process(self, events):
         isRealData = not hasattr(events, "genWeight")
@@ -394,11 +393,10 @@ class NanoProcessor(processor.ProcessorABC):
         #     Jet     #
         ###############
         # Jet: same with nominal BTA workflow
-        jet = events.Jet[
-            (events.Jet.pt > 20.0) & (abs(events.Jet.eta) < 2.5)
-        ]  # basic selection
-        if "veto" in jet.fields:
-            jet = jet[(jet.veto == 0)]
+        jet_presel = (events.Jet.pt > 20.0) & (abs(events.Jet.eta) < 2.5)
+        if "veto" in events.Jet.fields:
+            jet_presel = jet_presel & (events.Jet.veto == 0)
+        jet = events.Jet[jet_presel]  # basic selection
         zeros = ak.zeros_like(jet.pt, dtype=int)
         Jet = ak.zip(
             {
@@ -409,9 +407,7 @@ class NanoProcessor(processor.ProcessorABC):
                 "mass": ak.values_astype(jet.mass, float),
                 "uncorrpt": ak.values_astype(jet.pt_raw, float),
                 # jet ID/pileup ID // !!!
-                "looseID": jet.jetId >= 2,
-                "tightID": jet.jetId >= 4,
-                "tightlepvetoID": jet.jetId >= 6,
+                **jet_id_columns(events, jet, jet_presel, self._campaign),
                 # pileup ID (essentially userInt('puId106XUL18Id') for UL18)
                 # PU ID for Run 3 is not ready
                 # 'pileup_tightID':ak.values_astype((jet.puId & (1 << 0) > 0) | (jet.pt > 50.), int)  ,
@@ -464,8 +460,15 @@ class NanoProcessor(processor.ProcessorABC):
                 zeros,
             )  # in case the genJet index out of range
 
+            # `zeros` is the placeholder index for jets with no valid genJet match,
+            # but index 0 is itself out of range in events with *zero* GenJets, which
+            # awkward 2 rejects rather than silently returning garbage. Pad so the
+            # placeholder always resolves; its value is discarded by the ak.where.
+            genjet_padded = ak.pad_none(events.GenJet, 1, axis=1)
             Jet["genpt"] = ak.where(
-                jet.genJetIdx != -1, events.GenJet[genJetIdx].pt, -99
+                jet.genJetIdx != -1,
+                ak.fill_none(genjet_padded[genJetIdx].pt, -99),
+                -99,
             )
 
             # gen-level jet cleaning aginst prompt leptons

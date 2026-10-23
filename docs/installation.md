@@ -29,7 +29,7 @@ micromamba env create -f btv_env.yml
 # activate enviroment once you have coffea framework
 conda/micromamba activate btv_coffea
 
-conda/micromamba activate /eos/home-m/milee/miniforge3/envs/btv_coffea # contains coffea 0.7.22
+conda/micromamba activate /eos/home-m/milee/miniforge3/envs/btv_coffea # contains coffea
 
 # only first time, including submodules
 git clone git@github.com:cms-btv-pog/BTVNanoCommissioning.git

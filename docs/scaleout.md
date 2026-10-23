@@ -94,6 +94,12 @@ This utility is currently adapted for the lxplus and cmsconnect condor systems. 
 
 After executing the command, a new job folder will be created and the jobs will be submitted to condor.
 
+On lxplus, the checkout's filesystem decides which schedds you must submit to: the standard schedds reject `/eos` paths in a submit file and the [EosSubmit schedds](https://batchdocs.web.cern.ch/local/eossubmit.html) reject AFS paths. If your checkout is on EOS, select the EosSubmit schedds before submitting (and keep the module loaded for `condor_q`/`condor_rm` on those jobs):
+```bash
+module load lxbatch/eossubmit
+```
+The submitter checks this and stops with a hint if the schedds and the checkout do not match.
+
 Example command:
 ```bash
 python condor/submitter.py --workflow ctag_DY_sf --json metadata/Summer24/MC_Summer24_2024_ctag_DY_sf.json --campaign Summer24 --year 2024 --isArray --isSyst all --skipbadfiles --jobName condor_DYMu_MC --outputDir /eos/user/u/user/2024/DYmu_MC -n 20 --jobqueue workday
@@ -102,7 +108,7 @@ python condor/submitter.py --workflow ctag_DY_sf --json metadata/Summer24/MC_Sum
 ::: {admonition} Frequent issues for standalone condor jobs submission
 
 1. CMS Connect provides a condor interface where one can submit jobs to all resources available in the CMS Global Pool. See [WorkBookCMSConnect Twiki](https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookCMSConnect#Requesting_different_Operative_S) for the instructions if you use it for the first time.
-2. The submitted jobs are of the kind which requires a proper setup of the X509 proxy, to use the XRootD service to access and store data. In the generated `.jdl` file, you may see a line configured for this purpose `use_x509userproxy = true`. If you have not submitted jobs of this kind on lxplus condor, we recommend you to add a line
+2. The submitted jobs are of the kind which requires a proper setup of the X509 proxy, to use the XRootD service to access and store data. The submitter takes the proxy from `$X509_USER_PROXY`, refuses to submit if it is missing or expired, and writes its path into the generated `.jdl` file as `x509userproxy = ...`. If you have not submitted jobs of this kind on lxplus condor, we recommend you to add a line
    ```bash
    export X509_USER_PROXY=$HOME/x509up_u`id -u`
    ```

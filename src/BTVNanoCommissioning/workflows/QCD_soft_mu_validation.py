@@ -36,6 +36,7 @@ class NanoProcessor(processor.ProcessorABC):
         noHist=False,
         chunksize=75000,
         addsel=False,
+        ttbar_reweights="none",
     ):
         self._year = year
         self._campaign = campaign
@@ -45,12 +46,9 @@ class NanoProcessor(processor.ProcessorABC):
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
+        self.ttbar_reweights = ttbar_reweights
         ## Load corrections
         self.SF_map = load_SF(self._year, self._campaign)
-
-    @property
-    def accumulator(self):
-        return self._accumulator
 
     def process(self, events):
         events = missing_branch(events)
@@ -174,7 +172,15 @@ class NanoProcessor(processor.ProcessorABC):
         pruned_ev["SoftMuon"] = events.Muon[event_level][:, 0]
         pruned_ev["MuonJet"] = mu_jet[event_level][:, 0]
         pruned_ev["dr_mujet0"] = pruned_ev.Muon.delta_r(pruned_ev.Jet[:, 0])
-        pruned_ev["dr_mujet1"] = pruned_ev.Muon.delta_r(pruned_ev.Jet[:, 1])
+        # `req_jets` above only requires >=1 jet, but dr_mujet1 is a two-jet
+        # quantity, so `Jet[:, 1]` raised on every 1-jet event. Pad instead of
+        # tightening the selection: acceptance stays as intended, and dr_mujet1 is
+        # array output only (no histogram is booked for it), so the -1 sentinel
+        # marks "no second jet" without entering any distribution.
+        jet_padded = ak.pad_none(pruned_ev.Jet, 2, axis=1)
+        pruned_ev["dr_mujet1"] = ak.fill_none(
+            pruned_ev.Muon.delta_r(jet_padded[:, 1]), -1.0
+        )
         pruned_ev["njet"] = ak.count(event_jet[event_level].pt, axis=1)
         # Find the PFCands associate with selected jets. Search from jetindex->JetPFCands->PFCand
         if "PFCands" in events.fields:
@@ -193,10 +199,12 @@ class NanoProcessor(processor.ProcessorABC):
             print("valid_events", valid_events, len(valid_events), len(events))
             filtered_events = pruned_ev[valid_events]
 
-            # Pad pruned_ev.JetSVs.jetIdx to match the length of pruned_ev.Jet
-            filtered_events.JetSVs.jetIdx = ak.pad_none(
-                filtered_events.JetSVs.jetIdx, len(filtered_events.Jet), clip=True
-            )
+            # (Removed: a pad of JetSVs.jetIdx to `len(filtered_events.Jet)`. `len`
+            # on a jagged array is the *event* count, not the per-event jet count,
+            # so the pad target was meaningless and awkward 2 rejects the result
+            # with "cannot broadcast nested list". Out-of-range indices are already
+            # handled by the valid_indices filter immediately below, which is what
+            # the pad was evidently reaching for.)
 
             # Print the initial state of pruned_ev.Jet and pruned_ev.JetSVs.jetIdx
             # print("pruned_ev.Jet", filtered_events.Jet)
@@ -226,7 +234,7 @@ class NanoProcessor(processor.ProcessorABC):
                     "Warning: Some indices in pruned_ev.JetSVs.jetIdx are out of range."
                 )
                 # Filter out invalid indices
-                filtered_events.JetSVs = filtered_events.JetSVs[valid_indices]
+                filtered_events["JetSVs"] = filtered_events.JetSVs[valid_indices]
 
             # Check if pruned_ev.JetSVs.jetIdx is empty after filtering
             if len(filtered_events.JetSVs.jetIdx) == 0:
@@ -257,7 +265,7 @@ class NanoProcessor(processor.ProcessorABC):
             pruned_ev,
             self.SF_map,
             self.isSyst,
-            ttbar_reweights=getattr(self, "ttbar_reweights", "none"),
+            ttbar_reweights=self.ttbar_reweights,
             campaign=self._campaign,
         )
         if isRealData:

@@ -421,6 +421,13 @@ def histo_writter(pruned_ev, output, weights, systematics, isSyst, SF_map):
                             pruned_ev.SelMuon.energy,
                             pruned_ev.SelElectron.energy,
                         ),
+                        # PtEtaPhiECandidate requires `charge`; coffea 2026
+                        # validates the required fields at construction time.
+                        "charge": ak.where(
+                            _mu_is_harder,
+                            pruned_ev.SelMuon.charge,
+                            pruned_ev.SelElectron.charge,
+                        ),
                     },
                     with_name="PtEtaPhiECandidate",
                 )

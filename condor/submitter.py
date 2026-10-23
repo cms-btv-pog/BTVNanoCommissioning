@@ -1,19 +1,53 @@
-import os, sys
+import os, re, sys
 import json
 import shutil
+import subprocess
 import tarfile
 import argparse
 
 
+def framework_toplevel(source_dir):
+    """Top-level entries that make up the framework, i.e. the ones git tracks.
+
+    Local job output (jobs_*, p3_*, arrays_*, the campaign output directories)
+    lives beside the code and runs to hundreds of MB; it must not end up in the
+    tarball that is transferred to every worker node. Returns None when this is
+    not a git checkout, in which case the caller ships everything as before.
+    """
+    try:
+        entries = subprocess.run(
+            ["git", "-C", source_dir, "ls-tree", "--name-only", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=60,
+        ).stdout.split()
+    except Exception:
+        return None
+    entries = [e for e in entries if os.path.exists(os.path.join(source_dir, e))]
+    return entries or None
+
+
 def make_tarfile(output_filename, source_dir, exclude_dirs=[]):
+    toplevel = framework_toplevel(source_dir)
+    if toplevel is None:
+        print("  Not a git checkout: tarring the whole directory.")
+        toplevel = sorted(os.listdir(source_dir))
     with tarfile.open(output_filename, "w:gz") as tar:
-        for root, dirs, files in os.walk(source_dir):
-            dirs[:] = [
-                d for d in dirs if d not in exclude_dirs
-            ]  # Exclude specified directories
-            for file in files:
-                file_path = os.path.join(root, file)
-                tar.add(file_path, arcname=os.path.relpath(file_path, source_dir))
+        for entry in toplevel:
+            if entry in exclude_dirs:
+                continue
+            entry_path = os.path.join(source_dir, entry)
+            if os.path.isfile(entry_path):
+                tar.add(entry_path, arcname=entry)
+                continue
+            for root, dirs, files in os.walk(entry_path):
+                dirs[:] = [
+                    d for d in dirs if d not in exclude_dirs and d != "__pycache__"
+                ]  # Exclude specified directories
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    tar.add(file_path, arcname=os.path.relpath(file_path, source_dir))
 
 
 def get_condor_submitter_parser(parser):
@@ -127,6 +161,20 @@ def get_main_parser():
         ),
     )
     parser.add_argument("--isArray", action="store_true", help="Output root files")
+    parser.add_argument(
+        "--array-systs",
+        dest="array_systs",
+        default="both",
+        choices=["none", "weights", "shifts", "both"],
+        help="How much systematic content --isArray trees carry; forwarded to "
+        "runner.py. See its --array-systs help. Default: %(default)s",
+    )
+    parser.add_argument(
+        "--array-perjet",
+        dest="array_perjet",
+        action="store_true",
+        help="Write --isArray trees with one row per jet; forwarded to runner.py.",
+    )
 
     parser.add_argument(
         "--noHist", action="store_true", help="Not output coffea histogram"
@@ -165,18 +213,56 @@ if __name__ == "__main__":
     print("Running with the following options:")
     print(args)
 
-    uid = os.getuid()
-    homedir = os.getenv("HOME")
-    expected_value = f"{homedir}/x509up_u{uid}"
-    current_value = os.getenv("X509_USER_PROXY")
-    if current_value != expected_value:
-        print("X509_USER_PROXY is NOT set correctly.")
-        print(f"Please run the following command in your shell:")
-        print(f"export X509_USER_PROXY=$HOME/x509up_u`id -u`")
+    # condor_submit delegates the proxy named in the submit file to the jobs, so
+    # take it from X509_USER_PROXY (where voms-proxy-init writes when it is set)
+    # rather than assuming a fixed location, and refuse to submit without a valid one.
+    proxy = os.getenv("X509_USER_PROXY")
+    if not proxy or not os.path.isfile(proxy):
+        print(f"X509_USER_PROXY does not point to a proxy file ({proxy}).")
+        print("Please run the following commands in your shell:")
+        print("export X509_USER_PROXY=$HOME/x509up_u`id -u`")
+        print("voms-proxy-init --voms cms --valid 192:00")
         sys.exit(1)
+    if shutil.which("voms-proxy-info") is not None:
+        valid = subprocess.run(
+            ["voms-proxy-info", "--exists", "--file", proxy], capture_output=True
+        )
+        if valid.returncode != 0:
+            print(f"The proxy in X509_USER_PROXY ({proxy}) is expired or invalid.")
+            print("Please run the following command in your shell:")
+            print("voms-proxy-init --voms cms --valid 192:00")
+            sys.exit(1)
+    print(f"Using the proxy from X509_USER_PROXY: {proxy}")
 
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = current_dir.replace("/condor", "")
+
+    # Since Nov 2025 the CERN schedds split by filesystem: the standard ones refuse
+    # /eos paths in a submit file and the EosSubmit ones (`module load
+    # lxbatch/eossubmit`) refuse AFS paths. Everything below references base_dir, so
+    # the checkout's filesystem decides which schedd has to receive the job.
+    # https://batchdocs.web.cern.ch/local/eossubmit.html
+    on_eos = base_dir.startswith("/eos/")
+    eossubmit = os.getenv("_myschedd_POOL") == "eossubmit"
+    if on_eos and not eossubmit:
+        print(
+            f"The checkout is on EOS ({base_dir}), which only the EosSubmit schedds "
+            "accept. Please run the following command in your shell and resubmit:"
+        )
+        print("module load lxbatch/eossubmit")
+        sys.exit(1)
+    if eossubmit and not on_eos:
+        print(
+            f"The EosSubmit schedds are selected but the checkout is not on EOS "
+            f"({base_dir}). Please run the following command in your shell and "
+            "resubmit:"
+        )
+        print("module unload lxbatch/eossubmit")
+        sys.exit(1)
+    if on_eos:
+        # /eos/home-<x>/ and /eos/user/<x>/ are the same volume; the EosSubmit docs
+        # only use the latter.
+        base_dir = re.sub(r"^/eos/home-([a-z0-9])/", r"/eos/user/\1/", base_dir)
 
     if args.remoteRepo is not None:
         print("Will use a remote path to access BTVNanoCommissioning:", args.remoteRepo)
@@ -264,14 +350,24 @@ if __name__ == "__main__":
         f.write("\n".join([str(i) for i in range(counter)]))
 
     ## store the jdl file
+    submit_dir = f"{base_dir}/{job_dir}"
+    sandbox = [
+        f"{submit_dir}/arguments.json",
+        f"{submit_dir}/split_samples.json",
+        f"{submit_dir}/jobnum_list.txt",
+    ]
+    if not args.remoteRepo:
+        sandbox.append(f"{base_dir}/BTVNanoCommissioning.tar.gz")
+
     jdl_template = """Universe   = vanilla
 Executable = {executable}
+initialdir = {submit_dir}
 
 
 Arguments = $(JOBNUM) $(request_cpus)
 
 request_cpus = {nCPU}
-use_x509userproxy = true
+x509userproxy = {proxy}
 
 +JobFlavour = "{jobqueue}"
 
@@ -290,13 +386,14 @@ transfer_output_files   = .success
 Queue JOBNUM from {jobnum_file}
 """.format(
         executable=f"{base_dir}/condor/execute.sh",
+        proxy=proxy,
+        submit_dir=submit_dir,
         jobqueue=args.jobqueue,
-        log_dir=f"{base_dir}/{job_dir}/log",
-        transfer_input_files=f"{base_dir}/{job_dir}/arguments.json,{base_dir}/{job_dir}/split_samples.json,{base_dir}/{job_dir}/jobnum_list.txt"
-        + ("" if args.remoteRepo else f",{base_dir}/BTVNanoCommissioning.tar.gz"),
+        log_dir=f"{submit_dir}/log",
+        transfer_input_files=",".join(sandbox),
         nCPU=args.nCPU,
         batch_name=args.jobName,
-        jobnum_file=f"{base_dir}/{job_dir}/jobnum_list.txt",
+        jobnum_file=f"{submit_dir}/jobnum_list.txt",
     )
     with open(os.path.join(job_dir, "submit.jdl"), "w") as f:
         f.write(jdl_template)

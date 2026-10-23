@@ -13,6 +13,7 @@ dependencies:
   - fsspec[version='>=0.3.3']
   - psutil
   - dask
+  - numba
   - setuptools
   - arrow
   - dask-jobqueue

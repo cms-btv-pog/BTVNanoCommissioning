@@ -5,6 +5,34 @@ import pandas as pd
 import coffea.nanoevents.methods.vector as vector
 import os, psutil
 
+from BTVNanoCommissioning.utils.selection import jet_id_mask
+
+
+def jet_id_columns(events, jet, jet_presel, campaign):
+    """The three BTA jet-ID ntuple columns, for NanoAOD with or without `Jet_jetId`.
+
+    NanoAODv13+/v15 dropped the `Jet_jetId` branch (confirmed absent from the
+    Summer24 v15 samples), so the working points have to be recomputed. The
+    framework only implements TightLepVeto for those campaigns -- see the note in
+    `utils.selection.jet_id_mask` -- so where that is the only working point
+    available all three columns are filled with it. TightLepVeto implies Tight
+    implies Loose, so a jet flagged here always genuinely passes that column; jets
+    passing only a looser ID are conservatively flagged False rather than guessed.
+    """
+    if "jetId" in jet.fields:
+        return {
+            "looseID": jet.jetId >= 2,
+            "tightID": jet.jetId >= 4,
+            "tightlepvetoID": jet.jetId >= 6,
+        }
+    tightlepveto = jet_id_mask(events, campaign)[jet_presel]
+    return {
+        "looseID": tightlepveto,
+        "tightID": tightlepveto,
+        "tightlepvetoID": tightlepveto,
+    }
+
+
 ###############
 #  HLT table  #
 ###############

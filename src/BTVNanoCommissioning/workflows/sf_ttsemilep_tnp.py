@@ -416,6 +416,7 @@ class NanoProcessor(processor.ProcessorABC):
         chunksize=10000,
         selectionModifier="",  # "tt_semilep_mu" or "tt_semilep_el"
         tag_tagger="UParTAK4",
+        ttbar_reweights="none",
     ):
         self._year = year
         self._campaign = campaign
@@ -425,6 +426,7 @@ class NanoProcessor(processor.ProcessorABC):
         self.noHist = noHist
         self.lumiMask = load_lumi(self._campaign)
         self.chunksize = chunksize
+        self.ttbar_reweights = ttbar_reweights
         if selectionModifier not in ["tt_semilep_el", "tt_semilep_mu"]:
             raise ValueError(f"Invalid selectionModifier: {selectionModifier}")
         self.channel = "el" if (selectionModifier == "tt_semilep_el") else "mu"
@@ -434,10 +436,6 @@ class NanoProcessor(processor.ProcessorABC):
         self.tag_tagger = tag_tagger
         #        self._regions = ["central", "sbiso", "sbbtagM", "sbbtagL", "sbisobtagM"]
         self._regions = ["central", "sbbtagL", "sbbtagM"]
-
-    @property
-    def accumulator(self):
-        return self._accumulator
 
     def define_histograms(self, events):
         """
@@ -1371,7 +1369,7 @@ class NanoProcessor(processor.ProcessorABC):
                         pr,
                         self.SF_map,
                         self.isSyst,
-                        ttbar_reweights=getattr(self, "ttbar_reweights", "none"),
+                        ttbar_reweights=self.ttbar_reweights,
                         campaign=self._campaign,
                     )
                     systematics = (

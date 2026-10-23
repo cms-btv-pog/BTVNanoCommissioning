@@ -34,6 +34,14 @@ Get the run & luminosity information for the processed events from the coffea ou
 python scripts/dump_processed.py -c $COFFEA_FILES -n $OUTPUT_NAME (-j $ORIGINAL_JSON -t [all,lumi,failed])
 ```
 
+## `check_workflows.py`: build every registered workflow
+
+Instantiates and pickles every workflow in `workflows/__init__.py` exactly as `runner.py` does, without reading any events or needing a grid proxy. Run it after changing a processor's `__init__` or the arguments `runner.py` passes; CI runs it in `.github/workflows/check_workflows.yml`.
+
+```bash
+python scripts/check_workflows.py --campaign Summer23 --year 2023 (--isSyst all)
+```
+
 
 ## `make_template.py`: Store histograms from coffea file
 

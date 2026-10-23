@@ -1,0 +1,61 @@
+name: Workflow registry
+
+# Builds and pickles every registered workflow the way runner.py does, without
+# reading events. Needs no grid proxy, xrootd or CVMFS.
+on:
+  push:
+    branches: [ master ]
+    paths:
+    - 'src/BTVNanoCommissioning/**'
+    - 'scripts/check_workflows.py'
+    - '.github/workflows/check_workflows.yml'
+    - 'runner.py'
+    - 'btv_env.yml'
+    - 'setup.cfg'
+  pull_request:
+    branches: [ master ]
+    paths:
+    - 'src/BTVNanoCommissioning/**'
+    - 'scripts/check_workflows.py'
+    - '.github/workflows/check_workflows.yml'
+    - 'runner.py'
+    - 'btv_env.yml'
+    - 'setup.cfg'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+
+    defaults:
+      run:
+        shell: "bash -l {0}"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set conda environment
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+        channels: conda-forge,defaults
+        channel-priority: true
+        activate-environment: btv_coffea
+        environment-file: btv_env.yml
+        auto-activate-base: false
+
+    - name: Install Repo
+      run: |
+        pip install -e .
+
+    - name: Build every workflow (Run 3)
+      run: |
+        python scripts/check_workflows.py --campaign Summer23 --year 2023
+
+    - name: Build every workflow (Run 2, with systematics)
+      run: |
+        python scripts/check_workflows.py --campaign 2018-UL --year 2018 --isSyst all
